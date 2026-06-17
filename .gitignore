@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+.expo/
+web-build/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Local data caches (regenerate with npm run markets:usda:seed)
+market-seed-data.json

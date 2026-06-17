@@ -1,0 +1,15 @@
+-- Rooted USDA market import (17642 markets, 12 parts)
+-- Run each part in Supabase SQL Editor in order: part001, part002, ...
+-- Or: npm run markets:usda:apply
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part001.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part002.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part003.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part004.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part005.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part006.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part007.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part008.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part009.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part010.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part011.sql
+--   C:\Users\ethan\OneDrive\Desktop\Rooted\docs\supabase\generated_usda_markets_part012.sql

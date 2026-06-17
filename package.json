@@ -1,0 +1,44 @@
+{
+  "name": "rooted",
+  "private": true,
+  "description": "Rooted monorepo tooling (market seed scripts)",
+  "scripts": {
+    "markets:baseline": "npx tsx scripts/exportBaselineMarketsCsv.ts",
+    "markets:cities": "npx tsx scripts/fetchCityMarketsCsv.ts",
+    "markets:fetch": "npx tsx scripts/fetchMarketsFromOsm.ts --mode deep --cities 40",
+    "markets:fetch:fast": "npx tsx scripts/fetchMarketsFromOsm.ts --mode fast --cities 8",
+    "markets:fetch:nominatim": "npx tsx scripts/fetchMarketsFromOsm.ts --mode deep --cities 40",
+    "markets:fetch:max": "npx tsx scripts/fetchMarketsFromOsm.ts --mode deep --cities 120",
+    "markets:merge": "npx tsx scripts/mergeMarketsCsv.ts",
+    "markets:import": "npx tsx scripts/importMarketsFromCsv.ts",
+    "markets:usda:seed": "npx tsx scripts/seedMarkets.ts",
+    "markets:usda:schedules": "npx tsx scripts/fetchUsdaSchedules.ts",
+    "markets:usda:import": "npx tsx scripts/importMarketsFromJson.ts",
+    "markets:usda:apply": "npx tsx scripts/importMarketsFromJson.ts --apply",
+    "markets:usda:pipeline": "npm run markets:usda:seed && npm run markets:usda:schedules && npm run markets:usda:import",
+    "markets:usda:enrich": "npm run markets:enrich --prefix backend",
+    "markets:usda:fix-schedules": "npm run markets:usda:fix-schedules --prefix backend",
+    "markets:schedule:ai": "npm run markets:schedule:ai --prefix backend --",
+    "markets:fix-times": "npm run markets:fix-times --prefix backend --",
+    "markets:build": "npm run markets:baseline && npm run markets:cities && npm run markets:merge && npm run markets:import",
+    "markets:build:full": "npm run markets:baseline && npm run markets:cities && npm run markets:fetch && npm run markets:merge && npm run markets:import",
+    "markets:links": "npm run markets:links --prefix backend",
+    "markets:dedupe": "npm run markets:dedupe --prefix backend",
+    "markets:agent": "npm run markets:agent --prefix backend",
+    "markets:enrich": "npm run markets:enrich --prefix backend --",
+    "markets:fix-times": "npm run markets:fix-times --prefix backend --",
+    "markets:images": "npm run markets:images --prefix backend --",
+    "markets:images:google": "npm run markets:images:google --prefix backend --",
+    "markets:images:purge": "npm run markets:images:purge --prefix backend --",
+    "admin:agent": "npm run admin:agent --prefix backend",
+    "admin:posts": "npm run admin:posts --prefix backend"
+  },
+  "dependencies": {
+    "expo": "^56.0.11"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.14",
+    "luxon": "^3.6.1",
+    "typescript": "~6.0.3"
+  }
+}

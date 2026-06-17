@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rooted — Redirecting</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f8faf8;
+      color: #1b4332;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+    }
+    .card { max-width: 420px; }
+    h1 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+    p { color: #52796f; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Opening Rooted…</h1>
+    <p id="status">If the app does not open automatically, switch back to Rooted and try again.</p>
+  </div>
+  <script>
+    (function () {
+      var APP_SCHEME = 'mobile';
+      var hash = window.location.hash ? window.location.hash.substring(1) : '';
+      var search = window.location.search ? window.location.search.substring(1) : '';
+      var params = new URLSearchParams(hash || search);
+      var type = params.get('type');
+      var code = params.get('code');
+      var targetPath = type === 'recovery' ? 'auth/reset-password' : 'auth/callback';
+      var target = APP_SCHEME + '://' + targetPath;
+
+      if (hash) {
+        target += '#' + hash;
+      } else if (code) {
+        target += '?code=' + encodeURIComponent(code);
+      } else if (search) {
+        target += '?' + search;
+      }
+
+      window.location.replace(target);
+
+      setTimeout(function () {
+        document.getElementById('status').textContent =
+          'Return to the Rooted app. If you requested a password reset, use Set a new password when prompted.';
+      }, 2500);
+    })();
+  </script>
+</body>
+</html>

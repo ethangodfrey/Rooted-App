@@ -1,0 +1,499 @@
+// Rooted backend Prisma schema.
+//
+// This schema layers a NestJS/Prisma backend on top of the existing Supabase
+// Postgres database. The "existing Rooted tables" below are intentionally
+// abbreviated to the columns the POS layer needs and are mapped to the existing
+// snake_case tables via @@map. The POS_* models are the new additions for the
+// POS integration system.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================================================
+// Existing Rooted tables (abbreviated; managed by the mobile/Supabase layer).
+// ===========================================================================
+
+/// Maps to auth-backed users table; `role` drives app authorization.
+model User {
+  id    String  @id @db.Uuid
+  role  String
+  email String?
+
+  @@map("users")
+}
+
+model Vendor {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  businessName String? @map("business_name")
+
+  posConnections       PosConnection[]
+  posProductMappings   PosProductMapping[]
+  posTransactions      PosImportedTransaction[]
+
+  @@index([userId])
+  @@map("vendors")
+}
+
+model Product {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId String @map("vendor_id") @db.Uuid
+  name     String
+  price    Int
+
+  posProductMappings PosProductMapping[]
+  posLineItems       PosImportedLineItem[]
+
+  @@map("products")
+}
+
+model Event {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  description      String?
+  organizerName    String?   @map("organizer_name")
+  bannerUrl        String?   @map("banner_url")
+  startDatetime    DateTime  @map("start_datetime") @db.Timestamptz(6)
+  endDatetime      DateTime  @map("end_datetime") @db.Timestamptz(6)
+  address          String?
+  city             String?
+  state            String?
+  latitude         Decimal   @db.Decimal
+  longitude        Decimal   @db.Decimal
+  eventStatus      String    @default("upcoming") @map("event_status")
+  visibilityStatus String    @default("public") @map("visibility_status")
+  parkingInfo      String?   @map("parking_info")
+  admissionInfo    String?   @map("admission_info")
+  marketType       String?   @map("market_type")
+  hoursSummary     String?   @map("hours_summary")
+  websiteUrl       String?   @map("website_url")
+  extraInfo        String?   @map("extra_info")
+  marketHistory    String?   @map("market_history")
+  whatToLookFor    String?   @map("what_to_look_for")
+  marketHighlights String?   @map("market_highlights")
+  timezone         String?
+  externalSource   String?   @map("external_source")
+  externalId       String?   @map("external_id")
+  lastSyncedAt     DateTime? @map("last_synced_at") @db.Timestamptz(6)
+  syncMetadata     Json      @default("{}") @map("sync_metadata")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  posLocationMappings PosLocationMapping[]
+
+  @@unique([externalSource, externalId])
+  @@map("events")
+}
+
+model MarketSyncRun {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime? @map("finished_at") @db.Timestamptz(6)
+  status       String    @default("running")
+  discovered   Int       @default(0)
+  inserted     Int       @default(0)
+  updated      Int       @default(0)
+  skipped      Int       @default(0)
+  errors       Json      @default("[]")
+  agentVersion String?   @map("agent_version")
+  notes        String?
+
+  @@map("market_sync_runs")
+}
+
+model AdminAgentRun {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  startedAt         DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt        DateTime? @map("finished_at") @db.Timestamptz(6)
+  status            String    @default("running")
+  agentType         String    @default("vendor_review") @map("agent_type")
+  reviewed          Int       @default(0)
+  suggestionsCount  Int       @default(0) @map("suggestions_count")
+  skipped           Int       @default(0)
+  errors            Json      @default("[]")
+  agentVersion      String?   @map("agent_version")
+  notes             String?
+
+  vendorReviewSuggestions VendorReviewSuggestion[]
+
+  @@map("admin_agent_runs")
+}
+
+model VendorReviewSuggestion {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId          String?        @map("run_id") @db.Uuid
+  run            AdminAgentRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+  vendorId       String         @map("vendor_id") @db.Uuid
+  recommendation String
+  confidence     Decimal        @db.Decimal(4, 3)
+  summary        String
+  flags          Json           @default("[]")
+  reasons        Json           @default("[]")
+  agentVersion   String?        @map("agent_version")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([vendorId, createdAt(sort: Desc)])
+  @@map("vendor_review_suggestions")
+}
+
+model VendorReviewFeedback {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  suggestionId     String?  @map("suggestion_id") @db.Uuid
+  vendorId         String   @map("vendor_id") @db.Uuid
+  adminUserId      String   @map("admin_user_id") @db.Uuid
+  aiRecommendation String?  @map("ai_recommendation")
+  adminAction      String   @map("admin_action")
+  outcome          String
+  notes            String?
+  vendorSnapshot   Json     @default("{}") @map("vendor_snapshot")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([outcome, createdAt(sort: Desc)])
+  @@map("vendor_review_feedback")
+}
+
+model PostModerationSuggestion {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId          String?  @map("run_id") @db.Uuid
+  postId         String   @map("post_id") @db.Uuid
+  recommendation String
+  confidence     Decimal  @db.Decimal(4, 3)
+  summary        String
+  categories     Json     @default("[]")
+  flags          Json     @default("[]")
+  reasons        Json     @default("[]")
+  agentVersion   String?  @map("agent_version")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@map("post_moderation_suggestions")
+}
+
+model PostModerationFeedback {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  suggestionId    String?  @map("suggestion_id") @db.Uuid
+  postId          String   @map("post_id") @db.Uuid
+  adminUserId     String   @map("admin_user_id") @db.Uuid
+  aiRecommendation String? @map("ai_recommendation")
+  adminAction     String   @map("admin_action")
+  outcome         String
+  notes           String?
+  postSnapshot    Json     @default("{}") @map("post_snapshot")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("post_moderation_feedback")
+}
+
+model InventoryTransaction {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId        String   @map("vendor_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  eventId         String?  @map("event_id") @db.Uuid
+  transactionType String   @map("transaction_type")
+  quantityChange  Int      @map("quantity_change")
+  source          String?
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("inventory_transactions")
+}
+
+model AnalyticsSnapshot {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId      String   @map("vendor_id") @db.Uuid
+  date          DateTime @db.Date
+  revenueTotal  Int      @default(0) @map("revenue_total")
+  ordersTotal   Int      @default(0) @map("orders_total")
+  productViews  Int      @default(0) @map("product_views")
+  conversions   Int      @default(0)
+  eventSales    Int      @default(0) @map("event_sales")
+  inpersonSales Int      @default(0) @map("inperson_sales")
+  savedCount    Int      @default(0) @map("saved_count")
+  followerCount Int      @default(0) @map("follower_count")
+
+  @@unique([vendorId, date])
+  @@map("analytics_snapshots")
+}
+
+// ===========================================================================
+// POS integration: enums
+// ===========================================================================
+
+enum PosProvider {
+  SQUARE
+  TOAST
+  CLOVER
+}
+
+enum PosAuthType {
+  OAUTH
+  API_KEY
+}
+
+enum PosConnectionStatus {
+  PENDING
+  ACTIVE
+  ERROR
+  EXPIRED
+  DISCONNECTED
+}
+
+enum PosSyncTrigger {
+  MANUAL
+  SCHEDULED
+  WEBHOOK
+  BACKFILL
+}
+
+enum PosSyncStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+enum PosTransactionState {
+  COMPLETED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  VOIDED
+}
+
+enum PosWebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+enum PosErrorScope {
+  CONNECTION
+  SYNC
+  IMPORT
+  WEBHOOK
+  MAPPING
+}
+
+// ===========================================================================
+// POS integration: models
+// ===========================================================================
+
+model PosConnection {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId             String              @map("vendor_id") @db.Uuid
+  vendor               Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  provider             PosProvider
+  authType             PosAuthType         @map("auth_type")
+  status               PosConnectionStatus @default(PENDING)
+  displayName          String?             @map("display_name")
+  providerMerchantId   String?             @map("provider_merchant_id")
+  providerLocationId   String?             @map("provider_location_id")
+  scopes               String[]            @default([])
+  webhookSecret        String?             @map("webhook_secret")
+  oauthState           String?             @map("oauth_state")
+  lastSyncedAt         DateTime?           @map("last_synced_at") @db.Timestamptz(6)
+  lastCursor           String?             @map("last_cursor")
+  syncFrequencyMinutes Int                 @default(60) @map("sync_frequency_minutes")
+  errorMessage         String?             @map("error_message")
+  metadata             Json?
+  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  credential       PosCredential?
+  syncRuns         PosSyncRun[]
+  transactions     PosImportedTransaction[]
+  productMappings  PosProductMapping[]
+  locationMappings PosLocationMapping[]
+  webhookEvents    PosWebhookEvent[]
+  errors           PosSyncError[]
+
+  @@unique([vendorId, provider, providerMerchantId])
+  @@index([status])
+  @@map("pos_connections")
+}
+
+/// Encrypted credential vault (AES-256-GCM). Never exposed via the API.
+model PosCredential {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId  String        @unique @map("connection_id") @db.Uuid
+  connection    PosConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  secretCipher  String        @map("secret_cipher")
+  cipherIv      String        @map("cipher_iv")
+  cipherAuthTag String        @map("cipher_auth_tag")
+  keyVersion    Int           @default(1) @map("key_version")
+  expiresAt     DateTime?     @map("expires_at") @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("pos_credentials")
+}
+
+model PosSyncRun {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId         String         @map("connection_id") @db.Uuid
+  connection           PosConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  trigger              PosSyncTrigger
+  status               PosSyncStatus  @default(QUEUED)
+  windowStart          DateTime?      @map("window_start") @db.Timestamptz(6)
+  windowEnd            DateTime?      @map("window_end") @db.Timestamptz(6)
+  startedAt            DateTime?      @map("started_at") @db.Timestamptz(6)
+  finishedAt           DateTime?      @map("finished_at") @db.Timestamptz(6)
+  cursorStart          String?        @map("cursor_start")
+  cursorEnd            String?        @map("cursor_end")
+  transactionsFetched  Int            @default(0) @map("transactions_fetched")
+  transactionsImported Int            @default(0) @map("transactions_imported")
+  transactionsSkipped  Int            @default(0) @map("transactions_skipped")
+  errorCount           Int            @default(0) @map("error_count")
+  errorMessage         String?        @map("error_message")
+  jobId                String?        @map("job_id")
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  transactions PosImportedTransaction[]
+  errors       PosSyncError[]
+
+  @@index([connectionId, status])
+  @@map("pos_sync_runs")
+}
+
+/// Provider-agnostic normalized transaction.
+model PosImportedTransaction {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId          String              @map("connection_id") @db.Uuid
+  connection            PosConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  vendorId              String              @map("vendor_id") @db.Uuid
+  vendor                Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  syncRunId             String?             @map("sync_run_id") @db.Uuid
+  syncRun               PosSyncRun?         @relation(fields: [syncRunId], references: [id], onDelete: SetNull)
+  provider              PosProvider
+  providerTransactionId String              @map("provider_transaction_id")
+  providerOrderId       String?             @map("provider_order_id")
+  providerLocationId    String?             @map("provider_location_id")
+  state                 PosTransactionState @default(COMPLETED)
+  soldAt                DateTime            @map("sold_at") @db.Timestamptz(6)
+  currency              String              @default("USD")
+  grossAmount           Int                 @map("gross_amount")
+  discountAmount        Int                 @default(0) @map("discount_amount")
+  taxAmount             Int                 @default(0) @map("tax_amount")
+  tipAmount             Int                 @default(0) @map("tip_amount")
+  netAmount             Int                 @map("net_amount")
+  tenderType            String?             @map("tender_type")
+  cardBrand             String?             @map("card_brand")
+  eventId               String?             @map("event_id") @db.Uuid
+  rawPayload            Json                @map("raw_payload")
+  importedAt            DateTime            @default(now()) @map("imported_at") @db.Timestamptz(6)
+
+  lineItems PosImportedLineItem[]
+
+  @@unique([connectionId, providerTransactionId])
+  @@index([vendorId, soldAt])
+  @@map("pos_imported_transactions")
+}
+
+model PosImportedLineItem {
+  id                      String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transactionId           String                 @map("transaction_id") @db.Uuid
+  transaction             PosImportedTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  providerLineItemId      String?                @map("provider_line_item_id")
+  providerCatalogObjectId String?                @map("provider_catalog_object_id")
+  name                    String
+  quantity                Int                    @default(1)
+  unitPrice               Int                    @map("unit_price")
+  grossAmount             Int                    @map("gross_amount")
+  discountAmount          Int                    @default(0) @map("discount_amount")
+  taxAmount               Int                    @default(0) @map("tax_amount")
+  productId               String?                @map("product_id") @db.Uuid
+  product                 Product?               @relation(fields: [productId], references: [id], onDelete: SetNull)
+  /// Set once an InventoryTransaction has been written for this line (idempotency guard).
+  inventoryTransactionId  String?                @unique @map("inventory_transaction_id") @db.Uuid
+  rawPayload              Json?                  @map("raw_payload")
+
+  @@index([transactionId])
+  @@index([providerCatalogObjectId])
+  @@map("pos_imported_line_items")
+}
+
+/// Maps a provider catalog object to a Rooted product.
+model PosProductMapping {
+  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId            String        @map("connection_id") @db.Uuid
+  connection              PosConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  vendorId                String        @map("vendor_id") @db.Uuid
+  vendor                  Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  provider                PosProvider
+  providerCatalogObjectId String        @map("provider_catalog_object_id")
+  providerItemName        String?       @map("provider_item_name")
+  productId               String?       @map("product_id") @db.Uuid
+  product                 Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  autoMatched             Boolean       @default(false) @map("auto_matched")
+  ignored                 Boolean       @default(false)
+  createdAt               DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([connectionId, providerCatalogObjectId])
+  @@index([vendorId])
+  @@map("pos_product_mappings")
+}
+
+/// Maps a provider location to a Rooted event context (optional).
+model PosLocationMapping {
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId         String        @map("connection_id") @db.Uuid
+  connection           PosConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  provider             PosProvider
+  providerLocationId   String        @map("provider_location_id")
+  providerLocationName String?       @map("provider_location_name")
+  eventId              String?       @map("event_id") @db.Uuid
+  event                Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([connectionId, providerLocationId])
+  @@map("pos_location_mappings")
+}
+
+/// Raw inbound webhook envelopes (idempotent on provider event id).
+model PosWebhookEvent {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId    String?          @map("connection_id") @db.Uuid
+  connection      PosConnection?   @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  provider        PosProvider
+  providerEventId String           @map("provider_event_id")
+  eventType       String           @map("event_type")
+  status          PosWebhookStatus @default(RECEIVED)
+  signatureValid  Boolean          @default(false) @map("signature_valid")
+  payload         Json
+  receivedAt      DateTime         @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt     DateTime?        @map("processed_at") @db.Timestamptz(6)
+  error           String?
+
+  @@unique([provider, providerEventId])
+  @@index([status])
+  @@map("pos_webhook_events")
+}
+
+model PosSyncError {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId      String        @map("connection_id") @db.Uuid
+  connection        PosConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  syncRunId         String?       @map("sync_run_id") @db.Uuid
+  syncRun           PosSyncRun?   @relation(fields: [syncRunId], references: [id], onDelete: SetNull)
+  scope             PosErrorScope
+  code              String?
+  message           String
+  providerReference String?       @map("provider_reference")
+  payload           Json?
+  retryable         Boolean       @default(false)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([connectionId, scope])
+  @@map("pos_sync_errors")
+}

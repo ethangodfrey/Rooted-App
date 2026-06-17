@@ -1,0 +1,227 @@
+# CONTEXT FILE: Rooted - Hybrid Local Marketplace Platform
+# Master Source of Truth for Cursor AI / Composer
+# Last Updated: June 2026
+
+---
+
+## 1. PRODUCT OVERVIEW & CORE VISION
+
+Rooted is a mobile-first, two-sided local commerce and event marketplace designed to bridge the gap between digital pre-ordering and physical, live community events (markets, conventions, pop-ups, festivals). 
+
+### Major Problems Solved
+* **The Discovery Problem:** Shoppers lack a centralized hub to know which vendors exist, where they are setting up, and what events are active nearby.
+* **The Sales Problem:** Vendors miss critical pre-event revenue because shoppers cannot browse stock before arriving physically at a venue.
+* **The Communication Problem:** No single platform exists for local merchants to broadcast real-time stock alerts, location shifts, and event schedules directly to interested locals.
+
+Rooted serves as a **local discovery machine**, an **organic vendor promotional engine**, and an **agile pre-order management tool** rolled into a single system.
+
+---
+
+## 2. USER ROLES & ACCESSIBILITY
+
+| Role | Core Purpose & Access Scope | Public Facing? |
+| :--- | :--- | :--- |
+| **Shopper** | Discovers local events, handles geo-queries, follows vendor feeds, and places reserve-for-pickup orders. | Yes (Launch) |
+| **Vendor** | Manages a business profile, configures catalogs, splits channel inventory, processes orders, and tracks analytics. | Yes (Launch) |
+| **Admin** | Moderates content, approves/rejects vendor applications, creates flagship events, and manages database integrity. | No (Internal) |
+
+---
+
+## 3. CORE ARCHITECTURE & TARGET TECH STACK
+
+* **Frontend Framework:** Expo SDK 54 (React Native) initialized via the TypeScript native `tabs` layout template.
+* **Styling Engine:** TailWind CSS via NativeWind for fluid utilities.
+* **Backend Platform:** Supabase (PostgreSQL Database, GoTrue Native Auth, Storage Buckets).
+* **V1 Transaction Model:** **Model A: Reserve and Pay at Pickup.** Shoppers reserve items in-app, vendors verify/approve, and payment happens offline/in-person at the booth. This avoids premature checkout complexity, payment gateways, processing fees, and dispute infrastructure at launch.
+* **Strict Execution Directive:** Mobile-first architecture. **No web-exclusive browser APIs (`window`, `document`, etc.)** are permitted within active app routes unless wrapped inside an explicit platform check (`Platform.OS === 'web'`).
+
+---
+
+## 4. MVP CORE FUNCTIONAL MODULES
+
+### A. The Shopper Experience
+* **Discovery Dashboard:** A dynamic home screen emphasizing upcoming events near the user, featured local vendors, active map previews, and a live product catalog feed.
+* **Multi-View Event Discovery:** Event browsing via searchable list layouts, chronological calendars, or location-focused map pins marking active venues.
+* **Storefront Profiles:** Deep-dive look into individual vendor booths displaying custom bios, linked social handles, active schedules, and product listings.
+* **Reserve-for-Pickup Checkout:** A zero-friction wizard allowing shoppers to select items, allocate them to an upcoming event pickup location, and monitor real-time fulfillment states.
+* **Subscriber Feed:** A curated community feed delivering updates, restocks, and promotional alerts purely from vendors the shopper has flagged as a "Favorite."
+* **Contextual Messaging:** Deeply sandboxed chat routing allowing communication between shoppers and vendors *only* when linked directly to active order receipts or specific inquiries.
+
+### B. The Vendor Experience
+* **Operational Dashboard:** High-level metrics window tracking raw sales volumes, pending order tallies, low-inventory triggers, and quick-action shortcuts for swift updates.
+* **Storefront Customization Engine:** A lightweight profile manager giving vendors codeless authority over profile logos, banner layouts, color styling, and bio write-ups.
+* **Dual-Channel Inventory Controls:** A critical business safeguard. Vendors can partition total stock into two distinct channels: **Pre-Sale Digital Stock** (buyable via the app) and **In-Person Booth Stock** (protected for physical walk-ups). This completely blocks digital sales from depleting physical counter tables.
+* **Order Lifecycle Manager:** Step-by-step state toggles supporting order acceptance, rejections, packaging phases, ready-for-pickup alerts, and fulfillment tracking.
+* **Broadcast Publisher:** Content tool enabling vendors to fire rich media posts directly into the shopper live feeds to prompt real-time local engagement.
+* **Analytics & CSV Exporters:** Data layout summarizing revenue velocity, high-performing product items, and event-by-event performance. Supports clean CSV tabular data extractions.
+* **Manual Offline Tracking:** An internal logging menu allowing vendors to manually type in cash/card sales processed at physical events, keeping the in-app analytics engine completely accurate to their real-world numbers.
+
+---
+
+## 5. TECHNICAL DATABASE SCHEMATICS (SUPABASE POSTGRES)
+
+### Users
+* `id` (uuid, primary key -> auth.users)
+* `role` (text, 'shopper' | 'vendor' | 'admin')
+* `name` (text)
+* `email` (text)
+* `phone` (text)
+* `profile_photo` (text)
+* `city` (text)
+* `state` (text)
+* `zip_code` (text)
+* `location_coordinates` (point)
+* `notification_preferences` (jsonb)
+* `created_at` / `updated_at` (timestamp)
+
+### Shoppers
+* `id` (uuid, primary key)
+* `user_id` (uuid, foreign key -> Users.id)
+* `interests` (text[])
+* `saved_vendors` (uuid[])
+* `saved_events` (uuid[])
+* `default_location` (text)
+
+### Vendors
+* `id` (uuid, primary key)
+* `user_id` (uuid, foreign key -> Users.id)
+* `business_name` (text)
+* `business_description` (text)
+* `logo_url` (text)
+* `banner_url` (text)
+* `theme_settings` (jsonb)
+* `category` (text)
+* `website_url` / `instagram_url` (text)
+* `approval_status` (text, 'pending' | 'approved' | 'rejected')
+* `messaging_enabled` / `custom_orders_enabled` (boolean)
+* `created_at` / `updated_at` (timestamp)
+
+### Events
+* `id` (uuid, primary key)
+* `name` (text)
+* `description` (text)
+* `organizer_name` (text)
+* `banner_url` (text)
+* `start_datetime` / `end_datetime` (timestamp)
+* `address` / `city` / `state` (text)
+* `latitude` / `longitude` (numeric)
+* `event_status` (text, 'upcoming' | 'live' | 'completed' | 'cancelled')
+* `visibility_status` (text, 'draft' | 'public')
+* `parking_info` / `admission_info` (text)
+* `created_at` / `updated_at` (timestamp)
+
+### VendorEvents
+* `id` (uuid, primary key)
+* `vendor_id` (uuid, foreign key -> Vendors.id)
+* `event_id` (uuid, foreign key -> Events.id)
+* `participation_status` (text, 'requested' | 'approved' | 'declined')
+* `booth_details` / `setup_notes` (text)
+* `pre_order_enabled` (boolean)
+
+### Products
+* `id` (uuid, primary key)
+* `vendor_id` (uuid, foreign key -> Vendors.id)
+* `name` / `description` (text)
+* `price` (integer, value in cents)
+* `media_urls` (text[])
+* `category` / `sku` / `status` (text)
+* `inquiry_enabled` / `reserve_enabled` / `prepay_enabled` / `custom_order_enabled` (boolean)
+* `prep_time` (integer)
+* `created_at` / `updated_at` (timestamp)
+
+### ProductEventAvailability
+* `id` (uuid, primary key)
+* `product_id` (uuid, foreign key -> Products.id)
+* `event_id` (uuid, foreign key -> Events.id)
+* `available_quantity_presale` (integer)
+* `available_quantity_inperson` (integer)
+* `pre_order_deadline` (timestamp)
+* `pickup_notes` (text)
+
+### Orders
+* `id` (uuid, primary key)
+* `shopper_id` (uuid, foreign key -> Shoppers.id)
+* `vendor_id` (uuid, foreign key -> Vendors.id)
+* `event_id` (uuid, foreign key -> Events.id)
+* `order_status` (text: 'submitted' | 'pending_review' | 'accepted' | 'declined' | 'preparing' | 'ready_for_pickup' | 'fulfilled' | 'cancelled')
+* `payment_status` (text, 'unpaid' | 'paid_at_pickup')
+* `fulfillment_type` (text)
+* `pickup_datetime` (timestamp)
+* `subtotal` / `tax` / `total` (integer, in cents)
+* `notes` (text)
+* `created_at` / `updated_at` (timestamp)
+
+### OrderItems
+* `id` (uuid, primary key)
+* `order_id` (uuid, foreign key -> Orders.id)
+* `product_id` (uuid, foreign key -> Products.id)
+* `quantity` / `item_price` (integer)
+* `customization_data` (jsonb)
+* `fulfillment_status` (text)
+
+### Posts
+* `id` (uuid, primary key)
+* `vendor_id` (uuid, foreign key -> Vendors.id)
+* `event_id` (uuid, foreign key -> Events.id, optional)
+* `product_id` (uuid, foreign key -> Products.id, optional)
+* `post_type` (text, 'promotion' | 'launch' | 'restock' | 'announcement')
+* `caption` / `media_url` (text)
+* `created_at` (timestamp)
+
+### Messages
+* `id` (uuid, primary key)
+* `thread_id` (uuid)
+* `sender_user_id` / `receiver_user_id` (uuid, foreign key -> Users.id)
+* `order_id` (uuid, foreign key -> Orders.id, optional)
+* `message_text` (text)
+* `read_status` (boolean)
+* `created_at` (timestamp)
+
+### InventoryTransactions
+* `id` (uuid, primary key)
+* `vendor_id` (uuid, foreign key -> Vendors.id)
+* `product_id` (uuid, foreign key -> Products.id)
+* `event_id` (uuid, foreign key -> Events.id, optional)
+* `transaction_type` (text, 'sale_digital' | 'sale_manual' | 'adjustment' | 'restock')
+* `quantity_change` (integer)
+* `source` (text)
+* `notes` (text)
+* `created_at` (timestamp)
+
+### AnalyticsSnapshots
+* `id` (uuid, primary key)
+* `vendor_id` (uuid, foreign key -> Vendors.id)
+* `date` (date)
+* `revenue_total` / `orders_total` / `product_views` / `conversions` / `event_sales` / `inperson_sales` / `saved_count` / `follower_count` (integer)
+
+---
+
+## 6. BUSINESS RULES & PLATFORM LOGIC
+
+* **Account Bound:** A profile selects an identity context during configuration. Cross-role conversions (e.g., a Shopper applying to list products as an authorized Vendor) require manual Admin verification flags.
+* **Contextual Storefront Constraints:** Vendor products must be explicitly mapped to an existing `Event` instance via `ProductEventAvailability` profiles to become available for digital reservation. Items not mapped default to a display-only state.
+* **Pre-Sale Allocation Logic:** Digital checkouts must block execution if requested quantities cross over the isolated `available_quantity_presale` limits.
+* **Fulfillment Auto-Deductions:** Transitioning an order row to `fulfilled` must trigger an automatic negative entry inside `InventoryTransactions` to properly balance database snapshots.
+* **Feed Ranking Controls:** Feed content sorting must weigh localized geographic ranges, chronological recency, and user interest taxonomies above global sorting vectors.
+
+---
+
+## 7. MVP GRADUATED TECHNICAL ROLLOUT
+
+### Phase 1 (Absolute Minimum Scope)
+* Setup cross-role onboarding hooks natively using Supabase GoTrue parameters.
+* Implement structured rendering schemas for standard lists and map layouts tracking Events and corresponding Vendor profiles.
+* Standardize flat product item lookups and implement checkout steps relying purely on Model A (Reserve-for-Pickup, pay in person).
+* Create modular vendor inventory screens managing explicit numerical inputs.
+* Deploy basic Admin lookup views to review profiles and override baseline tables safely.
+
+### Phase 2 & Deferred Scope (Do Not Scaffold Yet)
+* *To be built later:* Direct peer-to-peer Stripe/payment modules, multi-vendor combined cart arrays, real-time message notifications, dynamic subscription engine processing, advanced predictive optimization tools, and dedicated Organizer sub-portals.
+
+---
+
+## 8. DEVELOPER INSTRUCTIONS & AI GUARDRAILS
+
+1. **Direct Data Architecture:** Interact natively with Supabase endpoints using React Native hooks and direct PostgreSQL commands. Do not write backend middleware patterns, Prisma models, or NestJS controllers.
+2. **Atomic UI Isolation:** Components must be completely standalone. Keep styling isolated via NativeWind utilities and verify routing paths map perfectly across the directory hierarchy.
+3. **No Halucinated Extensions:** Never write template components or placeholders addressing Phase 2 criteria unless explicitly asked. Stick exclusively to the layout, variables, and rules defined in this file.
