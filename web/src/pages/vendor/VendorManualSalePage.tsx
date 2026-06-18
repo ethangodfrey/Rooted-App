@@ -32,7 +32,10 @@ export function VendorManualSalePage() {
 
   useEffect(() => {
     async function load() {
-      if (!vendor) return;
+      if (!vendor) {
+        setLoading(false);
+        return;
+      }
       const [productsRes, eventsRes] = await Promise.all([
         supabase
           .from('products')

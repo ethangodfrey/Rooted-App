@@ -36,7 +36,6 @@ export function DashboardRedirect() {
   }
 
   const sessionUserId = session.user.id;
-  const hasTrustedCache = routeCache?.userId === sessionUserId;
 
   if (isProfileLoading) {
     return (
@@ -46,11 +45,18 @@ export function DashboardRedirect() {
     );
   }
 
-  if (!user && !hasTrustedCache) {
+  if (!user) {
     return <Navigate to="/onboarding/role-select" replace />;
   }
 
-  const destination = resolveAuthRedirect(user, shopper, vendor, routeCache, sessionUserId);
+  const destination = resolveAuthRedirect(
+    user,
+    shopper,
+    vendor,
+    routeCache,
+    sessionUserId,
+    isProfileLoading,
+  );
 
   return <Navigate to={destination ?? '/onboarding/role-select'} replace />;
 }

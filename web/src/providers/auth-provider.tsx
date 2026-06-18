@@ -50,21 +50,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const requestId = ++profileRequestRef.current;
     setIsProfileLoading(true);
 
-    const profile = await fetchUserProfile(userId);
-    if (requestId !== profileRequestRef.current) return;
+    try {
+      const profile = await fetchUserProfile(userId);
+      if (requestId !== profileRequestRef.current) return;
 
-    setUser(profile.user);
-    setShopper(profile.shopper);
-    setVendor(profile.vendor);
-    setIsProfileLoading(false);
+      setUser(profile.user);
+      setShopper(profile.shopper);
+      setVendor(profile.vendor);
 
-    if (profile.user?.role) {
-      await writeAuthRouteCache({
-        userId,
-        role: profile.user.role,
-        hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
-        vendorComplete: isVendorApplicationComplete(profile.vendor),
-      });
+      if (profile.user?.role) {
+        await writeAuthRouteCache({
+          userId,
+          role: profile.user.role,
+          hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
+          vendorComplete: isVendorApplicationComplete(profile.vendor),
+        });
+      } else {
+        await clearAuthRouteCache();
+      }
+    } finally {
+      if (requestId === profileRequestRef.current) {
+        setIsProfileLoading(false);
+      }
     }
   }, []);
 

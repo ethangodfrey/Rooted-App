@@ -28,7 +28,10 @@ export function VendorProductAvailabilityPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!vendor || !productId) return;
+    if (!vendor || !productId) {
+      setLoading(false);
+      return;
+    }
     setError(null);
 
     const [participationRes, availabilityRes] = await Promise.all([

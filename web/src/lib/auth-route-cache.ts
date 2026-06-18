@@ -1,3 +1,5 @@
+import type { User } from '@/types/database';
+
 export interface AuthRouteCache {
   userId: string;
   role: 'shopper' | 'vendor' | 'admin';
@@ -25,4 +27,16 @@ export async function writeAuthRouteCache(cache: AuthRouteCache): Promise<void> 
 
 export async function clearAuthRouteCache(): Promise<void> {
   localStorage.removeItem(CACHE_KEY);
+}
+
+/** Only trust cached role while profile is loading, or when the user row is present. */
+export function getTrustedAuthCache(
+  cache: AuthRouteCache | null | undefined,
+  sessionUserId: string | undefined,
+  options: { user: User | null; isProfileLoading: boolean },
+): AuthRouteCache | null {
+  if (!cache || !sessionUserId || cache.userId !== sessionUserId) return null;
+  if (options.user) return cache;
+  if (options.isProfileLoading) return cache;
+  return null;
 }

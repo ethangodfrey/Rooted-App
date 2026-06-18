@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/use-auth';
-import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
+import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 
 const ADMIN_TABS = [
   { to: '/admin/vendors', label: 'Vendors', icon: '💼' },
@@ -29,9 +29,15 @@ export function AdminLayout() {
     );
   }
 
-  const trustedCache =
-    session?.user?.id && routeCache?.userId === session.user.id ? routeCache : null;
+  const trustedCache = getTrustedAuthCache(routeCache, session?.user?.id, {
+    user,
+    isProfileLoading,
+  });
   const role = user?.role ?? trustedCache?.role ?? null;
+
+  if (!user && !isProfileLoading) {
+    return <Navigate to="/onboarding/role-select" replace />;
+  }
 
   if (role !== 'admin') {
     return <Navigate to="/app" replace />;

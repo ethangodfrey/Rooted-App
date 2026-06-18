@@ -13,7 +13,10 @@ export function VendorOrdersPage() {
 
   useEffect(() => {
     async function load() {
-      if (!vendor) return;
+      if (!vendor) {
+        setLoading(false);
+        return;
+      }
       const { data } = await supabase
         .from('orders')
         .select('id, order_status, total, created_at, event:events(name)')

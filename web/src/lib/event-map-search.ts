@@ -147,3 +147,31 @@ export async function geocodeUsZip(zip: string): Promise<Coords | null> {
     return null;
   }
 }
+
+export async function geocodeUsCityState(city: string, state: string): Promise<Coords | null> {
+  try {
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('city', city.trim());
+    url.searchParams.set('state', state.trim());
+    url.searchParams.set('country', 'US');
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('limit', '1');
+
+    const res = await fetch(url.toString(), {
+      headers: { 'User-Agent': 'RootedApp/1.0 (farmers market map search)' },
+    });
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as { lat?: string; lon?: string }[];
+    const hit = data[0];
+    if (!hit?.lat || !hit?.lon) return null;
+
+    const latitude = Number(hit.lat);
+    const longitude = Number(hit.lon);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+    return { latitude, longitude };
+  } catch {
+    return null;
+  }
+}

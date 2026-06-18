@@ -80,7 +80,7 @@ export function AdminOrderDetailPage() {
 
       <h2 style={{ fontSize: '1.125rem' }}>Items</h2>
       <div className="app-list">
-        {order.order_items.map((item, idx) => (
+        {(order.order_items ?? []).map((item, idx) => (
           <div key={idx} className="app-card app-row">
             <div className="app-row-body">
               <p className="app-row-title">{item.product?.name ?? 'Item'}</p>

@@ -83,7 +83,7 @@ export function VendorOrderDetailPage() {
       </div>
 
       <div className="app-list" style={{ marginTop: '1rem' }}>
-        {order.order_items.map((item, i) => (
+        {(order.order_items ?? []).map((item, i) => (
           <div key={i} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
             <span>{item.product?.name ?? item.item_title ?? 'Item'} × {item.quantity}</span>
             <span>{formatPrice(item.item_price * item.quantity)}</span>
