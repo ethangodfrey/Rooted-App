@@ -13,7 +13,10 @@ export function ShopperOrdersPage() {
 
   useEffect(() => {
     async function load() {
-      if (!shopper) return;
+      if (!shopper) {
+        setLoading(false);
+        return;
+      }
       const { data } = await supabase
         .from('orders')
         .select('id, order_status, total, created_at, vendor:vendors(business_name)')

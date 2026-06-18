@@ -1,8 +1,9 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { GuestOnly } from '@/components/layout/GuestOnly';
 import { RequireAuth } from '@/components/layout/RequireAuth';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
@@ -81,24 +82,25 @@ export default function App() {
         <Route path="/onboarding/interests" element={<InterestsPage />} />
 
         <Route path="/shopper" element={<ShopperLayout />}>
+          <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<ShopperHomePage />} />
           <Route path="events" element={<ShopperEventsPage />} />
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="feed" element={<ShopperFeedPage />} />
           <Route path="profile" element={<ShopperProfilePage />} />
+          <Route path="events/:id" element={<ShopperEventDetailPage />} />
+          <Route path="vendors/:id" element={<ShopperVendorPage />} />
+          <Route path="products/:id" element={<ShopperProductPage />} />
+          <Route path="checkout/:productId" element={<ShopperReservePage />} />
+          <Route path="profile/edit" element={<ShopperProfileEditPage />} />
+          <Route path="orders" element={<ShopperOrdersPage />} />
+          <Route path="orders/:id" element={<ShopperOrderDetailPage />} />
+          <Route path="leftovers" element={<ShopperLeftoversPage />} />
+          <Route path="leftovers/:id" element={<ShopperLeftoverDetailPage />} />
         </Route>
 
-        <Route path="/shopper/events/:id" element={<ShopperEventDetailPage />} />
-        <Route path="/shopper/vendors/:id" element={<ShopperVendorPage />} />
-        <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
-        <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
-        <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
-        <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
-        <Route path="/shopper/orders/:id" element={<ShopperOrderDetailPage />} />
-        <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
-        <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
-
         <Route path="/vendor" element={<VendorLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="dashboard" element={<VendorDashboardPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
@@ -106,39 +108,40 @@ export default function App() {
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
+          <Route path="orders/:id" element={<VendorOrderDetailPage />} />
+          <Route path="products/new" element={<VendorProductFormPage />} />
+          <Route path="products/:id/edit" element={<VendorProductFormPage />} />
+          <Route path="products/:id/availability" element={<VendorProductAvailabilityPage />} />
+          <Route path="posts/new" element={<VendorPostFormPage />} />
+          <Route path="posts/new-video" element={<VendorVideoPostFormPage />} />
+          <Route path="leftovers" element={<VendorLeftoversPage />} />
+          <Route path="leftovers/new" element={<VendorLeftoverFormPage />} />
+          <Route path="events" element={<VendorEventsPage />} />
+          <Route path="sales/manual" element={<VendorManualSalePage />} />
+          <Route path="pos" element={<VendorPosPage />} />
+          <Route path="pos/connected" element={<VendorPosConnectedPage />} />
+          <Route path="pos/mappings" element={<VendorPosMappingsPage />} />
+          <Route path="pos/:id" element={<VendorPosConnectionPage />} />
+          <Route path="storefront" element={<VendorStorefrontPage />} />
+          <Route path="preview" element={<VendorPreviewPage />} />
         </Route>
 
-        <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-        <Route path="/vendor/products/new" element={<VendorProductFormPage />} />
-        <Route path="/vendor/products/:id/edit" element={<VendorProductFormPage />} />
-        <Route path="/vendor/products/:id/availability" element={<VendorProductAvailabilityPage />} />
-        <Route path="/vendor/posts/new" element={<VendorPostFormPage />} />
-        <Route path="/vendor/posts/new-video" element={<VendorVideoPostFormPage />} />
-        <Route path="/vendor/leftovers" element={<VendorLeftoversPage />} />
-        <Route path="/vendor/leftovers/new" element={<VendorLeftoverFormPage />} />
-        <Route path="/vendor/events" element={<VendorEventsPage />} />
-        <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
-        <Route path="/vendor/pos" element={<VendorPosPage />} />
-        <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />
-        <Route path="/vendor/pos/mappings" element={<VendorPosMappingsPage />} />
-        <Route path="/vendor/pos/:id" element={<VendorPosConnectionPage />} />
-        <Route path="/vendor/storefront" element={<VendorStorefrontPage />} />
-        <Route path="/vendor/preview" element={<VendorPreviewPage />} />
-
         <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="vendors" replace />} />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="posts" element={<AdminPostsPage />} />
           <Route path="more" element={<AdminMorePage />} />
+          <Route path="vendors/:id" element={<AdminVendorDetailPage />} />
+          <Route path="events/new" element={<AdminEventFormPage />} />
+          <Route path="events/:id" element={<AdminEventDetailPage />} />
+          <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+          <Route path="posts/:id" element={<AdminPostDetailPage />} />
         </Route>
-
-        <Route path="/admin/vendors/:id" element={<AdminVendorDetailPage />} />
-        <Route path="/admin/events/new" element={<AdminEventFormPage />} />
-        <Route path="/admin/events/:id" element={<AdminEventDetailPage />} />
-        <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
-        <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
       </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

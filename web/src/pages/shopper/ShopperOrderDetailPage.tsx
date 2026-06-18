@@ -84,7 +84,7 @@ export function ShopperOrderDetailPage() {
 
       <h2 style={{ fontSize: '1.125rem', margin: '1.5rem 0 0.75rem' }}>Items</h2>
       <div className="app-list">
-        {order.order_items.map((item, i) => (
+        {(order.order_items ?? []).map((item, i) => (
           <div key={i} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
             <span>{item.product?.name ?? item.item_title ?? 'Item'} × {item.quantity}</span>
             <span>{formatPrice(item.item_price * item.quantity)}</span>

@@ -258,11 +258,18 @@ export function ShopperMapPage() {
               {sidebarEvents.map((event) => {
                 const phase = eventRuntimePhase(event, now);
                 return (
-                <button
+                <div
                   key={event.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   className={`app-card app-card--pressable app-row${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}${phase === 'live' ? ' app-card--live' : ''}`}
                   onClick={() => openEventDetail(event.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openEventDetail(event.id);
+                    }
+                  }}
                 >
                   <div className="app-row-icon">{phase === 'live' ? '●' : phase === 'closed' ? '◼' : '◷'}</div>
                   <div className="app-row-body" style={{ textAlign: 'left' }}>
@@ -283,7 +290,7 @@ export function ShopperMapPage() {
                   >
                     Details →
                   </Link>
-                </button>
+                </div>
                 );
               })}
             </div>

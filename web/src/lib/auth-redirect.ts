@@ -1,4 +1,4 @@
-import type { AuthRouteCache } from '@/lib/auth-route-cache';
+import { getTrustedAuthCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
 import type { Shopper, User, Vendor } from '@/types/database';
 
@@ -36,9 +36,12 @@ export function resolveAuthRedirect(
   vendor: Vendor | null,
   cache: AuthRouteCache | null,
   sessionUserId: string | null,
+  isProfileLoading = false,
 ): AuthRedirectPath | null {
   const trustedCache =
-    cache && sessionUserId && cache.userId === sessionUserId ? cache : null;
+    cache && sessionUserId
+      ? getTrustedAuthCache(cache, sessionUserId, { user, isProfileLoading })
+      : null;
 
   const role = user?.role ?? trustedCache?.role ?? null;
 

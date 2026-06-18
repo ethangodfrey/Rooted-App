@@ -83,8 +83,8 @@ export function ShopperFeedPage() {
           {displayed.map((post) => (
             <article key={post.id} className="app-card">
               <div className="app-row" style={{ marginBottom: '0.5rem' }}>
-                <span>{POST_TYPE_ICON[post.post_type]}</span>
-                <span className="app-status">{POST_TYPE_LABEL[post.post_type]}</span>
+                <span>{POST_TYPE_ICON[post.post_type] ?? '📣'}</span>
+                <span className="app-status">{POST_TYPE_LABEL[post.post_type] ?? 'Update'}</span>
                 <span className="app-row-meta">{formatRelativeTime(post.publish_at)}</span>
               </div>
               {post.vendor ? (

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
-import { getAuthRedirectUrlForDisplay, getPasswordResetRedirectUrl } from '@/lib/auth-redirect';
+import { getPasswordResetRedirectUrl } from '@/lib/auth-redirect';
 import { supabase } from '@/lib/supabase';
 
 export function ForgotPasswordPage() {
@@ -46,7 +46,7 @@ export function ForgotPasswordPage() {
       footer={
         <>
           <p style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginBottom: '0.5rem' }}>
-            Redirect URL: {getAuthRedirectUrlForDisplay()}
+            Redirect URL: {getPasswordResetRedirectUrl()}
           </p>
           <AuthLink to="/login">Back to sign in</AuthLink>
         </>

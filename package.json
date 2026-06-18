@@ -26,7 +26,6 @@
     "markets:dedupe": "npm run markets:dedupe --prefix backend",
     "markets:agent": "npm run markets:agent --prefix backend",
     "markets:enrich": "npm run markets:enrich --prefix backend --",
-    "markets:fix-times": "npm run markets:fix-times --prefix backend --",
     "markets:images": "npm run markets:images --prefix backend --",
     "markets:images:google": "npm run markets:images:google --prefix backend --",
     "markets:images:purge": "npm run markets:images:purge --prefix backend --",

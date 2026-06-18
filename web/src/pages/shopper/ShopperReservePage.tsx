@@ -8,7 +8,7 @@ import '@/components/ui/ui.css';
 export function ShopperReservePage() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<{ id: string; name: string; price: number } | null>(null);
+  const [product, setProduct] = useState<{ id: string; name: string; price: number; reserve_enabled: boolean } | null>(null);
   const [options, setOptions] = useState<{ available_quantity_presale: number; event: { id: string; name: string; start_datetime: string; city: string | null } | null }[]>([]);
   const [eventId, setEventId] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -23,7 +23,8 @@ export function ShopperReservePage() {
         supabase.from('products').select('id, name, price, reserve_enabled').eq('id', productId).maybeSingle(),
         supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime, city, state)').eq('product_id', productId).gt('available_quantity_presale', 0),
       ]);
-      setProduct(productRes.data);
+      const productRow = productRes.data as typeof product | null;
+      setProduct(productRow?.reserve_enabled ? productRow : null);
       const opts = (availRes.data as unknown as typeof options) ?? [];
       setOptions(opts);
       if (opts.length === 1 && opts[0].event) setEventId(opts[0].event.id);
@@ -54,7 +55,7 @@ export function ShopperReservePage() {
   }
 
   if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
-  if (!product) return <div className="app-empty">Product not found.</div>;
+  if (!product) return <div className="app-empty">Product not found or reservations are not enabled.</div>;
 
   const total = product.price * quantity;
 
