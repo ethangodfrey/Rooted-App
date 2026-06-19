@@ -328,6 +328,8 @@ export function LandingPage() {
             <a href="#how-it-works">How it works</a>
             <Link to="/login">Sign in</Link>
             <Link to="/signup">Sign up</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/terms">Terms</Link>
           </nav>
 
           <p className="footer__copy">&copy; {new Date().getFullYear()} Rooted. All rights reserved.</p>

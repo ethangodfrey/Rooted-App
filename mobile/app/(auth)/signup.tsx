@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { AuthLink, AuthScreen } from '@/src/components/auth/auth-screen';
+import { AuthLegalFooter } from '@/src/components/auth/auth-legal-footer';
 import { getAuthRedirectUrl } from '@/src/lib/auth-redirect';
 import { supabase } from '@/src/lib/supabase';
 
@@ -11,8 +12,13 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
   async function handleSignup() {
+    if (!consentAccepted) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -53,7 +59,16 @@ export default function SignupScreen() {
       loading={loading}
       error={error}
       message={message}
-      footer={<AuthLink href="/(auth)/login">Already have an account? Sign in</AuthLink>}
+      footer={
+        <>
+          <AuthLegalFooter
+            showConsent
+            consentAccepted={consentAccepted}
+            onConsentChange={setConsentAccepted}
+          />
+          <AuthLink href="/(auth)/login">Already have an account? Sign in</AuthLink>
+        </>
+      }
     />
   );
 }

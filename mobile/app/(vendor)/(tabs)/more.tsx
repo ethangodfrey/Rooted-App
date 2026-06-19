@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { ActionRow } from '@/src/components/ui/action-row';
+import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
@@ -56,8 +57,9 @@ export default function VendorMoreScreen() {
         />
       </View>
 
-      <View className="mt-2">
+      <View className="mt-2 gap-3">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
+        <DeleteAccountButton />
       </View>
     </Screen>
   );

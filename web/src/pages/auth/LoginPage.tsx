@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
+import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export function LoginPage() {
@@ -61,6 +62,7 @@ export function LoginPage() {
       error={error}
       footer={
         <>
+          <AuthLegalFooter />
           <AuthLink to="/forgot-password">Forgot password?</AuthLink>
           <AuthLink to="/signup">Create an account</AuthLink>
         </>
