@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { DeleteAccountButton } from '@/components/account/DeleteAccountButton';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
 
@@ -31,6 +32,10 @@ export function VendorProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border, #e5e7eb)' }}>
+        <DeleteAccountButton />
+      </div>
     </div>
   );
 }

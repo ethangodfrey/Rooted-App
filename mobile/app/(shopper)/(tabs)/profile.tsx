@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 
+import { DeleteAccountSection } from '@/src/components/account/delete-account-section';
 import { ActionRow } from '@/src/components/ui/action-row';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
@@ -156,6 +157,10 @@ export default function ShopperProfileScreen() {
 
       <View className="mt-2">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
+      </View>
+
+      <View className="mt-8 border-t border-honeydew pt-6">
+        <DeleteAccountSection />
       </View>
     </Screen>
   );

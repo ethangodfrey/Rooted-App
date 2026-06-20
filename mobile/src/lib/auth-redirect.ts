@@ -13,20 +13,25 @@ export type AuthRedirectHref =
   | '/(admin)/(tabs)/vendors'
   | '/(auth)/login';
 
+function getConfiguredHostedRedirectUrl(): string | null {
+  const configured = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL?.trim();
+  return configured || null;
+}
+
 export function getAuthRedirectUrl(): string {
-  return Linking.createURL('/auth/callback');
+  return getConfiguredHostedRedirectUrl() ?? Linking.createURL('/auth/callback');
 }
 
 export function getPasswordResetRedirectUrl(): string {
-  return Linking.createURL('/auth/reset-password');
+  return getConfiguredHostedRedirectUrl() ?? Linking.createURL('/auth/reset-password');
 }
 
-export function getHostedAuthRedirectUrl(): string {
-  return getAuthRedirectUrl();
+export function getHostedAuthRedirectUrl(): string | null {
+  return getConfiguredHostedRedirectUrl();
 }
 
 export function getAuthRedirectUrlForDisplay(): string {
-  return getAuthRedirectUrl();
+  return getConfiguredHostedRedirectUrl() ?? Linking.createURL('/auth/callback');
 }
 
 export function resolveAuthRedirect(
