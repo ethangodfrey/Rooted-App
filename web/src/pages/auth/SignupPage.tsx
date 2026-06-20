@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
+import { LegalConsent } from '@/components/auth/LegalConsent';
 import { getAuthRedirectUrl } from '@/lib/auth-redirect';
 import { supabase } from '@/lib/supabase';
 
@@ -9,11 +10,17 @@ export function SignupPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function handleSignup() {
+    if (!acceptedTerms) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -52,7 +59,12 @@ export function SignupPage() {
       loading={loading}
       error={error}
       message={message}
-      footer={<AuthLink to="/login">Already have an account? Sign in</AuthLink>}
+      footer={
+        <>
+          <LegalConsent checked={acceptedTerms} onChange={setAcceptedTerms} />
+          <AuthLink to="/login">Already have an account? Sign in</AuthLink>
+        </>
+      }
     />
   );
 }

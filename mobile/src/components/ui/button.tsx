@@ -10,7 +10,7 @@ import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
 import { colors } from '@/src/theme/colors';
 import { elevationShadow, radius } from '@/src/theme/layout';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 interface ButtonProps extends Omit<PressableProps, 'children'> {
   label: string;
@@ -26,12 +26,14 @@ const variantBackground: Record<Variant, ViewStyle> = {
   primary: { backgroundColor: colors.accent },
   secondary: { backgroundColor: colors.honeydew },
   ghost: { backgroundColor: 'transparent' },
+  danger: { backgroundColor: '#FEE2E2' },
 };
 
 const variantLabelColor: Record<Variant, string> = {
   primary: colors.white,
   secondary: colors.text,
   ghost: colors.primary,
+  danger: '#B91C1C',
 };
 
 export function Button({

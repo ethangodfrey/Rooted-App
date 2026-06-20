@@ -194,6 +194,45 @@
   border: 1px solid rgba(34, 139, 34, 0.2);
 }
 
+.app-btn--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  width: 100%;
+}
+
+.legal-consent {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-muted, #52796f);
+  margin-bottom: 1rem;
+}
+
+.legal-consent a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.legal-prose h2 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.legal-prose p,
+.legal-prose ul {
+  margin: 0.75rem 0;
+  line-height: 1.6;
+  color: var(--color-text, #1b4332);
+}
+
+.legal-prose ul {
+  padding-left: 1.25rem;
+}
+
 .app-btn--small {
   width: auto;
   padding: 0.5rem 1rem;
