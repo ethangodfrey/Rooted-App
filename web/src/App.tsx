@@ -19,6 +19,7 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
+import { LandingPage } from '@/pages/marketing/LandingPage';
 import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
 import { TermsPage } from '@/pages/marketing/TermsPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
