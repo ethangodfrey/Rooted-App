@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AuthLink, AuthScreen } from '@/src/components/auth/auth-screen';
+import { AuthLegalNotice } from '@/src/components/auth/auth-legal-notice';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { isAdminDevEmail } from '@/src/lib/admin-dev';
@@ -130,6 +131,7 @@ export default function LoginScreen() {
               <Text className="text-xs text-forest-600">Admin login</Text>
             </Pressable>
           ) : null}
+          <AuthLegalNotice />
         </>
       }
     />

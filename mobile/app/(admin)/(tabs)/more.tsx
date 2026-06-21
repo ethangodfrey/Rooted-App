@@ -1,5 +1,8 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+
+import { AccountLegalSection } from '@/src/components/account/account-legal-section';
 
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
@@ -104,6 +107,8 @@ export default function AdminMoreScreen() {
       <View className="mt-2">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </View>
+
+      <AccountLegalSection onAccountDeleted={() => router.replace('/(auth)/login')} />
     </Screen>
   );
 }

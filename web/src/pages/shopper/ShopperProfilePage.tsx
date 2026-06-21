@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+import { AccountLegalSection } from '@/components/account/AccountLegalSection';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
@@ -7,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
 export function ShopperProfilePage() {
+  const navigate = useNavigate();
   const { user, session, signOut } = useAuth();
   const { saved } = useSavedVendors();
   const [vendors, setVendors] = useState<{ id: string; business_name: string | null; category: string | null }[]>([]);
@@ -101,6 +104,8 @@ export function ShopperProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <AccountLegalSection onAccountDeleted={() => navigate('/login')} />
     </div>
   );
 }

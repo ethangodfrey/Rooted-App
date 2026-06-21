@@ -19,7 +19,8 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
-import { LandingPage } from '@/pages/marketing/LandingPage';
+import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
+import { TermsPage } from '@/pages/marketing/TermsPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
@@ -65,6 +66,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
 
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
