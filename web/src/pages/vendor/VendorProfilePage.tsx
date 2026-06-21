@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
+import { AccountLegalSection } from '@/components/account/AccountLegalSection';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
 
 export function VendorProfilePage() {
+  const navigate = useNavigate();
   const { user, vendor, signOut } = useAuth();
 
   return (
@@ -31,6 +33,8 @@ export function VendorProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <AccountLegalSection onAccountDeleted={() => navigate('/login')} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { AuthLegalNotice } from '@/components/account/AccountLegalSection';
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
 import { getAuthRedirectUrl } from '@/lib/auth-redirect';
 import { supabase } from '@/lib/supabase';
@@ -12,8 +13,14 @@ export function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function handleSignup() {
+    if (!acceptedTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -52,7 +59,23 @@ export function SignupPage() {
       loading={loading}
       error={error}
       message={message}
-      footer={<AuthLink to="/login">Already have an account? Sign in</AuthLink>}
+      footer={
+        <>
+          <label className="auth-consent">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+            />
+            <span>
+              I agree to the <a href="/terms">Terms of Service</a> and{' '}
+              <a href="/privacy">Privacy Policy</a>.
+            </span>
+          </label>
+          <AuthLegalNotice />
+          <AuthLink to="/login">Already have an account? Sign in</AuthLink>
+        </>
+      }
     />
   );
 }

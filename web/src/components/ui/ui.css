@@ -11,6 +11,34 @@
   text-decoration: underline;
 }
 
+.auth-legal-notice {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin-top: 1rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.auth-consent input {
+  margin-top: 0.2rem;
+}
+
+.auth-consent a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .app-screen {
   max-width: 720px;
   margin: 0 auto;

@@ -1,9 +1,13 @@
+import { useNavigate } from 'react-router-dom';
+
+import { AccountLegalSection } from '@/components/account/AccountLegalSection';
 import { useAuth } from '@/hooks/use-auth';
 import { useServerStatus } from '@/hooks/use-server-status';
 import { isApiConfigured } from '@/lib/api';
 import '@/components/ui/ui.css';
 
 export function AdminMorePage() {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const server = useServerStatus(15_000);
 
@@ -39,6 +43,8 @@ export function AdminMorePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <AccountLegalSection onAccountDeleted={() => navigate('/login')} />
     </div>
   );
 }

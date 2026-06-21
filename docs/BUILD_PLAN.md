@@ -1,10 +1,10 @@
 # Rooted MVP — Build Plan
 
-**Approach:** Flat `mobile/` app + Supabase only. No NestJS, Prisma, or monorepo packages until mobile MVP is proven.
+**Approach:** Monorepo with `mobile/` (Expo), `web/` (Vite + React), `backend/` (NestJS for POS, markets, admin agents), and Supabase (Auth + Postgres + Storage).
 
-**Stack (Phase 1+):** Expo SDK 54 · Expo Router · TypeScript · Supabase (Auth + Postgres + Storage) · NativeWind (from Phase 2)
+**Stack:** Expo SDK 54 · Expo Router · Vite + React · NestJS · TypeScript · Supabase · NativeWind (mobile)
 
-**Source of truth:** [`Context - Rooted - Marketplace App.txt`](./Context%20-%20Rooted%20-%20Marketplace%20App.txt) · Product spec · Monorepo profile/structure (future target — not built now)
+**Source of truth:** [`Context - Rooted - Marketplace App.txt`](./Context%20-%20Rooted%20-%20Marketplace%20App.txt) · Product spec · [`LAUNCH_RUNBOOK.md`](./LAUNCH_RUNBOOK.md) for production SQL/deploy order
 
 **V1 transaction model:** Model A — Reserve and pay at pickup (`payment_status: 'unpaid'` until vendor marks paid in person).
 
@@ -15,7 +15,7 @@
 1. **One phase, one test.** Finish and verify each phase before starting the next.
 2. **Mobile-first.** No browser-only APIs unless wrapped in `Platform.OS === 'web'`.
 3. **Role isolation early.** Split shopper and vendor flows immediately after auth.
-4. **Direct Supabase.** Mobile uses Supabase client + RLS; no NestJS, Prisma, or custom API.
+4. **Supabase + backend.** Mobile and web use Supabase client + RLS for core marketplace data. NestJS backend handles POS OAuth, market pipelines, and admin agents.
 5. **Incremental routes.** Every new screen must mount without breaking Expo Router.
 6. **Event-mapped inventory.** Products are reservable only when linked to an event via `product_event_availability` (context business rule).
 7. **No Phase 2 scaffolding.** Do not build payments, realtime messaging, subscriptions, or organizer portals unless explicitly requested.
