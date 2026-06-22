@@ -1,3 +1,4 @@
+import { AccountSettingsFooter } from '@/src/components/account/account-settings-footer';
 import { FontAwesome } from '@expo/vector-icons';
 import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
 import { router } from 'expo-router';
@@ -157,6 +158,8 @@ export default function ShopperProfileScreen() {
       <View className="mt-2">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </View>
+
+      <AccountSettingsFooter />
     </Screen>
   );
 }

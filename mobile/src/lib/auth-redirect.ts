@@ -13,16 +13,24 @@ export type AuthRedirectHref =
   | '/(admin)/(tabs)/vendors'
   | '/(auth)/login';
 
+function trimEnv(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/** Hosted HTTPS bridge (Supabase Storage auth-redirect.html) when configured. */
+export function getHostedAuthRedirectUrl(): string | null {
+  return trimEnv(process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL);
+}
+
 export function getAuthRedirectUrl(): string {
-  return Linking.createURL('/auth/callback');
+  return getHostedAuthRedirectUrl() ?? Linking.createURL('/auth/callback');
 }
 
 export function getPasswordResetRedirectUrl(): string {
+  const hosted = getHostedAuthRedirectUrl();
+  if (hosted) return hosted;
   return Linking.createURL('/auth/reset-password');
-}
-
-export function getHostedAuthRedirectUrl(): string {
-  return getAuthRedirectUrl();
 }
 
 export function getAuthRedirectUrlForDisplay(): string {

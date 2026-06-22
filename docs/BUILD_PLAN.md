@@ -1,5 +1,7 @@
 # Rooted MVP — Build Plan
 
+> **Note (June 2026):** This document describes the original Phase 1–12 mobile MVP plan. The repo has since grown into a monorepo with `web/`, `backend/` (NestJS + Prisma), SQL phases through **22**, POS, market discovery, and admin AI agents. For current launch steps, see [`LAUNCH_RUNBOOK.md`](./LAUNCH_RUNBOOK.md).
+
 **Approach:** Flat `mobile/` app + Supabase only. No NestJS, Prisma, or monorepo packages until mobile MVP is proven.
 
 **Stack (Phase 1+):** Expo SDK 54 · Expo Router · TypeScript · Supabase (Auth + Postgres + Storage) · NativeWind (from Phase 2)

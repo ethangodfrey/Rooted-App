@@ -1,3 +1,4 @@
+import { AccountSettingsFooter } from '@/src/components/account/account-settings-footer';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
@@ -59,6 +60,8 @@ export default function VendorMoreScreen() {
       <View className="mt-2">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </View>
+
+      <AccountSettingsFooter />
     </Screen>
   );
 }
