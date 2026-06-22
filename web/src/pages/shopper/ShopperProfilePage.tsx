@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { AccountSettingsSection } from '@/components/account/AccountSettingsSection';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { supabase } from '@/lib/supabase';
@@ -101,6 +102,8 @@ export function ShopperProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <AccountSettingsSection />
     </div>
   );
 }

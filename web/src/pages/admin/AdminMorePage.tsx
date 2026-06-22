@@ -1,3 +1,4 @@
+import { AccountSettingsSection } from '@/components/account/AccountSettingsSection';
 import { useAuth } from '@/hooks/use-auth';
 import { useServerStatus } from '@/hooks/use-server-status';
 import { isApiConfigured } from '@/lib/api';
@@ -39,6 +40,8 @@ export function AdminMorePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <AccountSettingsSection />
     </div>
   );
 }

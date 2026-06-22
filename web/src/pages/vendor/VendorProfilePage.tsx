@@ -1,3 +1,4 @@
+import { AccountSettingsSection } from '@/components/account/AccountSettingsSection';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -31,6 +32,8 @@ export function VendorProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <AccountSettingsSection />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { AccountSettingsFooter } from '@/src/components/account/account-settings-footer';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
@@ -104,6 +105,8 @@ export default function AdminMoreScreen() {
       <View className="mt-2">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </View>
+
+      <AccountSettingsFooter />
     </Screen>
   );
 }
