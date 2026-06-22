@@ -36,7 +36,11 @@ async function bootstrap() {
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       if (!origin) {
-        callback(null, true);
+        if (isDev) {
+          callback(null, true);
+          return;
+        }
+        callback(null, false);
         return;
       }
       if (allowedOrigins.has(origin)) {
