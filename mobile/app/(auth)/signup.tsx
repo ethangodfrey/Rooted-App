@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { AuthLink, AuthScreen } from '@/src/components/auth/auth-screen';
+import { AuthLegalNotice } from '@/src/components/auth/auth-legal-notice';
 import { getAuthRedirectUrl } from '@/src/lib/auth-redirect';
 import { supabase } from '@/src/lib/supabase';
 
@@ -53,7 +54,12 @@ export default function SignupScreen() {
       loading={loading}
       error={error}
       message={message}
-      footer={<AuthLink href="/(auth)/login">Already have an account? Sign in</AuthLink>}
+      footer={
+        <>
+          <AuthLegalNotice />
+          <AuthLink href="/(auth)/login">Already have an account? Sign in</AuthLink>
+        </>
+      }
     />
   );
 }

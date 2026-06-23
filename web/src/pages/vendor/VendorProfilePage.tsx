@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
+import { LegalLinks } from '@/components/account/LegalLinks';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
 
@@ -31,6 +33,9 @@ export function VendorProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <LegalLinks />
+      <DeleteAccountSection />
     </div>
   );
 }
