@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
+import { AuthLegalNotice } from '@/components/auth/AuthLegalNotice';
 import { getAuthRedirectUrl } from '@/lib/auth-redirect';
 import { supabase } from '@/lib/supabase';
 
@@ -52,7 +53,12 @@ export function SignupPage() {
       loading={loading}
       error={error}
       message={message}
-      footer={<AuthLink to="/login">Already have an account? Sign in</AuthLink>}
+      footer={
+        <>
+          <AuthLegalNotice />
+          <AuthLink to="/login">Already have an account? Sign in</AuthLink>
+        </>
+      }
     />
   );
 }

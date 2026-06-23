@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
+import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
+import { LegalLinks } from '@/components/account/LegalLinks';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -101,6 +103,9 @@ export function ShopperProfilePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+
+      <LegalLinks />
+      <DeleteAccountSection />
     </div>
   );
 }
