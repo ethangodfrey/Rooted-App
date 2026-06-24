@@ -26,10 +26,6 @@ export function getPasswordResetRedirectUrl(): string {
   return `${getAppOrigin()}/auth/reset-password`;
 }
 
-export function getAuthRedirectUrlForDisplay(): string {
-  return getAuthRedirectUrl();
-}
-
 export function resolveAuthRedirect(
   user: User | null,
   shopper: Shopper | null,
