@@ -23,7 +23,7 @@ const INTEREST_OPTIONS = [
 
 export function InterestsPage() {
   const navigate = useNavigate();
-  const { session, user, refreshUser } = useAuth();
+  const { session, user, shopper, refreshUser } = useAuth();
   const [selected, setSelected] = useState<string[]>([]);
   const [city, setCity] = useState('');
   const [zip, setZip] = useState('');
@@ -33,6 +33,10 @@ export function InterestsPage() {
 
   if (user && user.role && user.role !== 'shopper') {
     return <Navigate to="/app" replace />;
+  }
+
+  if (user?.role === 'shopper' && (shopper?.interests?.length ?? 0) > 0) {
+    return <Navigate to="/shopper/home" replace />;
   }
 
   function toggle(option: string) {

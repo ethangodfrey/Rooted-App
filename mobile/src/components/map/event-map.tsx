@@ -92,7 +92,7 @@ export function EventMap({
                     style={{
                       marginTop: 10,
                       backgroundColor: colors.primary,
-                      borderRadius: radius.sm,
+                      borderRadius: radius.button,
                       paddingVertical: 8,
                       paddingHorizontal: 12,
                       alignItems: 'center',

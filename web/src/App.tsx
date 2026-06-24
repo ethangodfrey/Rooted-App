@@ -20,6 +20,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { LandingPage } from '@/pages/marketing/LandingPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
@@ -139,6 +140,8 @@ export default function App() {
         <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
         <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
       </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

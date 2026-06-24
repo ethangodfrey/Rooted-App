@@ -50,21 +50,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const requestId = ++profileRequestRef.current;
     setIsProfileLoading(true);
 
-    const profile = await fetchUserProfile(userId);
-    if (requestId !== profileRequestRef.current) return;
+    try {
+      const profile = await fetchUserProfile(userId);
+      if (requestId !== profileRequestRef.current) return;
 
-    setUser(profile.user);
-    setShopper(profile.shopper);
-    setVendor(profile.vendor);
-    setIsProfileLoading(false);
+      setUser(profile.user);
+      setShopper(profile.shopper);
+      setVendor(profile.vendor);
 
-    if (profile.user?.role) {
-      await writeAuthRouteCache({
-        userId,
-        role: profile.user.role,
-        hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
-        vendorComplete: isVendorApplicationComplete(profile.vendor),
-      });
+      if (profile.user?.role) {
+        await writeAuthRouteCache({
+          userId,
+          role: profile.user.role,
+          hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
+          vendorComplete: isVendorApplicationComplete(profile.vendor),
+        });
+      }
+    } catch {
+      // Network/unexpected failure: keep any cached profile state so routing can
+      // fall back to the auth-route cache instead of hanging on a spinner.
+    } finally {
+      if (requestId === profileRequestRef.current) {
+        setIsProfileLoading(false);
+      }
     }
   }, []);
 
