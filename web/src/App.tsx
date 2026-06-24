@@ -19,6 +19,8 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
+import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from '@/pages/legal/TermsOfServicePage';
 import { LandingPage } from '@/pages/marketing/LandingPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
@@ -65,6 +67,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+
+      <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/legal/terms" element={<TermsOfServicePage />} />
 
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
