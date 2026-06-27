@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { rootedStackScreenOptions } from '@/src/components/navigation/rooted-stack-options';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { LeftoverCard } from '@/src/components/leftovers/leftover-card';
@@ -9,7 +9,11 @@ import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { useUserCoords } from '@/src/hooks/use-user-coords';
-import { fetchCuratedLeftovers, type CuratedLeftover } from '@/src/lib/leftovers';
+import {
+  fetchCuratedLeftovers,
+  fetchNearbyCuratedLeftovers,
+  type CuratedLeftover,
+} from '@/src/lib/leftovers';
 
 export default function ShopperLeftoversScreen() {
   const { user } = useAuth();
@@ -18,18 +22,39 @@ export default function ShopperLeftoversScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stable coords object keyed on primitives — useUserCoords returns a fresh
+  // reference each resolve, so memoizing avoids re-running the load effect.
+  const lat = coords?.latitude ?? null;
+  const lng = coords?.longitude ?? null;
+  const nearbyCoords = useMemo(
+    () => (lat != null && lng != null ? { latitude: lat, longitude: lng } : null),
+    [lat, lng],
+  );
+
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
       try {
-        const curated = await fetchCuratedLeftovers({
-          coords,
-          userCity: user?.city,
-          userState: user?.state,
-        });
+        // Prefer server-side distance ranking; fall back to client curation when
+        // coords are missing or the geo RPC is unavailable/errors.
+        let result: CuratedLeftover[] | null = null;
+        if (nearbyCoords) {
+          try {
+            result = await fetchNearbyCuratedLeftovers(nearbyCoords);
+          } catch {
+            result = null;
+          }
+        }
+        if (result == null) {
+          result = await fetchCuratedLeftovers({
+            coords: nearbyCoords,
+            userCity: user?.city,
+            userState: user?.state,
+          });
+        }
         if (!active) return;
-        setListings(curated);
+        setListings(result);
         setError(null);
       } catch (err) {
         if (!active) return;
@@ -42,7 +67,7 @@ export default function ShopperLeftoversScreen() {
     return () => {
       active = false;
     };
-  }, [coords, user?.city, user?.state]);
+  }, [nearbyCoords, user?.city, user?.state]);
 
   return (
     <>

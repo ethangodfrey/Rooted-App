@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { resolveApiBaseUrl, isApiUrlConfigured } from '@/lib/api-url';
+import { resolveApiBaseUrl, isApiUrlConfigured, isExplicitPublicApiUrl } from '@/lib/api-url';
 
 export type ServerConnectionStatus = 'unknown' | 'checking' | 'online' | 'offline';
 
@@ -63,11 +63,16 @@ export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
         checkedAt: new Date().toISOString(),
       });
     } catch {
+      const hint = isExplicitPublicApiUrl()
+        ? 'Check that the deployed API is up.'
+        : import.meta.env.DEV
+          ? 'Start backend (cd backend && npm run start:dev) and allow port 4000 on Windows Firewall.'
+          : 'Set VITE_API_URL to your deployed API.';
       setSnapshot({
         status: 'offline',
         apiUrl,
         latencyMs: null,
-        message: `Cannot reach ${apiUrl}. Start backend (cd backend && npm run start:dev) and allow port 4000 on Windows Firewall.`,
+        message: `Cannot reach ${apiUrl}. ${hint}`,
         checkedAt: new Date().toISOString(),
       });
     }

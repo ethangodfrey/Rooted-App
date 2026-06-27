@@ -1,4 +1,5 @@
 import { FontAwesome } from '@expo/vector-icons';
+import type { ReactNode } from 'react';
 import { Image, Pressable, View } from 'react-native';
 
 import { Card } from '@/src/components/ui/card';
@@ -33,6 +34,8 @@ interface VendorStorefrontViewProps {
   products: StorefrontProduct[];
   previewMode?: boolean;
   onPressProduct?: (productId: string) => void;
+  /** Optional content rendered under the business name (e.g. trust badges). */
+  headerAccessory?: ReactNode;
 }
 
 export function VendorStorefrontView({
@@ -40,6 +43,7 @@ export function VendorStorefrontView({
   products,
   previewMode = false,
   onPressProduct,
+  headerAccessory,
 }: VendorStorefrontViewProps) {
   const accent = resolveAccentColor(parseThemeSettings(vendor.theme_settings).accent_color);
 
@@ -69,7 +73,7 @@ export function VendorStorefrontView({
         </View>
       ) : null}
 
-      <VendorStorefrontHeader vendor={vendor} />
+      <VendorStorefrontHeader vendor={vendor} accessory={headerAccessory} />
 
       <Text variant="heading" className="mb-3">
         Products

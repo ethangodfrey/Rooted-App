@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
+import { TrustBadges } from '@/components/trust/TrustBadges';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -59,6 +61,7 @@ export function ShopperVendorPage() {
         <div>
           <h1 className="app-title" style={{ margin: 0 }}>{vendor.business_name}</h1>
           {vendor.category ? <p className="app-row-meta">{vendor.category}</p> : null}
+          <TrustBadges userId={vendor.user_id} />
         </div>
       </div>
 
@@ -80,6 +83,8 @@ export function ShopperVendorPage() {
           ))}
         </div>
       )}
+
+      <ReviewsSection targetType="vendor" targetId={id!} />
     </div>
   );
 }

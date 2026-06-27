@@ -1,7 +1,10 @@
 import type { Coords } from '@/src/lib/geo';
 import { distanceMiles } from '@/src/lib/geo';
+import { fetchNearbyLeftovers } from '@/src/lib/geo-search';
 import { firstRelation } from '@/src/lib/supabase-relations';
 import { supabase } from '@/src/lib/supabase';
+
+const KM_PER_MILE = 1.609344;
 
 export type LeftoverStatus = 'active' | 'sold_out' | 'expired' | 'cancelled';
 
@@ -41,6 +44,8 @@ export interface CuratedLeftover extends LeftoverListing {
   hoursLeft: number;
   distanceMiles: number | null;
   locationLabel: string;
+  /** Distance in km from a server-side geo ranking RPC, when available. */
+  distanceKm?: number | null;
 }
 
 export interface LeftoverCurationContext {
@@ -168,6 +173,45 @@ export async function fetchCuratedLeftovers(
 ): Promise<CuratedLeftover[]> {
   const listings = await fetchActiveLeftovers(80);
   return curateLeftovers(listings, context).slice(0, limit);
+}
+
+/**
+ * Server-side distance-ranked leftovers via the `find_nearby_leftovers` PostGIS
+ * RPC. The RPC returns ordered ids + `distance_km` but fewer fields than the
+ * card needs, so we hydrate vendor details from the active-listings query and
+ * preserve the RPC ordering. Returns `null` when the RPC is unavailable/errors
+ * so the caller can fall back to {@link fetchCuratedLeftovers}.
+ */
+export async function fetchNearbyCuratedLeftovers(
+  coords: Coords,
+  limit = 20,
+): Promise<CuratedLeftover[] | null> {
+  const nearby = await fetchNearbyLeftovers(coords, { limit });
+  if (nearby == null) return null;
+  if (nearby.length === 0) return [];
+
+  const listings = await fetchActiveLeftovers(80);
+  const byId = new Map(listings.map((listing) => [listing.id, listing]));
+  const now = Date.now();
+
+  const curated: CuratedLeftover[] = [];
+  for (const row of nearby) {
+    const listing = byId.get(row.id);
+    if (!listing) continue;
+    const hoursLeft = Math.max(
+      0,
+      (new Date(listing.expires_at).getTime() - now) / (1000 * 60 * 60),
+    );
+    const distanceKm = Number.isFinite(row.distance_km) ? row.distance_km : null;
+    curated.push({
+      ...listing,
+      hoursLeft,
+      distanceMiles: distanceKm != null ? distanceKm / KM_PER_MILE : null,
+      distanceKm,
+      locationLabel: locationLabel(listing),
+    });
+  }
+  return curated.slice(0, limit);
 }
 
 export async function fetchLeftoverById(id: string): Promise<LeftoverListing | null> {

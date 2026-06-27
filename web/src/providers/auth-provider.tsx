@@ -16,15 +16,17 @@ import {
   clearAuthRouteCache,
   writeAuthRouteCache,
 } from '@/lib/auth-route-cache';
+import { isChefProfileComplete } from '@/lib/chef-profile';
 import { supabase } from '@/lib/supabase';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
-import type { Shopper, User, Vendor } from '@/types/database';
+import type { Chef, Shopper, User, Vendor } from '@/types/database';
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   shopper: Shopper | null;
   vendor: Vendor | null;
+  chef: Chef | null;
   isLoading: boolean;
   isProfileLoading: boolean;
   isPasswordRecovery: boolean;
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [shopper, setShopper] = useState<Shopper | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [chef, setChef] = useState<Chef | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
@@ -56,14 +59,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(profile.user);
     setShopper(profile.shopper);
     setVendor(profile.vendor);
+    setChef(profile.chef);
     setIsProfileLoading(false);
 
-    if (profile.user?.role) {
+    const cacheRole = profile.user?.role;
+    if (
+      cacheRole === 'shopper' ||
+      cacheRole === 'vendor' ||
+      cacheRole === 'chef' ||
+      cacheRole === 'admin'
+    ) {
       await writeAuthRouteCache({
         userId,
-        role: profile.user.role,
+        role: cacheRole,
         hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
         vendorComplete: isVendorApplicationComplete(profile.vendor),
+        chefComplete: isChefProfileComplete(profile.chef),
       });
     }
   }, []);
@@ -78,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setShopper(null);
       setVendor(null);
+      setChef(null);
       setIsProfileLoading(false);
       await clearAuthRouteCache();
       return;
@@ -128,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setShopper(null);
         setVendor(null);
+        setChef(null);
         setIsProfileLoading(false);
         void clearAuthRouteCache();
       }
@@ -152,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setShopper(null);
     setVendor(null);
+    setChef(null);
     setIsProfileLoading(false);
     setIsPasswordRecovery(false);
     await clearAuthRouteCache();
@@ -164,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       shopper,
       vendor,
+      chef,
       isLoading,
       isProfileLoading,
       isPasswordRecovery,
@@ -176,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       shopper,
       vendor,
+      chef,
       isLoading,
       isProfileLoading,
       isPasswordRecovery,

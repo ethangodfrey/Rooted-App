@@ -1,7 +1,7 @@
 {
-  "name": "@rooted/backend",
+  "name": "@vendorly/backend",
   "version": "0.1.0",
-  "description": "Rooted backend service (POS integrations, analytics ingestion).",
+  "description": "Vendorly backend service (POS integrations, analytics ingestion).",
   "private": true,
   "scripts": {
     "build": "nest build",
@@ -18,6 +18,7 @@
     "markets:enrich": "ts-node scripts/run-markets-enrich.ts",
     "markets:fix-times": "ts-node scripts/run-markets-fix-times.ts",
     "markets:schedule:ai": "ts-node scripts/run-schedule-ai-enrich.ts",
+    "markets:classify": "ts-node scripts/run-market-classify.ts",
     "markets:usda:fix-schedules": "ts-node scripts/run-usda-schedule-fix.ts",
     "markets:images": "ts-node scripts/run-markets-images.ts",
     "markets:images:google": "ts-node scripts/run-markets-images-google.ts",
@@ -37,11 +38,12 @@
     "bullmq": "^5.34.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "geo-tz": "^8.1.4",
     "jose": "^6.2.3",
     "luxon": "^3.6.1",
-    "geo-tz": "^8.1.4",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "stripe": "^17.7.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

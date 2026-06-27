@@ -3,19 +3,19 @@ import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { APP_NAME, APP_TAGLINE } from '@/constants/Config';
 import { BackButton } from '@/src/components/ui/back-button';
 import { PressableCard } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { isAdminDevEmail } from '@/src/lib/admin-dev';
-import { ensureRoleExtension } from '@/src/lib/role-selection';
+import { ensureRoleExtension, type OnboardingRole } from '@/src/lib/role-selection';
 import { supabase } from '@/src/lib/supabase';
-import type { UserRole } from '@/src/types/database';
 
 export default function RoleSelectScreen() {
   const { session, user, refreshUser, signOut } = useAuth();
-  const [loading, setLoading] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState<OnboardingRole | null>(null);
   const [adminLoading, setAdminLoading] = useState(false);
   const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export default function RoleSelectScreen() {
     return <Redirect href="/" />;
   }
 
-  async function selectRole(role: 'shopper' | 'vendor') {
+  async function selectRole(role: OnboardingRole) {
     if (!session?.user) {
       setError('You must be signed in to continue.');
       return;
@@ -77,6 +77,7 @@ export default function RoleSelectScreen() {
 
     await supabase.from('shoppers').delete().eq('user_id', userId);
     await supabase.from('vendors').delete().eq('user_id', userId);
+    await supabase.from('chefs').delete().eq('user_id', userId);
 
     const { error: roleError } = await supabase
       .from('users')
@@ -109,29 +110,28 @@ export default function RoleSelectScreen() {
       />
 
       <Text variant="eyebrow" className="mb-2">
-        Rooted
+        {APP_NAME}
       </Text>
       <Text variant="title" className="mb-2">
-        How will you use Rooted?
+        How will you use Vendorly?
       </Text>
       <Text variant="subtitle" className="mb-6">
-        Choose your role to personalize your experience. You can request a role change later through
-        admin review.
+        {APP_TAGLINE}
       </Text>
 
       <PressableCard
         className="mb-4 min-h-[100px] justify-center"
-        onPress={() => selectRole('shopper')}
+        onPress={() => selectRole('customer')}
         disabled={loading !== null || backing}>
-        {loading === 'shopper' ? (
+        {loading === 'customer' ? (
           <LoadingIndicator />
         ) : (
           <>
             <Text variant="heading" className="mb-1.5">
-              Shopper
+              Customer
             </Text>
             <Text variant="caption">
-              Discover events, follow vendors, and reserve items for pickup.
+              Discover markets, book private chefs, and order from local food businesses.
             </Text>
           </>
         )}
@@ -149,7 +149,25 @@ export default function RoleSelectScreen() {
               Vendor
             </Text>
             <Text variant="caption">
-              Manage your storefront, inventory, orders, and event presence.
+              Sell at farmers markets or direct-to-customer from your home kitchen or food business.
+            </Text>
+          </>
+        )}
+      </PressableCard>
+
+      <PressableCard
+        className="mb-4 min-h-[100px] justify-center"
+        onPress={() => selectRole('chef')}
+        disabled={loading !== null || backing}>
+        {loading === 'chef' ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <Text variant="heading" className="mb-1.5">
+              Chef
+            </Text>
+            <Text variant="caption">
+              Offer private dining, meal prep, catering, and other bookable culinary services.
             </Text>
           </>
         )}

@@ -42,10 +42,10 @@ export function VendorPosPage() {
       return;
     }
     try {
-      await triggerStalePosSync();
       const data = await posApi.listConnections();
       setConnections(data);
       setError(null);
+      void triggerStalePosSync();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -159,7 +159,7 @@ export function VendorPosPage() {
           ) : (
             <Link to="/vendor/pos/mappings" className="app-card app-card--pressable" style={{ display: 'block' }}>
               <p className="app-row-title">Item mappings</p>
-              <p className="app-row-meta">Map register items to Rooted products</p>
+              <p className="app-row-meta">Map register items to Vendorly products</p>
             </Link>
           )}
 

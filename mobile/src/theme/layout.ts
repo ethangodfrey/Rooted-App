@@ -3,9 +3,10 @@ import { StyleSheet, type ViewStyle } from 'react-native';
 import { colors } from '@/src/theme/colors';
 
 export const radius = {
-  card: 14,
-  button: 12,
-  input: 12,
+  card: 20,
+  bento: 24,
+  button: 14,
+  input: 16,
   pill: 999,
 } as const;
 
@@ -17,9 +18,9 @@ export const tabBarClearance = 96;
 
 /** Shadow only — use with an explicit backgroundColor on buttons/CTAs. */
 export const elevationShadow: ViewStyle = {
-  shadowColor: '#000000',
+  shadowColor: '#2D2A26',
   shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.07,
+  shadowOpacity: 0.08,
   shadowRadius: 10,
   elevation: 4,
 };
@@ -41,7 +42,7 @@ export const floatingShadow: ViewStyle = {
 export const layoutStyles = StyleSheet.create({
   canvas: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cream,
   },
   screenGutter: {
     flex: 1,

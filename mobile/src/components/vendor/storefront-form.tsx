@@ -110,7 +110,7 @@ export function StorefrontForm({
         label="Business name"
         value={values.business_name}
         onChangeText={(text) => patch('business_name', text)}
-        placeholder="Rooted Bakehouse"
+        placeholder="Maple Street Bakehouse"
       />
       <Input
         label="Tagline"

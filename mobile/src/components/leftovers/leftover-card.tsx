@@ -8,6 +8,7 @@ import { formatPrice } from '@/src/lib/format';
 import { formatExpiresIn, type CuratedLeftover } from '@/src/lib/leftovers';
 import { pickListingDisplayImage } from '@/src/lib/product-image';
 import { formatDistance } from '@/src/lib/geo';
+import { formatDistanceKm } from '@/src/lib/geo-search';
 
 interface LeftoverCardProps {
   listing: CuratedLeftover;
@@ -17,6 +18,10 @@ interface LeftoverCardProps {
 
 export function LeftoverCard({ listing, onPress, compact = false }: LeftoverCardProps) {
   const displayImageUrl = pickListingDisplayImage(listing.media_url);
+  // Prefer the server geo-ranked "X mi away" label; fall back to client distance.
+  const distanceLabel =
+    formatDistanceKm(listing.distanceKm) ??
+    (listing.distanceMiles != null ? formatDistance(listing.distanceMiles) : null);
 
   const content = (
     <Card className={compact ? 'p-3' : undefined}>
@@ -40,7 +45,7 @@ export function LeftoverCard({ listing, onPress, compact = false }: LeftoverCard
           </Text>
           <Text variant="caption" numberOfLines={1}>
             {listing.locationLabel}
-            {listing.distanceMiles != null ? ` · ${formatDistance(listing.distanceMiles)}` : ''}
+            {distanceLabel ? ` · ${distanceLabel}` : ''}
           </Text>
         </View>
         {onPress ? <FontAwesome name="chevron-right" size={14} color="#9CAF88" /> : null}

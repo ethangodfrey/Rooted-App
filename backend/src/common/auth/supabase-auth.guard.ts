@@ -12,6 +12,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { AppRole, AuthenticatedUser } from './auth.types';
 
 const APP_ROLES: AppRole[] = ['shopper', 'vendor', 'admin'];
+/** Vendorly uses `customer` in Supabase; backend routes accept it as shopper. */
+const DB_ROLES: string[] = [...APP_ROLES, 'customer'];
 
 /**
  * Verifies the Supabase access token (Authorization: Bearer <jwt>).
@@ -99,10 +101,10 @@ export class SupabaseAuthGuard implements CanActivate {
       where: { id },
       select: { role: true, email: true },
     });
-    if (!dbUser || !APP_ROLES.includes(dbUser.role as AppRole)) {
+    if (!dbUser || !DB_ROLES.includes(dbUser.role)) {
       return null;
     }
-    const role = dbUser.role as AppRole;
+    const role: AppRole = dbUser.role === 'customer' ? 'shopper' : (dbUser.role as AppRole);
 
     let vendorId: string | undefined;
     if (role === 'vendor') {

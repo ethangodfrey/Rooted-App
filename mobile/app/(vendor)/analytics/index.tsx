@@ -14,7 +14,7 @@ import { useAuth } from '@/src/hooks/use-auth';
 import { isApiConfigured } from '@/src/lib/api';
 import { formatDateTime, formatPrice } from '@/src/lib/format';
 import { ORDER_STATUS_LABEL } from '@/src/lib/order-status';
-import { getPosSyncStatus, triggerStalePosSync, type PosSyncStatus } from '@/src/lib/pos-sync';
+import { refreshPosSyncState, type PosSyncStatus } from '@/src/lib/pos-sync';
 import { loadVendorAnalytics, type VendorAnalyticsData } from '@/src/lib/vendor-analytics';
 import type { PosImportedTransaction } from '@/src/types/pos';
 
@@ -29,40 +29,36 @@ export default function VendorAnalyticsScreen() {
   const router = useRouter();
   const [metrics, setMetrics] = useState<VendorAnalyticsData | null>(null);
   const [posSync, setPosSync] = useState<PosSyncStatus | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 
-      async function loadMetrics() {
-        if (!vendor) return;
-        const data = await loadVendorAnalytics(vendor.id, 'all');
-        if (active) setMetrics(data);
-      }
-
       async function load() {
-        if (!vendor) {
-          setLoading(false);
-          return;
-        }
-        setLoading(true);
-        try {
-          const [syncStatus, triggered] = await Promise.all([
-            getPosSyncStatus(),
-            triggerStalePosSync(),
-          ]);
+        if (!vendor) return;
+
+        const metricsPromise = loadVendorAnalytics(vendor.id, 90);
+
+        void refreshPosSyncState().then(({ syncStatus, triggered }) => {
           if (!active) return;
           setPosSync(syncStatus);
-          await loadMetrics();
           if (triggered) {
             refreshTimer = setTimeout(() => {
-              if (active) void loadMetrics();
+              if (active) {
+                void loadVendorAnalytics(vendor.id, 90, { force: true }).then((data) => {
+                  if (active) setMetrics(data);
+                });
+              }
             }, 2500);
           }
-        } finally {
-          if (active) setLoading(false);
+        });
+
+        try {
+          const data = await metricsPromise;
+          if (active) setMetrics(data);
+        } catch {
+          // keep prior metrics visible on refresh failure
         }
       }
       load();
@@ -108,7 +104,7 @@ export default function VendorAnalyticsScreen() {
         );
       }
     }
-    await Share.share({ message: lines.join('\n'), title: 'Rooted analytics export' });
+    await Share.share({ message: lines.join('\n'), title: 'Vendorly analytics export' });
   }
 
   const totalRevenue = metrics?.totalRevenue ?? 0;
@@ -123,7 +119,7 @@ export default function VendorAnalyticsScreen() {
           ...rootedStackScreenOptions,
         }}
       />
-      {loading || !metrics ? (
+      {!metrics ? (
         <View className="flex-1 items-center justify-center bg-canvas">
           <LoadingIndicator />
         </View>
@@ -242,7 +238,7 @@ export default function VendorAnalyticsScreen() {
                                   </Text>
                                 ) : (
                                   <Text variant="caption" className="text-amber-700">
-                                    Not linked to a Rooted product
+                                    Not linked to a Vendorly product
                                   </Text>
                                 )}
                               </View>
@@ -273,7 +269,7 @@ export default function VendorAnalyticsScreen() {
                         mapping
                       </Text>
                       <Text variant="caption" className="text-amber-800">
-                        Link Square items to Rooted products for inventory tracking
+                        Link Square items to Vendorly products for inventory tracking
                       </Text>
                     </View>
                     <FontAwesome name="chevron-right" size={12} color="#b45309" />

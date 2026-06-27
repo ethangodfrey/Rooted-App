@@ -2,49 +2,33 @@ import { Redirect } from 'expo-router';
 
 import { AuthLoadingShell } from '@/src/components/ui/auth-loading-shell';
 import { useAuth } from '@/src/hooks/use-auth';
-import { resolveAuthRedirect } from '@/src/lib/auth-redirect';
+import { resolveIndexRedirect } from '@/src/lib/auth-redirect';
 import { isSupabaseConfigured } from '@/src/lib/supabase';
 
+/**
+ * Single source of truth for auth-based routing. Every group layout only gates
+ * on session; all role / onboarding decisions happen here to avoid redirect loops.
+ */
 export default function Index() {
-  const {
-    session,
-    user,
-    shopper,
-    vendor,
-    isLoading,
-    isPasswordRecovery,
-    cacheReady,
-    trustedCache,
-  } = useAuth();
-  const sessionUserId = session?.user.id;
+  const auth = useAuth();
 
-  if (!isSupabaseConfigured) {
-    return <Redirect href="/intro" />;
-  }
+  const destination = resolveIndexRedirect({
+    isSupabaseConfigured,
+    isLoading: auth.isLoading,
+    isPasswordRecovery: auth.isPasswordRecovery,
+    session: auth.session,
+    user: auth.user,
+    shopper: auth.shopper,
+    vendor: auth.vendor,
+    chef: auth.chef,
+    isProfileLoading: auth.isProfileLoading,
+    cacheReady: auth.cacheReady,
+    trustedCache: auth.trustedCache,
+  });
 
-  if (isLoading || !cacheReady) {
+  if (destination === 'loading') {
     return <AuthLoadingShell />;
   }
 
-  if (isPasswordRecovery) {
-    return <Redirect href="/auth/reset-password" />;
-  }
-
-  if (!session) {
-    return <Redirect href="/intro" />;
-  }
-
-  if (!user && !trustedCache) {
-    return <Redirect href="/(onboarding)/role-select" />;
-  }
-
-  const destination = resolveAuthRedirect(
-    user,
-    shopper,
-    vendor,
-    trustedCache,
-    sessionUserId ?? null,
-  );
-
-  return <Redirect href={destination ?? '/(onboarding)/role-select'} />;
+  return <Redirect href={destination} />;
 }

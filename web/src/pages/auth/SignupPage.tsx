@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
 import { getAuthRedirectUrl } from '@/lib/auth-redirect';
 import { supabase } from '@/lib/supabase';
 
@@ -41,8 +42,8 @@ export function SignupPage() {
 
   return (
     <AuthScreen
-      title="Join Rooted"
-      subtitle="Discover local events and reserve pickup from nearby vendors."
+      title="Join Vendorly"
+      subtitle="Your local food marketplace — farmers markets, private chefs, and home cooks in one place."
       email={email}
       password={password}
       onEmailChange={setEmail}
@@ -52,6 +53,7 @@ export function SignupPage() {
       loading={loading}
       error={error}
       message={message}
+      socialAuth={<OAuthButtons disabled={loading} />}
       footer={<AuthLink to="/login">Already have an account? Sign in</AuthLink>}
     />
   );

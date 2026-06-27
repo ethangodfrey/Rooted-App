@@ -8,6 +8,7 @@ import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { StorefrontForm } from '@/src/components/vendor/storefront-form';
 import { useAuth } from '@/src/hooks/use-auth';
+import { geocodeAddress } from '@/src/lib/geocode';
 import {
   storefrontUpdatePayload,
   storefrontValuesFromVendor,
@@ -38,9 +39,30 @@ export default function VendorStorefrontEditScreen() {
     setSaving(true);
     setError(null);
 
+    const payload = storefrontUpdatePayload(values);
+
+    // Re-geocode when the city/state changed so the vendor's map position and
+    // distance ranking stay accurate. Falls back to a city/state centroid and
+    // never blocks the save on failure (mirrors onboarding setup).
+    const cityChanged =
+      payload.sell_city.toLowerCase() !== (vendor.sell_city ?? '').trim().toLowerCase();
+    const stateChanged =
+      payload.sell_state.toLowerCase() !== (vendor.sell_state ?? '').trim().toLowerCase();
+
+    let coords: { latitude: number; longitude: number } | null = null;
+    if (cityChanged || stateChanged) {
+      coords = await geocodeAddress({
+        streetAddress: vendor.street_address,
+        city: payload.sell_city,
+        state: payload.sell_state,
+        postalCode: vendor.postal_code,
+        country: 'USA',
+      });
+    }
+
     const { error: updateError } = await supabase
       .from('vendors')
-      .update(storefrontUpdatePayload(values))
+      .update(coords ? { ...payload, latitude: coords.latitude, longitude: coords.longitude } : payload)
       .eq('user_id', user.id);
 
     setSaving(false);

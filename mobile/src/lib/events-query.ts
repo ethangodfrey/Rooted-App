@@ -1,4 +1,5 @@
 import { dedupeEvents } from '@/src/lib/dedupe-events';
+import { filterShopperEvents } from '@/src/lib/market-type-labels';
 import type { EventsScope } from '@/src/lib/location-preferences';
 import type { Coords } from '@/src/lib/geo';
 import { supabase } from '@/src/lib/supabase';
@@ -9,8 +10,8 @@ export const EVENT_LIST_SELECT =
 
 const LOCAL_RADIUS_MILES = 120;
 const MAP_RADIUS_MILES = 200;
-const LOCAL_LIST_LIMIT = 200;
-const NATIONWIDE_LIST_LIMIT = 200;
+const LOCAL_LIST_LIMIT = 500;
+const NATIONWIDE_LIST_LIMIT = 1000;
 const MAP_FALLBACK_LIMIT = 350;
 
 function bboxForRadius(center: Coords, radiusMiles: number) {
@@ -70,8 +71,36 @@ export async function fetchPublicEvents(
     .order('name', { ascending: true });
 
   return {
-    data: dedupeEvents((data ?? []) as Event[]),
+    data: filterShopperEvents(dedupeEvents((data ?? []) as Event[])),
     error: error?.message ?? null,
     truncated,
   };
+}
+
+export interface FetchFeaturedMarketsOptions {
+  userState?: string | null;
+}
+
+/** Upcoming public markets for browse/discover when geo RPCs or GPS are unavailable. */
+export async function fetchFeaturedPublicMarkets(
+  limit = 10,
+  options: FetchFeaturedMarketsOptions = {},
+): Promise<Event[]> {
+  let query = supabase
+    .from('events')
+    .select(EVENT_LIST_SELECT)
+    .eq('visibility_status', 'public')
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null)
+    .order('start_datetime', { ascending: true })
+    .order('name', { ascending: true })
+    .limit(Math.max(limit * 4, limit));
+
+  if (options.userState?.trim()) {
+    query = query.eq('state', options.userState.trim().toUpperCase().slice(0, 2));
+  }
+
+  const { data, error } = await query;
+  if (error) return [];
+  return filterShopperEvents(dedupeEvents((data ?? []) as Event[])).slice(0, limit);
 }

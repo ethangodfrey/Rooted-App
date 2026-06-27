@@ -11,6 +11,7 @@ interface SearchFieldProps extends Omit<TextInputProps, 'style'> {
   onChangeText: (text: string) => void;
   onClear?: () => void;
   floating?: boolean;
+  glass?: boolean;
   className?: string;
 }
 
@@ -19,6 +20,7 @@ export function SearchField({
   onChangeText,
   onClear,
   floating = false,
+  glass = false,
   placeholder = 'Search',
   className,
   onFocus,
@@ -31,17 +33,17 @@ export function SearchField({
     <View
       className={className}
       style={[
-        inputBorderStyle(focused),
-        floating ? floatingShadow : undefined,
+        inputBorderStyle(focused, glass),
+        floating || glass ? floatingShadow : undefined,
         {
           flexDirection: 'row',
           alignItems: 'center',
-          borderRadius: floating ? radius.pill : undefined,
+          borderRadius: glass ? radius.input + 4 : floating ? radius.pill : undefined,
           paddingHorizontal: 14,
-          minHeight: 48,
+          minHeight: 56,
         },
       ]}>
-      <FontAwesome name="search" size={16} color={colors.sage} />
+      <FontAwesome name="search" size={18} color={colors.sage} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -50,9 +52,9 @@ export function SearchField({
         style={{
           flex: 1,
           marginLeft: 10,
-          fontSize: 16,
+          fontSize: 17,
           color: colors.text,
-          paddingVertical: 10,
+          paddingVertical: 12,
         }}
         onFocus={(event) => {
           setFocused(true);

@@ -12,6 +12,7 @@ import { MarketLinks } from '@/src/components/events/market-links';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { formatEventFullDate, formatEventTimeRange } from '@/src/lib/format';
+import { formatMarketType } from '@/src/lib/market-type-labels';
 import { extraInfoWithoutSocialLinks } from '@/src/lib/market-links';
 import {
   getFeaturedVendorCategories,
@@ -25,14 +26,6 @@ interface AttendingVendor {
   id: string;
   business_name: string | null;
   category: string | null;
-}
-
-function formatMarketType(value: string | null): string | null {
-  if (!value) return null;
-  return value
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
 }
 
 function DetailRow({
@@ -259,7 +252,7 @@ export default function EventDetailScreen() {
           </Card>
 
           <Text variant="heading" className="mb-3 mt-8">
-            Vendors on Rooted
+            Vendors on Vendorly
           </Text>
           {vendors.length === 0 ? (
             <Text variant="caption">No vendors have confirmed for this event yet.</Text>

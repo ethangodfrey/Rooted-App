@@ -14,13 +14,17 @@ function activeConnection(connections: PosConnection[]): PosConnection | undefin
   return connections.find((c) => c.status === 'ACTIVE');
 }
 
-/** Read the vendor's active Square/POS connection sync state. */
-export async function getPosSyncStatus(): Promise<PosSyncStatus | null> {
-  if (!isApiConfigured) return null;
+/** Single connections fetch for sync status + optional stale sync trigger. */
+export async function refreshPosSyncState(): Promise<{
+  syncStatus: PosSyncStatus | null;
+  triggered: boolean;
+}> {
+  if (!isApiConfigured) return { syncStatus: null, triggered: false };
   try {
     const connection = activeConnection(await posApi.listConnections());
-    if (!connection) return null;
-    return {
+    if (!connection) return { syncStatus: null, triggered: false };
+
+    const syncStatus: PosSyncStatus = {
       connection,
       lastSyncedLabel: connection.lastSyncedAt
         ? formatRelativeTime(connection.lastSyncedAt)
@@ -28,9 +32,25 @@ export async function getPosSyncStatus(): Promise<PosSyncStatus | null> {
       autoSyncLabel: `every ${connection.syncFrequencyMinutes} min`,
       realTimeEnabled: Boolean(connection.metadata?.webhookSubscriptionId),
     };
+
+    const last = connection.lastSyncedAt
+      ? new Date(connection.lastSyncedAt).getTime()
+      : 0;
+    const dueMs = connection.syncFrequencyMinutes * 60_000;
+    if (last > 0 && Date.now() - last < dueMs) {
+      return { syncStatus, triggered: false };
+    }
+
+    await posApi.triggerSync(connection.id);
+    return { syncStatus, triggered: true };
   } catch {
-    return null;
+    return { syncStatus: null, triggered: false };
   }
+}
+
+/** Read the vendor's active Square/POS connection sync state. */
+export async function getPosSyncStatus(): Promise<PosSyncStatus | null> {
+  return (await refreshPosSyncState()).syncStatus;
 }
 
 /**

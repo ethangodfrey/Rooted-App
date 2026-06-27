@@ -83,7 +83,7 @@ function downloadCsv(metrics: VendorAnalyticsData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'rooted-analytics.csv';
+  a.download = 'vendorly-analytics.csv';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -92,27 +92,18 @@ export function VendorAnalyticsPage() {
   const { vendor } = useAuth();
   const [range, setRange] = useState<AnalyticsRange>(30);
   const [data, setData] = useState<VendorAnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!vendor) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await loadVendorAnalytics(vendor.id, range);
-      setData(result);
-    } finally {
-      setLoading(false);
-    }
+    if (!vendor) return;
+    const result = await loadVendorAnalytics(vendor.id, range);
+    setData(result);
   }, [vendor, range]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  if (loading || !data) {
+  if (!data) {
     return (
       <div className="app-loading">
         <div className="app-spinner" />

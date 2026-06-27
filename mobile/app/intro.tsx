@@ -11,8 +11,8 @@ import { useAuth } from '@/src/hooks/use-auth';
 import { hasSeenWelcome } from '@/src/lib/welcome-storage';
 import { colors } from '@/src/theme/colors';
 
-const INTRO_MS = 900;
-const AUTH_WAIT_MS = 5_000;
+const INTRO_MS = 300;
+const AUTH_WAIT_MS = 1_200;
 
 export default function IntroScreen() {
   const { session, isLoading } = useAuth();
@@ -43,12 +43,14 @@ export default function IntroScreen() {
     if (!authReady) return;
 
     if (session) {
+      if (advancingRef.current) return;
+      advancingRef.current = true;
       router.replace('/');
       return;
     }
 
     const timer = setTimeout(() => {
-      goNext();
+      void goNext();
     }, INTRO_MS);
 
     return () => clearTimeout(timer);

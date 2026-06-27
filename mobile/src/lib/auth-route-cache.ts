@@ -9,6 +9,7 @@ export interface AuthRouteCache {
   role: UserRole;
   hasInterests: boolean;
   vendorComplete: boolean;
+  chefComplete: boolean;
 }
 
 export async function readAuthRouteCache(): Promise<AuthRouteCache | null> {
@@ -25,7 +26,7 @@ export async function readAuthRouteCache(): Promise<AuthRouteCache | null> {
 
 /** Never hang startup on a slow storage read. */
 export function readAuthRouteCacheWithTimeout(
-  timeoutMs = 3_000,
+  timeoutMs = 200,
 ): Promise<AuthRouteCache | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   return Promise.race([

@@ -35,6 +35,18 @@ export default function VendorMoreScreen() {
 
       <View className="mb-4 gap-3">
         <ActionRow
+          icon="shield"
+          title="Compliance & credentials"
+          subtitle="Cottage food requirements, permits, and trust badges."
+          onPress={() => router.push('/(vendor)/compliance')}
+        />
+        <ActionRow
+          icon="th-large"
+          title="Explore showcase"
+          subtitle="Post photos and promotions to the customer Explore feed."
+          onPress={() => router.push('/(vendor)/explore')}
+        />
+        <ActionRow
           icon="paint-brush"
           title="Edit storefront"
           subtitle="Banner, logo, about section, links, and shopper details."

@@ -2,21 +2,39 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
-import { ensureRoleExtension } from '@/lib/role-selection';
+import { ensureRoleExtension, type OnboardingRole } from '@/lib/role-selection';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
+
+const ROLE_OPTIONS: { role: OnboardingRole; title: string; meta: string }[] = [
+  {
+    role: 'shopper',
+    title: 'Customer',
+    meta: 'Discover markets, browse vendors and chefs, and reserve items for pickup.',
+  },
+  {
+    role: 'vendor',
+    title: 'Vendor',
+    meta: 'Manage your storefront, inventory, orders, and event presence.',
+  },
+  {
+    role: 'chef',
+    title: 'Private chef',
+    meta: 'List your services, respond to booking inquiries, and showcase your work.',
+  },
+];
 
 export function RoleSelectPage() {
   const navigate = useNavigate();
   const { session, user, refreshUser, signOut } = useAuth();
-  const [loading, setLoading] = useState<'shopper' | 'vendor' | null>(null);
+  const [loading, setLoading] = useState<OnboardingRole | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (user?.role) {
     return <Navigate to="/app" replace />;
   }
 
-  async function selectRole(role: 'shopper' | 'vendor') {
+  async function selectRole(role: OnboardingRole) {
     if (!session?.user) {
       setError('You must be signed in to continue.');
       return;
@@ -57,48 +75,29 @@ export function RoleSelectPage() {
         ← Sign out
       </button>
 
-      <p className="app-eyebrow">Rooted</p>
-      <h1 className="app-title">How will you use Rooted?</h1>
-      <p className="app-subtitle">
-        Choose your role to personalize your experience.
-      </p>
+      <p className="app-eyebrow">Vendorly</p>
+      <h1 className="app-title">How will you use Vendorly?</h1>
+      <p className="app-subtitle">Choose your role to personalize your experience.</p>
 
       <div className="app-list">
-        <button
-          type="button"
-          className="app-card app-card--pressable"
-          onClick={() => selectRole('shopper')}
-          disabled={loading !== null}
-        >
-          {loading === 'shopper' ? (
-            <div className="app-spinner" />
-          ) : (
-            <>
-              <h3 className="app-row-title">Shopper</h3>
-              <p className="app-row-meta">
-                Discover events, follow vendors, and reserve items for pickup.
-              </p>
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          className="app-card app-card--pressable"
-          onClick={() => selectRole('vendor')}
-          disabled={loading !== null}
-        >
-          {loading === 'vendor' ? (
-            <div className="app-spinner" />
-          ) : (
-            <>
-              <h3 className="app-row-title">Vendor</h3>
-              <p className="app-row-meta">
-                Manage your storefront, inventory, orders, and event presence.
-              </p>
-            </>
-          )}
-        </button>
+        {ROLE_OPTIONS.map((option) => (
+          <button
+            key={option.role}
+            type="button"
+            className="app-card app-card--pressable"
+            onClick={() => selectRole(option.role)}
+            disabled={loading !== null}
+          >
+            {loading === option.role ? (
+              <div className="app-spinner" />
+            ) : (
+              <>
+                <h3 className="app-row-title">{option.title}</h3>
+                <p className="app-row-meta">{option.meta}</p>
+              </>
+            )}
+          </button>
+        ))}
       </div>
 
       {error ? <p className="app-error">{error}</p> : null}

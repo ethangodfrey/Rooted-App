@@ -1,7 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-
-import { EventStatusBadge } from '@/components/events/EventStatusBadge';
+import { useNavigate } from 'react-router-dom';
 import { useMapFetchOrigin } from '@/hooks/use-map-fetch-origin';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -140,7 +138,6 @@ export function ShopperMapPage() {
   }, [filteredEvents, sortOrigin, now]);
 
   const sidebarEvents = sortedEvents.slice(0, MAP_SIDEBAR_LIMIT);
-  const hiddenSidebar = Math.max(0, sortedEvents.length - sidebarEvents.length);
 
   const distanceFor = useCallback(
     (event: Event): string | null => {
@@ -195,15 +192,13 @@ export function ShopperMapPage() {
   }
 
   return (
-    <div className="app-screen app-screen--map">
-      <p className="app-eyebrow">Explore</p>
-      <h1 className="app-title">Map</h1>
+    <div className="app-screen app-screen--map app-screen--titled">
       <p className="app-subtitle">
-        Tap a pin to preview a market on the map, then open the full page when you&apos;re ready.
+        Tap a pin to preview a market, then open details when you&apos;re ready.
       </p>
 
       <input
-        className="app-search"
+        className="app-search app-search--glass"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by ZIP, city, or market name"
@@ -249,41 +244,27 @@ export function ShopperMapPage() {
             ) : null}
           </div>
 
-          <div className="shopper-map-list">
-            <p className="app-row-meta" style={{ marginBottom: '0.75rem' }}>
-              {sortedEvents.length} event{sortedEvents.length === 1 ? '' : 's'}
-              {hiddenSidebar > 0 ? ` · showing ${sidebarEvents.length} nearest` : ' on map'}
-            </p>
-            <div className="app-list">
+          <div className="shopper-map-list shopper-map-carousel">
+            <div className="app-hscroll" style={{ marginBottom: '1rem' }}>
               {sidebarEvents.map((event) => {
                 const phase = eventRuntimePhase(event, now);
                 return (
-                <button
-                  key={event.id}
-                  type="button"
-                  className={`app-card app-card--pressable app-row${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}${phase === 'live' ? ' app-card--live' : ''}`}
-                  onClick={() => openEventDetail(event.id)}
-                >
-                  <div className="app-row-icon">{phase === 'live' ? '●' : phase === 'closed' ? '◼' : '◷'}</div>
-                  <div className="app-row-body" style={{ textAlign: 'left' }}>
-                    <div style={{ marginBottom: '0.25rem' }}>
-                      <EventStatusBadge event={event} showHint now={now} />
-                    </div>
-                    <p className="app-row-title">{event.name}</p>
-                    <p className="app-row-meta">
+                  <button
+                    key={event.id}
+                    type="button"
+                    className={`app-hscroll-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                    style={{ flex: '0 0 min(85vw, 280px)', textAlign: 'left', border: 'none', cursor: 'pointer', font: 'inherit' }}
+                    onClick={() => openEventDetail(event.id)}
+                  >
+                    <p className="app-hscroll-card__title">{event.name}</p>
+                    <p className="app-hscroll-card__meta">
                       {formatEventDate(event.start_datetime)}
                       {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
                     </p>
-                  </div>
-                  <Link
-                    to={`/shopper/events/${event.id}`}
-                    className="map-event-action"
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`View details for ${event.name}`}
-                  >
-                    Details →
-                  </Link>
-                </button>
+                    {phase === 'live' ? (
+                      <span className="app-hscroll-card__badge">Live</span>
+                    ) : null}
+                  </button>
                 );
               })}
             </div>

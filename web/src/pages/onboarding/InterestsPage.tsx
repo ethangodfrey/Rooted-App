@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
+import { isCustomerRole } from '@/lib/role-utils';
 import { resetRoleSelection } from '@/lib/reset-role-selection';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
@@ -31,7 +32,7 @@ export function InterestsPage() {
   const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (user && user.role && user.role !== 'shopper') {
+  if (user && user.role && !isCustomerRole(user.role)) {
     return <Navigate to="/app" replace />;
   }
 

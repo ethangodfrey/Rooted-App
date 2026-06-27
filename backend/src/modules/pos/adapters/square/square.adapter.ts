@@ -278,7 +278,7 @@ export class SquareAdapter implements PosProviderAdapter {
         {
           idempotency_key: randomUUID(),
           subscription: {
-            name: 'Rooted POS sync',
+            name: 'Vendorly POS sync',
             event_types: this.webhookEventTypes(),
             notification_url: callbackUrl,
             api_version: this.apiVersion,

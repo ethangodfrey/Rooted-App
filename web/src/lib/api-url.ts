@@ -1,5 +1,11 @@
 const API_PORT = 4000;
 
+/** True when VITE_API_URL is set to an absolute https URL (production / tunnel). */
+export function isExplicitPublicApiUrl(): boolean {
+  const configured = (import.meta.env.VITE_API_URL ?? '').trim();
+  return configured.startsWith('https://');
+}
+
 function tryParseHostname(url: string): string | null {
   try {
     return new URL(url).hostname;
@@ -19,8 +25,13 @@ export function resolveApiBaseUrl(): string {
   const onLocalMachine = hostname === 'localhost' || hostname === '127.0.0.1';
 
   if (configured) {
+    // HTTPS or any non-localhost URL: always honor env (works off LAN / cellular).
+    if (configured.startsWith('https://')) {
+      return configured;
+    }
     const configHost = tryParseHostname(configured);
     const pointsToLocalhost = configHost === 'localhost' || configHost === '127.0.0.1';
+    // LAN dev: localhost in .env but browser opened at 192.168.x.x → same machine :4000
     if (!onLocalMachine && pointsToLocalhost) {
       return `${protocol}//${hostname}:${API_PORT}`;
     }

@@ -6,6 +6,8 @@ const MARKET_TYPE_PRIORITY: Record<string, number> = {
   food_hub: 60,
   agritourism: 40,
   csa: 20,
+  local_business: 0,
+  farm_stand: 10,
 };
 
 function normalizeMarketName(name: string): string {

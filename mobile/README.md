@@ -1,12 +1,12 @@
-# Rooted Mobile App
+# Vendorly Mobile App
 
-Expo + Supabase mobile client for the Rooted local marketplace MVP.
+Expo + Supabase mobile client for the Vendorly local food marketplace.
 
 ## Prerequisites
 
 - Node.js 18+
 - [Expo Go](https://expo.dev/go) on a physical device, or iOS Simulator / Android emulator
-- A Supabase project with the Rooted schema applied
+- A Supabase project with the Vendorly schema applied
 
 ## Setup
 
@@ -25,9 +25,9 @@ Expo + Supabase mobile client for the Rooted local marketplace MVP.
 
 3. Fill in `mobile/.env`:
 
-   - `EXPO_PUBLIC_SUPABASE_URL` — Supabase project URL
+   - `EXPO_PUBLIC_SUPABASE_URL` — Supabase project URL (cloud; works on cellular)
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
-   - `EXPO_PUBLIC_API_URL` — optional NestJS backend URL for Square POS (LAN IP or tunnel)
+   - `EXPO_PUBLIC_API_URL` — optional NestJS backend. **Off LAN:** use `https://api.vendorly.app` (or your deployed API), not a LAN IP. **Same Wi‑Fi dev:** use your PC's LAN IP. Leave blank to hide POS; core flows still work.
    - `EXPO_PUBLIC_AUTH_REDIRECT_URL` — optional hosted auth redirect page for password reset
 
 4. Run Supabase SQL scripts in order (Supabase SQL Editor):
@@ -60,6 +60,13 @@ Expo + Supabase mobile client for the Rooted local marketplace MVP.
    ```
 
    Scan the QR code with Expo Go, or press `i` / `a` for simulator.
+
+### Off LAN / cellular
+
+- **Supabase auth and marketplace data** work anywhere — no home Wi‑Fi required.
+- Set `EXPO_PUBLIC_API_URL` to a **public HTTPS** backend URL for POS and proxied market images (not `192.168.x.x`).
+- **Dev bundle off LAN:** `npx expo start --tunnel` so Expo Go can load JS when the phone is not on your PC's network.
+- See [`docs/OFF_LAN_ACCESS.md`](../docs/OFF_LAN_ACCESS.md) for deploy, tunnel, and CORS steps.
 
 ## Roles
 

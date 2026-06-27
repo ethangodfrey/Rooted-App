@@ -1,23 +1,29 @@
-# Rooted — Agent maintenance guide
+# Vendorly Marketplace — Agent maintenance guide
 
-You are maintaining **Rooted**, a farmers-market marketplace monorepo. Work autonomously: fix bugs, improve reliability, and ship small safe improvements. Do not force-push, amend pushed commits, or commit secrets.
+You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food marketplace monorepo. Work autonomously: fix bugs, improve reliability, and ship small safe improvements. Do not force-push, amend pushed commits, or commit secrets.
 
 ## Repo layout
 
 | Path | What it is |
 |------|------------|
-| `web/` | Vite + React shopper/vendor/admin web app |
-| `mobile/` | Expo React Native app (shopper/vendor/admin) |
+| `web/` | Vite + React customer/vendor/admin web app |
+| `mobile/` | Expo React Native app (customer/vendor/chef/admin) |
 | `backend/` | NestJS API (markets, POS, admin agents) |
 | `scripts/` | USDA market seed/import pipelines |
 | `docs/supabase/` | SQL migrations and generated market SQL |
 
+## Vendorly migration
+
+- Apply `docs/supabase/phase22_vendorly_marketplace.sql` after prior phase scripts
+- Roles: `customer` (legacy `shopper` alias), `vendor`, `chef`, `admin`
+- See `docs/VENDORLY_MIGRATION.md` for Phase 1 status
+
 ## Priority order each run
 
-1. **Broken UX** — map pins, market detail links, auth bootstrap spinners, duplicate markets on map/lists
-2. **Data quality** — market schedules (2am times), dead website/social links, duplicate events
+1. **Broken UX** — map pins, market detail links, auth bootstrap spinners, role routing
+2. **Data quality** — market schedules, dead links, market classification
 3. **TypeScript / lint** — `web`: `npm run build`, `mobile`: `npx tsc --noEmit`, `backend`: `npm run build`
-4. **Small improvements** — performance (timers, pagination), copy, missing null checks
+4. **Small improvements** — performance, copy, missing null checks
 
 ## Key commands
 
@@ -25,13 +31,14 @@ You are maintaining **Rooted**, a farmers-market marketplace monorepo. Work auto
 # Root — market data
 npm run markets:dedupe
 npm run markets:links
+npm run markets:classify -- --limit 5
 npm run markets:usda:pipeline
+
+# Supabase (manual): phase22 + phase23 in docs/supabase/
 
 # Backend (cd backend)
 npm run start:dev
-npm run markets:links
-npm run markets:fix-times
-npm run markets:schedule:ai -- --limit 5
+npm run markets:classify -- --limit 5
 
 # Web (cd web)
 npm run dev
@@ -44,23 +51,14 @@ npx tsc --noEmit
 ## Conventions
 
 - Match existing code style; minimal diffs
-- Dedupe markets by normalized name + city + state (`scripts/lib/market-dedupe.ts`, `web|mobile/src/lib/dedupe-events.ts`)
-- Market links: normalize website/Facebook/Instagram (`backend/src/modules/markets/market-links.util.ts`)
-- Only create git commits when the automation instructions say to; use clear commit messages
-- Prefer fixing root cause over UI band-aids
-- Do not edit `docs/supabase/generated_usda_markets_part*.sql` by hand — regenerate via `npm run markets:usda:import`
+- Preserve farmers market flows — Vendorly is additive
+- Dedupe markets by normalized name + city + state
+- Only create git commits when explicitly requested
 
-## When stuck
+## Off-LAN / cellular access
 
-- If Supabase/env is missing, document what’s needed in a short run summary — do not invent credentials
-- If a change needs user input (product decision, API keys), open a small PR or leave a `TODO(agent):` comment and move on
-- Stop after one focused slice of work per run; leave the repo buildable
+See [`docs/OFF_LAN_ACCESS.md`](docs/OFF_LAN_ACCESS.md) — Supabase flows work anywhere; POS/API needs public HTTPS URLs + Vercel deploy for web.
 
 ## Run summary (required)
 
-End every run with:
-
-- What you checked
-- What you changed (files + why)
-- Commands run and results
-- What to do next run
+End every run with: what you checked, what changed, commands run, what to do next.

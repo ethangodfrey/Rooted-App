@@ -1,6 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { Redirect, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Logo } from '@/src/components/Logo';
@@ -12,12 +12,13 @@ import { useAuth } from '@/src/hooks/use-auth';
 import { hasSeenWelcome, markWelcomeSeen } from '@/src/lib/welcome-storage';
 import { colors } from '@/src/theme/colors';
 
-const AUTH_WAIT_MS = 5_000;
+const AUTH_WAIT_MS = 1_200;
 
 export default function WelcomeScreen() {
   const { session, isLoading } = useAuth();
   const [checking, setChecking] = useState(true);
   const [authTimedOut, setAuthTimedOut] = useState(false);
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setAuthTimedOut(true), AUTH_WAIT_MS);
@@ -31,6 +32,8 @@ export default function WelcomeScreen() {
 
     async function guard() {
       if (session) {
+        if (redirectedRef.current) return;
+        redirectedRef.current = true;
         router.replace('/');
         return;
       }
@@ -56,7 +59,11 @@ export default function WelcomeScreen() {
   }, [authReady, session]);
 
   if (session) {
-    return <Redirect href="/" />;
+    return (
+      <Screen centered>
+        <LoadingIndicator />
+      </Screen>
+    );
   }
 
   async function handleContinue() {
@@ -81,12 +88,9 @@ export default function WelcomeScreen() {
       <Text variant="eyebrow" className="mb-2 text-center">
         Welcome to
       </Text>
-      <Logo variant="primary" size="large" style={{ marginBottom: 8, alignSelf: 'center' }} />
-      <Text variant="subtitle" className="mb-8 text-center">
-        Discover local markets, follow makers, and reserve pickup from vendors near you.
-      </Text>
+      <Logo variant="primary" size="large" showTagline style={{ marginBottom: 24, alignSelf: 'center' }} />
 
-      <CtaLink label="Want to get Rooted?" onPress={handleContinue} />
+      <CtaLink label="Get started" onPress={handleContinue} />
     </Screen>
   );
 }

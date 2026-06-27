@@ -37,14 +37,14 @@ export function EventThumb({ event, size = 56, large = false }: EventThumbProps)
 
   return (
     <div
-      className="app-row-icon"
+      className="app-event-card-thumb"
       style={{
         width: large ? '100%' : size,
         height: large ? 200 : size,
         borderRadius: large ? 16 : 12,
         flexShrink: 0,
-        fontSize: large ? 48 : size * 0.4,
         marginBottom: large ? '1rem' : 0,
+        background: imageUrl && !failed ? undefined : 'linear-gradient(135deg, var(--color-warm-sage) 0%, rgba(212, 168, 83, 0.35) 100%)',
       }}
     >
       {eventPlaceholderEmoji(event.market_type)}

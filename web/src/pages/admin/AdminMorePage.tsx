@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { useAuth } from '@/hooks/use-auth';
 import { useServerStatus } from '@/hooks/use-server-status';
 import { isApiConfigured } from '@/lib/api';
@@ -18,6 +20,10 @@ export function AdminMorePage() {
       </div>
 
       <div className="app-list">
+        <Link to="/admin/credentials" className="app-card app-card--pressable">
+          <p className="app-row-title">Credential review</p>
+          <p className="app-row-meta">Verify vendor & chef documents and award trust badges</p>
+        </Link>
         <div className="app-card">
           <p className="app-row-title">Backend API</p>
           <p className="app-row-meta">

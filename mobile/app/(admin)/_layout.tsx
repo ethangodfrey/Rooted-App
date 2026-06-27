@@ -5,20 +5,20 @@ import { AuthLoadingShell } from '@/src/components/ui/auth-loading-shell';
 import { useAuth } from '@/src/hooks/use-auth';
 
 export default function AdminLayout() {
-  const { session, user, isLoading, cacheReady, trustedCache } = useAuth();
+  const { session, user, isLoading, isProfileLoading, cacheReady, trustedCache } = useAuth();
 
-  if (!isLoading && !session) {
-    return <Redirect href="/(auth)/login" />;
+  if (isLoading && !session) {
+    return <AuthLoadingShell />;
   }
 
-  if (!cacheReady) {
-    return <AuthLoadingShell />;
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   const role = user?.role ?? trustedCache?.role ?? null;
 
-  if (!role) {
-    return <Redirect href="/(onboarding)/role-select" />;
+  if (!role && (isProfileLoading || !cacheReady)) {
+    return <AuthLoadingShell />;
   }
 
   if (role !== 'admin') {
@@ -47,6 +47,10 @@ export default function AdminLayout() {
       <Stack.Screen
         name="posts/[id]"
         options={{ headerShown: true, title: 'Post review', ...rootedStackScreenOptions }}
+      />
+      <Stack.Screen
+        name="credentials/index"
+        options={{ headerShown: true, title: 'Credential review', ...rootedStackScreenOptions }}
       />
     </Stack>
   );

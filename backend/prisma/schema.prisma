@@ -33,6 +33,10 @@ model Vendor {
   userId       String  @map("user_id") @db.Uuid
   businessName String? @map("business_name")
 
+  stripeAccountId      String? @map("stripe_account_id")
+  stripeChargesEnabled Boolean @default(false) @map("stripe_charges_enabled")
+  stripePayoutsEnabled Boolean @default(false) @map("stripe_payouts_enabled")
+
   posConnections       PosConnection[]
   posProductMappings   PosProductMapping[]
   posTransactions      PosImportedTransaction[]

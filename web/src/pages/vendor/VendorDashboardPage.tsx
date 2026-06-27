@@ -70,6 +70,18 @@ export function VendorDashboardPage() {
         <Link to="/vendor/sales/manual" className="app-card app-card--pressable">Log in-person sale</Link>
         <Link to="/vendor/pos" className="app-card app-card--pressable">Connect Square POS</Link>
         <Link to="/vendor/storefront" className="app-card app-card--pressable">Edit storefront</Link>
+        <Link to="/vendor/explore" className="app-card app-card--pressable">
+          <p className="app-row-title">Explore showcase</p>
+          <p className="app-row-meta">Publish portfolio posts to the customer Explore feed</p>
+        </Link>
+        <Link to="/vendor/compliance" className="app-card app-card--pressable">
+          <p className="app-row-title">Food safety checklist</p>
+          <p className="app-row-meta">State cottage food requirements and compliance status</p>
+        </Link>
+        <Link to="/vendor/credentials" className="app-card app-card--pressable">
+          <p className="app-row-title">Verification credentials</p>
+          <p className="app-row-meta">Upload documents to earn trust badges</p>
+        </Link>
       </div>
     </div>
   );

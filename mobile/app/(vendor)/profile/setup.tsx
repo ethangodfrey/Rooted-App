@@ -9,7 +9,9 @@ import { Input } from '@/src/components/ui/input';
 import { TextArea } from '@/src/components/ui/text-area';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
+import { VENDOR_TYPES } from '@/constants/Config';
 import { useAuth } from '@/src/hooks/use-auth';
+import { geocodeAddress } from '@/src/lib/geocode';
 import { resetRoleSelection } from '@/src/lib/reset-role-selection';
 import { supabase } from '@/src/lib/supabase';
 import {
@@ -19,6 +21,7 @@ import {
   VENDOR_CATEGORY_OPTIONS,
   type SellingChannel,
 } from '@/src/lib/vendor-application';
+import type { VendorType } from '@/src/types/database';
 
 export default function VendorSetupScreen() {
   const { session, vendor, refreshUser } = useAuth();
@@ -26,8 +29,11 @@ export default function VendorSetupScreen() {
   const [productSummary, setProductSummary] = useState(vendor?.product_summary ?? '');
   const [description, setDescription] = useState(vendor?.business_description ?? '');
   const [category, setCategory] = useState<string | null>(vendor?.category ?? null);
+  const [vendorType, setVendorType] = useState<VendorType | null>(vendor?.vendor_type ?? null);
+  const [streetAddress, setStreetAddress] = useState(vendor?.street_address ?? '');
   const [sellCity, setSellCity] = useState(vendor?.sell_city ?? '');
   const [sellState, setSellState] = useState(vendor?.sell_state ?? '');
+  const [postalCode, setPostalCode] = useState(vendor?.postal_code ?? '');
   const [channels, setChannels] = useState<SellingChannel[]>(
     (vendor?.selling_channels as SellingChannel[]) ?? [],
   );
@@ -74,6 +80,22 @@ export default function VendorSetupScreen() {
     setError(null);
 
     const now = new Date().toISOString();
+
+    const cleanCity = application.sell_city.trim();
+    const cleanState = application.sell_state.trim().toUpperCase();
+    const cleanStreet = streetAddress.trim();
+    const cleanPostal = postalCode.trim();
+
+    // Best-effort geocode so the vendor lands on the nearby map. Falls back to a
+    // city/state centroid and never blocks the save on failure.
+    const coords = await geocodeAddress({
+      streetAddress: cleanStreet,
+      city: cleanCity,
+      state: cleanState,
+      postalCode: cleanPostal,
+      country: 'USA',
+    });
+
     const { error: vendorError } = await supabase
       .from('vendors')
       .update({
@@ -81,8 +103,13 @@ export default function VendorSetupScreen() {
         product_summary: application.product_summary.trim(),
         business_description: application.business_description,
         category: application.category,
-        sell_city: application.sell_city.trim(),
-        sell_state: application.sell_state.trim().toUpperCase(),
+        vendor_type: vendorType,
+        street_address: cleanStreet || null,
+        sell_city: cleanCity,
+        sell_state: cleanState,
+        postal_code: cleanPostal || null,
+        country: 'USA',
+        ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         selling_channels: application.selling_channels,
         primary_market: application.primary_market,
         instagram_url: application.instagram_url,
@@ -136,9 +163,25 @@ export default function VendorSetupScreen() {
         Tell us about your business
       </Text>
       <Text variant="subtitle" className="mb-6">
-        Rooted is for local makers and market vendors. We review every application before your
-        storefront goes live.
+        Vendorly is for local makers, home kitchens, and market vendors. We review every application
+        before your storefront goes live.
       </Text>
+
+      <Text variant="heading" className="mb-3">
+        Business type
+      </Text>
+      <View className="mb-4 flex-row flex-wrap gap-2">
+        {VENDOR_TYPES.map((option) => (
+          <Chip
+            key={option.value}
+            label={option.label}
+            selected={vendorType === option.value}
+            onPress={() =>
+              setVendorType((prev) => (prev === option.value ? null : option.value))
+            }
+          />
+        ))}
+      </View>
 
       <Text variant="heading" className="mb-3">
         What you sell
@@ -148,7 +191,7 @@ export default function VendorSetupScreen() {
         label="Business name"
         value={businessName}
         onChangeText={setBusinessName}
-        placeholder="Rooted Bakehouse"
+        placeholder="Sunrise Bakehouse"
         autoCapitalize="words"
       />
 
@@ -183,6 +226,15 @@ export default function VendorSetupScreen() {
         Where you sell
       </Text>
 
+      <Input
+        label="Street address"
+        value={streetAddress}
+        onChangeText={setStreetAddress}
+        placeholder="123 Main St"
+        autoCapitalize="words"
+        textContentType="streetAddressLine1"
+      />
+
       <View className="mb-4 flex-row gap-3">
         <View className="flex-1">
           <Input label="City" value={sellCity} onChangeText={setSellCity} placeholder="Austin" />
@@ -195,6 +247,17 @@ export default function VendorSetupScreen() {
             placeholder="TX"
             autoCapitalize="characters"
             maxLength={2}
+          />
+        </View>
+        <View className="w-24">
+          <Input
+            label="ZIP"
+            value={postalCode}
+            onChangeText={setPostalCode}
+            placeholder="78701"
+            keyboardType="number-pad"
+            maxLength={10}
+            textContentType="postalCode"
           />
         </View>
       </View>

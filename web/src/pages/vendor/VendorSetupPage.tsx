@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
+import { geocodeAddress } from '@/lib/geocode';
 import { resetRoleSelection } from '@/lib/reset-role-selection';
 import { supabase } from '@/lib/supabase';
 import {
@@ -20,8 +21,10 @@ export function VendorSetupPage() {
   const [productSummary, setProductSummary] = useState(vendor?.product_summary ?? '');
   const [description, setDescription] = useState(vendor?.business_description ?? '');
   const [category, setCategory] = useState(vendor?.category ?? '');
+  const [streetAddress, setStreetAddress] = useState(vendor?.street_address ?? '');
   const [sellCity, setSellCity] = useState(vendor?.sell_city ?? '');
   const [sellState, setSellState] = useState(vendor?.sell_state ?? '');
+  const [postalCode, setPostalCode] = useState(vendor?.postal_code ?? '');
   const [channels, setChannels] = useState<SellingChannel[]>(
     (vendor?.selling_channels as SellingChannel[]) ?? [],
   );
@@ -62,6 +65,22 @@ export function VendorSetupPage() {
 
     setLoading(true);
     const now = new Date().toISOString();
+
+    const cleanCity = application.sell_city.trim();
+    const cleanState = application.sell_state.trim().toUpperCase();
+    const cleanStreet = streetAddress.trim();
+    const cleanPostal = postalCode.trim();
+
+    // Best-effort geocode so the vendor lands on the nearby map. Falls back to a
+    // city/state centroid and never blocks the save on failure.
+    const coords = await geocodeAddress({
+      streetAddress: cleanStreet,
+      city: cleanCity,
+      state: cleanState,
+      postalCode: cleanPostal,
+      country: 'USA',
+    });
+
     const { error: vendorError } = await supabase
       .from('vendors')
       .update({
@@ -69,8 +88,12 @@ export function VendorSetupPage() {
         product_summary: application.product_summary.trim(),
         business_description: application.business_description,
         category: application.category,
-        sell_city: application.sell_city.trim(),
-        sell_state: application.sell_state.trim().toUpperCase(),
+        street_address: cleanStreet || null,
+        sell_city: cleanCity,
+        sell_state: cleanState,
+        postal_code: cleanPostal || null,
+        country: 'USA',
+        ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         selling_channels: application.selling_channels,
         primary_market: application.primary_market,
         instagram_url: application.instagram_url,
@@ -126,12 +149,33 @@ export function VendorSetupPage() {
       </div>
 
       <div className="app-input-group">
+        <label>Street address</label>
+        <input
+          className="app-input"
+          value={streetAddress}
+          onChange={(e) => setStreetAddress(e.target.value)}
+          placeholder="123 Main St"
+          autoComplete="street-address"
+        />
+      </div>
+      <div className="app-input-group">
         <label>City</label>
         <input className="app-input" value={sellCity} onChange={(e) => setSellCity(e.target.value)} />
       </div>
       <div className="app-input-group">
         <label>State</label>
         <input className="app-input" value={sellState} onChange={(e) => setSellState(e.target.value)} maxLength={2} />
+      </div>
+      <div className="app-input-group">
+        <label>ZIP code</label>
+        <input
+          className="app-input"
+          value={postalCode}
+          onChange={(e) => setPostalCode(e.target.value)}
+          placeholder="78701"
+          inputMode="numeric"
+          autoComplete="postal-code"
+        />
       </div>
 
       <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Where do you sell?</p>

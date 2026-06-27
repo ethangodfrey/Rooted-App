@@ -73,6 +73,10 @@ export function eventPlaceholderEmoji(marketType: string | null | undefined): st
       return '🏪';
     case 'craft_market':
       return '🎨';
+    case 'local_business':
+      return '🏪';
+    case 'farm_stand':
+      return '🧺';
     default:
       return '🧺';
   }

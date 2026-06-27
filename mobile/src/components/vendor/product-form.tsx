@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { Image, Pressable, Switch, View } from 'react-native';
 
 import { Button } from '@/src/components/ui/button';
+import { Chip } from '@/src/components/ui/chip';
 import { Input } from '@/src/components/ui/input';
 import { TextArea } from '@/src/components/ui/text-area';
 import { inputBorderStyle } from '@/src/theme/input-styles';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { pickAndUploadProductImage } from '@/src/lib/upload';
+
+import type { ProductAvailabilityType } from '@/src/types/database';
 
 export interface ProductFormValues {
   name: string;
@@ -20,6 +23,11 @@ export interface ProductFormValues {
   reserve_limit_total: number | null;
   reserve_limit_per_shopper: number | null;
   media_urls: string[];
+  availability_type: ProductAvailabilityType;
+  made_to_order: boolean;
+  available_for_pickup: boolean;
+  available_for_delivery: boolean;
+  lead_time_hours: number | null;
 }
 
 interface ProductFormProps {
@@ -32,6 +40,11 @@ interface ProductFormProps {
     reserve_limit_total: number | null;
     reserve_limit_per_shopper: number | null;
     media_urls: string[];
+    availability_type?: ProductAvailabilityType;
+    made_to_order?: boolean;
+    available_for_pickup?: boolean;
+    available_for_delivery?: boolean;
+    lead_time_hours?: number | null;
   }>;
   submitLabel: string;
   onSubmit: (values: ProductFormValues) => Promise<void> | void;
@@ -64,6 +77,17 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
     initial?.reserve_limit_per_shopper != null ? String(initial.reserve_limit_per_shopper) : '',
   );
   const [mediaUrls, setMediaUrls] = useState<string[]>(initial?.media_urls ?? []);
+  const [availabilityType, setAvailabilityType] = useState<ProductAvailabilityType>(
+    initial?.availability_type ?? 'always',
+  );
+  const [madeToOrder, setMadeToOrder] = useState(initial?.made_to_order ?? false);
+  const [availableForPickup, setAvailableForPickup] = useState(initial?.available_for_pickup ?? true);
+  const [availableForDelivery, setAvailableForDelivery] = useState(
+    initial?.available_for_delivery ?? false,
+  );
+  const [leadTimeHours, setLeadTimeHours] = useState(
+    initial?.lead_time_hours != null ? String(initial.lead_time_hours) : '',
+  );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,6 +149,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
     }
 
     setError(null);
+    const parsedLeadTime = leadTimeHours.trim() ? Number(leadTimeHours) : null;
+    if (parsedLeadTime != null && (!Number.isInteger(parsedLeadTime) || parsedLeadTime < 1)) {
+      setError('Lead time must be a whole number of hours.');
+      return;
+    }
+
     await onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -134,6 +164,11 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       reserve_limit_total: limitTotalValue,
       reserve_limit_per_shopper: limitPerShopperValue,
       media_urls: mediaUrls,
+      availability_type: availabilityType,
+      made_to_order: madeToOrder,
+      available_for_pickup: availableForPickup,
+      available_for_delivery: availableForDelivery,
+      lead_time_hours: parsedLeadTime,
     });
   }
 
@@ -240,6 +275,58 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
           </View>
         ) : null}
       </View>
+
+      <Text variant="body" className="mb-2 font-semibold">
+        Availability
+      </Text>
+      <View className="mb-4 flex-row flex-wrap gap-2">
+        {(
+          [
+            ['always', 'Always'],
+            ['event_only', 'Markets only'],
+            ['preorder_only', 'Pre-order'],
+            ['seasonal', 'Seasonal'],
+          ] as const
+        ).map(([value, label]) => (
+          <Chip
+            key={value}
+            label={label}
+            selected={availabilityType === value}
+            onPress={() => setAvailabilityType(value)}
+          />
+        ))}
+      </View>
+
+      <View className="mb-4 px-3.5 py-3" style={inputBorderStyle()}>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text variant="body" className="font-semibold">
+            Made to order
+          </Text>
+          <Switch value={madeToOrder} onValueChange={setMadeToOrder} />
+        </View>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text variant="body" className="font-semibold">
+            Pickup available
+          </Text>
+          <Switch value={availableForPickup} onValueChange={setAvailableForPickup} />
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text variant="body" className="font-semibold">
+            Delivery available
+          </Text>
+          <Switch value={availableForDelivery} onValueChange={setAvailableForDelivery} />
+        </View>
+      </View>
+
+      {madeToOrder ? (
+        <Input
+          label="Lead time (hours)"
+          value={leadTimeHours}
+          onChangeText={setLeadTimeHours}
+          placeholder="24"
+          keyboardType="number-pad"
+        />
+      ) : null}
 
       {error ? <Text className="mb-3 text-sm text-danger">{error}</Text> : null}
 

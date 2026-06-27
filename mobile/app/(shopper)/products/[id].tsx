@@ -5,6 +5,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, View } from 'react-native';
 
+import { ReviewsSection } from '@/src/components/reviews/reviews-section';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
@@ -204,6 +205,8 @@ export default function ProductDetailScreen() {
               Reserve holds your item to pay at pickup. Buy now (online payment) is coming soon.
             </Text>
           </View>
+
+          <ReviewsSection targetType="product" targetId={product.id} />
         </Screen>
       )}
     </>

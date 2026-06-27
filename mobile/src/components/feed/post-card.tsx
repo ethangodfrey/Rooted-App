@@ -45,10 +45,12 @@ export function PostCard({
 }: PostCardProps) {
   const scheduled = new Date(post.publish_at).getTime() > Date.now();
   return (
-    <Card>
+    <Card
+      className="border-l-4 border-harvest pl-4"
+      style={{ borderLeftColor: '#D4A853', borderLeftWidth: 4 }}>
       <View className="mb-2 flex-row items-center">
-        <View className="mr-2 h-9 w-9 items-center justify-center rounded-full bg-forest-100">
-          <FontAwesome name={POST_TYPE_ICON[post.post_type]} size={15} color="#228B22" />
+        <View className="mr-2 h-9 w-9 items-center justify-center rounded-full bg-honeydew">
+          <FontAwesome name={POST_TYPE_ICON[post.post_type]} size={15} color="#C4704B" />
         </View>
         <View className="flex-1">
           {showVendor && post.vendor ? (

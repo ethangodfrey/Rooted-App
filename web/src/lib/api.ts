@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { getApiBaseUrl, isApiUrlConfigured } from '@/lib/api-url';
+import { getApiBaseUrl, isApiUrlConfigured, isExplicitPublicApiUrl } from '@/lib/api-url';
 
 export const isApiConfigured = isApiUrlConfigured();
 
@@ -26,9 +26,12 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
       body: body != null ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error(
-      `Could not reach the API at ${API_URL}. On another device, open the site via your PC's network IP (e.g. http://10.0.0.165:5173), start the backend (cd backend && npm run start:dev), and allow port 4000 through Windows Firewall.`,
-    );
+    const hint = isExplicitPublicApiUrl()
+      ? 'Check that the backend is deployed and reachable at that URL.'
+      : import.meta.env.DEV
+        ? `On another device on the same Wi‑Fi, open the site via your PC's network IP (e.g. http://10.0.0.165:5173), start the backend (cd backend && npm run start:dev), and allow port 4000 through Windows Firewall. Off LAN, deploy web + API or set VITE_API_URL to a public HTTPS URL — see docs/OFF_LAN_ACCESS.md.`
+        : 'Set VITE_API_URL to your deployed API (e.g. https://api.vendorly.app). See docs/OFF_LAN_ACCESS.md.';
+    throw new Error(`Could not reach the API at ${API_URL}. ${hint}`);
   }
 
   const text = await res.text();

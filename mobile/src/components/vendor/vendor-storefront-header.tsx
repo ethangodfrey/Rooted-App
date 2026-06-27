@@ -1,4 +1,5 @@
 import { FontAwesome } from '@expo/vector-icons';
+import type { ReactNode } from 'react';
 import { Image, Linking, Pressable, View } from 'react-native';
 
 import { Text } from '@/src/components/ui/text';
@@ -13,9 +14,15 @@ import type { Vendor } from '@/src/types/database';
 interface VendorStorefrontHeaderProps {
   vendor: Vendor;
   showLinks?: boolean;
+  /** Optional content rendered directly under the business name (e.g. trust badges). */
+  accessory?: ReactNode;
 }
 
-export function VendorStorefrontHeader({ vendor, showLinks = true }: VendorStorefrontHeaderProps) {
+export function VendorStorefrontHeader({
+  vendor,
+  showLinks = true,
+  accessory,
+}: VendorStorefrontHeaderProps) {
   const theme = parseThemeSettings(vendor.theme_settings);
   const accent = resolveAccentColor(theme.accent_color);
   const location = [vendor.sell_city, vendor.sell_state].filter(Boolean).join(', ');
@@ -88,6 +95,8 @@ export function VendorStorefrontHeader({ vendor, showLinks = true }: VendorStore
           {vendor.category}
         </Text>
       ) : null}
+
+      {accessory ? <View className="mb-3">{accessory}</View> : null}
 
       {vendor.product_summary ? (
         <Text variant="subtitle" className="mb-3">

@@ -435,7 +435,7 @@ it is unset, POS features hide themselves gracefully.
 - `mobile/src/lib/pos-api.ts` — typed POS endpoint client.
 - `app/(vendor)/pos/index.tsx` — list connections + "Connect Square" (opens the
   OAuth flow via `WebBrowser.openAuthSessionAsync`; backend bounces back to the
-  `APP_DEEP_LINK`, which must match the app scheme `mobile://pos/connected`).
+  `APP_DEEP_LINK`, which must match the app scheme `vendorly://pos/connected`).
 - `app/(vendor)/pos/[id].tsx` — connection status, manual "Sync now", recent sync
   runs, and disconnect.
 - `app/(vendor)/pos/mappings.tsx` — match imported register items to Rooted

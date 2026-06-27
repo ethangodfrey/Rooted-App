@@ -58,6 +58,7 @@ async function bootstrap() {
   // register a raw body parser scoped to the webhook path before the JSON
   // parser takes over everything else.
   app.use('/pos/webhooks', raw({ type: '*/*', limit: '2mb' }));
+  app.use('/stripe/webhooks', raw({ type: '*/*', limit: '2mb' }));
   app.use(json({ limit: '2mb' }));
 
   app.useGlobalPipes(
@@ -75,7 +76,7 @@ async function bootstrap() {
 
   const lan = getLanIpv4Addresses();
   // eslint-disable-next-line no-console
-  console.log(`Rooted backend listening on 0.0.0.0:${port}`);
+  console.log(`Vendorly backend listening on 0.0.0.0:${port}`);
   // eslint-disable-next-line no-console
   console.log(`  Local:   http://localhost:${port}`);
   for (const address of lan) {

@@ -112,7 +112,7 @@ export default function PosMappingsScreen() {
       ) : (
         <Screen scroll>
           <Text variant="subtitle" className="mb-4">
-            Match each register item to a Rooted product so sales roll into the right analytics.
+            Match each register item to a Vendorly product so sales roll into the right analytics.
           </Text>
 
           {error ? <Text className="mb-3 text-sm text-danger">{error}</Text> : null}

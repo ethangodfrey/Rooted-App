@@ -13,6 +13,8 @@ import { AdminAgentModule } from './modules/admin-agent/admin-agent.module';
 import { MarketsModule } from './modules/markets/markets.module';
 import { PosModule } from './modules/pos/pos.module';
 
+import { StripeModule } from './modules/stripe/stripe.module';
+
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
 @Module({
@@ -42,6 +44,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     AdminAgentModule,
     PosModule,
     MarketsModule,
+    StripeModule,
   ],
 })
 export class AppModule {}

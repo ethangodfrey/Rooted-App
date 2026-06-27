@@ -7,7 +7,7 @@ import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache'
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 export function DashboardRedirect() {
-  const { session, user, shopper, vendor, isLoading, isProfileLoading, isPasswordRecovery } =
+  const { session, user, shopper, vendor, chef, isLoading, isProfileLoading, isPasswordRecovery } =
     useAuth();
   const [routeCache, setRouteCache] = useState<AuthRouteCache | null | undefined>(undefined);
 
@@ -50,7 +50,7 @@ export function DashboardRedirect() {
     return <Navigate to="/onboarding/role-select" replace />;
   }
 
-  const destination = resolveAuthRedirect(user, shopper, vendor, routeCache, sessionUserId);
+  const destination = resolveAuthRedirect(user, shopper, vendor, chef, routeCache, sessionUserId);
 
   return <Navigate to={destination ?? '/onboarding/role-select'} replace />;
 }

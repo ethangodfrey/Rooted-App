@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { formatEventDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
@@ -74,6 +75,8 @@ export function ShopperProductPage() {
       ) : (
         <p className="app-row-meta" style={{ marginTop: '1.5rem' }}>Reservations not available for this product yet.</p>
       )}
+
+      <ReviewsSection targetType="product" targetId={id!} />
     </div>
   );
 }

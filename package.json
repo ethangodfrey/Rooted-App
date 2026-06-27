@@ -1,7 +1,7 @@
 {
-  "name": "rooted",
+  "name": "vendorly",
   "private": true,
-  "description": "Rooted monorepo tooling (market seed scripts)",
+  "description": "Vendorly monorepo tooling (market seed scripts)",
   "scripts": {
     "markets:baseline": "npx tsx scripts/exportBaselineMarketsCsv.ts",
     "markets:cities": "npx tsx scripts/fetchCityMarketsCsv.ts",
@@ -24,6 +24,7 @@
     "markets:build:full": "npm run markets:baseline && npm run markets:cities && npm run markets:fetch && npm run markets:merge && npm run markets:import",
     "markets:links": "npm run markets:links --prefix backend",
     "markets:dedupe": "npm run markets:dedupe --prefix backend",
+    "markets:classify": "npm run markets:classify --prefix backend --",
     "markets:agent": "npm run markets:agent --prefix backend",
     "markets:enrich": "npm run markets:enrich --prefix backend --",
     "markets:fix-times": "npm run markets:fix-times --prefix backend --",

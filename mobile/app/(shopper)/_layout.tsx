@@ -3,29 +3,16 @@ import { Redirect, Stack } from 'expo-router';
 import { AuthLoadingShell } from '@/src/components/ui/auth-loading-shell';
 import { useAuth } from '@/src/hooks/use-auth';
 
+/** Session gate only. Role + onboarding routing lives in `app/index.tsx`. */
 export default function ShopperLayout() {
-  const { session, user, shopper, isLoading, cacheReady, trustedCache } = useAuth();
+  const { session, isLoading } = useAuth();
 
-  if (!isLoading && !session) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  if (!cacheReady) {
+  if (isLoading && !session) {
     return <AuthLoadingShell />;
   }
 
-  const role = user?.role ?? trustedCache?.role ?? null;
-
-  if (role !== 'shopper') {
-    return <Redirect href="/" />;
-  }
-
-  const hasInterests = user
-    ? (shopper?.interests?.length ?? 0) > 0
-    : (trustedCache?.hasInterests ?? false);
-
-  if (!hasInterests) {
-    return <Redirect href="/(onboarding)/interests" />;
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;

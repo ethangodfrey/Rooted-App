@@ -74,7 +74,7 @@ export function VendorPosMappingsPage() {
     <div className="app-screen">
       <Link to="/vendor/pos" className="app-back-link">← POS</Link>
       <h1 className="app-title">Item mappings</h1>
-      <p className="app-subtitle">Link Square catalog items to your Rooted products.</p>
+      <p className="app-subtitle">Link Square catalog items to your Vendorly products.</p>
 
       {loading ? (
         <div className="app-loading"><div className="app-spinner" /></div>

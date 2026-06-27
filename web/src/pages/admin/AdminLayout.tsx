@@ -6,11 +6,11 @@ import { useAuth } from '@/hooks/use-auth';
 import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 
 const ADMIN_TABS = [
-  { to: '/admin/vendors', label: 'Vendors', icon: '💼' },
-  { to: '/admin/events', label: 'Events', icon: '📅' },
-  { to: '/admin/orders', label: 'Orders', icon: '📦' },
-  { to: '/admin/posts', label: 'Posts', icon: '📣' },
-  { to: '/admin/more', label: 'More', icon: '⚙️' },
+  { to: '/admin/vendors', label: 'Vendors', icon: 'products' as const },
+  { to: '/admin/events', label: 'Events', icon: 'markets' as const },
+  { to: '/admin/orders', label: 'Orders', icon: 'orders' as const },
+  { to: '/admin/posts', label: 'Posts', icon: 'posts' as const },
+  { to: '/admin/more', label: 'More', icon: 'explore' as const },
 ];
 
 export function AdminLayout() {

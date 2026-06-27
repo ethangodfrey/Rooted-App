@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 
 import { Card } from '@/src/components/ui/card';
@@ -35,6 +35,7 @@ export default function VendorOrdersScreen() {
   const { vendor } = useAuth();
   const [orders, setOrders] = useState<VendorOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const firstLoadRef = useRef(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -44,14 +45,17 @@ export default function VendorOrdersScreen() {
           setLoading(false);
           return;
         }
+        if (firstLoadRef.current) setLoading(true);
         const { data } = await supabase
           .from('orders')
           .select('id, order_status, total, created_at, event:events(name), order_items(quantity)')
           .eq('vendor_id', vendor.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
         if (!active) return;
         setOrders((data as unknown as VendorOrderRow[]) ?? []);
         setLoading(false);
+        firstLoadRef.current = false;
       }
       load();
       return () => {
@@ -77,7 +81,7 @@ export default function VendorOrdersScreen() {
           </Text>
         ) : null}
       </View>
-      {loading ? (
+      {loading && orders.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <LoadingIndicator />
         </View>

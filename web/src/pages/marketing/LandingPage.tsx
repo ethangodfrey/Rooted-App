@@ -1,24 +1,26 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 import { LeafIcon } from '@/components/LeafIcon';
 import { Logo } from '@/components/Logo';
+import { useAuth } from '@/hooks/use-auth';
 import '@/App.css';
+import '@/components/ui/ui.css';
 
 const SHOPPER_FEATURES = [
   {
     icon: '🗺️',
     title: 'Explore near you',
-    body: 'Find farmers markets and events in your city, or browse popular vendors nationwide.',
+    body: 'Find farmers markets, private chefs, and local food businesses in your area — or browse popular makers nationwide.',
   },
   {
     icon: '❤️',
     title: 'Follow your favorites',
-    body: 'Save vendors you love and get a personalized feed of updates, products, and announcements.',
+    body: 'Save vendors and chefs you love and get a personalized feed of updates, products, and booking announcements.',
   },
   {
     icon: '🛒',
-    title: 'Reserve & pick up',
-    body: 'Browse products, place reservations, and pick up fresh goods directly from local makers.',
+    title: 'Order, reserve & book',
+    body: 'Browse products, place reservations, book chef services, and pick up fresh goods from home cooks and cottage food vendors.',
   },
 ];
 
@@ -44,17 +46,17 @@ const PHILOSOPHY_PILLARS = [
   {
     title: 'Connect the community',
     body:
-      'Rooted brings local shoppers and independent vendors into one place — so discovery, trust, and repeat business happen in your neighborhood, not across a dozen apps and social feeds.',
+      'Vendorly brings local shoppers, private chefs, home cooks, and independent vendors into one place — so discovery, trust, and repeat business happen in your neighborhood, not across a dozen apps and social feeds.',
   },
   {
     title: 'Sell beyond market day',
     body:
-      'Farmers markets are only a few hours a week. Rooted helps vendors capture their full sales potential with presale and pickup orders — turning interest into revenue before and after the booth closes.',
+      'Farmers markets are only a few hours a week. Vendorly helps makers capture their full sales potential with direct orders, chef bookings, and presale pickup — turning interest into revenue before and after the booth closes.',
   },
   {
     title: 'One home for your business',
     body:
-      'Vendors get a single storefront to promote every product, promotion, and update. Your catalog, your story, your schedule — everything shoppers need in one profile.',
+      'Vendors and chefs get a single storefront to promote every product, service, and update. Your catalog, your story, your schedule — everything shoppers need in one profile.',
   },
 ];
 
@@ -67,12 +69,12 @@ const STEPS = [
   {
     step: '02',
     title: 'Choose your path',
-    body: 'Shop local as a customer, or apply to sell as a vendor in your community.',
+    body: 'Shop local as a customer, sell as a vendor, or offer chef services in your community.',
   },
   {
     step: '03',
     title: 'Get connected',
-    body: 'Discover markets, follow makers, reserve pickup, and grow your local food network.',
+    body: 'Discover markets, book private chefs, order from home kitchens, and grow your local food network.',
   },
 ];
 
@@ -108,6 +110,20 @@ function LandingNav() {
 }
 
 export function LandingPage() {
+  const { session, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="app-loading">
+        <div className="app-spinner" />
+      </div>
+    );
+  }
+
+  if (session) {
+    return <Navigate to="/app" replace />;
+  }
+
   return (
     <>
       <LandingNav />
@@ -117,15 +133,19 @@ export function LandingPage() {
           <div className="hero__bg" aria-hidden="true" />
           <div className="container hero__inner">
             <div className="hero__content">
-              <p className="eyebrow">Local food, rooted in community</p>
+              <p className="eyebrow">
+                Vendorly Marketplace
+                <span className="logo__tm" aria-hidden="true">
+                  ™
+                </span>
+              </p>
               <h1 className="hero__title">
-                Local markets.
+                Farmers markets.
                 <br />
-                <span className="hero__title-accent">Local makers.</span>
+                <span className="hero__title-accent">Private chefs. Home cooks.</span>
               </h1>
               <p className="hero__lead">
-                Rooted connects you with farmers markets, independent vendors, and fresh
-                products in your area — discover, follow, and reserve pickup in one place.
+                Discover, book, and order from makers near you — markets, chefs, and home kitchens in one app.
               </p>
               <div className="hero__actions">
                 <Link to="/signup" className="btn btn--primary">
@@ -134,9 +154,6 @@ export function LandingPage() {
                 <Link to="/login" className="btn btn--secondary">
                   Sign in
                 </Link>
-                <a href="#about" className="btn btn--ghost">
-                  Learn more
-                </a>
               </div>
             </div>
 
@@ -147,12 +164,20 @@ export function LandingPage() {
                     <span className="phone-mock__leaf">
                       <LeafIcon size={18} />
                     </span>
-                    <span className="phone-mock__logo">Rooted</span>
+                    <span className="phone-mock__brand">
+                      <span className="phone-mock__logo">Vendorly</span>
+                      <span className="phone-mock__logo-sub">
+                        Marketplace
+                        <span className="logo__tm" aria-hidden="true">
+                          ™
+                        </span>
+                      </span>
+                    </span>
                   </div>
-                  <div className="phone-mock__tagline">Local markets. Local makers.</div>
+                  <div className="phone-mock__tagline">Your local food marketplace</div>
                   <div className="phone-mock__chips">
-                    <span>Near you</span>
-                    <span className="active">Saved</span>
+                    <span>Markets</span>
+                    <span className="active">Chefs</span>
                   </div>
                   <div className="phone-mock__cards">
                     <div className="phone-mock__card">
@@ -163,17 +188,17 @@ export function LandingPage() {
                       </div>
                     </div>
                     <div className="phone-mock__card">
-                      <div className="phone-mock__card-icon">🥕</div>
+                      <div className="phone-mock__card-icon">👨‍🍳</div>
                       <div>
-                        <strong>Fresh Harvest Co.</strong>
-                        <p>Seasonal produce · Pickup ready</p>
+                        <strong>Chef Maria</strong>
+                        <p>Meal prep · Private dining</p>
                       </div>
                     </div>
                     <div className="phone-mock__card">
-                      <div className="phone-mock__card-icon">🍯</div>
+                      <div className="phone-mock__card-icon">🥕</div>
                       <div>
-                        <strong>Valley Apiary</strong>
-                        <p>Raw honey · New batch</p>
+                        <strong>Fresh Harvest Co.</strong>
+                        <p>Home kitchen · Pickup ready</p>
                       </div>
                     </div>
                   </div>
@@ -186,18 +211,18 @@ export function LandingPage() {
         <section id="about" className="section section--about">
           <div className="container about__inner">
             <div className="about__intro">
-              <p className="eyebrow">Why Rooted exists</p>
+              <p className="eyebrow">Why Vendorly exists</p>
               <h2 className="section-title">Built for local food, built for both sides</h2>
               <p className="about__mission">
-                Rooted was created because local food deserves better than a few market
-                hours and scattered promotion. We believe shoppers and vendors thrive when
+                Vendorly was created because local food deserves better than scattered listings
+                and a few market hours a week. We believe shoppers, chefs, and vendors thrive when
                 they are connected year-round — not just on Saturday morning.
               </p>
               <blockquote className="about__quote">
                 <p>
-                  &ldquo;Markets bring people together. Rooted keeps them together — helping
-                  vendors sell their full output and giving shoppers one trusted place to
-                  find, follow, and buy local.&rdquo;
+                  &ldquo;Markets bring people together. Vendorly keeps them together — helping
+                  chefs, home cooks, and vendors sell their full output and giving shoppers one
+                  trusted place to find, follow, and buy local.&rdquo;
                 </p>
               </blockquote>
             </div>
@@ -221,8 +246,8 @@ export function LandingPage() {
             <p className="eyebrow">For shoppers</p>
             <h2 className="section-title">Everything local, in your pocket</h2>
             <p className="section-lead">
-              Browse markets on a map, follow the vendors you love, and reserve pickup
-              without chasing down five different websites.
+              Browse farmers markets on a map, book private chefs, order from home kitchens, and
+              reserve pickup without chasing down five different websites.
             </p>
 
             <div className="grid-3 features-grid">
@@ -245,8 +270,8 @@ export function LandingPage() {
               <p className="eyebrow">For vendors</p>
               <h2 className="section-title">Grow your local business</h2>
               <p className="section-lead">
-                Rooted gives independent makers a storefront, a feed, and tools to manage
-                orders — so you can focus on what you grow, bake, and craft.
+                Vendorly gives independent makers and private chefs a storefront, a feed, and tools
+                to manage orders — so you can focus on what you grow, bake, cook, and craft.
               </p>
               <Link to="/signup" className="btn btn--primary">
                 Sign up as a vendor
@@ -293,22 +318,23 @@ export function LandingPage() {
             <div className="cta__icon" aria-hidden="true">
               <LeafIcon size={36} />
             </div>
-            <h2 className="section-title cta__title">Ready to get Rooted?</h2>
+            <h2 className="section-title cta__title">Ready to shop local?</h2>
             <p className="section-lead cta__lead">
-              Create a free account or sign in to explore your local food community on the web.
+              Create a free account or sign in to explore farmers markets, private chefs, and local
+              food businesses on the web.
             </p>
             <div className="cta__stores">
-              <Link to="/signup" className="store-badge" aria-label="Sign up for Rooted">
+              <Link to="/signup" className="store-badge" aria-label="Sign up for Vendorly">
                 <span className="store-badge__small">New here?</span>
                 <span className="store-badge__large">Sign up</span>
               </Link>
-              <Link to="/login" className="store-badge store-badge--outline" aria-label="Sign in to Rooted">
+              <Link to="/login" className="store-badge store-badge--outline" aria-label="Sign in to Vendorly">
                 <span className="store-badge__small">Already have an account?</span>
                 <span className="store-badge__large">Sign in</span>
               </Link>
             </div>
             <p className="cta__note">
-              After signing in, you&apos;ll choose shopper or vendor and enter the app.
+              After signing in, you&apos;ll choose customer, vendor, or chef and enter the app.
             </p>
           </div>
         </section>
@@ -317,8 +343,7 @@ export function LandingPage() {
       <footer className="footer">
         <div className="container footer__inner">
           <div className="footer__brand">
-            <Logo variant="reversed" size="medium" />
-            <p>Local markets. Local makers.</p>
+            <Logo variant="reversed" size="medium" showTagline />
           </div>
 
           <nav className="footer__links" aria-label="Footer">
@@ -330,7 +355,9 @@ export function LandingPage() {
             <Link to="/signup">Sign up</Link>
           </nav>
 
-          <p className="footer__copy">&copy; {new Date().getFullYear()} Rooted. All rights reserved.</p>
+          <p className="footer__copy">
+            &copy; {new Date().getFullYear()} Vendorly Marketplace&trade;. All rights reserved.
+          </p>
         </div>
       </footer>
     </>

@@ -3,9 +3,10 @@ import type { UserRole } from '@/types/database';
 
 export async function resetRoleSelection(
   userId: string,
-  role: Extract<UserRole, 'shopper' | 'vendor'>,
+  role: Extract<UserRole, 'shopper' | 'vendor' | 'chef'>,
 ): Promise<{ error: string | null }> {
-  const extensionTable = role === 'shopper' ? 'shoppers' : 'vendors';
+  const extensionTable =
+    role === 'shopper' ? 'shoppers' : role === 'chef' ? 'chefs' : 'vendors';
 
   const { error: deleteError } = await supabase
     .from(extensionTable)

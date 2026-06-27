@@ -1,21 +1,25 @@
-import { FontAwesome } from '@expo/vector-icons';
 import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
 import { router } from 'expo-router';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
+import { WeekStrip } from '@/src/components/events/week-strip';
 import { PressableCard } from '@/src/components/ui/card';
-import { EventLiveClock } from '@/src/components/events/event-live-clock';
-import { EventStatusBadge } from '@/src/components/events/event-status-badge';
-import { EventThumb } from '@/src/components/events/event-thumb';
 import { Screen } from '@/src/components/ui/screen';
-import { ScopeToggle } from '@/src/components/ui/scope-toggle';
 import { Text } from '@/src/components/ui/text';
-import { useEventsScope } from '@/src/hooks/use-events-scope';
 import { useNow } from '@/src/hooks/use-now';
 import { useUserCoords } from '@/src/hooks/use-user-coords';
 import { EVENTS_PAGE_SIZE } from '@/src/lib/events-display-limits';
 import { eventsForScope } from '@/src/lib/events-list';
+import type { EventsScope } from '@/src/lib/location-preferences';
+import {
+  eventDatesForWeekStrip,
+  filterEventsByCalendarDay,
+  findNearestDayWithEvents,
+  formatCalendarDayLabel,
+  startOfDay,
+} from '@/src/lib/event-day-filter';
+import { eventPlaceholderEmoji } from '@/src/lib/event-image';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/src/lib/event-runtime';
 import { formatEventDate, formatEventTimeRange } from '@/src/lib/format';
 import { distanceMiles, formatDistance } from '@/src/lib/geo';
@@ -23,11 +27,6 @@ import { fetchPublicEvents } from '@/src/lib/events-query';
 import { colors } from '@/src/theme/colors';
 import { layoutStyles } from '@/src/theme/layout';
 import type { Event } from '@/src/types/database';
-
-const SCOPE_OPTIONS = [
-  { value: 'local' as const, label: 'Local events' },
-  { value: 'nationwide' as const, label: 'Nationwide' },
-];
 
 const LIST_NOW_MS = 60_000;
 
@@ -45,61 +44,48 @@ const EventRow = memo(function EventRow({
   return (
     <PressableCard
       onPress={() => router.push(`/(shopper)/events/${item.id}`)}
+      className="flex-row gap-3"
       style={phase === 'closed' ? { opacity: 0.72 } : undefined}>
-      <View className="flex-row gap-3">
-        <EventThumb event={item} />
-        <View className="flex-1">
-          <View className="mb-1.5">
-            <EventStatusBadge event={item} now={now} />
-          </View>
-          <Text variant="body" className="mb-1 font-semibold">
-            {item.name}
-          </Text>
-          <Text variant="caption" className="mb-2">
-            {formatEventDate(item.start_datetime)}
-            {item.end_datetime
-              ? ` · ${formatEventTimeRange(item.start_datetime, item.end_datetime, item.timezone)}`
-              : ''}
-          </Text>
-          {item.city || item.state ? (
-            <View className="flex-row items-center">
-              <FontAwesome name="map-marker" size={12} color="#9CAF88" />
-              <Text variant="caption" className="ml-1.5">
-                {[item.city, item.state].filter(Boolean).join(', ')}
-              </Text>
-              {distance ? (
-                <View
-                  className="ml-2 px-2.5 py-1"
-                  style={{ borderRadius: 999, backgroundColor: colors.honeydew }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                    {distance}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
+      <View
+        className="h-[72px] w-[72px] items-center justify-center rounded-xl"
+        style={{ backgroundColor: colors.warmSage }}>
+        <Text className="text-3xl">{eventPlaceholderEmoji(item.market_type)}</Text>
+      </View>
+      <View className="min-w-0 flex-1">
+        <Text variant="body" className="mb-1 font-semibold">
+          {item.name}
+        </Text>
+        <Text variant="caption" className="mb-2">
+          {formatEventDate(item.start_datetime)}
+          {item.end_datetime
+            ? ` · ${formatEventTimeRange(item.start_datetime, item.end_datetime, item.timezone)}`
+            : ''}
+          {distance ? ` · ${distance}` : ''}
+        </Text>
+        {item.city || item.state ? (
+          <Text variant="caption">{[item.city, item.state].filter(Boolean).join(', ')}</Text>
+        ) : null}
       </View>
     </PressableCard>
   );
 });
 
 export default function ShopperEventsScreen() {
-  const { coords, source } = useUserCoords();
-  const { scope, setScope, ready: scopeReady } = useEventsScope();
+  const { coords } = useUserCoords();
+  const [scope, setScope] = useState<EventsScope>('local');
   const now = useNow(LIST_NOW_MS);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [truncated, setTruncated] = useState(false);
   const [visibleCount, setVisibleCount] = useState(EVENTS_PAGE_SIZE);
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
 
   const loadEvents = useCallback(async () => {
     setError(null);
-    const { data, error: queryError, truncated: isTruncated } = await fetchPublicEvents({
+    const { data, error: queryError } = await fetchPublicEvents({
       scope,
-      near: coords,
+      near: scope === 'local' ? coords : null,
     });
 
     if (queryError) {
@@ -108,7 +94,6 @@ export default function ShopperEventsScreen() {
     } else {
       setEvents(data);
     }
-    setTruncated(isTruncated);
     setVisibleCount(EVENTS_PAGE_SIZE);
   }, [scope, coords]);
 
@@ -117,70 +102,93 @@ export default function ShopperEventsScreen() {
     loadEvents().finally(() => setLoading(false));
   }, [loadEvents]);
 
+  useEffect(() => {
+    setSelectedDate(startOfDay(now));
+    setVisibleCount(EVENTS_PAGE_SIZE);
+  }, [scope]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadEvents();
     setRefreshing(false);
   }, [loadEvents]);
 
-  const displayedEvents = useMemo(
-    () => sortEventsByRuntime(eventsForScope(events, scope, coords), now),
-    [events, scope, coords, now],
+  const scopedEvents = useMemo(
+    () => eventsForScope(events, scope, coords),
+    [events, scope, coords],
   );
 
+  const displayedEvents = useMemo(
+    () => sortEventsByRuntime(scopedEvents, now),
+    [scopedEvents, now],
+  );
+
+  const dayFilteredEvents = useMemo(
+    () => sortEventsByRuntime(filterEventsByCalendarDay(scopedEvents, selectedDate), now),
+    [scopedEvents, selectedDate, now],
+  );
+
+  const stripEventDates = useMemo(
+    () => eventDatesForWeekStrip(scopedEvents, now),
+    [scopedEvents, now],
+  );
+
+  const nearestEventDay = useMemo(
+    () => findNearestDayWithEvents(scopedEvents, selectedDate, now),
+    [scopedEvents, selectedDate, now],
+  );
+
+  const handleSelectDate = useCallback((date: Date) => {
+    setSelectedDate(startOfDay(date));
+    setVisibleCount(EVENTS_PAGE_SIZE);
+  }, []);
+
   const visibleEvents = useMemo(
-    () => displayedEvents.slice(0, visibleCount),
-    [displayedEvents, visibleCount],
+    () => dayFilteredEvents.slice(0, visibleCount),
+    [dayFilteredEvents, visibleCount],
   );
 
   const distanceFor = useCallback(
     (event: Event): string | null => {
-      if (scope !== 'local' || !coords || event.latitude == null || event.longitude == null) {
+      if (!coords || event.latitude == null || event.longitude == null) {
         return null;
       }
       return formatDistance(
         distanceMiles(coords, { latitude: event.latitude, longitude: event.longitude }),
       );
     },
-    [coords, scope],
+    [coords],
   );
 
-  const scopeHint =
-    scope === 'local'
-      ? coords
-        ? source === 'gps'
-          ? 'Sorted by distance from your current location.'
-          : 'Sorted by distance using your saved city or ZIP.'
-        : 'Add a city during onboarding to sort local events by distance.'
-      : truncated
-        ? `Showing ${events.length} markets nationwide (sorted by date). Switch to Local or open the map for nearby markets.`
-        : 'Showing public events across the US, sorted by date.';
-
   const renderItem = useCallback(
-    ({ item }: { item: Event }) => (
-      <EventRow item={item} now={now} distance={distanceFor(item)} />
-    ),
+    ({ item }: { item: Event }) => <EventRow item={item} now={now} distance={distanceFor(item)} />,
     [now, distanceFor],
   );
 
   return (
     <Screen scroll={false}>
-      <Text variant="eyebrow" className="mb-2">
-        {scope === 'local' ? 'Near you' : 'Across the US'}
-      </Text>
-      <Text variant="title" className="mb-4">
-        Events
-      </Text>
-
-      <EventLiveClock />
-
-      {scopeReady ? (
-        <View className="mb-4">
-          <ScopeToggle value={scope} options={SCOPE_OPTIONS} onChange={setScope} />
-          <Text variant="caption" className="mt-2">
-            {scopeHint}
+      <View className="mb-4 flex-row items-start justify-between gap-3">
+        <Text variant="caption" className="min-w-0 flex-1">
+          {scope === 'local'
+            ? 'Upcoming farmers markets and pop-ups near you.'
+            : 'Markets nationwide — sorted by date.'}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setScope((current: EventsScope) => (current === 'local' ? 'nationwide' : 'local'))}>
+          <Text variant="caption" className="font-semibold text-primary">
+            {scope === 'local' ? 'Show all markets' : 'Nearby only'}
           </Text>
-        </View>
+        </Pressable>
+      </View>
+
+      {!loading && displayedEvents.length > 0 ? (
+        <WeekStrip
+          eventDates={stripEventDates}
+          now={now}
+          selectedDate={selectedDate}
+          onSelectDate={handleSelectDate}
+        />
       ) : null}
 
       {loading ? (
@@ -198,22 +206,37 @@ export default function ShopperEventsScreen() {
           windowSize={7}
           removeClippedSubviews
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#228B22" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           ListEmptyComponent={
-            <View className="mt-16 items-center">
-              <Text variant="subtitle" className="text-center">
-                {error ? `Couldn't load events: ${error}` : 'No upcoming events yet. Pull to refresh.'}
-              </Text>
-            </View>
+            displayedEvents.length === 0 ? (
+              <View className="mt-16 items-center">
+                <Text variant="subtitle" className="text-center">
+                  {error ? `Couldn't load events: ${error}` : 'No upcoming events yet. Pull to refresh.'}
+                </Text>
+              </View>
+            ) : (
+              <View className="mt-16 items-center gap-2 px-4">
+                <Text variant="subtitle" className="text-center">
+                  No markets on this day.
+                </Text>
+                {nearestEventDay && nearestEventDay.getTime() !== selectedDate.getTime() ? (
+                  <Pressable accessibilityRole="button" onPress={() => handleSelectDate(nearestEventDay)}>
+                    <Text variant="body" className="font-semibold text-primary">
+                      See markets on {formatCalendarDayLabel(nearestEventDay)}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            )
           }
           ListFooterComponent={
-            visibleCount < displayedEvents.length ? (
+            visibleCount < dayFilteredEvents.length ? (
               <Pressable
-                className="mt-2 items-center rounded-card border border-primary/20 bg-honeydew px-4 py-3"
+                className="mt-2 items-center rounded-card border border-primary/20 bg-warm-sage px-4 py-3 active:scale-[0.98]"
                 onPress={() => setVisibleCount((count) => count + EVENTS_PAGE_SIZE)}>
                 <Text variant="body" className="font-semibold text-primary">
-                  Load more ({displayedEvents.length - visibleCount} remaining)
+                  Load more ({dayFilteredEvents.length - visibleCount} remaining)
                 </Text>
               </Pressable>
             ) : null

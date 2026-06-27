@@ -26,6 +26,14 @@ export function VendorProfilePage() {
         <Link to="/vendor/setup" className="app-card app-card--pressable">Application details</Link>
         <Link to="/vendor/events" className="app-card app-card--pressable">My events</Link>
         <Link to="/vendor/pos" className="app-card app-card--pressable">Point of Sale</Link>
+        <Link to="/vendor/compliance" className="app-card app-card--pressable">
+          <p className="app-row-title">Food safety checklist</p>
+          <p className="app-row-meta">State cottage food requirements and compliance status</p>
+        </Link>
+        <Link to="/vendor/credentials" className="app-card app-card--pressable">
+          <p className="app-row-title">Verification credentials</p>
+          <p className="app-row-meta">Upload documents to earn trust badges</p>
+        </Link>
       </div>
 
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>

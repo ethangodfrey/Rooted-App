@@ -1,16 +1,80 @@
 .logo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
   font-family: 'Quicksand', system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: 0.03em;
   line-height: 1;
 }
 
+.logo__wordmark {
+  display: block;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.logo__tm {
+  font-size: 0.45em;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-left: 0.06em;
+  opacity: 0.85;
+  vertical-align: super;
+}
+
+.logo__tagline {
+  display: block;
+  margin-top: 0.55em;
+  font-size: 0.38em;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.logo--primary .logo__tagline {
+  color: var(--color-muted);
+}
+
+.logo--reversed .logo__tagline {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.logo__sub {
+  display: block;
+  margin-top: 0.18em;
+  font-size: 0.32em;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.logo__sub-text {
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+}
+
+.logo__sub .logo__tm {
+  font-size: 0.7em;
+  letter-spacing: 0;
+  margin-left: 0.04em;
+  vertical-align: super;
+}
+
 .logo--primary {
   color: var(--color-primary);
 }
 
+.logo--primary .logo__sub {
+  color: var(--color-muted);
+}
+
 .logo--reversed {
   color: var(--color-white);
+}
+
+.logo--reversed .logo__sub {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .logo--small {

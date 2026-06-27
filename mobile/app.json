@@ -1,26 +1,29 @@
 {
   "expo": {
-    "name": "Rooted",
-    "slug": "rooted",
+    "name": "Vendorly Marketplace",
+    "slug": "vendorly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "vendorly",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FAF7F2"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vendorly.marketplace",
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FAF7F2"
       },
+      "package": "com.vendorly.marketplace",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -31,17 +34,18 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       "expo-secure-store",
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Rooted uses your location to show nearby events on the map."
+          "locationWhenInUsePermission": "Vendorly uses your location to show nearby markets, vendors, and chefs."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Rooted needs access to your photos so you can add product images."
+          "photosPermission": "Vendorly needs access to your photos so you can add product and portfolio images."
         }
       ],
       "expo-video"
