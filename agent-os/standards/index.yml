@@ -1,0 +1,37 @@
+# Agent OS Standards Index
+
+global:
+  monorepo:
+    description: Repo layout, stacks, shared Supabase data, types parity
+  agent-workflow:
+    description: Priority order, diff rules, verification commands, run summary
+  roles:
+    description: Customer/vendor/chef/admin roles, route prefixes, auth redirect
+
+web:
+  vite-react:
+    description: Web folder structure, env vars, API client, search and markets
+  auth:
+    description: Supabase PKCE auth, key files, production redirect URLs
+
+backend:
+  nestjs:
+    description: Module layout, guards, jobs, health endpoints, build commands
+  env-and-cors:
+    description: Required Railway env vars, Redis, CORS setup
+  pos:
+    description: POS OAuth, webhooks, credential encryption, Square setup
+
+mobile:
+  expo:
+    description: Expo SDK 54, Router structure, env vars, web parity, tsc gate
+
+database:
+  supabase-migrations:
+    description: Phase SQL apply order, key RPCs, migration tracker
+  markets-data:
+    description: Dedupe rules, enrichment scripts, schedules, images
+
+deploy:
+  production:
+    description: Vercel + Railway + Supabase architecture and smoke tests

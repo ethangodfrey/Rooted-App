@@ -59,6 +59,10 @@ npx tsc --noEmit
 
 See [`docs/OFF_LAN_ACCESS.md`](docs/OFF_LAN_ACCESS.md) — Supabase flows work anywhere; POS/API needs public HTTPS URLs + Vercel deploy for web.
 
+## Agent OS standards
+
+Detailed, scannable conventions live in `agent-os/standards/` (see `agent-os/standards/index.yml`). Before non-trivial work, read the files for the relevant area (`global/`, `web/`, `backend/`, `mobile/`, `database/`, `deploy/`).
+
 ## Run summary (required)
 
 End every run with: what you checked, what changed, commands run, what to do next.
