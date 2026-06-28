@@ -17,7 +17,7 @@ import {
   writeAuthRouteCache,
 } from '@/lib/auth-route-cache';
 import { isChefProfileComplete } from '@/lib/chef-profile';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
 import type { Chef, Shopper, User, Vendor } from '@/types/database';
 
@@ -80,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+
     const {
       data: { session: currentSession },
     } = await supabase.auth.getSession();
@@ -99,6 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     async function init() {
@@ -159,7 +166,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
     profileRequestRef.current += 1;
     setSession(null);
     setUser(null);

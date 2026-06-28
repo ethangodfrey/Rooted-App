@@ -389,6 +389,7 @@ Run on **cellular or off home Wi‑Fi**:
 | Vercel 404 on refresh | Wrong root / missing rewrite | Option A: Root = `web`; Option B: root `vercel.json` rewrites to `/index.html` in `web/dist` |
 | **`vite build` exited with 127** | Building repo root; `vite` not installed there | **Option B (easiest):** leave Root Directory empty, push root `vercel.json`, redeploy. **Option A:** Root Directory = **`web`**, Build = **`npm run build`**, redeploy |
 | Deploy shows old commit | Stale Git link or wrong branch | Reconnect repo; push latest `main`; Redeploy |
+| **Blank white page** (`#root` empty, console may show `supabaseUrl is required`) | Missing `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` at **build** time | Vercel → **Project → Settings → Environment Variables** → add both for **Production** → **Deployments → Redeploy** (env vars are baked into the JS bundle; changing them requires a new build) |
 
 ---
 
