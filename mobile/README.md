@@ -2,6 +2,8 @@
 
 Expo + Supabase mobile client for the Vendorly local food marketplace.
 
+**Production builds (TestFlight / APK):** see [`BUILD.md`](BUILD.md).
+
 ## Prerequisites
 
 - Node.js 18+

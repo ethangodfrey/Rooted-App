@@ -35,3 +35,7 @@ database:
 deploy:
   production:
     description: Vercel + Railway + Supabase architecture and smoke tests
+  runbook:
+    description: Ordered deploy phase gates with checklists for agents to execute
+  troubleshooting:
+    description: 404 vs 503 diagnosis, DATABASE_URL fixes, CORS and Vercel issues

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Pressable, View } from 'react-native';
+import { InteractionManager, Pressable, View } from 'react-native';
 
 import { ChefCard } from '@/src/components/chef/chef-card';
 import { DiscoverBrowseFeed } from '@/src/components/discover/discover-browse-feed';
@@ -79,21 +79,24 @@ export default function SearchTabScreen() {
     let cancelled = false;
     setDiscoverLoading(true);
 
-    void fetchDiscoverFeed({
-      coords: searchCoords,
-      userCity: user?.city,
-      userState: user?.state,
-      interests: shopper?.interests ?? [],
-      savedVendorIds: saved,
-    }).then((feed) => {
-      if (!cancelled) {
-        setDiscover(feed);
-        setDiscoverLoading(false);
-      }
+    const task = InteractionManager.runAfterInteractions(() => {
+      void fetchDiscoverFeed({
+        coords: searchCoords,
+        userCity: user?.city,
+        userState: user?.state,
+        interests: shopper?.interests ?? [],
+        savedVendorIds: saved,
+      }).then((feed) => {
+        if (!cancelled) {
+          setDiscover(feed);
+          setDiscoverLoading(false);
+        }
+      });
     });
 
     return () => {
       cancelled = true;
+      task.cancel();
     };
   }, [active, searchCoords, user?.city, user?.state, shopper?.interests, saved]);
 

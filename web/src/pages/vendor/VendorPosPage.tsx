@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
+import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
 import { formatDateTime } from '@/lib/format';
 import { posApi } from '@/lib/pos-api';
 import { getPosOAuthReturnUrl } from '@/lib/pos-oauth-return';
@@ -99,7 +100,10 @@ export function VendorPosPage() {
       <div className="app-screen">
         <Link to="/vendor/dashboard" className="app-back-link">← Dashboard</Link>
         <h1 className="app-title">Point of Sale</h1>
-        <div className="app-empty">Set VITE_API_URL to connect Square.</div>
+        <div className="app-card app-card--honeydew">
+          <p className="app-row-title">Square POS sync isn&apos;t available yet</p>
+          <p className="app-row-meta">{BACKEND_UNAVAILABLE_COPY}</p>
+        </div>
       </div>
     );
   }

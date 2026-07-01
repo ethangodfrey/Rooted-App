@@ -42,12 +42,17 @@ export function isVerifiedEventImage(event: EventImageFields): boolean {
   return false;
 }
 
+function isProxiedMarketPhotoUrl(url: string): boolean {
+  return url.includes('/public/markets/');
+}
+
 export function resolveEventBannerUrl(event: EventImageFields): string | null {
   if (!isVerifiedEventImage(event) || !event.banner_url) return null;
 
   const url = event.banner_url;
-  const apiUrl = apiBaseUrl();
-  if (url.includes('/public/markets/') && apiUrl) {
+  if (isProxiedMarketPhotoUrl(url)) {
+    const apiUrl = apiBaseUrl();
+    if (!apiUrl) return null;
     const path = url.substring(url.indexOf('/public/markets/'));
     return `${apiUrl}${path}`;
   }

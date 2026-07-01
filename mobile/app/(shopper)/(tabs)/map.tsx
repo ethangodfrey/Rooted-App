@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { InteractionManager, View } from 'react-native';
 import type MapView from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -73,30 +73,34 @@ export default function ShopperMapScreen() {
   useEffect(() => {
     let active = true;
 
-    async function init() {
-      const { data, error: queryError } = await fetchPublicEvents({
-        forMap: true,
-        near: fetchOrigin,
-      });
+    const task = InteractionManager.runAfterInteractions(() => {
+      async function init() {
+        const { data, error: queryError } = await fetchPublicEvents({
+          forMap: true,
+          near: fetchOrigin,
+        });
 
-      if (!active) return;
+        if (!active) return;
 
-      if (queryError) {
-        setError(queryError);
-      } else {
-        setEvents(data);
+        if (queryError) {
+          setError(queryError);
+        } else {
+          setEvents(data);
+        }
+
+        if (fetchOrigin) {
+          setRegion({ ...fetchOrigin, ...DEFAULT_DELTA });
+        }
+
+        setLoading(false);
       }
 
-      if (fetchOrigin) {
-        setRegion({ ...fetchOrigin, ...DEFAULT_DELTA });
-      }
+      void init();
+    });
 
-      setLoading(false);
-    }
-
-    init();
     return () => {
       active = false;
+      task.cancel();
     };
   }, [fetchOrigin]);
 

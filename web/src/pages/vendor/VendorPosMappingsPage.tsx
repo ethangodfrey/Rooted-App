@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
+import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
 import { posApi } from '@/lib/pos-api';
 import { supabase } from '@/lib/supabase';
 import type { PosProductMapping } from '@/types/pos';
@@ -76,7 +77,12 @@ export function VendorPosMappingsPage() {
       <h1 className="app-title">Item mappings</h1>
       <p className="app-subtitle">Link Square catalog items to your Vendorly products.</p>
 
-      {loading ? (
+      {!isApiConfigured ? (
+        <div className="app-card app-card--honeydew">
+          <p className="app-row-title">Item mappings require the backend API</p>
+          <p className="app-row-meta">{BACKEND_UNAVAILABLE_COPY}</p>
+        </div>
+      ) : loading ? (
         <div className="app-loading"><div className="app-spinner" /></div>
       ) : mappings.length === 0 ? (
         <div className="app-empty">No register items to map yet. Run a sync first.</div>

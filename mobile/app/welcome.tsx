@@ -11,6 +11,7 @@ import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { hasSeenWelcome, markWelcomeSeen } from '@/src/lib/welcome-storage';
 import { colors } from '@/src/theme/colors';
+import { cardShadow, radius } from '@/src/theme/layout';
 
 const AUTH_WAIT_MS = 1_200;
 
@@ -81,14 +82,20 @@ export default function WelcomeScreen() {
 
   return (
     <Screen centered>
-      <View className="mb-6 h-16 w-16 items-center justify-center rounded-card bg-honeydew">
-        <FontAwesome name="leaf" size={28} color={colors.primary} />
+      <View
+        className="mb-8 h-20 w-20 items-center justify-center rounded-bento"
+        style={[{ backgroundColor: colors.warmSageAlt }, cardShadow, { borderRadius: radius.bento }]}>
+        <FontAwesome name="leaf" size={32} color={colors.primary} />
       </View>
 
-      <Text variant="eyebrow" className="mb-2 text-center">
+      <Text variant="eyebrow" className="mb-2 text-center text-accent">
         Welcome to
       </Text>
-      <Logo variant="primary" size="large" showTagline style={{ marginBottom: 24, alignSelf: 'center' }} />
+      <Logo variant="primary" size="large" showTagline style={{ marginBottom: 16, alignSelf: 'center' }} />
+
+      <Text variant="subtitle" className="mb-8 max-w-xs text-center">
+        Discover farmers markets, local vendors, and chefs in your neighborhood.
+      </Text>
 
       <CtaLink label="Get started" onPress={handleContinue} />
     </Screen>

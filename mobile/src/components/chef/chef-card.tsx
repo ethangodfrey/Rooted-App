@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { PressableCard } from '@/src/components/ui/card';
@@ -16,7 +17,7 @@ interface ChefCardProps {
   onPress: () => void;
 }
 
-export function ChefCard({ chef, onPress }: ChefCardProps) {
+export const ChefCard = memo(function ChefCard({ chef, onPress }: ChefCardProps) {
   const location = [chef.home_base_city, chef.home_base_state].filter(Boolean).join(', ');
 
   return (
@@ -48,4 +49,4 @@ export function ChefCard({ chef, onPress }: ChefCardProps) {
       </PressableCard>
     </Pressable>
   );
-}
+});

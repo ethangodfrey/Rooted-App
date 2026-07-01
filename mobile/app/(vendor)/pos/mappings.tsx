@@ -100,6 +100,16 @@ export default function PosMappingsScreen() {
         <View className="flex-1 items-center justify-center bg-canvas">
           <LoadingIndicator />
         </View>
+      ) : !isApiConfigured ? (
+        <Screen centered>
+          <Text variant="subtitle" className="text-center">
+            Item mappings require the backend API.
+          </Text>
+          <Text variant="caption" className="mt-2 text-center">
+            POS sync, admin AI agents, and proxied market photos need a deployed backend.
+            Everything else runs on Supabase.
+          </Text>
+        </Screen>
       ) : mappings.length === 0 ? (
         <Screen centered>
           <Text variant="subtitle" className="text-center">

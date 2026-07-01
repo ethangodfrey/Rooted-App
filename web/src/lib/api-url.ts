@@ -50,4 +50,8 @@ export function isApiUrlConfigured(): boolean {
   return configured.length > 0 || import.meta.env.DEV;
 }
 
+/** User-facing note when optional backend features are unavailable. */
+export const BACKEND_UNAVAILABLE_COPY =
+  'POS sync, admin AI agents, and proxied market photos need a deployed backend. Everything else runs on Supabase.';
+
 export const getApiBaseUrl = resolveApiBaseUrl;

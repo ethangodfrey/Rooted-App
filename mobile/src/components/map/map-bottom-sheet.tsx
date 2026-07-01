@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, memo } from 'react';
 import { Dimensions, FlatList, PanResponder, Pressable, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -31,7 +31,7 @@ interface MapBottomSheetProps {
 const SPRING = { damping: 22, stiffness: 220 };
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-function EventPreviewCard({
+const EventPreviewCard = memo(function EventPreviewCard({
   event,
   selected,
   distance,
@@ -74,9 +74,9 @@ function EventPreviewCard({
       </View>
     </PressableCard>
   );
-}
+});
 
-function EventListRow({
+const EventListRow = memo(function EventListRow({
   event,
   selected,
   distance,
@@ -137,7 +137,7 @@ function EventListRow({
       )}
     </PressableCard>
   );
-}
+});
 
 export function MapBottomSheet({
   events,

@@ -156,7 +156,8 @@ export default function PosConnectionsScreen() {
             POS sync isn&apos;t available yet.
           </Text>
           <Text variant="caption" className="mt-2 text-center">
-            Set EXPO_PUBLIC_API_URL to the Vendorly backend to connect Square.
+            POS sync, admin AI agents, and proxied market photos need a deployed backend.
+            Everything else runs on Supabase.
           </Text>
         </Screen>
       ) : (

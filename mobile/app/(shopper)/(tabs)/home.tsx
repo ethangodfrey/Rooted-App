@@ -1,16 +1,16 @@
 import { FontAwesome } from '@expo/vector-icons';
 
-import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
-
 import { router } from 'expo-router';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, memo, type ReactNode } from 'react';
 
 import { InteractionManager, Pressable, ScrollView, View } from 'react-native';
 
 
 
 import { Card } from '@/src/components/ui/card';
+
+import { HomeSectionSkeleton } from '@/src/components/ui/skeleton';
 
 import { Screen } from '@/src/components/ui/screen';
 
@@ -66,11 +66,17 @@ function HScrollSection({
 
       <View className="mb-3 flex-row items-center justify-between">
 
-        <Text variant="heading">{title}</Text>
+        <View className="flex-row items-center gap-2.5">
+
+          <View className="h-5 w-1 rounded-full bg-primary" />
+
+          <Text variant="heading">{title}</Text>
+
+        </View>
 
         {actionLabel && onAction ? (
 
-          <Pressable onPress={onAction}>
+          <Pressable onPress={onAction} className="rounded-full px-2 py-1 active:opacity-70">
 
             <Text variant="caption" className="font-semibold text-primary">
 
@@ -98,7 +104,7 @@ function HScrollSection({
 
 
 
-function TileCard({
+const TileCard = memo(function TileCard({
   title,
   meta,
   badge,
@@ -137,7 +143,7 @@ function TileCard({
       </Card>
     </Pressable>
   );
-}
+});
 
 
 
@@ -155,7 +161,11 @@ export default function ShopperHomeScreen() {
 
   const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  const [loadingNearby, setLoadingNearby] = useState(true);
+
+  const [loadingLeftovers, setLoadingLeftovers] = useState(true);
 
 
 
@@ -185,21 +195,45 @@ export default function ShopperHomeScreen() {
 
       async function load() {
 
-        setLoading(true);
+        setLoadingProducts(true);
 
-        const [products, events, curated] = await Promise.all([
+        setLoadingNearby(true);
 
-          fetchSuggestedProducts(shopper?.interests ?? [], { userCity: user?.city, userState: user?.state }, 8).catch(
+        setLoadingLeftovers(true);
 
-            () => [] as SuggestedProduct[],
 
-          ),
 
-          nearbyCoords
+        const products = await fetchSuggestedProducts(
 
-            ? fetchNearbyEvents(nearbyCoords, { limit: 12 }).catch(() => [] as NearbyEvent[])
+          shopper?.interests ?? [],
 
-            : Promise.resolve([] as NearbyEvent[]),
+          { userCity: user?.city, userState: user?.state },
+
+          8,
+
+        ).catch(() => [] as SuggestedProduct[]);
+
+
+
+        if (cancelled) return;
+
+        setSuggestedProducts(products);
+
+        setLoadingProducts(false);
+
+
+
+        const eventsPromise = nearbyCoords
+
+          ? fetchNearbyEvents(nearbyCoords, { limit: 12 }).catch(() => [] as NearbyEvent[])
+
+          : Promise.resolve([] as NearbyEvent[]);
+
+
+
+        const [events, curated] = await Promise.all([
+
+          eventsPromise,
 
           fetchCuratedLeftovers(
 
@@ -211,15 +245,17 @@ export default function ShopperHomeScreen() {
 
         ]);
 
-        if (cancelled) return;
 
-        setSuggestedProducts(products);
+
+        if (cancelled) return;
 
         setNearbyEvents(events ?? []);
 
+        setLoadingNearby(false);
+
         setLeftovers(curated);
 
-        setLoading(false);
+        setLoadingLeftovers(false);
 
       }
 
@@ -311,134 +347,161 @@ export default function ShopperHomeScreen() {
 
 
 
-      {loading ? (
+      {nearbyCoords ? (
 
-        <View className="items-center py-8">
+        loadingNearby ? (
 
-          <LoadingIndicator />
+          <HomeSectionSkeleton />
 
-        </View>
+        ) : (
 
-      ) : (
+          <HScrollSection title="Open now" actionLabel="Map" onAction={() => router.push('/(shopper)/(tabs)/map')}>
 
-        <>
+            {openNow.length === 0 ? (
 
-          {nearbyCoords ? (
+              <View className="rounded-card bg-warm-sage px-4 py-5">
 
-            <HScrollSection title="Open now" actionLabel="Map" onAction={() => router.push('/(shopper)/(tabs)/map')}>
-
-              {openNow.length === 0 ? (
                 <Text variant="caption" className="max-w-xs">
+
                   {nextOpeningHint ?? 'No markets open right now.'}
+
                 </Text>
-              ) : (
-                openNow.map((event) => (
-                  <TileCard
-                    key={event.id}
-                    badge="Live"
-                    emoji="🧺"
-                    title={event.name}
-                    meta={[event.city, formatDistanceKm(event.distance_km)].filter(Boolean).join(' · ')}
-                    onPress={() => router.push(`/(shopper)/events/${event.id}`)}
-                  />
-                ))
-              )}
 
-            </HScrollSection>
+              </View>
 
-          ) : null}
+            ) : (
 
-
-
-          <HScrollSection
-
-            title="New this week"
-
-            actionLabel="All markets"
-
-            onAction={() => router.push('/(shopper)/(tabs)/events')}>
-
-            {newThisWeek.length > 0
-
-              ? newThisWeek.slice(0, 8).map((event) => (
-                  <TileCard
-                    key={event.id}
-                    emoji="🌿"
-                    title={event.name}
-                    meta={formatEventDate(event.start_datetime)}
-                    onPress={() => router.push(`/(shopper)/events/${event.id}`)}
-                  />
-                ))
-
-              : suggestedProducts.slice(0, 6).map((product) => (
-
-                  <TileCard
-
-                    key={product.id}
-
-                    title={product.name}
-
-                    meta={`${product.vendor?.business_name ?? 'Vendor'} · ${formatPrice(product.price)}`}
-
-                    onPress={() => router.push(`/(shopper)/products/${product.id}`)}
-
-                  />
-
-                ))}
-
-          </HScrollSection>
-
-
-
-          <HScrollSection title="Updates" actionLabel="See all" onAction={() => router.push('/(shopper)/(tabs)/feed')}>
-
-            <TileCard
-
-              title="From your saved vendors"
-
-              meta="Postcards from markets, new products, and vendor news."
-
-              onPress={() => router.push('/(shopper)/(tabs)/feed')}
-
-            />
-
-          </HScrollSection>
-
-
-
-          {leftovers.length > 0 ? (
-
-            <HScrollSection
-
-              title="Leftovers near you"
-
-              actionLabel="See all"
-
-              onAction={() => router.push('/(shopper)/leftovers')}>
-
-              {leftovers.slice(0, 5).map((listing) => (
+              openNow.map((event) => (
 
                 <TileCard
 
-                  key={listing.id}
+                  key={event.id}
 
-                  title={listing.title}
+                  badge="Live"
 
-                  meta={formatPrice(listing.price_cents)}
+                  emoji="🧺"
 
-                  onPress={() => router.push(`/(shopper)/leftovers/${listing.id}`)}
+                  title={event.name}
+
+                  meta={[event.city, formatDistanceKm(event.distance_km)].filter(Boolean).join(' · ')}
+
+                  onPress={() => router.push(`/(shopper)/events/${event.id}`)}
+
+                />
+
+              ))
+
+            )}
+
+          </HScrollSection>
+
+        )
+
+      ) : null}
+
+
+
+      {loadingProducts ? (
+
+        <HomeSectionSkeleton />
+
+      ) : (
+
+        <HScrollSection
+
+          title="New this week"
+
+          actionLabel="All markets"
+
+          onAction={() => router.push('/(shopper)/(tabs)/events')}>
+
+          {newThisWeek.length > 0
+
+            ? newThisWeek.slice(0, 8).map((event) => (
+
+                <TileCard
+
+                  key={event.id}
+
+                  emoji="🌿"
+
+                  title={event.name}
+
+                  meta={formatEventDate(event.start_datetime)}
+
+                  onPress={() => router.push(`/(shopper)/events/${event.id}`)}
+
+                />
+
+              ))
+
+            : suggestedProducts.slice(0, 6).map((product) => (
+
+                <TileCard
+
+                  key={product.id}
+
+                  title={product.name}
+
+                  meta={`${product.vendor?.business_name ?? 'Vendor'} · ${formatPrice(product.price)}`}
+
+                  onPress={() => router.push(`/(shopper)/products/${product.id}`)}
 
                 />
 
               ))}
 
-            </HScrollSection>
-
-          ) : null}
-
-        </>
+        </HScrollSection>
 
       )}
+
+
+
+      <HScrollSection title="Updates" actionLabel="See all" onAction={() => router.push('/(shopper)/(tabs)/feed')}>
+
+        <TileCard
+
+          title="From your saved vendors"
+
+          meta="Postcards from markets, new products, and vendor news."
+
+          onPress={() => router.push('/(shopper)/(tabs)/feed')}
+
+        />
+
+      </HScrollSection>
+
+
+
+      {loadingLeftovers ? null : leftovers.length > 0 ? (
+
+        <HScrollSection
+
+          title="Leftovers near you"
+
+          actionLabel="See all"
+
+          onAction={() => router.push('/(shopper)/leftovers')}>
+
+          {leftovers.slice(0, 5).map((listing) => (
+
+            <TileCard
+
+              key={listing.id}
+
+              title={listing.title}
+
+              meta={formatPrice(listing.price_cents)}
+
+              onPress={() => router.push(`/(shopper)/leftovers/${listing.id}`)}
+
+            />
+
+          ))}
+
+        </HScrollSection>
+
+      ) : null}
 
 
 

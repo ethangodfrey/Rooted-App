@@ -34,6 +34,8 @@ function TabIcon({
 
   size = 24,
 
+  focused = false,
+
 }: {
 
   name: ComponentProps<typeof FontAwesome>['name'];
@@ -42,9 +44,11 @@ function TabIcon({
 
   size?: number;
 
+  focused?: boolean;
+
 }) {
 
-  return <FontAwesome size={size} name={name} color={color} />;
+  return <FontAwesome size={focused ? size + 2 : size} name={name} color={color} />;
 
 }
 
@@ -74,7 +78,9 @@ export default function ShopperTabsLayout() {
 
           headerTitle: () => <Logo size="small" />,
           headerTitleAlign: 'center',
-          tabBarIcon: ({ color, size }) => <TabIcon name="home" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="home" color={color} size={size} focused={focused} />
+          ),
 
         }}
 
@@ -92,7 +98,9 @@ export default function ShopperTabsLayout() {
           headerTitleAlign: 'left',
           lazy: true,
 
-          tabBarIcon: ({ color, size }) => <TabIcon name="search" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="search" color={color} size={size} focused={focused} />
+          ),
 
         }}
 
@@ -110,7 +118,9 @@ export default function ShopperTabsLayout() {
           headerTitleAlign: 'left',
           lazy: true,
 
-          tabBarIcon: ({ color, size }) => <TabIcon name="calendar" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="calendar" color={color} size={size} focused={focused} />
+          ),
 
         }}
 
@@ -128,7 +138,9 @@ export default function ShopperTabsLayout() {
           headerTitleAlign: 'left',
           lazy: true,
 
-          tabBarIcon: ({ color, size }) => <TabIcon name="user" color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="user" color={color} size={size} focused={focused} />
+          ),
 
         }}
 

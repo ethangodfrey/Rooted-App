@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable } from 'react-native';
 
 import { PressableCard } from '@/src/components/ui/card';
@@ -13,7 +14,7 @@ interface VendorCardProps {
   onPress: () => void;
 }
 
-export function VendorCard({ vendor, onPress }: VendorCardProps) {
+export const VendorCard = memo(function VendorCard({ vendor, onPress }: VendorCardProps) {
   const typeLabel = vendorTypeLabel(vendor.vendor_type);
 
   return (
@@ -40,4 +41,4 @@ export function VendorCard({ vendor, onPress }: VendorCardProps) {
       </PressableCard>
     </Pressable>
   );
-}
+});

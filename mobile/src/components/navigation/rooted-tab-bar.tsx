@@ -105,9 +105,11 @@ function TabItem({
 
       }}
 
-      style={[styles.tab, animatedStyle]}>
+      style={[styles.tab, isFocused ? styles.tabActive : null, animatedStyle]}>
 
       <View style={styles.iconWrap}>{icon}</View>
+
+      {isFocused ? <View style={styles.activeDot} /> : null}
 
       {isFocused ? (
 
@@ -251,6 +253,8 @@ export function RootedTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
           const iconColor = isFocused ? colors.primary : colors.muted;
 
+          const iconSize = isFocused ? 22 : 20;
+
           const icon =
 
             options.tabBarIcon?.({
@@ -259,9 +263,9 @@ export function RootedTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
               color: iconColor,
 
-              size: 20,
+              size: iconSize,
 
-            }) ?? <FontAwesome name="circle" size={20} color={iconColor} />;
+            }) ?? <FontAwesome name="circle" size={iconSize} color={iconColor} />;
 
 
 
@@ -347,19 +351,39 @@ const styles = StyleSheet.create({
 
     minHeight: 44,
 
-    paddingVertical: 2,
+    paddingVertical: 4,
 
-    gap: 2,
+    gap: 3,
+
+    borderRadius: 14,
+
+  },
+
+  tabActive: {
+
+    backgroundColor: 'rgba(196, 112, 75, 0.08)',
 
   },
 
   iconWrap: {
 
-    height: 24,
+    height: 26,
 
     alignItems: 'center',
 
     justifyContent: 'center',
+
+  },
+
+  activeDot: {
+
+    width: 4,
+
+    height: 4,
+
+    borderRadius: 2,
+
+    backgroundColor: colors.primary,
 
   },
 

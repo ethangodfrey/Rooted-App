@@ -12,6 +12,50 @@ Related: [`OFF_LAN_ACCESS.md`](OFF_LAN_ACCESS.md) (what needs a public API), [`w
 
 ---
 
+## Ship without backend (free tier)
+
+You can deploy **web to Vercel + Supabase only** and skip Railway until you have paid Supabase (IPv4) and a working `DATABASE_URL`. Most of the product runs on Supabase; the NestJS backend is optional for now.
+
+### Vercel env vars (minimum)
+
+| Variable | Required? | Value |
+|----------|-----------|-------|
+| `VITE_SUPABASE_URL` | **Yes** | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | **Yes** | Supabase → Settings → API → anon public |
+| `VITE_APP_URL` | **Yes** | `https://vendorly.app` or your `*.vercel.app` URL |
+| `VITE_API_URL` | **No — omit** | Do not set until backend is deployed |
+
+**Important:** If `VITE_API_URL` is set to a broken or unreachable API, admin pages will show connection errors and the browser may log failed health checks. Leave it unset for Supabase-only mode.
+
+After changing env vars, **Redeploy** (values are baked in at build time).
+
+### What works without backend
+
+| Feature | Works? |
+|---------|--------|
+| Sign up / sign in / OAuth | Yes (Supabase) |
+| Discover, map, events, feed | Yes (Supabase) |
+| Reservations, orders, products | Yes (Supabase) |
+| Vendor dashboard (non-POS) | Yes (Supabase) |
+| Admin vendor/event moderation (manual) | Yes (Supabase) |
+| Analytics (reservations + in-person) | Yes (Supabase) |
+| Market card photos (emoji placeholders) | Yes — proxied photos deferred |
+| Square POS connect/sync | Deferred |
+| Admin AI agent buttons | Hidden |
+| POS card-sales in analytics | Deferred |
+
+### Deferred until paid Supabase + Railway
+
+1. **Supabase paid plan** — IPv4 add-on or direct connection so Railway can reach Postgres (fixes Prisma P1000 / pooler auth issues on free tier).
+2. **Railway backend** — set `DATABASE_URL`, `REDIS_URL` (Upstash), deploy from `backend/Dockerfile`.
+3. **Then** add `VITE_API_URL=https://api.vendorly.app` in Vercel and `EXPO_PUBLIC_API_URL` for mobile → redeploy.
+
+See §2 below for full backend setup when ready.
+
+**Mobile (EAS):** [`mobile/BUILD.md`](../mobile/BUILD.md) — preview/production builds with Supabase-only env (no backend).
+
+---
+
 ## Before you start
 
 ### GitHub repo
@@ -143,7 +187,7 @@ If Root Directory is empty **and** there is no root `vercel.json`, Vercel auto-d
    | `VITE_SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` | Same as mobile |
    | `VITE_SUPABASE_ANON_KEY` | *(Supabase → Settings → API → anon public)* | Never commit |
    | `VITE_APP_URL` | `https://vendorly.app` | Or `https://your-project.vercel.app` until DNS is ready |
-   | `VITE_API_URL` | `https://api.vendorly.app` | Must match deployed backend |
+   | `VITE_API_URL` | *(omit for Supabase-only)* | Optional — set to deployed backend URL when Railway is live |
 
 6. Click **Deploy**.
 7. After deploy, open the site and hard-refresh. Env vars are baked in at **build** time — change them → **Redeploy**.
@@ -157,7 +201,8 @@ npx vercel link
 npx vercel env add VITE_SUPABASE_URL production
 npx vercel env add VITE_SUPABASE_ANON_KEY production
 npx vercel env add VITE_APP_URL production
-npx vercel env add VITE_API_URL production
+# Optional — skip until backend is deployed:
+# npx vercel env add VITE_API_URL production
 npx vercel --prod
 ```
 
@@ -385,6 +430,8 @@ Run on **cellular or off home Wi‑Fi**:
 | CORS error in browser console | Backend missing web origin | Update `WEB_APP_URL` / `CORS_ORIGINS`, redeploy API |
 | POS OAuth fails | HTTP callback URL | `PUBLIC_BASE_URL` must be `https://...` |
 | `/health/ready` 503 | Bad `DATABASE_URL` or Redis | Check Supabase pooler URL; Upstash `REDIS_URL` |
+| Prisma `Can't reach … db.*:6543` | Pooler port on direct host | Use `*.pooler.supabase.com:6543` (transaction) or `db.*:5432` (direct) — not both |
+| Prisma **P1000** / SASL auth failed | Stale or wrong DB password | Supabase → Database → reset password → wait 2–3 min → paste fresh Transaction pooler URI |
 | Web still hits LAN API | Stale build | Set `VITE_API_URL` in Vercel → Redeploy |
 | Vercel 404 on refresh | Wrong root / missing rewrite | Option A: Root = `web`; Option B: root `vercel.json` rewrites to `/index.html` in `web/dist` |
 | **`vite build` exited with 127** | Building repo root; `vite` not installed there | **Option B (easiest):** leave Root Directory empty, push root `vercel.json`, redeploy. **Option A:** Root Directory = **`web`**, Build = **`npm run build`**, redeploy |

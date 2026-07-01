@@ -12,7 +12,7 @@ export interface ServerStatusSnapshot {
   checkedAt: string | null;
 }
 
-export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
+export function useServerStatus(pollMs = 30_000, enabled = true): ServerStatusSnapshot {
   const [snapshot, setSnapshot] = useState<ServerStatusSnapshot>({
     status: 'unknown',
     apiUrl: '',
@@ -22,14 +22,7 @@ export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
   });
 
   const check = useCallback(async () => {
-    if (!isApiUrlConfigured()) {
-      setSnapshot({
-        status: 'unknown',
-        apiUrl: '',
-        latencyMs: null,
-        message: 'Backend URL not configured',
-        checkedAt: new Date().toISOString(),
-      });
+    if (!enabled || !isApiUrlConfigured()) {
       return;
     }
 
@@ -76,16 +69,17 @@ export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
         checkedAt: new Date().toISOString(),
       });
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     const startDelay = window.setTimeout(() => void check(), 2000);
     const id = window.setInterval(() => void check(), pollMs);
     return () => {
       window.clearTimeout(startDelay);
       window.clearInterval(id);
     };
-  }, [check, pollMs]);
+  }, [check, pollMs, enabled]);
 
   return snapshot;
 }

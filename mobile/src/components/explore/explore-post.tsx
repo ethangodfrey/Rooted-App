@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Image, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { Text } from '@/src/components/ui/text';
@@ -11,7 +12,7 @@ interface ExplorePostProps {
   onPress?: () => void;
 }
 
-export function ExplorePost({
+export const ExplorePost = memo(function ExplorePost({
   item,
   creatorName,
   creatorAvatarUrl,
@@ -40,11 +41,17 @@ export function ExplorePost({
               source={{ uri: url }}
               style={{ width: imageWidth, height: 192 }}
               resizeMode="cover"
+              fadeDuration={200}
             />
           ))}
         </ScrollView>
       ) : images.length === 1 ? (
-        <Image source={{ uri: images[0] }} className="h-48 w-full" resizeMode="cover" />
+        <Image
+          source={{ uri: images[0] }}
+          className="h-48 w-full"
+          resizeMode="cover"
+          fadeDuration={200}
+        />
       ) : (
         <View className="h-48 w-full items-center justify-center bg-cream">
           <Text variant="caption">{typeLabel}</Text>
@@ -88,4 +95,4 @@ export function ExplorePost({
       </View>
     </Pressable>
   );
-}
+});

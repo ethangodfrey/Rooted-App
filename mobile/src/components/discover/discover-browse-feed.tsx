@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 
-import { type ReactNode } from 'react';
+import { type ReactNode, memo } from 'react';
 
 import { Pressable, ScrollView, View, Image } from 'react-native';
 
@@ -10,7 +10,7 @@ import { PostCard, type FeedPost } from '@/src/components/feed/post-card';
 
 import { Card } from '@/src/components/ui/card';
 
-import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
+import { HomeSectionSkeleton } from '@/src/components/ui/skeleton';
 
 import { Text } from '@/src/components/ui/text';
 
@@ -89,7 +89,7 @@ function HScrollSection({
 
 
 
-function TileCard({
+const TileCard = memo(function TileCard({
 
   title,
 
@@ -171,7 +171,7 @@ function TileCard({
 
   );
 
-}
+});
 
 
 
@@ -185,7 +185,7 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 
-function ProductTileCard({
+const ProductTileCard = memo(function ProductTileCard({
 
   product,
 
@@ -225,6 +225,8 @@ function ProductTileCard({
 
               resizeMode="cover"
 
+              fadeDuration={200}
+
             />
 
           ) : (
@@ -257,7 +259,7 @@ function ProductTileCard({
 
   );
 
-}
+});
 
 
 
@@ -307,7 +309,17 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
   if (loading && !data) {
 
-    return <LoadingIndicator />;
+    return (
+
+      <View>
+
+        <HomeSectionSkeleton />
+
+        <HomeSectionSkeleton />
+
+      </View>
+
+    );
 
   }
 
