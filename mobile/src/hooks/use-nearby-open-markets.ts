@@ -21,11 +21,17 @@ export function useNearbyOpenMarkets() {
     void fetchNearbyEvents(
       { latitude: coords.latitude, longitude: coords.longitude },
       { limit: 12 },
-    ).then((events) => {
-      if (cancelled) return;
-      const list = events ?? [];
-      setOpenCount(list.filter((e) => eventRuntimePhase(e as EventRuntimeFields, now) === 'live').length);
-    });
+    )
+      .then((events) => {
+        if (cancelled) return;
+        const list = events ?? [];
+        setOpenCount(
+          list.filter((e) => eventRuntimePhase(e as EventRuntimeFields, now) === 'live').length,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setOpenCount(0);
+      });
 
     return () => {
       cancelled = true;

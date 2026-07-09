@@ -15,9 +15,24 @@ export function ShopperLeftoversPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCuratedLeftovers({ userCity: user?.city, userState: user?.state })
-      .then(setListings)
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const curated = await fetchCuratedLeftovers({ userCity: user?.city, userState: user?.state });
+        if (!cancelled) setListings(curated ?? []);
+      } catch {
+        if (!cancelled) setListings([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.city, user?.state]);
 
   return (

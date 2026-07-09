@@ -192,15 +192,17 @@ export function ShopperHomePage() {
 
     setNearbyLoading(true);
 
-    void fetchNearbyEvents(nearbyCoords, { limit: 12 }).then((events) => {
-
-      if (cancelled) return;
-
-      setNearbyEvents(events ?? []);
-
-      setNearbyLoading(false);
-
-    });
+    void fetchNearbyEvents(nearbyCoords, { limit: 12 })
+      .then((events) => {
+        if (cancelled) return;
+        setNearbyEvents(events ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setNearbyEvents([]);
+      })
+      .finally(() => {
+        if (!cancelled) setNearbyLoading(false);
+      });
 
 
 

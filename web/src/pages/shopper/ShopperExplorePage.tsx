@@ -14,10 +14,24 @@ export function ShopperExplorePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchExploreFeed().then((data) => {
-      setItems(data);
-      setLoading(false);
-    });
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await fetchExploreFeed();
+        if (!cancelled) setItems(data ?? []);
+      } catch {
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
