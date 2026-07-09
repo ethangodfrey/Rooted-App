@@ -428,6 +428,109 @@
   margin-bottom: 0.75rem;
 }
 
+.app-field-error {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  margin: 0.375rem 0 0;
+  line-height: 1.4;
+}
+
+.app-input--invalid,
+.app-textarea.app-input--invalid {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.15);
+}
+
+/* Mobile-first layout utilities (Tailwind-equivalent patterns) */
+.app-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.app-stack--md-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .app-stack--md-row {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.app-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .app-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.app-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .app-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.app-detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .app-detail-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.app-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(
+    135deg,
+    var(--color-warm-sage) 0%,
+    rgba(212, 168, 83, 0.35) 100%
+  );
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+.app-thumb-fallback--vendor {
+  background: linear-gradient(
+    135deg,
+    var(--color-honeydew) 0%,
+    rgba(196, 112, 75, 0.2) 100%
+  );
+}
+
+.app-thumb-fallback__icon {
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.animate-pulse {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 .app-message {
   color: var(--color-primary);
   font-size: 0.875rem;
@@ -1419,7 +1522,9 @@
     var(--color-honeydew) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  animation:
+    skeleton-shimmer 1.4s ease-in-out infinite,
+    skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .app-skeleton--card {
@@ -1432,12 +1537,26 @@
   height: 120px;
 }
 
+.app-skeleton--heading {
+  height: 1.125rem;
+}
+
 @keyframes skeleton-shimmer {
   0% {
     background-position: 200% 0;
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }
 

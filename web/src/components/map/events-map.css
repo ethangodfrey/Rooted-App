@@ -152,6 +152,32 @@
   margin-bottom: 1rem;
 }
 
+/* Mobile-first: stack map above market carousel, then side-by-side on desktop */
+.shopper-map-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.shopper-map-list {
+  min-width: 0;
+}
+
+.shopper-map-carousel .app-hscroll {
+  margin-left: calc(-1 * var(--space-4, 1rem));
+  margin-right: calc(-1 * var(--space-4, 1rem));
+  padding-left: var(--space-4, 1rem);
+  padding-right: var(--space-4, 1rem);
+}
+
+@media (max-width: 599px) {
+  .events-map-frame {
+    height: min(42vh, 360px);
+    min-height: 240px;
+  }
+}
+
 @media (min-width: 900px) {
   .shopper-map-layout {
     display: grid;

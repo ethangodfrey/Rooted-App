@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { FormFieldError } from '@/components/ui/FormFieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { expiresAtFromHours, EXPIRY_PRESETS } from '@/lib/leftovers';
 import { supabase } from '@/lib/supabase';
@@ -42,6 +43,18 @@ export function VendorLeftoverFormPage() {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<'title' | 'price' | 'quantity' | 'sourceEventId', string>>
+  >({});
+
+  function clearFieldError(field: 'title' | 'price' | 'quantity' | 'sourceEventId') {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!vendor) return;
@@ -76,18 +89,28 @@ export function VendorLeftoverFormPage() {
     if (!vendor) return;
     const qty = Number.parseInt(quantity, 10);
     const priceCents = Math.round(Number.parseFloat(priceDollars) * 100);
+    const nextFieldErrors: Partial<Record<'title' | 'price' | 'quantity' | 'sourceEventId', string>> = {};
+
     if (!title.trim()) {
-      setError('Add a title for this leftover.');
-      return;
+      nextFieldErrors.title = 'Add a title for this leftover.';
     }
     if (!Number.isFinite(priceCents) || priceCents < 0) {
-      setError('Enter a valid price.');
-      return;
+      nextFieldErrors.price = 'Enter a valid price (e.g. 5.00).';
     }
     if (!Number.isFinite(qty) || qty < 1) {
-      setError('Quantity must be at least 1.');
+      nextFieldErrors.quantity = 'Quantity must be at least 1.';
+    }
+    if (pickupMode === 'event' && !sourceEventId) {
+      nextFieldErrors.sourceEventId = 'Select which market this leftover is from.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
+
+    setFieldErrors({});
 
     const event = sourceEventId ? events.find((e) => e.id === sourceEventId) : null;
     let pickupCity = vendor.sell_city;
@@ -102,9 +125,6 @@ export function VendorLeftoverFormPage() {
       pickupAddress = event.address;
       pickupLat = Number(event.latitude);
       pickupLng = Number(event.longitude);
-    } else if (pickupMode === 'event' && !sourceEventId) {
-      setError('Select which market this leftover is from.');
-      return;
     }
 
     setSaving(true);
@@ -169,7 +189,15 @@ export function VendorLeftoverFormPage() {
 
       <div className="app-input-group">
         <label>Title</label>
-        <input className="app-input" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.title ? ' app-input--invalid' : ''}`}
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            clearFieldError('title');
+          }}
+        />
+        <FormFieldError message={fieldErrors.title} />
       </div>
 
       <div className="app-input-group">
@@ -183,14 +211,32 @@ export function VendorLeftoverFormPage() {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <div className="app-form-grid">
         <div className="app-input-group">
           <label>Price ($)</label>
-          <input className="app-input" value={priceDollars} onChange={(e) => setPriceDollars(e.target.value)} inputMode="decimal" />
+          <input
+            className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
+            value={priceDollars}
+            onChange={(e) => {
+              setPriceDollars(e.target.value);
+              clearFieldError('price');
+            }}
+            inputMode="decimal"
+          />
+          <FormFieldError message={fieldErrors.price} />
         </div>
         <div className="app-input-group">
           <label>Quantity</label>
-          <input className="app-input" value={quantity} onChange={(e) => setQuantity(e.target.value)} inputMode="numeric" />
+          <input
+            className={`app-input${fieldErrors.quantity ? ' app-input--invalid' : ''}`}
+            value={quantity}
+            onChange={(e) => {
+              setQuantity(e.target.value);
+              clearFieldError('quantity');
+            }}
+            inputMode="numeric"
+          />
+          <FormFieldError message={fieldErrors.quantity} />
         </div>
       </div>
 
@@ -232,18 +278,24 @@ export function VendorLeftoverFormPage() {
       </div>
 
       {pickupMode === 'event' && events.length > 0 ? (
-        <div className="app-chip-row" style={{ marginBottom: '1rem' }}>
-          {events.map((event) => (
-            <button
-              key={event.id}
-              type="button"
-              className={`app-chip${sourceEventId === event.id ? ' app-chip--selected' : ''}`}
-              onClick={() => setSourceEventId(event.id)}
-            >
-              {event.name}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="app-chip-row" style={{ marginBottom: '0.5rem' }}>
+            {events.map((event) => (
+              <button
+                key={event.id}
+                type="button"
+                className={`app-chip${sourceEventId === event.id ? ' app-chip--selected' : ''}`}
+                onClick={() => {
+                  setSourceEventId(event.id);
+                  clearFieldError('sourceEventId');
+                }}
+              >
+                {event.name}
+              </button>
+            ))}
+          </div>
+          <FormFieldError message={fieldErrors.sourceEventId} />
+        </>
       ) : (
         <div className="app-card" style={{ marginBottom: '1rem' }}>
           <p className="app-row-meta">

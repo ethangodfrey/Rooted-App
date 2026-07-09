@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 
 
-import { categoryVisual } from '@/lib/category-visuals';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 
 import { formatEventDate, formatPrice, formatRelativeTime } from '@/lib/format';
 
@@ -32,7 +32,7 @@ function SkeletonTiles({ count = 3 }: { count?: number }) {
 
       {Array.from({ length: count }, (_, i) => (
 
-        <div key={i} className="app-skeleton app-skeleton--tile" />
+        <div key={i} className="app-skeleton app-skeleton--tile animate-pulse" />
 
       ))}
 
@@ -55,17 +55,13 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 function ProductVisual({ product }: { product: PopularProduct | SuggestedProduct }) {
-
-  const visual = categoryVisual(productCategory(product));
-
-  if (product.displayImageUrl) {
-
-    return <img src={product.displayImageUrl} alt="" />;
-
-  }
-
-  return <span aria-hidden="true">{visual.emoji}</span>;
-
+  return (
+    <ProductThumb
+      src={product.displayImageUrl}
+      category={productCategory(product)}
+      size={56}
+    />
+  );
 }
 
 
@@ -158,11 +154,11 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
         <section className="app-scroll-section">
 
-          <div className="app-skeleton app-skeleton--heading" style={{ width: '45%', marginBottom: '0.75rem' }} />
+          <div className="app-skeleton app-skeleton--heading animate-pulse" style={{ width: '45%', marginBottom: '0.75rem' }} />
 
           {Array.from({ length: 2 }, (_, i) => (
 
-            <div key={i} className="app-skeleton app-skeleton--card" style={{ height: 120, marginBottom: '0.75rem' }} />
+            <div key={i} className="app-skeleton app-skeleton--card animate-pulse" style={{ height: 120, marginBottom: '0.75rem' }} />
 
           ))}
 
@@ -170,7 +166,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
         <section className="app-scroll-section">
 
-          <div className="app-skeleton app-skeleton--heading" style={{ width: '40%', marginBottom: '0.75rem' }} />
+          <div className="app-skeleton app-skeleton--heading animate-pulse" style={{ width: '40%', marginBottom: '0.75rem' }} />
 
           <SkeletonTiles />
 
@@ -178,7 +174,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
         <section className="app-scroll-section">
 
-          <div className="app-skeleton app-skeleton--heading" style={{ width: '35%', marginBottom: '0.75rem' }} />
+          <div className="app-skeleton app-skeleton--heading animate-pulse" style={{ width: '35%', marginBottom: '0.75rem' }} />
 
           <SkeletonTiles />
 

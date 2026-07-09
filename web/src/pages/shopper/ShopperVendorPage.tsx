@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { VendorImage } from '@/components/ui/VendorImage';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -48,17 +49,11 @@ export function ShopperVendorPage() {
         </button>
       </div>
 
-      {vendor.banner_url ? (
-        <img src={vendor.banner_url} alt="" style={{ width: '100%', borderRadius: '16px', marginBottom: '1rem', maxHeight: '200px', objectFit: 'cover' }} />
-      ) : null}
+      <VendorImage src={vendor.banner_url} variant="banner" businessName={vendor.business_name} />
 
-      <div className="app-row" style={{ marginBottom: '1rem' }}>
-        {vendor.logo_url ? (
-          <img src={vendor.logo_url} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />
-        ) : (
-          <div className="app-row-icon">🏪</div>
-        )}
-        <div>
+      <div className="app-detail-header">
+        <VendorImage src={vendor.logo_url} variant="logo" businessName={vendor.business_name} />
+        <div style={{ minWidth: 0 }}>
           <h1 className="app-title" style={{ margin: 0 }}>{vendor.business_name}</h1>
           {vendor.category ? <p className="app-row-meta">{vendor.category}</p> : null}
           <TrustBadges userId={vendor.user_id} />

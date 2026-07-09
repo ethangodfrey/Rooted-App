@@ -28,7 +28,7 @@ function SkeletonTiles({ count = 3 }: { count?: number }) {
 
       {Array.from({ length: count }, (_, i) => (
 
-        <div key={i} className="app-skeleton app-skeleton--tile" />
+        <div key={i} className="app-skeleton app-skeleton--tile animate-pulse" />
 
       ))}
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { FormFieldError } from '@/components/ui/FormFieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { updateShopperEmail, updateShopperProfile } from '@/lib/shopper-profile';
@@ -24,6 +25,8 @@ export function ShopperProfileEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'email', string>>>({});
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   useEffect(() => {
     setName(user?.name ?? '');
@@ -63,6 +66,24 @@ export function ShopperProfileEditPage() {
   async function handleSave() {
     if (!user) return;
 
+    const nextFieldErrors: Partial<Record<'name' | 'email', string>> = {};
+    if (!name.trim()) {
+      nextFieldErrors.name = 'Name is required.';
+    }
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      nextFieldErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      nextFieldErrors.email = 'Enter a valid email address.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
+      return;
+    }
+
+    setFieldErrors({});
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -118,8 +139,13 @@ export function ShopperProfileEditPage() {
       <p className="app-subtitle">Update your photo, contact info, and saved vendors.</p>
 
       <div className="profile-avatar-block">
-        {photoUrl ? (
-          <img src={photoUrl} alt="" className="profile-avatar" />
+        {photoUrl && !photoFailed ? (
+          <img
+            src={photoUrl}
+            alt=""
+            className="profile-avatar"
+            onError={() => setPhotoFailed(true)}
+          />
         ) : (
           <div className="profile-avatar profile-avatar--placeholder">{initials}</div>
         )}
@@ -134,7 +160,10 @@ export function ShopperProfileEditPage() {
           type="button"
           className="app-btn app-btn--secondary app-btn--small"
           disabled={uploadingPhoto}
-          onClick={() => fileRef.current?.click()}
+          onClick={() => {
+            setPhotoFailed(false);
+            fileRef.current?.click();
+          }}
         >
           {uploadingPhoto ? 'Uploading…' : 'Change photo'}
         </button>
@@ -147,17 +176,40 @@ export function ShopperProfileEditPage() {
 
       <div className="app-input-group">
         <label htmlFor="name">Name</label>
-        <input id="name" className="app-input" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          id="name"
+          className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setFieldErrors((prev) => {
+              if (!prev.name) return prev;
+              const next = { ...prev };
+              delete next.name;
+              return next;
+            });
+          }}
+        />
+        <FormFieldError message={fieldErrors.name} />
       </div>
       <div className="app-input-group">
         <label htmlFor="email">Email</label>
         <input
           id="email"
-          className="app-input"
+          className={`app-input${fieldErrors.email ? ' app-input--invalid' : ''}`}
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setFieldErrors((prev) => {
+              if (!prev.email) return prev;
+              const next = { ...prev };
+              delete next.email;
+              return next;
+            });
+          }}
         />
+        <FormFieldError message={fieldErrors.email} />
         <p className="app-row-meta" style={{ marginTop: '0.375rem' }}>
           Changing your email may require confirmation via inbox.
         </p>

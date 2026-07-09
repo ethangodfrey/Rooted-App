@@ -32,7 +32,7 @@ export function DiscoverThumb({ imageUrl, category, size = 56 }: DiscoverThumbPr
 
   return (
     <div
-      className="app-row-icon"
+      className="app-thumb-fallback app-row-icon"
       style={{
         width: size,
         height: size,
@@ -40,8 +40,9 @@ export function DiscoverThumb({ imageUrl, category, size = 56 }: DiscoverThumbPr
         flexShrink: 0,
         fontSize: size * 0.4,
       }}
+      aria-hidden="true"
     >
-      {visual.emoji}
+      <span className="app-thumb-fallback__icon">{visual.emoji}</span>
     </div>
   );
 }

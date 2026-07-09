@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 import { formatEventDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
@@ -44,9 +45,7 @@ export function ShopperProductPage() {
     <div className="app-screen">
       <Link to={`/shopper/vendors/${product.vendor_id}`} className="app-back-link">← {product.vendor?.business_name ?? 'Vendor'}</Link>
 
-      {product.media_urls[0] ? (
-        <img src={product.media_urls[0]} alt="" style={{ width: '100%', borderRadius: '16px', marginBottom: '1rem' }} />
-      ) : null}
+      <ProductThumb src={product.media_urls[0]} category={null} large />
 
       <h1 className="app-title">{product.name}</h1>
       <p className="app-subtitle">{formatPrice(product.price)}</p>

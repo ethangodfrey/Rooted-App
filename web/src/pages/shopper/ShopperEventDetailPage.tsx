@@ -38,13 +38,13 @@ export function ShopperEventDetailPage() {
   if (!event) return <div className="app-empty">Event not found.</div>;
 
   return (
-    <div className="app-screen">
+    <div className="app-screen app-screen--narrow">
       <Link to="/shopper/events" className="app-back-link">← Events</Link>
       <EventThumb event={event} large />
       <div style={{ marginBottom: '0.75rem' }}>
         <EventStatusBadge event={event} showHint size="md" />
       </div>
-      <h1 className="app-title">{event.name}</h1>
+      <h1 className="app-title" style={{ overflowWrap: 'anywhere' }}>{event.name}</h1>
       <p className="app-subtitle">
         {formatEventFullDate(event.start_datetime, event.timezone)}
         <br />
