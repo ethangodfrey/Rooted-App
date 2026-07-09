@@ -1,7 +1,7 @@
 import { dedupeEvents } from '@/src/lib/dedupe-events';
 import { filterShopperEvents } from '@/src/lib/market-type-labels';
 import type { EventsScope } from '@/src/lib/location-preferences';
-import type { Coords } from '@/src/lib/geo';
+import { filterMappableEvents, type Coords } from '@/src/lib/geo';
 import { supabase } from '@/src/lib/supabase';
 import type { Event } from '@/src/types/database';
 
@@ -70,8 +70,13 @@ export async function fetchPublicEvents(
     .order('start_datetime', { ascending: true })
     .order('name', { ascending: true });
 
+  let events = filterShopperEvents(dedupeEvents((data ?? []) as Event[]));
+  if (forMap) {
+    events = filterMappableEvents(events);
+  }
+
   return {
-    data: filterShopperEvents(dedupeEvents((data ?? []) as Event[])),
+    data: events,
     error: error?.message ?? null,
     truncated,
   };
@@ -102,5 +107,7 @@ export async function fetchFeaturedPublicMarkets(
 
   const { data, error } = await query;
   if (error) return [];
-  return filterShopperEvents(dedupeEvents((data ?? []) as Event[])).slice(0, limit);
+  return filterMappableEvents(
+    filterShopperEvents(dedupeEvents((data ?? []) as Event[])),
+  ).slice(0, limit);
 }

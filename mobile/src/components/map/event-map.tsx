@@ -1,3 +1,4 @@
+import { filterMappableEvents, parseCoords } from '@/src/lib/geo';
 import { useMemo } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -29,10 +30,7 @@ export function EventMap({
   selectedEventId,
 }: EventMapProps) {
   const now = useNow();
-  const mappable = useMemo(
-    () => events.filter((e) => e.latitude != null && e.longitude != null),
-    [events],
-  );
+  const mappable = useMemo(() => filterMappableEvents(events), [events]);
 
   return (
     <MapView
@@ -44,11 +42,14 @@ export function EventMap({
       toolbarEnabled={false}
       moveOnMarkerPress={false}>
       {mappable.map((event) => {
+        const coords = parseCoords(event.latitude, event.longitude);
+        if (!coords) return null;
+
         const phase = eventRuntimePhase(event, now);
         return (
           <Marker
             key={event.id}
-            coordinate={{ latitude: event.latitude!, longitude: event.longitude! }}
+            coordinate={{ latitude: coords.latitude, longitude: coords.longitude }}
             onPress={() => onPreviewEvent(event.id)}
             tracksViewChanges={false}
             title={event.name}

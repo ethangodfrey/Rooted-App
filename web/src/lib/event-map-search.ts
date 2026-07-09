@@ -1,4 +1,4 @@
-import { distanceMiles, type Coords } from '@/lib/geo';
+import { distanceMiles, filterMappableEvents, parseCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 export const ZIP_SEARCH_RADIUS_MILES = 35;
@@ -91,9 +91,10 @@ export function filterEventsForMapSearch(
   if (parsed.zip) {
     const zipMatches = filtered.filter((event) => eventMatchesZip(event, parsed.zip!));
     const nearbyMatches = searchCenter
-      ? filtered.filter(
-          (event) => distanceMiles(searchCenter, event) <= radius,
-        )
+      ? filtered.filter((event) => {
+          const eventCoords = parseCoords(event.latitude, event.longitude);
+          return eventCoords != null && distanceMiles(searchCenter, eventCoords) <= radius;
+        })
       : [];
 
     const merged = new Map<string, Event>();
@@ -107,17 +108,19 @@ export function filterEventsForMapSearch(
 }
 
 export function centroidOfEvents(events: Event[]): Coords | null {
-  if (events.length === 0) return null;
-  const totals = events.reduce(
+  const mappable = filterMappableEvents(events);
+  if (mappable.length === 0) return null;
+
+  const totals = mappable.reduce(
     (acc, event) => ({
-      latitude: acc.latitude + event.latitude,
-      longitude: acc.longitude + event.longitude,
+      latitude: acc.latitude + Number(event.latitude),
+      longitude: acc.longitude + Number(event.longitude),
     }),
     { latitude: 0, longitude: 0 },
   );
   return {
-    latitude: totals.latitude / events.length,
-    longitude: totals.longitude / events.length,
+    latitude: totals.latitude / mappable.length,
+    longitude: totals.longitude / mappable.length,
   };
 }
 
