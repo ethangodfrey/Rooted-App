@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { FieldError } from '@/components/ui/FieldError';
 import { combineDateTime, toDateInput, toTimeInput } from '@/lib/event-datetime';
 import type { Event, EventStatus, VisibilityStatus } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -76,41 +77,84 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
   );
   const [parkingInfo, setParkingInfo] = useState(initial?.parking_info ?? '');
   const [admissionInfo, setAdmissionInfo] = useState(initial?.admission_info ?? '');
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    const nextErrors: Record<string, string> = {};
 
     if (!name.trim()) {
-      setError('Event name is required.');
-      return;
+      nextErrors.name = 'Event name is required.';
     }
 
     const startIso = combineDateTime(startDate, startTime);
     const endIso = combineDateTime(endDate, endTime);
-    if (!startIso || !endIso) {
-      setError('Enter valid start and end date/time values.');
-      return;
+
+    if (!startDate.trim()) {
+      nextErrors.startDate = 'Start date is required.';
+    } else if (!startIso) {
+      nextErrors.startDate = 'Enter a valid start date.';
     }
-    if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
-      setError('End time must be after start time.');
-      return;
+
+    if (!startTime.trim()) {
+      nextErrors.startTime = 'Start time is required.';
+    } else if (!startIso) {
+      nextErrors.startTime = 'Enter a valid start time.';
+    }
+
+    if (!endDate.trim()) {
+      nextErrors.endDate = 'End date is required.';
+    } else if (!endIso) {
+      nextErrors.endDate = 'Enter a valid end date.';
+    }
+
+    if (!endTime.trim()) {
+      nextErrors.endTime = 'End time is required.';
+    } else if (!endIso) {
+      nextErrors.endTime = 'Enter a valid end time.';
+    }
+
+    if (startIso && endIso && new Date(endIso).getTime() <= new Date(startIso).getTime()) {
+      nextErrors.endDate = 'End must be after the start.';
+      nextErrors.endTime = 'End must be after the start.';
     }
 
     const lat = Number(latitude);
     const lng = Number(longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      setError('Latitude and longitude must be valid numbers.');
+    if (!latitude.trim()) {
+      nextErrors.latitude = 'Latitude is required.';
+    } else if (!Number.isFinite(lat)) {
+      nextErrors.latitude = 'Enter a valid latitude.';
+    }
+
+    if (!longitude.trim()) {
+      nextErrors.longitude = 'Longitude is required.';
+    } else if (!Number.isFinite(lng)) {
+      nextErrors.longitude = 'Enter a valid longitude.';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
       return;
     }
+
+    setFieldErrors({});
 
     await onSubmit({
       name: name.trim(),
       description: description.trim() || null,
       organizer_name: organizerName.trim() || null,
-      start_datetime: startIso,
-      end_datetime: endIso,
+      start_datetime: startIso!,
+      end_datetime: endIso!,
       address: address.trim() || null,
       city: city.trim() || null,
       state: state.trim() || null,
@@ -126,73 +170,195 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
   return (
     <form onSubmit={(e) => void handleSubmit(e)}>
       <div className="app-input-group">
-        <label>Name</label>
-        <input className="app-input" value={name} onChange={(e) => setName(e.target.value)} />
+        <label htmlFor="event-name">Name</label>
+        <input
+          id="event-name"
+          className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            clearFieldError('name');
+          }}
+          aria-invalid={Boolean(fieldErrors.name)}
+          aria-describedby={fieldErrors.name ? 'event-name-error' : undefined}
+        />
+        <FieldError id="event-name-error" message={fieldErrors.name} />
       </div>
       <div className="app-input-group">
-        <label>Description</label>
-        <textarea className="app-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <label htmlFor="event-description">Description</label>
+        <textarea
+          id="event-description"
+          className="app-textarea"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
       </div>
       <div className="app-input-group">
-        <label>Organizer</label>
-        <input className="app-input" value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} />
+        <label htmlFor="event-organizer">Organizer</label>
+        <input
+          id="event-organizer"
+          className="app-input"
+          value={organizerName}
+          onChange={(e) => setOrganizerName(e.target.value)}
+        />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+      <div className="app-form-grid">
         <div className="app-input-group">
-          <label>Start date</label>
-          <input className="app-input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <label htmlFor="event-start-date">Start date</label>
+          <input
+            id="event-start-date"
+            className={`app-input${fieldErrors.startDate ? ' app-input--invalid' : ''}`}
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              clearFieldError('startDate');
+              clearFieldError('endDate');
+              clearFieldError('endTime');
+            }}
+            aria-invalid={Boolean(fieldErrors.startDate)}
+            aria-describedby={fieldErrors.startDate ? 'event-start-date-error' : undefined}
+          />
+          <FieldError id="event-start-date-error" message={fieldErrors.startDate} />
         </div>
         <div className="app-input-group">
-          <label>Start time</label>
-          <input className="app-input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          <label htmlFor="event-start-time">Start time</label>
+          <input
+            id="event-start-time"
+            className={`app-input${fieldErrors.startTime ? ' app-input--invalid' : ''}`}
+            type="time"
+            value={startTime}
+            onChange={(e) => {
+              setStartTime(e.target.value);
+              clearFieldError('startTime');
+              clearFieldError('endDate');
+              clearFieldError('endTime');
+            }}
+            aria-invalid={Boolean(fieldErrors.startTime)}
+            aria-describedby={fieldErrors.startTime ? 'event-start-time-error' : undefined}
+          />
+          <FieldError id="event-start-time-error" message={fieldErrors.startTime} />
         </div>
         <div className="app-input-group">
-          <label>End date</label>
-          <input className="app-input" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <label htmlFor="event-end-date">End date</label>
+          <input
+            id="event-end-date"
+            className={`app-input${fieldErrors.endDate ? ' app-input--invalid' : ''}`}
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              clearFieldError('endDate');
+              clearFieldError('endTime');
+            }}
+            aria-invalid={Boolean(fieldErrors.endDate)}
+            aria-describedby={fieldErrors.endDate ? 'event-end-date-error' : undefined}
+          />
+          <FieldError id="event-end-date-error" message={fieldErrors.endDate} />
         </div>
         <div className="app-input-group">
-          <label>End time</label>
-          <input className="app-input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          <label htmlFor="event-end-time">End time</label>
+          <input
+            id="event-end-time"
+            className={`app-input${fieldErrors.endTime ? ' app-input--invalid' : ''}`}
+            type="time"
+            value={endTime}
+            onChange={(e) => {
+              setEndTime(e.target.value);
+              clearFieldError('endTime');
+              clearFieldError('endDate');
+            }}
+            aria-invalid={Boolean(fieldErrors.endTime)}
+            aria-describedby={fieldErrors.endTime ? 'event-end-time-error' : undefined}
+          />
+          <FieldError id="event-end-time-error" message={fieldErrors.endTime} />
         </div>
       </div>
 
       <div className="app-input-group">
-        <label>Address</label>
-        <input className="app-input" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <label htmlFor="event-address">Address</label>
+        <input
+          id="event-address"
+          className="app-input"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+      <div className="app-form-grid">
         <div className="app-input-group">
-          <label>City</label>
-          <input className="app-input" value={city} onChange={(e) => setCity(e.target.value)} />
+          <label htmlFor="event-city">City</label>
+          <input
+            id="event-city"
+            className="app-input"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
         </div>
         <div className="app-input-group">
-          <label>State</label>
-          <input className="app-input" value={state} onChange={(e) => setState(e.target.value)} />
+          <label htmlFor="event-state">State</label>
+          <input
+            id="event-state"
+            className="app-input"
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+          />
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+      <div className="app-form-grid">
         <div className="app-input-group">
-          <label>Latitude</label>
-          <input className="app-input" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+          <label htmlFor="event-latitude">Latitude</label>
+          <input
+            id="event-latitude"
+            className={`app-input${fieldErrors.latitude ? ' app-input--invalid' : ''}`}
+            value={latitude}
+            onChange={(e) => {
+              setLatitude(e.target.value);
+              clearFieldError('latitude');
+            }}
+            aria-invalid={Boolean(fieldErrors.latitude)}
+            aria-describedby={fieldErrors.latitude ? 'event-latitude-error' : undefined}
+          />
+          <FieldError id="event-latitude-error" message={fieldErrors.latitude} />
         </div>
         <div className="app-input-group">
-          <label>Longitude</label>
-          <input className="app-input" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+          <label htmlFor="event-longitude">Longitude</label>
+          <input
+            id="event-longitude"
+            className={`app-input${fieldErrors.longitude ? ' app-input--invalid' : ''}`}
+            value={longitude}
+            onChange={(e) => {
+              setLongitude(e.target.value);
+              clearFieldError('longitude');
+            }}
+            aria-invalid={Boolean(fieldErrors.longitude)}
+            aria-describedby={fieldErrors.longitude ? 'event-longitude-error' : undefined}
+          />
+          <FieldError id="event-longitude-error" message={fieldErrors.longitude} />
         </div>
       </div>
 
       <div className="app-input-group">
-        <label>Status</label>
-        <select className="app-input" value={eventStatus} onChange={(e) => setEventStatus(e.target.value as EventStatus)}>
+        <label htmlFor="event-status">Status</label>
+        <select
+          id="event-status"
+          className="app-input"
+          value={eventStatus}
+          onChange={(e) => setEventStatus(e.target.value as EventStatus)}
+        >
           {EVENT_STATUSES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
       </div>
       <div className="app-input-group">
-        <label>Visibility</label>
-        <select className="app-input" value={visibilityStatus} onChange={(e) => setVisibilityStatus(e.target.value as VisibilityStatus)}>
+        <label htmlFor="event-visibility">Visibility</label>
+        <select
+          id="event-visibility"
+          className="app-input"
+          value={visibilityStatus}
+          onChange={(e) => setVisibilityStatus(e.target.value as VisibilityStatus)}
+        >
           {VISIBILITY_STATUSES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
@@ -200,15 +366,23 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
       </div>
 
       <div className="app-input-group">
-        <label>Parking info</label>
-        <textarea className="app-textarea" value={parkingInfo} onChange={(e) => setParkingInfo(e.target.value)} />
+        <label htmlFor="event-parking">Parking info</label>
+        <textarea
+          id="event-parking"
+          className="app-textarea"
+          value={parkingInfo}
+          onChange={(e) => setParkingInfo(e.target.value)}
+        />
       </div>
       <div className="app-input-group">
-        <label>Admission info</label>
-        <textarea className="app-textarea" value={admissionInfo} onChange={(e) => setAdmissionInfo(e.target.value)} />
+        <label htmlFor="event-admission">Admission info</label>
+        <textarea
+          id="event-admission"
+          className="app-textarea"
+          value={admissionInfo}
+          onChange={(e) => setAdmissionInfo(e.target.value)}
+        />
       </div>
-
-      {error ? <p className="app-error">{error}</p> : null}
 
       <button type="submit" className="app-btn app-btn--primary" disabled={loading}>
         {loading ? 'Saving…' : submitLabel}

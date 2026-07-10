@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { VendorAvatar } from '@/components/ui/VendorAvatar';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
@@ -52,13 +53,13 @@ export function ShopperVendorPage() {
         <img src={vendor.banner_url} alt="" style={{ width: '100%', borderRadius: '16px', marginBottom: '1rem', maxHeight: '200px', objectFit: 'cover' }} />
       ) : null}
 
-      <div className="app-row" style={{ marginBottom: '1rem' }}>
-        {vendor.logo_url ? (
-          <img src={vendor.logo_url} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />
-        ) : (
-          <div className="app-row-icon">🏪</div>
-        )}
-        <div>
+      <div className="app-market-detail-header">
+        <VendorAvatar
+          logoUrl={vendor.logo_url}
+          businessName={vendor.business_name}
+          category={vendor.category}
+        />
+        <div className="app-row-body">
           <h1 className="app-title" style={{ margin: 0 }}>{vendor.business_name}</h1>
           {vendor.category ? <p className="app-row-meta">{vendor.category}</p> : null}
           <TrustBadges userId={vendor.user_id} />

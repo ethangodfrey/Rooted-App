@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 
 
-import { categoryVisual } from '@/lib/category-visuals';
+import { ProductImage } from '@/components/ui/ProductImage';
 
 import { formatEventDate, formatPrice, formatRelativeTime } from '@/lib/format';
 
@@ -55,17 +55,15 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 function ProductVisual({ product }: { product: PopularProduct | SuggestedProduct }) {
-
-  const visual = categoryVisual(productCategory(product));
-
-  if (product.displayImageUrl) {
-
-    return <img src={product.displayImageUrl} alt="" />;
-
-  }
-
-  return <span aria-hidden="true">{visual.emoji}</span>;
-
+  return (
+    <ProductImage
+      src={product.displayImageUrl}
+      category={productCategory(product)}
+      name={product.name}
+      size="full"
+      rounded="md"
+    />
+  );
 }
 
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { ProductImage } from '@/components/ui/ProductImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { formatEventDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -44,9 +45,15 @@ export function ShopperProductPage() {
     <div className="app-screen">
       <Link to={`/shopper/vendors/${product.vendor_id}`} className="app-back-link">← {product.vendor?.business_name ?? 'Vendor'}</Link>
 
-      {product.media_urls[0] ? (
-        <img src={product.media_urls[0]} alt="" style={{ width: '100%', borderRadius: '16px', marginBottom: '1rem' }} />
-      ) : null}
+      <ProductImage
+        src={product.media_urls[0]}
+        category={null}
+        name={product.name}
+        size="full"
+        rounded="xl"
+        className="app-market-detail-hero-image"
+        style={{ marginBottom: '1rem' }}
+      />
 
       <h1 className="app-title">{product.name}</h1>
       <p className="app-subtitle">{formatPrice(product.price)}</p>
