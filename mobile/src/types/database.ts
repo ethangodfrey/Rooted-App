@@ -53,6 +53,8 @@ export type VisibilityStatus = 'draft' | 'public';
 export type ParticipationStatus = 'requested' | 'approved' | 'declined';
 
 export type ProductStatus = 'active' | 'archived';
+export type TransactionStatus = 'authorized' | 'captured' | 'refunded';
+export type VendorCertificationStatus = 'pending' | 'approved' | 'expired';
 
 export interface User {
   id: string;
@@ -109,6 +111,11 @@ export interface Vendor {
   dietary_tags: string[];
   minimum_order_amount: number | null;
   lead_time_hours: number | null;
+  portfolio_gallery: string[];
+  payouts_enabled: boolean;
+  stripe_account_id?: string | null;
+  stripe_charges_enabled?: boolean;
+  stripe_payouts_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -325,15 +332,29 @@ export type OrderStatus =
   | 'preparing'
   | 'ready_for_pickup'
   | 'fulfilled'
-  | 'cancelled';
+  | 'cancelled'
+  | 'pending'
+  | 'completed'
+  | 'canceled';
 
-export type PaymentStatus = 'unpaid' | 'paid_at_pickup';
+export type PaymentStatus = 'unpaid' | 'paid_at_pickup' | 'stripe_pending' | 'paid_online';
+
+export interface Transaction {
+  id: string;
+  customer_id: string;
+  stripe_payment_intent_id: string | null;
+  total_amount: number;
+  status: TransactionStatus;
+  created_at: string;
+}
 
 export interface Order {
   id: string;
+  transaction_id: string | null;
   shopper_id: string;
   vendor_id: string;
   event_id: string | null;
+  leftover_listing_id?: string | null;
   order_type: OrderType;
   order_status: OrderStatus;
   payment_status: PaymentStatus;
@@ -347,6 +368,12 @@ export interface Order {
   subtotal: number;
   tax: number;
   total: number;
+  platform_fee: number;
+  pickup_code: string | null;
+  fulfillment_window_start: string | null;
+  fulfillment_window_end: string | null;
+  stripe_checkout_session_id?: string | null;
+  stripe_payment_intent_id?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -355,7 +382,9 @@ export interface Order {
 export interface OrderItem {
   id: string;
   order_id: string;
-  product_id: string;
+  product_id: string | null;
+  leftover_listing_id?: string | null;
+  item_title?: string | null;
   quantity: number;
   item_price: number;
   customization_data: Record<string, unknown> | null;
@@ -391,6 +420,7 @@ export interface Post {
   product_id: string | null;
   post_type: PostType;
   caption: string;
+  content: string | null;
   media_url: string | null;
   media_type: PostMediaType;
   video_thumbnail_url: string | null;
@@ -468,6 +498,19 @@ export interface VendorCompliance {
   has_food_handler_cert: boolean;
   labeling_compliant: boolean;
   notes: string | null;
+}
+
+export interface VendorCertification {
+  id: string;
+  vendor_id: string;
+  cert_name: string;
+  issuing_body: string | null;
+  cert_number: string | null;
+  expiration_date: string | null;
+  document_url: string | null;
+  status: VendorCertificationStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 export type ReviewTargetType = 'vendor' | 'chef' | 'product' | 'service';

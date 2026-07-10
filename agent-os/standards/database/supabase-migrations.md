@@ -4,7 +4,7 @@
 
 Run in Supabase SQL Editor **after** all prior phases. Scripts are idempotent where noted (`DROP IF EXISTS`).
 
-Minimum Vendorly stack through phase31:
+Minimum Vendorly stack through phase33:
 
 ```
 docs/supabase/phase22_vendorly_marketplace.sql
@@ -19,9 +19,12 @@ docs/supabase/phase28_search_index.sql
 docs/supabase/phase29_search_refresh_cron.sql
 docs/supabase/phase30_chef_geo.sql
 docs/supabase/phase31_leftovers_search.sql
+docs/supabase/phase32_stripe_messaging.sql
+docs/supabase/phase33_production_mvp_core_schema.sql
 ```
 
-Optional next: `phase32_stripe_messaging.sql` (Stripe Connect + messaging).
+Phase33 is additive and preserves legacy reservation/order/feed fields while
+adding the production MVP transaction and vendor-profile schema.
 
 ## Key RPCs
 
