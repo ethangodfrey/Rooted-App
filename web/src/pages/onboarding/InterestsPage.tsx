@@ -113,7 +113,7 @@ export function InterestsPage() {
       <p className="app-eyebrow">Step 2 of 2</p>
       <h1 className="app-title">What are you into?</h1>
       <p className="app-subtitle">
-        Pick a few interests so we can surface vendors and events you'll love.
+        Pick a few interests so we can surface vendors and events you&apos;ll love.
       </p>
 
       <div className="app-chip-row">

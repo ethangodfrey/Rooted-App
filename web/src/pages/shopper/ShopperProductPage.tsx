@@ -19,14 +19,14 @@ export function ShopperProductPage() {
     vendor_id: string;
     vendor: { business_name: string | null } | null;
   } | null>(null);
-  const [availability, setAvailability] = useState<{ available_quantity_presale: number; event: { id: string; name: string; start_datetime: string } | null }[]>([]);
+  const [availability, setAvailability] = useState<{ id: string; available_quantity_presale: number; event: { id: string; name: string; start_datetime: string } | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const [productRes, availRes] = await Promise.all([
         supabase.from('products').select('id, name, description, price, media_urls, reserve_enabled, vendor_id, vendor:vendors(business_name)').eq('id', id).maybeSingle(),
-        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime)').eq('product_id', id).gt('available_quantity_presale', 0),
+        supabase.from('product_event_availability').select('id, available_quantity_presale, event:events(id, name, start_datetime)').eq('product_id', id).gt('available_quantity_presale', 0),
       ]);
       setProduct(productRes.data as unknown as typeof product);
       setAvailability((availRes.data as unknown as typeof availability) ?? []);
@@ -56,8 +56,8 @@ export function ShopperProductPage() {
         <div style={{ marginTop: '1.5rem' }}>
           <h2 style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>Available for pickup</h2>
           <div className="app-list">
-            {availability.map((row, i) => (
-              <div key={i} className="app-card">
+            {availability.map((row) => (
+              <div key={row.id} className="app-card">
                 <p className="app-row-title">{row.event?.name}</p>
                 <p className="app-row-meta">
                   {row.event ? formatEventDate(row.event.start_datetime) : ''} · {row.available_quantity_presale} available

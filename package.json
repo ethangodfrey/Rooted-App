@@ -19,7 +19,6 @@
     "markets:usda:enrich": "npm run markets:enrich --prefix backend",
     "markets:usda:fix-schedules": "npm run markets:usda:fix-schedules --prefix backend",
     "markets:schedule:ai": "npm run markets:schedule:ai --prefix backend --",
-    "markets:fix-times": "npm run markets:fix-times --prefix backend --",
     "markets:build": "npm run markets:baseline && npm run markets:cities && npm run markets:merge && npm run markets:import",
     "markets:build:full": "npm run markets:baseline && npm run markets:cities && npm run markets:fetch && npm run markets:merge && npm run markets:import",
     "markets:links": "npm run markets:links --prefix backend",
@@ -38,6 +37,7 @@
     "expo": "^56.0.11"
   },
   "devDependencies": {
+    "@types/luxon": "^3.7.2",
     "@types/react": "~19.2.14",
     "luxon": "^3.6.1",
     "typescript": "~6.0.3"

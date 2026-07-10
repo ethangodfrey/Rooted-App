@@ -126,7 +126,6 @@ export function MultiLineChart({
 }) {
   const scrollRef = useRef<ScrollView>(null);
   const count = series[0]?.data.length ?? 0;
-  if (count === 0) return null;
 
   const width = Math.max(minWidth, count * 48 + PADDING.left + PADDING.right);
   const plotW = width - PADDING.left - PADDING.right;
@@ -146,6 +145,8 @@ export function MultiLineChart({
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: false });
   }, [count, width]);
+
+  if (count === 0) return null;
 
   return (
     <ScrollView ref={scrollRef} horizontal showsHorizontalScrollIndicator={false}>
@@ -235,8 +236,6 @@ export function VerticalBarChart({
   maxValue?: number;
   currency?: boolean;
 }) {
-  if (data.length === 0) return null;
-
   const scrollRef = useRef<ScrollView>(null);
   const width = Math.max(minWidth, data.length * 48 + PADDING.left + PADDING.right);
   const plotW = width - PADDING.left - PADDING.right;
@@ -248,6 +247,8 @@ export function VerticalBarChart({
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: false });
   }, [data.length, width]);
+
+  if (data.length === 0) return null;
 
   return (
     <ScrollView ref={scrollRef} horizontal showsHorizontalScrollIndicator={false}>

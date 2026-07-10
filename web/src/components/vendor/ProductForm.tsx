@@ -123,8 +123,8 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       <div className="app-input-group">
         <label>Photos</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          {mediaUrls.map((url) => (
-            <div key={url} style={{ position: 'relative' }}>
+          {mediaUrls.map((url, index) => (
+            <div key={`${url}-${index}`} style={{ position: 'relative' }}>
               <img src={url} alt="" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover' }} />
               <button
                 type="button"

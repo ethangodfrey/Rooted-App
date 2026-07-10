@@ -60,10 +60,11 @@ export function useUserCoords() {
     shopper?.default_location ||
     null;
 
-  const resolveCoords = useCallback(async () => {
+  const resolveCoords = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true);
     try {
       const persisted = await readCachedCoords();
+      if (!isActive()) return;
       if (persisted) {
         applyCoords(persisted, 'submitted', setCoords, setSource);
       }
@@ -77,6 +78,7 @@ export function useUserCoords() {
         permission.status === 'granted' ? resolveGpsCoords() : Promise.resolve(null);
 
       const [geocoded, gps] = await Promise.all([geocodePromise, gpsPromise]);
+      if (!isActive()) return;
 
       if (gps) {
         applyCoords(gps, 'gps', setCoords, setSource);
@@ -86,7 +88,7 @@ export function useUserCoords() {
         applyCoords(geocoded, 'submitted', setCoords, setSource);
       }
     } finally {
-      setLoading(false);
+      if (isActive()) setLoading(false);
     }
   }, [submittedQuery]);
 
@@ -100,7 +102,7 @@ export function useUserCoords() {
     });
 
     const task = InteractionManager.runAfterInteractions(() => {
-      if (active) void resolveCoords();
+      if (active) void resolveCoords(() => active);
     });
 
     return () => {

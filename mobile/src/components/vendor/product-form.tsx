@@ -176,8 +176,8 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
     <View>
       <Text className="mb-1.5 text-sm font-semibold text-ink">Photos</Text>
       <View className="mb-4 flex-row flex-wrap gap-3">
-        {mediaUrls.map((url) => (
-          <View key={url} className="relative">
+        {mediaUrls.map((url, index) => (
+          <View key={`${url}-${index}`} className="relative">
             <Image source={{ uri: url }} className="h-20 w-20 rounded-xl bg-line" />
             <Pressable
               onPress={() => removePhoto(url)}

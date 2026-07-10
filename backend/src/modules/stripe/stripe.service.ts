@@ -244,7 +244,7 @@ export class StripeService {
     return stripe.webhooks.constructEvent(rawBody, signature, this.webhookSecret);
   }
 
-  /** Stub handler — extend as checkout + Connect events are wired in Phase 2b. */
+  /** Handles Stripe webhooks used by checkout and Connect account onboarding. */
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
     this.logger.log(`Stripe webhook received: ${event.type} (${event.id})`);
 

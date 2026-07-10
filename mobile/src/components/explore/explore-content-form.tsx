@@ -128,8 +128,8 @@ export function ExploreContentForm({
         showsHorizontalScrollIndicator={false}
         className="mb-5"
         contentContainerClassName="gap-3">
-        {mediaUrls.map((url) => (
-          <View key={url} className="relative">
+        {mediaUrls.map((url, index) => (
+          <View key={`${url}-${index}`} className="relative">
             <Image source={{ uri: url }} className="h-28 w-28 rounded-xl bg-line" />
             <Pressable
               onPress={() => removeImage(url)}
