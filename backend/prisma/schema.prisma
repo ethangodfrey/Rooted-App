@@ -90,9 +90,81 @@ model Event {
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   posLocationMappings PosLocationMapping[]
+  tenants             Tenant[]
 
   @@unique([externalSource, externalId])
   @@map("events")
+}
+
+// ===========================================================================
+// Multi-tenant marketplace routing (custom domains + platform subdomains).
+// ===========================================================================
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+/// A branded marketplace instance (farmers market, food hub, etc.).
+model Tenant {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String       @unique
+  displayName String       @map("display_name")
+  status      TenantStatus @default(ACTIVE)
+  eventId     String?      @map("event_id") @db.Uuid
+  event       Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  logoUrl     String?      @map("logo_url")
+  faviconUrl  String?      @map("favicon_url")
+  primaryColor String?     @map("primary_color")
+  accentColor  String?     @map("accent_color")
+  tagline     String?
+  metadata    Json         @default("{}")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  domains         TenantDomain[]
+  posIntegrations TenantPosIntegration[]
+
+  @@index([status])
+  @@index([eventId])
+  @@map("tenants")
+}
+
+/// Hostname routing table — custom domains and explicit subdomain aliases.
+model TenantDomain {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  host      String   @unique
+  isPrimary Boolean  @default(false) @map("is_primary")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId])
+  @@index([tenantId, isPrimary])
+  @@map("tenant_domains")
+}
+
+/// Public POS integration metadata scoped to a tenant (no secrets).
+model TenantPosIntegration {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String              @map("tenant_id") @db.Uuid
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider           PosProvider
+  status             PosConnectionStatus @default(PENDING)
+  providerAppId      String?             @map("provider_app_id")
+  providerLocationId String?             @map("provider_location_id")
+  webhookEndpoint    String?             @map("webhook_endpoint")
+  metadata           Json?
+  active             Boolean             @default(true)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, provider])
+  @@index([tenantId, active])
+  @@index([tenantId, provider, active])
+  @@map("tenant_pos_integrations")
 }
 
 model MarketSyncRun {

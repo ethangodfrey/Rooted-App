@@ -54,6 +54,7 @@ docs/supabase/phase28_search_index.sql   # search_index matview + search_all() u
 docs/supabase/phase29_search_refresh_cron.sql   # pg_cron job: refresh_search_index() every 10 min
 docs/supabase/phase30_chef_geo.sql   # chef latitude/longitude/geog + find_nearby_chefs + matview rebuild (chef geog)
 docs/supabase/phase31_leftovers_search.sql   # add leftover_listings to search_index (entity_type='leftover')
+docs/supabase/phase32_multi_tenant.sql       # tenant domains + POS metadata for edge routing
 ```
 
 `phase24` enables the `postgis` extension, adds generated `geography` columns
