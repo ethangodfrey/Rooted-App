@@ -20,4 +20,19 @@ export default defineConfig({
     host: true,
     port: 4173,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'map-vendor';
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('@supabase')) return 'supabase-vendor';
+          return 'vendor';
+        },
+      },
+    },
+  },
 });
