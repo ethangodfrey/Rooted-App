@@ -12,6 +12,7 @@ import { HealthModule } from './modules/health/health.module';
 import { AdminAgentModule } from './modules/admin-agent/admin-agent.module';
 import { CheckoutModule } from './modules/checkout/checkout.module';
 import { MarketsModule } from './modules/markets/markets.module';
+import { MediaModule } from './modules/media/media.module';
 import { PosModule } from './modules/pos/pos.module';
 
 import { StripeModule } from './modules/stripe/stripe.module';
@@ -44,6 +45,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     HealthModule,
     AdminAgentModule,
     CheckoutModule,
+    MediaModule,
     PosModule,
     MarketsModule,
     StripeModule,
