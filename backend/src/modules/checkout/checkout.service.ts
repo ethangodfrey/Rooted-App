@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, type Event, type Product, type VendorEvent } from '@prisma/client';
+import { Prisma, type Event, type Product } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -7,6 +7,7 @@ import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import type { CreateCheckoutDto } from './dto/create-checkout.dto';
 
 const PICKUP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const PICKUP_CODE_PATTERN = /^[A-Z0-9]{6}$/;
 const PLATFORM_FEE_BPS = 500;
 
 interface BasketLine {
@@ -368,6 +369,9 @@ export class CheckoutService {
   private async uniquePickupCode(tx: CheckoutTx): Promise<string> {
     for (let attempt = 0; attempt < 12; attempt += 1) {
       const code = pickupCode();
+      if (!PICKUP_CODE_PATTERN.test(code)) {
+        throw new BadRequestException('Generated pickup code was invalid. Please retry.');
+      }
       const existing = await tx.order.findUnique({
         where: { pickupCode: code },
         select: { id: true },

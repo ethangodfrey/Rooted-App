@@ -24,7 +24,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined;
+          if (!id.includes('node_modules')) {
+            if (id.includes('/src/pages/admin/')) return 'admin-pages';
+            if (id.includes('/src/pages/vendor/')) return 'vendor-pages';
+            if (id.includes('/src/pages/shopper/')) return 'shopper-pages';
+            if (id.includes('/src/pages/chef/')) return 'chef-pages';
+            if (id.includes('/src/pages/marketing/') || id.includes('/src/pages/onboarding/')) {
+              return 'public-pages';
+            }
+            return undefined;
+          }
           if (id.includes('leaflet') || id.includes('react-leaflet')) return 'map-vendor';
           if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
             return 'react-vendor';

@@ -1,6 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 
 import { rootedStackScreenOptions } from '@/src/components/navigation/rooted-stack-options';
@@ -16,6 +16,7 @@ import {
 } from '@/src/lib/vendor-media-upload';
 
 export default function VendorMediaCaptureScreen() {
+  const mountedRef = useRef(true);
   const [mediaType, setMediaType] = useState<VendorMediaKind>('image');
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('Ready');
@@ -23,24 +24,41 @@ export default function VendorMediaCaptureScreen() {
   const [result, setResult] = useState<VendorMediaUploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  function updateProgress(next: number, label: string) {
+    if (!mountedRef.current) return;
+    setProgress(next);
+    setProgressLabel(label);
+  }
+
   async function run(source: VendorMediaSource) {
     setUploading(true);
     setError(null);
     setResult(null);
+    updateProgress(0, 'Opening picker');
     try {
       const uploaded = await captureAndUploadVendorMedia({
         mediaType,
         source,
-        onProgress: (next, label) => {
-          setProgress(next);
-          setProgressLabel(label);
-        },
+        onProgress: updateProgress,
       });
-      if (uploaded) setResult(uploaded);
+      if (!mountedRef.current) return;
+      if (uploaded) {
+        setResult(uploaded);
+      } else {
+        updateProgress(0, 'Ready');
+      }
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Upload failed.');
+      updateProgress(0, 'Upload failed');
     } finally {
-      setUploading(false);
+      if (mountedRef.current) setUploading(false);
     }
   }
 
@@ -81,6 +99,7 @@ export default function VendorMediaCaptureScreen() {
           {(['image', 'video'] as const).map((kind) => (
             <Pressable
               key={kind}
+              disabled={uploading}
               onPress={() => setMediaType(kind)}
               className={`flex-1 rounded-2xl border p-3 ${
                 mediaType === kind ? 'border-primary bg-honeydew' : 'border-subtle bg-white'
