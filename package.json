@@ -32,7 +32,8 @@
     "markets:images:google": "npm run markets:images:google --prefix backend --",
     "markets:images:purge": "npm run markets:images:purge --prefix backend --",
     "admin:agent": "npm run admin:agent --prefix backend",
-    "admin:posts": "npm run admin:posts --prefix backend"
+    "admin:posts": "npm run admin:posts --prefix backend",
+    "test:webhook": "npx tsx scripts/test-pos-webhook.ts"
   },
   "dependencies": {
     "expo": "^56.0.11"
