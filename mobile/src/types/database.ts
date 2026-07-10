@@ -55,6 +55,7 @@ export type ParticipationStatus = 'requested' | 'approved' | 'declined';
 export type ProductStatus = 'active' | 'archived';
 export type TransactionStatus = 'authorized' | 'captured' | 'refunded';
 export type VendorCertificationStatus = 'pending' | 'approved' | 'expired';
+export type VendorSettlementStatus = 'pending' | 'available' | 'released' | 'held';
 
 export interface User {
   id: string;
@@ -510,6 +511,32 @@ export interface VendorCertification {
   document_url: string | null;
   status: VendorCertificationStatus;
   created_at: string;
+  updated_at: string;
+}
+
+export interface VendorSettlement {
+  id: string;
+  order_id: string;
+  transaction_id: string | null;
+  vendor_id: string;
+  stripe_payment_intent_id: string | null;
+  gross_amount: number;
+  platform_fee: number;
+  net_amount: number;
+  status: VendorSettlementStatus;
+  hold_until: string;
+  created_at: string;
+  released_at: string | null;
+}
+
+export interface VendorTaxCompliance {
+  id: string;
+  vendor_id: string;
+  tax_year: number;
+  gross_volume: number;
+  transaction_count: number;
+  needs_1099k: boolean;
+  threshold_reason: string | null;
   updated_at: string;
 }
 

@@ -91,6 +91,7 @@ export class StripeService {
         stripeAccountId: true,
         stripeChargesEnabled: true,
         stripePayoutsEnabled: true,
+        payoutsEnabled: true,
       },
     });
     if (!vendor) {
@@ -103,6 +104,7 @@ export class StripeService {
         accountId: vendor.stripeAccountId,
         chargesEnabled: vendor.stripeChargesEnabled,
         payoutsEnabled: vendor.stripePayoutsEnabled,
+        marketplacePayoutsEnabled: vendor.payoutsEnabled,
       };
     }
 
@@ -112,13 +114,15 @@ export class StripeService {
 
     if (
       chargesEnabled !== vendor.stripeChargesEnabled ||
-      payoutsEnabled !== vendor.stripePayoutsEnabled
+      payoutsEnabled !== vendor.stripePayoutsEnabled ||
+      payoutsEnabled !== vendor.payoutsEnabled
     ) {
       await this.prisma.vendor.update({
         where: { id: vendorId },
         data: {
           stripeChargesEnabled: chargesEnabled,
           stripePayoutsEnabled: payoutsEnabled,
+          payoutsEnabled,
         },
       });
     }
@@ -128,6 +132,7 @@ export class StripeService {
       accountId: vendor.stripeAccountId,
       chargesEnabled,
       payoutsEnabled,
+      marketplacePayoutsEnabled: payoutsEnabled,
     };
   }
 
@@ -269,7 +274,15 @@ export class StripeService {
         ? session.payment_intent
         : session.payment_intent?.id;
 
-    await this.prisma.$executeRaw`
+    const updatedOrders = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        transaction_id: string | null;
+        vendor_id: string;
+        total: number;
+        platform_fee: number;
+      }>
+    >`
       update public.orders
       set
         payment_status = 'paid_online',
@@ -277,7 +290,12 @@ export class StripeService {
         updated_at = now()
       where id = ${orderId}::uuid
         and stripe_checkout_session_id = ${session.id}
+      returning id, transaction_id, vendor_id, total, platform_fee
     `;
+
+    for (const order of updatedOrders) {
+      await this.recordSettlementAndTax(order, paymentIntentId ?? null);
+    }
   }
 
   private async onAccountUpdated(account: Stripe.Account) {
@@ -288,7 +306,102 @@ export class StripeService {
       data: {
         stripeChargesEnabled: account.charges_enabled ?? false,
         stripePayoutsEnabled: account.payouts_enabled ?? false,
+        payoutsEnabled: account.payouts_enabled ?? false,
       },
     });
+  }
+
+  private async recordSettlementAndTax(
+    order: {
+      id: string;
+      transaction_id: string | null;
+      vendor_id: string;
+      total: number;
+      platform_fee: number;
+    },
+    paymentIntentId: string | null,
+  ): Promise<void> {
+    const netAmount = Math.max(0, order.total - order.platform_fee);
+
+    await this.prisma.$executeRaw`
+      insert into public.vendor_settlements (
+        order_id,
+        transaction_id,
+        vendor_id,
+        stripe_payment_intent_id,
+        gross_amount,
+        platform_fee,
+        net_amount,
+        status,
+        hold_until
+      ) values (
+        ${order.id}::uuid,
+        ${order.transaction_id}::uuid,
+        ${order.vendor_id}::uuid,
+        ${paymentIntentId},
+        ${order.total},
+        ${order.platform_fee},
+        ${netAmount},
+        'pending',
+        now() + interval '2 days'
+      )
+      on conflict (order_id) do update set
+        stripe_payment_intent_id = excluded.stripe_payment_intent_id,
+        gross_amount = excluded.gross_amount,
+        platform_fee = excluded.platform_fee,
+        net_amount = excluded.net_amount
+    `;
+
+    if (order.transaction_id) {
+      await this.prisma.$executeRaw`
+        update public.transactions
+        set status = 'captured',
+            stripe_payment_intent_id = coalesce(stripe_payment_intent_id, ${paymentIntentId})
+        where id = ${order.transaction_id}::uuid
+      `;
+    }
+
+    await this.refreshVendorTaxCompliance(order.vendor_id);
+  }
+
+  private async refreshVendorTaxCompliance(vendorId: string): Promise<void> {
+    const year = new Date().getUTCFullYear();
+    await this.prisma.$executeRaw`
+      insert into public.vendor_tax_compliance (
+        vendor_id,
+        tax_year,
+        gross_volume,
+        transaction_count,
+        needs_1099k,
+        threshold_reason,
+        updated_at
+      )
+      select
+        ${vendorId}::uuid,
+        ${year},
+        coalesce(sum(gross_amount), 0)::integer,
+        count(*)::integer,
+        (coalesce(sum(gross_amount), 0) >= 2000000 or count(*) >= 200),
+        case
+          when coalesce(sum(gross_amount), 0) >= 2000000 and count(*) >= 200
+            then 'gross_volume_and_transaction_count'
+          when coalesce(sum(gross_amount), 0) >= 2000000
+            then 'gross_volume'
+          when count(*) >= 200
+            then 'transaction_count'
+          else null
+        end,
+        now()
+      from public.vendor_settlements
+      where vendor_id = ${vendorId}::uuid
+        and extract(year from created_at)::integer = ${year}
+        and status in ('pending', 'available', 'released')
+      on conflict (vendor_id, tax_year) do update set
+        gross_volume = excluded.gross_volume,
+        transaction_count = excluded.transaction_count,
+        needs_1099k = excluded.needs_1099k,
+        threshold_reason = excluded.threshold_reason,
+        updated_at = now()
+    `;
   }
 }

@@ -4,7 +4,7 @@
 
 Run in Supabase SQL Editor **after** all prior phases. Scripts are idempotent where noted (`DROP IF EXISTS`).
 
-Minimum Vendorly stack through phase35:
+Minimum Vendorly stack through phase36:
 
 ```
 docs/supabase/phase22_vendorly_marketplace.sql
@@ -23,12 +23,14 @@ docs/supabase/phase32_stripe_messaging.sql
 docs/supabase/phase33_production_mvp_core_schema.sql
 docs/supabase/phase34_vendor_media_feed_storage.sql
 docs/supabase/phase35_ranked_vendor_feed.sql
+docs/supabase/phase36_payments_kyc_ledger.sql
 ```
 
 Phase33 is additive and preserves legacy reservation/order/feed fields while
 adding the production MVP transaction and vendor-profile schema.
 Phase34 provisions the public signed-upload media bucket for vendor feeds.
 Phase35 adds the cached hyper-local ranked vendor feed RPC.
+Phase36 adds settlement holds and 1099-K compliance rollups.
 
 ## Key RPCs
 
