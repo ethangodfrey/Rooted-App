@@ -1,4 +1,4 @@
-import { formatDistance, type Coords } from '@/lib/geo';
+import { formatDistance, parseCoords, type Coords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 
 const KM_PER_MILE = 1.609344;
@@ -65,7 +65,8 @@ export async function fetchNearbyEvents(
   });
 
   if (error) return null;
-  return (data as NearbyEvent[] | null) ?? [];
+  const rows = (data as NearbyEvent[] | null) ?? [];
+  return rows.filter((row) => parseCoords(row.latitude, row.longitude) !== null);
 }
 
 /** Approved vendors near `coords` (only those with populated coordinates). */

@@ -8,6 +8,7 @@ import {
   type EventRuntimeFields,
 } from '@/src/lib/event-runtime';
 import { formatEventDate } from '@/src/lib/format';
+import { filterEventsWithCoords } from '@/src/lib/geo';
 
 import { EventMarker } from './event-marker';
 import type { EventMapProps } from './types';
@@ -29,10 +30,7 @@ export function EventMap({
   selectedEventId,
 }: EventMapProps) {
   const now = useNow();
-  const mappable = useMemo(
-    () => events.filter((e) => e.latitude != null && e.longitude != null),
-    [events],
-  );
+  const mappable = useMemo(() => filterEventsWithCoords(events), [events]);
 
   return (
     <MapView

@@ -9,7 +9,7 @@ import { useNow } from '@/hooks/use-now';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
 import { formatEventDate } from '@/lib/format';
-import type { Coords } from '@/lib/geo';
+import { filterEventsWithCoords, parseCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 import './events-map.css';
@@ -34,12 +34,20 @@ function FitBounds({ events, active }: { events: Event[]; active: boolean }) {
   useEffect(() => {
     if (!active || events.length === 0 || hasFittedRef.current) return;
 
-    const bounds = L.latLngBounds(
-      events.map((event) => [event.latitude, event.longitude] as [number, number]),
-    );
+    try {
+      const points = events
+        .map((event) => parseCoords(event.latitude, event.longitude))
+        .filter((coords): coords is Coords => coords !== null)
+        .map((coords) => [coords.latitude, coords.longitude] as [number, number]);
 
-    map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
-    hasFittedRef.current = true;
+      if (points.length === 0) return;
+
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+      hasFittedRef.current = true;
+    } catch {
+      // Skip fit when Leaflet rejects corrupt coordinate data.
+    }
   }, [events, map, active]);
 
   return null;
@@ -56,7 +64,9 @@ function FlyToTarget({
 
   useEffect(() => {
     if (!target) return;
-    map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
+    const parsed = parseCoords(target.latitude, target.longitude);
+    if (!parsed) return;
+    map.flyTo([parsed.latitude, parsed.longitude], zoom, { duration: 0.6 });
   }, [target, zoom, map]);
 
   return null;
@@ -87,10 +97,12 @@ export function EventsMap({
 }: EventsMapProps) {
   const liveNow = useNow(60_000);
   const now = nowProp ?? liveNow;
-  const initialCenter: [number, number] = userCoords
-    ? [userCoords.latitude, userCoords.longitude]
+  const mappableEvents = filterEventsWithCoords(events);
+  const safeUserCoords = userCoords ? parseCoords(userCoords.latitude, userCoords.longitude) : null;
+  const initialCenter: [number, number] = safeUserCoords
+    ? [safeUserCoords.latitude, safeUserCoords.longitude]
     : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
-  const initialZoom = userCoords ? 9 : DEFAULT_ZOOM;
+  const initialZoom = safeUserCoords ? 9 : DEFAULT_ZOOM;
 
   return (
     <div className="events-map-panel">
@@ -106,14 +118,14 @@ export function EventsMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {events.length > 0 && !focusTarget ? (
-            <FitBounds events={events} active={!focusTarget} />
+          {mappableEvents.length > 0 && !focusTarget ? (
+            <FitBounds events={mappableEvents} active={!focusTarget} />
           ) : null}
           {focusTarget ? <FlyToTarget target={focusTarget} zoom={focusZoom} /> : null}
 
-          {userCoords ? (
+          {safeUserCoords ? (
             <Marker
-              position={[userCoords.latitude, userCoords.longitude]}
+              position={[safeUserCoords.latitude, safeUserCoords.longitude]}
               icon={L.divIcon({
                 className: 'rooted-map-marker',
                 html: '<div class="rooted-map-marker__dot" style="background:#3b82f6;border-color:#fff"></div>',
@@ -125,7 +137,7 @@ export function EventsMap({
             </Marker>
           ) : null}
 
-          {events.map((event) => {
+          {mappableEvents.map((event) => {
             const distance = getDistanceLabel?.(event);
             const phase = eventRuntimePhase(event, now);
             const links = extractMarketLinks(event);

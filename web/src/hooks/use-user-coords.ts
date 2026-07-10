@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import type { Coords } from '@/lib/geo';
+import { parseCoords } from '@/lib/geo';
 import { geocodeAddress } from '@/lib/geocode';
 
 export function useUserCoords() {
@@ -43,10 +44,12 @@ export function useUserCoords() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (cancelled) return;
-        setCoords({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
+        const parsed = parseCoords(position.coords.latitude, position.coords.longitude);
+        if (!parsed) {
+          void resolveProfileCoords();
+          return;
+        }
+        setCoords(parsed);
         setSource('gps');
       },
       () => {

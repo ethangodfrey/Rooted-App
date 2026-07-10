@@ -21,7 +21,7 @@ import {
   geocodeUsZip,
   parseMapSearchQuery,
 } from '@/src/lib/event-map-search';
-import { distanceMiles, formatDistance, type Coords } from '@/src/lib/geo';
+import { distanceMiles, formatDistance, parseCoords, type Coords } from '@/src/lib/geo';
 import { capEventsNear, MAP_MARKER_LIMIT, MAP_SIDEBAR_LIMIT } from '@/src/lib/events-display-limits';
 import { fetchPublicEvents } from '@/src/lib/events-query';
 import { pagePadding } from '@/src/theme/layout';
@@ -159,10 +159,10 @@ export default function ShopperMapScreen() {
     return [...runtimeSorted].sort((a, b) => {
       const phaseDiff = phaseRank(a) - phaseRank(b);
       if (phaseDiff !== 0) return phaseDiff;
-      return (
-        distanceMiles(sortOrigin, { latitude: a.latitude, longitude: a.longitude }) -
-        distanceMiles(sortOrigin, { latitude: b.latitude, longitude: b.longitude })
-      );
+      const aCoords = parseCoords(a.latitude, a.longitude);
+      const bCoords = parseCoords(b.latitude, b.longitude);
+      if (!aCoords || !bCoords) return 0;
+      return distanceMiles(sortOrigin, aCoords) - distanceMiles(sortOrigin, bCoords);
     });
   }, [filteredEvents, sortOrigin, now]);
 
@@ -174,10 +174,9 @@ export default function ShopperMapScreen() {
   const distanceFor = useCallback(
     (event: Event): string | null => {
       const origin = searchCenter ?? coords;
-      if (!origin || event.latitude == null || event.longitude == null) return null;
-      return formatDistance(
-        distanceMiles(origin, { latitude: event.latitude, longitude: event.longitude }),
-      );
+      const eventCoords = parseCoords(event.latitude, event.longitude);
+      if (!origin || !eventCoords) return null;
+      return formatDistance(distanceMiles(origin, eventCoords));
     },
     [coords, searchCenter],
   );
@@ -189,12 +188,13 @@ export default function ShopperMapScreen() {
   const previewEvent = useCallback(
     (id: string) => {
       const event = mapEvents.find((item) => item.id === id);
-      if (!event?.latitude || !event?.longitude) return;
+      const eventCoords = event ? parseCoords(event.latitude, event.longitude) : null;
+      if (!eventCoords) return;
       setSelectedEventId(id);
       mapRef.current?.animateToRegion(
         {
-          latitude: event.latitude,
-          longitude: event.longitude,
+          latitude: eventCoords.latitude,
+          longitude: eventCoords.longitude,
           latitudeDelta: 0.12,
           longitudeDelta: 0.12,
         },

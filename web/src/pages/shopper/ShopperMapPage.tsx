@@ -16,7 +16,7 @@ import {
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
 import { formatEventDate } from '@/lib/format';
-import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
+import { distanceMiles, formatDistance, parseCoords, type Coords } from '@/lib/geo';
 import { fetchPublicEvents } from '@/lib/events-query';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -130,10 +130,10 @@ export function ShopperMapPage() {
     return [...runtimeSorted].sort((a, b) => {
       const phaseDiff = phaseRank(a) - phaseRank(b);
       if (phaseDiff !== 0) return phaseDiff;
-      return (
-        distanceMiles(sortOrigin, { latitude: a.latitude, longitude: a.longitude }) -
-        distanceMiles(sortOrigin, { latitude: b.latitude, longitude: b.longitude })
-      );
+      const aCoords = parseCoords(a.latitude, a.longitude);
+      const bCoords = parseCoords(b.latitude, b.longitude);
+      if (!aCoords || !bCoords) return 0;
+      return distanceMiles(sortOrigin, aCoords) - distanceMiles(sortOrigin, bCoords);
     });
   }, [filteredEvents, sortOrigin, now]);
 
@@ -142,10 +142,9 @@ export function ShopperMapPage() {
   const distanceFor = useCallback(
     (event: Event): string | null => {
       const origin = searchCenter ?? coords;
-      if (!origin) return null;
-      return formatDistance(
-        distanceMiles(origin, { latitude: event.latitude, longitude: event.longitude }),
-      );
+      const eventCoords = parseCoords(event.latitude, event.longitude);
+      if (!origin || !eventCoords) return null;
+      return formatDistance(distanceMiles(origin, eventCoords));
     },
     [coords, searchCenter],
   );
@@ -163,8 +162,10 @@ export function ShopperMapPage() {
         mapEvents.find((item) => item.id === id) ??
         sortedEvents.find((item) => item.id === id);
       if (!event) return;
+      const eventCoords = parseCoords(event.latitude, event.longitude);
+      if (!eventCoords) return;
       setSelectedEventId(id);
-      setFocusTarget({ latitude: event.latitude, longitude: event.longitude });
+      setFocusTarget(eventCoords);
     },
     [mapEvents, sortedEvents],
   );

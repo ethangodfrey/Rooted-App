@@ -1,4 +1,4 @@
-import { formatDistance, type Coords } from '@/src/lib/geo';
+import { formatDistance, parseCoords, type Coords } from '@/src/lib/geo';
 import { cachedQuery } from '@/src/lib/query-cache';
 import { supabase } from '@/src/lib/supabase';
 
@@ -104,7 +104,8 @@ export async function fetchNearbyEvents(
     });
 
     if (error) return null;
-    return (data as NearbyEvent[] | null) ?? [];
+    const rows = (data as NearbyEvent[] | null) ?? [];
+    return rows.filter((row) => parseCoords(row.latitude, row.longitude) !== null);
   });
 }
 

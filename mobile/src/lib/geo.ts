@@ -3,6 +3,32 @@ export interface Coords {
   longitude: number;
 }
 
+export function isValidLatitude(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= -90 && value <= 90;
+}
+
+export function isValidLongitude(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= -180 && value <= 180;
+}
+
+/** Parse lat/lng from DB strings or numbers; returns null for null, NaN, or out-of-range values. */
+export function parseCoords(latitude: unknown, longitude: unknown): Coords | null {
+  const lat = typeof latitude === 'number' ? latitude : Number(latitude);
+  const lng = typeof longitude === 'number' ? longitude : Number(longitude);
+  if (!isValidLatitude(lat) || !isValidLongitude(lng)) return null;
+  return { latitude: lat, longitude: lng };
+}
+
+export function hasValidCoords(value: { latitude: unknown; longitude: unknown }): boolean {
+  return parseCoords(value.latitude, value.longitude) !== null;
+}
+
+export function filterEventsWithCoords<T extends { latitude: unknown; longitude: unknown }>(
+  events: T[],
+): T[] {
+  return events.filter(hasValidCoords);
+}
+
 /** Great-circle distance between two points in miles (haversine). */
 export function distanceMiles(a: Coords, b: Coords): number {
   const R = 3958.8; // Earth radius in miles
