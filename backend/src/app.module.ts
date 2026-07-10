@@ -10,6 +10,7 @@ import { resolveRedisConnection } from './common/redis/redis-connection';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { AdminAgentModule } from './modules/admin-agent/admin-agent.module';
+import { CheckoutModule } from './modules/checkout/checkout.module';
 import { MarketsModule } from './modules/markets/markets.module';
 import { PosModule } from './modules/pos/pos.module';
 
@@ -42,6 +43,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     ObservabilityModule,
     HealthModule,
     AdminAgentModule,
+    CheckoutModule,
     PosModule,
     MarketsModule,
     StripeModule,

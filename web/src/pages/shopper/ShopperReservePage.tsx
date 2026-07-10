@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { createCheckout } from '@/lib/checkout-api';
 import { formatEventFullDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
@@ -39,18 +40,21 @@ export function ShopperReservePage() {
     }
     setSubmitting(true);
     setError(null);
-    const { data, error: rpcError } = await supabase.rpc('create_reservation', {
-      p_product_id: productId,
-      p_event_id: eventId,
-      p_quantity: quantity,
-      p_notes: notes.trim() || null,
-    });
-    setSubmitting(false);
-    if (rpcError) {
-      setError(rpcError.message);
-      return;
+    try {
+      const result = await createCheckout([
+        {
+          productId: productId!,
+          eventId,
+          quantity,
+          notes: notes.trim() || undefined,
+        },
+      ]);
+      navigate(`/checkout/success?transactionId=${result.transactionId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Checkout failed.');
+    } finally {
+      setSubmitting(false);
     }
-    navigate(`/shopper/orders/${data as string}`);
   }
 
   if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
