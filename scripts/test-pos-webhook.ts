@@ -83,7 +83,7 @@ function resolveTargetUrl(): string {
   if (cli) return cli;
   return (
     process.env.POS_WEBHOOK_TEST_URL?.trim() ||
-    'http://localhost:3000/api/webhooks/pos-sync?provider=SQUARE'
+    'https://rooted-app-mu.vercel.app/api/webhooks/pos-sync?provider=SQUARE'
   );
 }
 

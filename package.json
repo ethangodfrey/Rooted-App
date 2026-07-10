@@ -36,6 +36,8 @@
     "test:webhook": "npx tsx scripts/test-pos-webhook.ts"
   },
   "dependencies": {
+    "@vercel/node": "^5.3.0",
+    "bullmq": "^5.34.0",
     "expo": "^56.0.11"
   },
   "devDependencies": {
