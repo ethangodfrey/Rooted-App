@@ -21,7 +21,7 @@ import {
 } from '@/src/lib/event-day-filter';
 import { eventPlaceholderEmoji } from '@/src/lib/event-image';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/src/lib/event-runtime';
-import { formatEventDate, formatEventTimeRange } from '@/src/lib/format';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/src/lib/format';
 import { distanceMiles, formatDistance } from '@/src/lib/geo';
 import { fetchPublicEvents } from '@/src/lib/events-query';
 import { colors } from '@/src/theme/colors';
@@ -56,10 +56,8 @@ const EventRow = memo(function EventRow({
           {item.name}
         </Text>
         <Text variant="caption" className="mb-2">
-          {formatEventDate(item.start_datetime)}
-          {item.end_datetime
-            ? ` · ${formatEventTimeRange(item.start_datetime, item.end_datetime, item.timezone)}`
-            : ''}
+          {formatEventDisplayDate(item, now)}
+          {item.end_datetime ? ` · ${formatEventDisplayTimeRange(item)}` : ''}
           {distance ? ` · ${distance}` : ''}
         </Text>
         {item.city || item.state ? (

@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 
 export function RequireAuth() {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, isPasswordRecovery } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -12,6 +12,10 @@ export function RequireAuth() {
         <div className="app-spinner" />
       </div>
     );
+  }
+
+  if (isPasswordRecovery && location.pathname !== '/auth/reset-password') {
+    return <Navigate to="/auth/reset-password" replace />;
   }
 
   if (!session) {

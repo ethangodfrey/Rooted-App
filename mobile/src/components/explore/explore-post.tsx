@@ -35,9 +35,9 @@ export const ExplorePost = memo(function ExplorePost({
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           className="h-48 w-full">
-          {images.map((url) => (
+          {images.map((url, index) => (
             <Image
-              key={url}
+              key={`${url}-${index}`}
               source={{ uri: url }}
               style={{ width: imageWidth, height: 192 }}
               resizeMode="cover"

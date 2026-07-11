@@ -11,7 +11,7 @@ export function EventLiveClock({ compact = false }: { compact?: boolean }) {
   return (
     <View
       accessibilityLiveRegion="polite"
-      className={`mb-3 flex-row items-center gap-2 rounded-xl border px-3 py-2${compact ? '' : ''}`}
+      className="mb-3 flex-row items-center gap-2 rounded-xl border px-3 py-2"
       style={{
         borderColor: 'rgba(34, 139, 34, 0.2)',
         backgroundColor: colors.honeydew,

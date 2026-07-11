@@ -30,16 +30,13 @@ export function ShopperSavedPage() {
   const [rows, setRows] = useState<SavedRow[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
-  const vendorKey = savedVendorIds.join(',');
-  const chefKey = savedChefIds.join(',');
-  const productKey = savedProductIds.join(',');
-
   useEffect(() => {
     let cancelled = false;
     async function load() {
       if (!loaded) return;
       if (!savedVendorIds.length && !savedChefIds.length && !savedProductIds.length) {
         setRows([]);
+        setLoadingDetails(false);
         return;
       }
 
@@ -100,8 +97,7 @@ export function ShopperSavedPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, vendorKey, chefKey, productKey]);
+  }, [loaded, savedVendorIds, savedChefIds, savedProductIds]);
 
   const visibleRows = useMemo(
     () => (filter === 'all' ? rows : rows.filter((row) => row.type === filter)),
