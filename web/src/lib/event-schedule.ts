@@ -371,3 +371,38 @@ export function nextOperatingDayName(
   const next = sorted.find((day) => day > weekday) ?? sorted[0];
   return WEEKDAY_NAMES[next] ?? schedule.dayOfWeek;
 }
+
+/** Instant to format on cards — live recurring markets use today, not seed start_datetime. */
+export function resolveEventDisplayInstant(
+  event: EventScheduleFields & { start_datetime: string },
+  now: Date,
+): Date {
+  if (!isRecurringMarketEvent(event)) {
+    return new Date(event.start_datetime);
+  }
+
+  const schedule = resolveEventScheduleForEvent(event);
+  const timeZone = resolveEventTimezone(event);
+  const operatingDays = resolveOperatingDayIndices(event);
+  const phase = recurringMarketPhase(schedule, timeZone, now, operatingDays);
+
+  if (phase === 'live') {
+    return now;
+  }
+
+  const { hour, minute } = getZonedParts(now, timeZone);
+  const nowMinutes = hour * 60 + minute;
+  const endMinutes = schedule.endHour * 60;
+
+  for (let offset = 0; offset < 8; offset += 1) {
+    const probe = new Date(now.getTime() + offset * 86_400_000);
+    const parts = getZonedParts(probe, timeZone);
+    if (!operatingDays.includes(parts.weekday)) continue;
+
+    if (offset === 0 && nowMinutes > endMinutes) continue;
+
+    return probe;
+  }
+
+  return new Date(event.start_datetime);
+}
