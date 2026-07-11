@@ -61,6 +61,7 @@ import { ShopperReservePage } from '@/pages/shopper/ShopperReservePage';
 import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
+import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
 import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
@@ -139,12 +140,15 @@ export default function App() {
         <Route path="/shopper/saved" element={<ShopperSavedPage />} />
         <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
         <Route path="/shopper/orders/:id" element={<ShopperOrderDetailPage />} />
+        <Route path="/profile/orders" element={<ShopperOrdersPage />} />
+        <Route path="/profile/orders/:id" element={<ShopperOrderDetailPage />} />
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
 
         <Route path="/vendor" element={<VendorLayout />}>
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="dashboard" element={<VendorDashboardPage />} />
+          <Route path="fulfillment" element={<VendorFulfillmentPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="products" element={<VendorProductsPage />} />
@@ -172,6 +176,8 @@ export default function App() {
         <Route path="/vendor/explore" element={<VendorExplorePage />} />
         <Route path="/vendor/compliance" element={<VendorCompliancePage />} />
         <Route path="/vendor/credentials" element={<VendorCredentialsPage />} />
+
+        <Route path="/dashboard/fulfillment" element={<Navigate to="/vendor/fulfillment" replace />} />
 
         <Route path="/chef" element={<ChefLayout />}>
           <Route path="setup" element={<ChefSetupPage />} />

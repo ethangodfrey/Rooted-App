@@ -41,7 +41,7 @@ export function ShopperProfilePage() {
 
       <div className="app-profile-big-cards">
 
-        <Link to="/shopper/orders" className="app-profile-big-card">
+        <Link to="/profile/orders" className="app-profile-big-card">
 
           <span className="app-profile-big-card__icon" aria-hidden="true">
 

@@ -10,10 +10,10 @@ export interface PickupScheduleFields {
   state?: string | null;
   address?: string | null;
   start_datetime: string;
-  end_datetime?: string;
+  end_datetime?: string | null;
   timezone?: string | null;
   hours_summary?: string | null;
-  sync_metadata?: Record<string, unknown>;
+  sync_metadata?: Record<string, unknown> | null;
 }
 
 /** Human-readable pickup label, e.g. "Pickup Sunday, July 12th at Lot Twenty Eight". */
@@ -27,7 +27,7 @@ export function formatPickupSummary(
       timezone: market.timezone,
       state: market.state,
       hours_summary: market.hours_summary,
-      sync_metadata: market.sync_metadata,
+      sync_metadata: market.sync_metadata ?? undefined,
     },
     now,
   );

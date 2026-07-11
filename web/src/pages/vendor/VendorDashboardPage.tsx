@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
+import { PENDING_PICKUP_STATUSES } from '@/lib/order-fulfillment';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -13,20 +14,41 @@ const statusCopy: Record<string, string> = {
 
 export function VendorDashboardPage() {
   const { user, vendor } = useAuth();
-  const [pendingOrders, setPendingOrders] = useState(0);
+  const [pendingPickup, setPendingPickup] = useState(0);
+  const [fulfilledToday, setFulfilledToday] = useState(0);
   const [activeProducts, setActiveProducts] = useState(0);
 
   useEffect(() => {
     async function load() {
       if (!vendor) return;
-      const [ordersRes, productsRes] = await Promise.all([
-        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor.id).in('order_status', ['submitted', 'pending_review']),
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor.id).eq('status', 'active'),
+
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const [pendingRes, fulfilledRes, productsRes] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('vendor_id', vendor.id)
+          .in('order_status', PENDING_PICKUP_STATUSES),
+        supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('vendor_id', vendor.id)
+          .in('order_status', ['fulfilled', 'completed'])
+          .gte('updated_at', startOfDay.toISOString()),
+        supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('vendor_id', vendor.id)
+          .eq('status', 'active'),
       ]);
-      setPendingOrders(ordersRes.count ?? 0);
+
+      setPendingPickup(pendingRes.count ?? 0);
+      setFulfilledToday(fulfilledRes.count ?? 0);
       setActiveProducts(productsRes.count ?? 0);
     }
-    load();
+    void load();
   }, [vendor]);
 
   const status = vendor?.approval_status ?? 'pending';
@@ -44,11 +66,15 @@ export function VendorDashboardPage() {
       </div>
 
       <div className="app-dashboard-grid" style={{ marginBottom: '1.5rem' }}>
-        <Link to="/vendor/orders" className="app-card app-card--pressable">
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{pendingOrders}</p>
-          <p className="app-row-meta">Pending orders</p>
+        <Link to="/vendor/fulfillment" className="app-card app-card--pressable" style={{ minHeight: 88 }}>
+          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{pendingPickup}</p>
+          <p className="app-row-meta">Pending pickup</p>
         </Link>
-        <Link to="/vendor/products" className="app-card app-card--pressable">
+        <Link to="/vendor/fulfillment" className="app-card app-card--pressable app-card--honeydew" style={{ minHeight: 88 }}>
+          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{fulfilledToday}</p>
+          <p className="app-row-meta">Fulfilled today</p>
+        </Link>
+        <Link to="/vendor/products" className="app-card app-card--pressable" style={{ minHeight: 88 }}>
           <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{activeProducts}</p>
           <p className="app-row-meta">Active products</p>
         </Link>
@@ -60,6 +86,10 @@ export function VendorDashboardPage() {
       </Link>
 
       <div className="app-list">
+        <Link to="/vendor/fulfillment" className="app-card app-card--pressable app-card--honeydew">
+          <p className="app-row-title">Fulfillment ledger</p>
+          <p className="app-row-meta">Mark pickups complete and track live counters</p>
+        </Link>
         <Link to="/vendor/products/new" className="app-card app-card--pressable">+ Add a product</Link>
         <Link to="/vendor/events" className="app-card app-card--pressable">My events</Link>
         <Link to="/vendor/posts/new" className="app-card app-card--pressable">+ Create a post</Link>
