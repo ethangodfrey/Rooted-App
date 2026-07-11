@@ -68,6 +68,7 @@ import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
+import { VendorPosActivityPage } from '@/pages/vendor/VendorPosActivityPage';
 import { VendorPosConnectedPage } from '@/pages/vendor/VendorPosConnectedPage';
 import { VendorPosConnectionPage } from '@/pages/vendor/VendorPosConnectionPage';
 import { VendorPosMappingsPage } from '@/pages/vendor/VendorPosMappingsPage';
@@ -150,6 +151,7 @@ export default function App() {
         <Route path="/vendor/events" element={<VendorEventsPage />} />
         <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
         <Route path="/vendor/pos" element={<VendorPosPage />} />
+        <Route path="/vendor/pos/activity" element={<VendorPosActivityPage />} />
         <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />
         <Route path="/vendor/pos/mappings" element={<VendorPosMappingsPage />} />
         <Route path="/vendor/pos/:id" element={<VendorPosConnectionPage />} />

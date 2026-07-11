@@ -161,10 +161,16 @@ export function VendorPosPage() {
               </button>
             </div>
           ) : (
-            <Link to="/vendor/pos/mappings" className="app-card app-card--pressable" style={{ display: 'block' }}>
-              <p className="app-row-title">Item mappings</p>
-              <p className="app-row-meta">Map register items to Vendorly products</p>
-            </Link>
+            <>
+              <Link to="/vendor/pos/activity" className="app-card app-card--pressable" style={{ display: 'block', marginBottom: '0.75rem' }}>
+                <p className="app-row-title">Live activity dashboard</p>
+                <p className="app-row-meta">Inventory syncs, low-stock alerts, and queue health</p>
+              </Link>
+              <Link to="/vendor/pos/mappings" className="app-card app-card--pressable" style={{ display: 'block' }}>
+                <p className="app-row-title">Item mappings</p>
+                <p className="app-row-meta">Map register items to Vendorly products</p>
+              </Link>
+            </>
           )}
 
           {error ? <p className="app-error">{error}</p> : null}

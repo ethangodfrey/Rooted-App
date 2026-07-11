@@ -7,6 +7,7 @@ import { CloverAdapter } from './adapters/clover/clover.adapter';
 import { SquareAdapter } from './adapters/square/square.adapter';
 import { ToastAdapter } from './adapters/toast/toast.adapter';
 import { AdminPosController } from './controllers/admin-pos.controller';
+import { PosActivityController } from './controllers/pos-activity.controller';
 import { PosConnectionsController } from './controllers/pos-connections.controller';
 import { PosMappingsController } from './controllers/pos-mappings.controller';
 import { PosOAuthController } from './controllers/pos-oauth.controller';
@@ -24,6 +25,7 @@ import { POS_AGGREGATION_QUEUE, POS_SYNC_QUEUE } from './jobs/pos-queue.constant
 import { PosSchedulerService } from './jobs/pos-scheduler.service';
 import { PosSyncProcessor } from './jobs/pos-sync.processor';
 import { PosAnalyticsService } from './services/pos-analytics.service';
+import { PosActivityDashboardService } from './services/pos-activity-dashboard.service';
 import { PosConnectionService } from './services/pos-connection.service';
 import { PosImportService } from './services/pos-import.service';
 import { PosInventorySyncService } from './services/pos-inventory-sync.service';
@@ -53,6 +55,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosMappingsController,
     PosOAuthController,
     PosWebhooksController,
+    PosActivityController,
     AdminPosController,
   ],
   providers: [
@@ -69,6 +72,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosInventorySyncService,
     PosWebhookService,
     PosAnalyticsService,
+    PosActivityDashboardService,
     // Jobs
     PosJobsService,
     PosInventoryJobsService,
