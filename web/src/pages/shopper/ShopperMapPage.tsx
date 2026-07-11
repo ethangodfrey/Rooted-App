@@ -252,8 +252,7 @@ export function ShopperMapPage() {
                   <button
                     key={event.id}
                     type="button"
-                    className={`app-hscroll-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
-                    style={{ flex: '0 0 min(85vw, 280px)', textAlign: 'left', border: 'none', cursor: 'pointer', font: 'inherit' }}
+                    className={`app-hscroll-card shopper-map-carousel-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
                     onClick={() => openEventDetail(event.id)}
                   >
                     <p className="app-hscroll-card__title">{event.name}</p>

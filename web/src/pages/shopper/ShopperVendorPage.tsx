@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { CartCheckoutSlider } from '@/components/checkout/CartCheckoutSlider';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
@@ -122,21 +123,28 @@ export function ShopperVendorPage() {
         </button>
       </div>
 
-      {vendor.banner_url ? (
-        <img
-          src={vendor.banner_url}
-          alt=""
-          style={{ width: '100%', borderRadius: '16px', marginBottom: '1rem', maxHeight: '200px', objectFit: 'cover' }}
-        />
-      ) : null}
+      <FallbackImage
+        src={vendor.banner_url}
+        variant="banner"
+        category={vendor.category}
+        style={{
+          width: '100%',
+          borderRadius: '16px',
+          marginBottom: '1rem',
+          maxHeight: '200px',
+          minHeight: '120px',
+          objectFit: 'cover',
+        }}
+      />
 
-      <div className="app-row" style={{ marginBottom: '1rem' }}>
-        {vendor.logo_url ? (
-          <img src={vendor.logo_url} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} />
-        ) : (
-          <div className="app-row-icon">🏪</div>
-        )}
-        <div>
+      <div className="app-row app-market-detail-header">
+        <FallbackImage
+          src={vendor.logo_url}
+          variant="vendor-logo"
+          category={vendor.category}
+          style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }}
+        />
+        <div className="min-w-0 flex-1">
           <h1 className="app-title" style={{ margin: 0 }}>{vendor.business_name}</h1>
           {vendor.category ? <p className="app-row-meta">{vendor.category}</p> : null}
           <TrustBadges userId={vendor.user_id} />

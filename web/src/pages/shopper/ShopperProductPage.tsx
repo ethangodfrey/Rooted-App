@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { formatEventDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -44,9 +45,18 @@ export function ShopperProductPage() {
     <div className="app-screen">
       <Link to={`/shopper/vendors/${product.vendor_id}`} className="app-back-link">← {product.vendor?.business_name ?? 'Vendor'}</Link>
 
-      {product.media_urls[0] ? (
-        <img src={product.media_urls[0]} alt="" style={{ width: '100%', borderRadius: '16px', marginBottom: '1rem' }} />
-      ) : null}
+      <FallbackImage
+        src={product.media_urls[0]}
+        variant="product"
+        style={{
+          width: '100%',
+          borderRadius: '16px',
+          marginBottom: '1rem',
+          minHeight: '180px',
+          maxHeight: '320px',
+          objectFit: 'cover',
+        }}
+      />
 
       <h1 className="app-title">{product.name}</h1>
       <p className="app-subtitle">{formatPrice(product.price)}</p>

@@ -38,7 +38,7 @@ export function ShopperEventDetailPage() {
   if (!event) return <div className="app-empty">Event not found.</div>;
 
   return (
-    <div className="app-screen">
+    <div className="app-screen app-screen--narrow">
       <Link to="/shopper/events" className="app-back-link">← Events</Link>
       <EventThumb event={event} large />
       <div style={{ marginBottom: '0.75rem' }}>
