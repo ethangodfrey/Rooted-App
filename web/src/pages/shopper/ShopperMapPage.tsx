@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMapFetchOrigin } from '@/hooks/use-map-fetch-origin';
 import { useNow } from '@/hooks/use-now';
@@ -12,6 +12,7 @@ import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import {
   centroidOfEvents,
   filterEventsForMapSearch,
+  geocodePlaceQuery,
   geocodeUsZip,
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
@@ -41,18 +42,32 @@ export function ShopperMapPage() {
   const [searchCenter, setSearchCenter] = useState<Coords | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<Coords | null>(null);
+  const hasInitializedFocusRef = useRef(false);
+
+  const eventFetchOrigin = searchCenter ?? fetchOrigin ?? coords;
 
   useEffect(() => {
     const parsed = parseMapSearchQuery(query);
-    if (!parsed.zip) {
+    if (!parsed.trimmed) {
       setSearchCenter(null);
       return;
     }
 
     let cancelled = false;
     const handle = setTimeout(async () => {
-      const center = await geocodeUsZip(parsed.zip!);
-      if (!cancelled) setSearchCenter(center);
+      if (parsed.zip) {
+        const center = await geocodeUsZip(parsed.zip);
+        if (!cancelled) setSearchCenter(center);
+        return;
+      }
+
+      if (parsed.textTerms.length > 0) {
+        const center = await geocodePlaceQuery(parsed.textTerms.join(' '));
+        if (!cancelled) setSearchCenter(center);
+        return;
+      }
+
+      if (!cancelled) setSearchCenter(null);
     }, 350);
 
     return () => {
@@ -64,7 +79,7 @@ export function ShopperMapPage() {
   useEffect(() => {
     if (!query.trim()) return;
     const parsed = parseMapSearchQuery(query);
-    if (parsed.zip && searchCenter) {
+    if ((parsed.zip || parsed.textTerms.length > 0) && searchCenter) {
       setFocusTarget(searchCenter);
       setSelectedEventId(null);
       return;
@@ -79,6 +94,22 @@ export function ShopperMapPage() {
   }, [query, searchCenter, events]);
 
   useEffect(() => {
+    if (hasInitializedFocusRef.current || query.trim()) return;
+    if (coords) {
+      setFocusTarget(coords);
+      hasInitializedFocusRef.current = true;
+      return;
+    }
+    if (!loading && events.length > 0) {
+      const center = centroidOfEvents(events);
+      if (center) {
+        setFocusTarget(center);
+        hasInitializedFocusRef.current = true;
+      }
+    }
+  }, [coords, events, loading, query]);
+
+  useEffect(() => {
     let active = true;
 
     async function load() {
@@ -86,7 +117,7 @@ export function ShopperMapPage() {
       setError(null);
       const { data, error: queryError } = await fetchPublicEvents({
         forMap: true,
-        near: fetchOrigin,
+        near: eventFetchOrigin,
       });
 
       if (!active) return;
@@ -104,7 +135,7 @@ export function ShopperMapPage() {
     return () => {
       active = false;
     };
-  }, [fetchOrigin]);
+  }, [eventFetchOrigin]);
 
   const filteredEvents = useMemo(
     () => filterEventsForMapSearch(events, query, searchCenter),
@@ -210,11 +241,15 @@ export function ShopperMapPage() {
         </div>
       ) : error ? (
         <div className="app-empty">Couldn&apos;t load events: {error}</div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="app-empty">No mapped events match your search.</div>
       ) : (
         <div className="shopper-map-layout">
           <div className="relative z-0 min-w-0">
+            {filteredEvents.length === 0 ? (
+              <p className="app-empty" style={{ marginBottom: '0.75rem' }}>
+                No mapped events match your search.
+              </p>
+            ) : null}
+
             <Suspense
               fallback={
                 <div className="events-map-panel">
@@ -229,7 +264,7 @@ export function ShopperMapPage() {
                 now={now}
                 selectedEventId={selectedEventId}
                 userCoords={coords}
-                focusTarget={focusTarget}
+                focusTarget={focusTarget ?? searchCenter}
                 focusZoom={FOCUS_ZOOM}
                 onPreviewEvent={previewEvent}
                 onRecenter={() => (coords ? recenterOnUser() : requestUserLocation())}
@@ -244,31 +279,33 @@ export function ShopperMapPage() {
             ) : null}
           </div>
 
-          <div className="shopper-map-list shopper-map-carousel">
-            <div className="app-hscroll pb-1">
-              {sidebarEvents.map((event) => {
-                const phase = eventRuntimePhase(event, now);
-                return (
-                  <button
-                    key={event.id}
-                    type="button"
-                    className={`app-hscroll-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
-                    style={{ flex: '0 0 min(85vw, 280px)', textAlign: 'left', border: 'none', cursor: 'pointer', font: 'inherit' }}
-                    onClick={() => openEventDetail(event.id)}
-                  >
-                    <p className="app-hscroll-card__title">{event.name}</p>
-                    <p className="app-hscroll-card__meta">
-                      {formatEventDate(event.start_datetime)}
-                      {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
-                    </p>
-                    {phase === 'live' ? (
-                      <span className="app-hscroll-card__badge">Live</span>
-                    ) : null}
-                  </button>
-                );
-              })}
+          {sidebarEvents.length > 0 ? (
+            <div className="shopper-map-list shopper-map-carousel">
+              <div className="app-hscroll pb-1">
+                {sidebarEvents.map((event) => {
+                  const phase = eventRuntimePhase(event, now);
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      className={`app-hscroll-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                      style={{ flex: '0 0 min(85vw, 280px)', textAlign: 'left', border: 'none', cursor: 'pointer', font: 'inherit' }}
+                      onClick={() => openEventDetail(event.id)}
+                    >
+                      <p className="app-hscroll-card__title">{event.name}</p>
+                      <p className="app-hscroll-card__meta">
+                        {formatEventDate(event.start_datetime)}
+                        {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
+                      </p>
+                      {phase === 'live' ? (
+                        <span className="app-hscroll-card__badge">Live</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       )}
     </div>
