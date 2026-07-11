@@ -9,18 +9,21 @@ type SettlementOrderRow = {
   total: number;
   gross_cents?: number | null;
   platform_fee_cents?: number | null;
+  updated_at?: string | null;
 };
 
-const SETTLEMENT_ORDER_SELECT = 'id, total, gross_cents, platform_fee_cents';
+const SETTLEMENT_ORDER_SELECT = 'id, total, gross_cents, platform_fee_cents, updated_at';
 
 function toSettlementInput(row: SettlementOrderRow): SettlementOrderInput {
   const totalCents = row.gross_cents ?? row.total;
   const platformFeeCents = row.platform_fee_cents ?? undefined;
+  const completedAt = row.updated_at ?? undefined;
 
   return {
     id: row.id,
     totalCents,
     platformFeeCents: platformFeeCents ?? undefined,
+    completedAt,
   };
 }
 

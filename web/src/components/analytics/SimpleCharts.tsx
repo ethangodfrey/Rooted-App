@@ -213,3 +213,109 @@ export function PieLegend({ slices, formatValue }: { slices: ChartSlice[]; forma
     </div>
   );
 }
+
+export interface SettlementPeriodBar {
+  label: string;
+  grossCents: number;
+  platformFeeCents: number;
+  netCents: number;
+}
+
+export const SETTLEMENT_CHART_COLORS = {
+  gross: '#334155',
+  platformFee: '#f59e0b',
+  net: '#10b981',
+  bucket: '#228B22',
+} as const;
+
+/** Daily/weekly gross volume trend from fulfilled orders. */
+export function SettlementGrossTrendChart({
+  data,
+  maxValue,
+  formatValue = (cents) => `$${(cents / 100).toFixed(2)}`,
+}: {
+  data: SettlementPeriodBar[];
+  maxValue: number;
+  formatValue?: (cents: number) => string;
+}) {
+  if (data.length === 0) return <EmptyChart message="No completed orders to chart yet." />;
+
+  const max = maxValue > 0 ? maxValue : 1;
+  return (
+    <div
+      className="analytics-bars"
+      role="img"
+      aria-label="Gross settlement volume trend by period"
+    >
+      {data.map((point, index) => (
+        <div key={`${point.label}-${index}`} className="analytics-bar-group">
+          <div className="analytics-bar-stack">
+            <div
+              className="analytics-bar"
+              style={{
+                width: '12px',
+                height: `${Math.max(2, (point.grossCents / max) * 140)}px`,
+                background: SETTLEMENT_CHART_COLORS.gross,
+              }}
+              title={`${point.label}: ${formatValue(point.grossCents)} gross`}
+            />
+          </div>
+          <span className="analytics-bar-label">{point.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Stacked net vendor allocation + platform fee to show take-rate per period. */
+export function SettlementFeeSplitChart({
+  data,
+  maxValue,
+  formatValue = (cents) => `$${(cents / 100).toFixed(2)}`,
+}: {
+  data: SettlementPeriodBar[];
+  maxValue: number;
+  formatValue?: (cents: number) => string;
+}) {
+  if (data.length === 0) return <EmptyChart message="No fee split data yet." />;
+
+  const max = maxValue > 0 ? maxValue : 1;
+  const scale = (cents: number) => Math.max(0, (cents / max) * 140);
+
+  return (
+    <div
+      className="analytics-bars"
+      role="img"
+      aria-label="Net payout and platform fee split by period"
+    >
+      {data.map((point, index) => {
+        const hasVolume = point.grossCents > 0;
+        return (
+          <div key={`${point.label}-${index}`} className="analytics-bar-group">
+            <div className="analytics-bar-stack">
+              <div
+                className="analytics-bar"
+                style={{
+                  width: '12px',
+                  height: `${Math.max(hasVolume ? 2 : 0, scale(point.netCents))}px`,
+                  background: SETTLEMENT_CHART_COLORS.net,
+                }}
+                title={`${point.label} net: ${formatValue(point.netCents)}`}
+              />
+              <div
+                className="analytics-bar"
+                style={{
+                  width: '12px',
+                  height: `${Math.max(hasVolume ? 2 : 0, scale(point.platformFeeCents))}px`,
+                  background: SETTLEMENT_CHART_COLORS.platformFee,
+                }}
+                title={`${point.label} platform fee: ${formatValue(point.platformFeeCents)}`}
+              />
+            </div>
+            <span className="analytics-bar-label">{point.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
