@@ -108,7 +108,10 @@ export function AppShell({
 
       <div className="app-layout">
 
-        <nav className="app-sidebar" aria-label={`${role} navigation`}>
+        <nav
+          className="app-sidebar hidden min-[900px]:flex"
+          aria-label={`${role} navigation`}
+        >
 
           {tabs.map((tab) => (
 

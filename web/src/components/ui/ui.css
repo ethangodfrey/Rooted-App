@@ -160,6 +160,7 @@
 
 .app-screen--map {
   max-width: 1100px;
+  overflow: visible;
 }
 
 .profile-avatar-block {
@@ -831,6 +832,11 @@
 .app-tabbar__label {
   line-height: 1.1;
   letter-spacing: 0.01em;
+}
+
+/* Desktop sidebar — hidden on mobile (bottom tab bar is primary). */
+.app-sidebar {
+  display: none;
 }
 
 @media (min-width: 900px) {
