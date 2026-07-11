@@ -26,3 +26,13 @@ Market hours/timezones: `backend/src/modules/markets/market-schedule.util.ts`. C
 ## Images
 
 Prefer free sources (Commons, website og:image). Google Places is optional fallback — costs money. Vision verification via OpenAI when enabled.
+
+One-time Google Places backfill (persists static URLs in `events.image_url` / `banner_url`):
+
+```bash
+# Apply docs/supabase/phase40_markets_image_url.sql in Supabase first
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... GOOGLE_PLACES_API_KEY=... \
+  npm run markets:seed-photos -- --limit 50
+```
+
+Uses 200ms delay between lookups; Unsplash fallback when Places returns zero results.
