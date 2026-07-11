@@ -84,7 +84,7 @@ export async function recordVendorReviewFeedback(options: {
     vendor_snapshot: buildVendorSnapshot(vendor),
   });
 
-  if (error) {
+  if (error && __DEV__) {
     console.warn('Failed to record vendor review feedback:', error.message);
   }
 }

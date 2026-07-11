@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { ProductImage } from '@/components/ui/ProductImage';
 import { useAuth } from '@/hooks/use-auth';
 import { formatPrice } from '@/lib/format';
-import { ProductThumb } from '@/components/ui/ProductThumb';
 import { supabase } from '@/lib/supabase';
 import type { Product } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -15,7 +15,10 @@ export function VendorProductsPage() {
 
   useEffect(() => {
     async function load() {
-      if (!vendor) return;
+      if (!vendor) {
+        setLoading(false);
+        return;
+      }
       const { data } = await supabase.from('products').select('*').eq('vendor_id', vendor.id).order('created_at', { ascending: false });
       setProducts(data ?? []);
       setLoading(false);
@@ -42,7 +45,13 @@ export function VendorProductsPage() {
           {products.map((product) => (
             <div key={product.id} className="app-card">
               <Link to={`/vendor/products/${product.id}/edit`} className="app-row" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <ProductThumb src={product.media_urls[0]} category={product.category} size={48} />
+                <ProductImage
+                  src={product.media_urls[0]}
+                  category={product.category}
+                  name={product.name}
+                  size={48}
+                  rounded="md"
+                />
                 <div className="app-row-body">
                   <p className="app-row-title">{product.name}</p>
                   <p className="app-row-meta">{formatPrice(product.price)} · {product.status}</p>

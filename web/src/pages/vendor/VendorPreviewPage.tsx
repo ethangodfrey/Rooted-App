@@ -11,9 +11,14 @@ export function VendorPreviewPage() {
   const { vendor } = useAuth();
   const [data, setData] = useState<Vendor | null>(null);
   const [products, setProducts] = useState<{ id: string; name: string; price: number }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!vendor) return;
+    if (!vendor) {
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       const [vendorRes, productsRes] = await Promise.all([
         supabase.from('vendors').select('*').eq('id', vendor!.id).maybeSingle(),
@@ -21,12 +26,27 @@ export function VendorPreviewPage() {
       ]);
       setData(vendorRes.data);
       setProducts(productsRes.data ?? []);
+      setLoading(false);
     }
-    load();
+
+    void load();
   }, [vendor]);
 
-  if (!vendor || !data) {
+  if (loading) {
     return <div className="app-loading"><div className="app-spinner" /></div>;
+  }
+
+  if (!vendor) {
+    return <div className="app-empty">Sign in as a vendor to preview your storefront.</div>;
+  }
+
+  if (!data) {
+    return (
+      <div className="app-screen">
+        <Link to="/vendor/profile" className="app-back-link">← Profile</Link>
+        <div className="app-empty">Could not load storefront preview.</div>
+      </div>
+    );
   }
 
   return (

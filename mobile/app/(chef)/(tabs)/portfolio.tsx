@@ -85,8 +85,8 @@ export default function ChefPortfolioScreen() {
             <Card key={item.id} className="overflow-hidden p-0">
               {item.media_urls.length > 0 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {item.media_urls.map((url) => (
-                    <Image key={url} source={{ uri: url }} className="h-40 w-40" />
+                  {item.media_urls.map((url, index) => (
+                    <Image key={`${url}-${index}`} source={{ uri: url }} className="h-40 w-40" />
                   ))}
                 </ScrollView>
               ) : null}

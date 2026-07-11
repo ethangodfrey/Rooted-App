@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
 import { useAuth } from '@/hooks/use-auth';
 import { geocodeAddress } from '@/lib/geocode';
 import { supabase } from '@/lib/supabase';
@@ -123,11 +124,7 @@ export function ChefSetupPage() {
       </p>
 
       <div className="profile-avatar-block">
-        {photoUrl ? (
-          <img src={photoUrl} alt="" className="profile-avatar" />
-        ) : (
-          <div className="profile-avatar profile-avatar--placeholder">👨‍🍳</div>
-        )}
+        <ProfilePhoto photoUrl={photoUrl} initials="👨‍🍳" />
         <input
           ref={photoRef}
           type="file"

@@ -12,7 +12,7 @@ import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { useNow } from '@/src/hooks/use-now';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/src/lib/event-runtime';
-import { formatEventDate, formatEventTimeRange } from '@/src/lib/format';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/src/lib/format';
 import { supabase } from '@/src/lib/supabase';
 import type { Event } from '@/src/types/database';
 
@@ -150,8 +150,7 @@ export default function VendorEventsScreen() {
                 <View className="mb-2 flex-row items-center">
                   <FontAwesome name="calendar" size={13} color="#228B22" />
                   <Text variant="caption" className="ml-2 text-forest">
-                    {formatEventDate(item.start_datetime)} ·{' '}
-                    {formatEventTimeRange(item.start_datetime, item.end_datetime)}
+                    {formatEventDisplayDate(item, now)} · {formatEventDisplayTimeRange(item)}
                   </Text>
                 </View>
                 <Text variant="heading" className="mb-1">

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { FormFieldError } from '@/components/ui/FormFieldError';
+import { FieldError } from '@/components/ui/FieldError';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { updateShopperEmail, updateShopperProfile } from '@/lib/shopper-profile';
@@ -25,8 +26,7 @@ export function ShopperProfileEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'email', string>>>({});
-  const [photoFailed, setPhotoFailed] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'email', string>>>({});
 
   useEffect(() => {
     setName(user?.name ?? '');
@@ -66,27 +66,23 @@ export function ShopperProfileEditPage() {
   async function handleSave() {
     if (!user) return;
 
-    const nextFieldErrors: Partial<Record<'name' | 'email', string>> = {};
-    if (!name.trim()) {
-      nextFieldErrors.name = 'Name is required.';
-    }
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    const nextFieldErrors: Partial<Record<'email', string>> = {};
     const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      nextFieldErrors.email = 'Email is required.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       nextFieldErrors.email = 'Enter a valid email address.';
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
-      setError(null);
+      setSaving(false);
       return;
     }
 
     setFieldErrors({});
-    setSaving(true);
-    setError(null);
-    setMessage(null);
 
     const profileResult = await updateShopperProfile(user.id, {
       name,
@@ -139,12 +135,13 @@ export function ShopperProfileEditPage() {
       <p className="app-subtitle">Update your photo, contact info, and saved vendors.</p>
 
       <div className="profile-avatar-block">
-        {photoUrl && !photoFailed ? (
-          <img
+        {photoUrl ? (
+          <FallbackImage
             src={photoUrl}
             alt=""
+            variant="avatar"
+            label={name || email}
             className="profile-avatar"
-            onError={() => setPhotoFailed(true)}
           />
         ) : (
           <div className="profile-avatar profile-avatar--placeholder">{initials}</div>
@@ -160,10 +157,7 @@ export function ShopperProfileEditPage() {
           type="button"
           className="app-btn app-btn--secondary app-btn--small"
           disabled={uploadingPhoto}
-          onClick={() => {
-            setPhotoFailed(false);
-            fileRef.current?.click();
-          }}
+          onClick={() => fileRef.current?.click()}
         >
           {uploadingPhoto ? 'Uploading…' : 'Change photo'}
         </button>
@@ -176,21 +170,7 @@ export function ShopperProfileEditPage() {
 
       <div className="app-input-group">
         <label htmlFor="name">Name</label>
-        <input
-          id="name"
-          className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setFieldErrors((prev) => {
-              if (!prev.name) return prev;
-              const next = { ...prev };
-              delete next.name;
-              return next;
-            });
-          }}
-        />
-        <FormFieldError message={fieldErrors.name} />
+        <input id="name" className="app-input" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="app-input-group">
         <label htmlFor="email">Email</label>
@@ -209,7 +189,7 @@ export function ShopperProfileEditPage() {
             });
           }}
         />
-        <FormFieldError message={fieldErrors.email} />
+        <FieldError message={fieldErrors.email} />
         <p className="app-row-meta" style={{ marginTop: '0.375rem' }}>
           Changing your email may require confirmation via inbox.
         </p>

@@ -9,6 +9,9 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   ready_for_pickup: 'Ready for pickup',
   fulfilled: 'Fulfilled',
   cancelled: 'Cancelled',
+  pending: 'Pending',
+  completed: 'Completed',
+  canceled: 'Canceled',
 };
 
 export const ORDER_STATUS_STYLE: Record<OrderStatus, string> = {
@@ -20,6 +23,9 @@ export const ORDER_STATUS_STYLE: Record<OrderStatus, string> = {
   ready_for_pickup: 'bg-honeydew text-warn',
   fulfilled: 'bg-honeydew text-primary',
   cancelled: 'bg-honeydew text-muted',
+  pending: 'bg-honeydew text-primary',
+  completed: 'bg-honeydew text-primary',
+  canceled: 'bg-honeydew text-muted',
 };
 
 export function nextVendorStatus(status: OrderStatus): OrderStatus | null {

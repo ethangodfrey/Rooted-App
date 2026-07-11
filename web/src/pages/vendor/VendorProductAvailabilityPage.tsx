@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
-import { formatEventDate } from '@/lib/format';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayDate } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -10,6 +11,11 @@ interface AttendedEvent {
   id: string;
   name: string;
   start_datetime: string;
+  end_datetime?: string | null;
+  timezone?: string | null;
+  hours_summary?: string | null;
+  sync_metadata?: Record<string, unknown>;
+  state?: string | null;
 }
 
 interface QtyEntry {
@@ -21,6 +27,7 @@ export function VendorProductAvailabilityPage() {
   const { id: productId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { vendor } = useAuth();
+  const now = useNow(60_000);
   const [events, setEvents] = useState<AttendedEvent[]>([]);
   const [quantities, setQuantities] = useState<Record<string, QtyEntry>>({});
   const [loading, setLoading] = useState(true);
@@ -28,13 +35,16 @@ export function VendorProductAvailabilityPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!vendor || !productId) return;
+    if (!vendor || !productId) {
+      setLoading(false);
+      return;
+    }
     setError(null);
 
     const [participationRes, availabilityRes] = await Promise.all([
       supabase
         .from('vendor_events')
-        .select('events!inner(id, name, start_datetime)')
+        .select('events!inner(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state)')
         .eq('vendor_id', vendor.id),
       supabase
         .from('product_event_availability')
@@ -147,7 +157,7 @@ export function VendorProductAvailabilityPage() {
           {events.map((ev) => (
             <div key={ev.id} className="app-card">
               <p className="app-row-title">{ev.name}</p>
-              <p className="app-row-meta">{formatEventDate(ev.start_datetime)}</p>
+              <p className="app-row-meta">{formatEventDisplayDate(ev, now)}</p>
               <div className="app-form-grid" style={{ marginTop: '0.75rem' }}>
                 <div className="app-input-group" style={{ margin: 0 }}>
                   <label>Presale qty</label>

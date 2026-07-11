@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { FormFieldError } from '@/components/ui/FormFieldError';
+import { FieldError } from '@/components/ui/FieldError';
 import { combineDateTime, toDateInput, toTimeInput } from '@/lib/event-datetime';
 import type { Event, EventStatus, VisibilityStatus } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -31,6 +31,15 @@ interface EventFormProps {
 
 const EVENT_STATUSES: EventStatus[] = ['upcoming', 'live', 'completed', 'cancelled'];
 const VISIBILITY_STATUSES: VisibilityStatus[] = ['draft', 'public'];
+
+type EventField =
+  | 'name'
+  | 'startDate'
+  | 'startTime'
+  | 'endDate'
+  | 'endTime'
+  | 'latitude'
+  | 'longitude';
 
 function defaultStart(): { date: string; time: string } {
   const d = new Date();
@@ -78,9 +87,9 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
   const [parkingInfo, setParkingInfo] = useState(initial?.parking_info ?? '');
   const [admissionInfo, setAdmissionInfo] = useState(initial?.admission_info ?? '');
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'schedule' | 'coordinates', string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<EventField, string>>>({});
 
-  function clearFieldError(field: 'name' | 'schedule' | 'coordinates') {
+  function clearFieldError(field: EventField) {
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -91,8 +100,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    const nextFieldErrors: Partial<Record<'name' | 'schedule' | 'coordinates', string>> = {};
+    const nextFieldErrors: Partial<Record<EventField, string>> = {};
 
     if (!name.trim()) {
       nextFieldErrors.name = 'Event name is required.';
@@ -100,24 +108,40 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
 
     const startIso = combineDateTime(startDate, startTime);
     const endIso = combineDateTime(endDate, endTime);
-    if (!startIso || !endIso) {
-      nextFieldErrors.schedule = 'Enter valid start and end date/time values.';
-    } else if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
-      nextFieldErrors.schedule = 'End time must be after start time.';
+    if (!startDate || !startIso) {
+      nextFieldErrors.startDate = 'Enter a valid start date.';
+    }
+    if (!startTime || !startIso) {
+      nextFieldErrors.startTime = 'Enter a valid start time.';
+    }
+    if (!endDate || !endIso) {
+      nextFieldErrors.endDate = 'Enter a valid end date.';
+    }
+    if (!endTime || !endIso) {
+      nextFieldErrors.endTime = 'Enter a valid end time.';
+    }
+    if (startIso && endIso && new Date(endIso).getTime() <= new Date(startIso).getTime()) {
+      nextFieldErrors.endDate = 'End must be after the start.';
+      nextFieldErrors.endTime = 'End must be after the start.';
     }
 
     const lat = Number(latitude);
     const lng = Number(longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      nextFieldErrors.coordinates = 'Latitude and longitude must be valid numbers.';
+    if (!Number.isFinite(lat)) {
+      nextFieldErrors.latitude = 'Latitude must be a valid number.';
+    }
+    if (!Number.isFinite(lng)) {
+      nextFieldErrors.longitude = 'Longitude must be a valid number.';
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
 
     setFieldErrors({});
+    setError(null);
 
     await onSubmit({
       name: name.trim(),
@@ -149,7 +173,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
             clearFieldError('name');
           }}
         />
-        <FormFieldError message={fieldErrors.name} />
+        <FieldError message={fieldErrors.name} />
       </div>
       <div className="app-input-group">
         <label>Description</label>
@@ -164,53 +188,60 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
         <div className="app-input-group">
           <label>Start date</label>
           <input
-            className={`app-input${fieldErrors.schedule ? ' app-input--invalid' : ''}`}
+            className={`app-input${fieldErrors.startDate ? ' app-input--invalid' : ''}`}
             type="date"
             value={startDate}
             onChange={(e) => {
               setStartDate(e.target.value);
-              clearFieldError('schedule');
+              clearFieldError('startDate');
+              clearFieldError('endDate');
             }}
           />
+          <FieldError message={fieldErrors.startDate} />
         </div>
         <div className="app-input-group">
           <label>Start time</label>
           <input
-            className={`app-input${fieldErrors.schedule ? ' app-input--invalid' : ''}`}
+            className={`app-input${fieldErrors.startTime ? ' app-input--invalid' : ''}`}
             type="time"
             value={startTime}
             onChange={(e) => {
               setStartTime(e.target.value);
-              clearFieldError('schedule');
+              clearFieldError('startTime');
+              clearFieldError('endTime');
             }}
           />
+          <FieldError message={fieldErrors.startTime} />
         </div>
         <div className="app-input-group">
           <label>End date</label>
           <input
-            className={`app-input${fieldErrors.schedule ? ' app-input--invalid' : ''}`}
+            className={`app-input${fieldErrors.endDate ? ' app-input--invalid' : ''}`}
             type="date"
             value={endDate}
             onChange={(e) => {
               setEndDate(e.target.value);
-              clearFieldError('schedule');
+              clearFieldError('endDate');
+              clearFieldError('endTime');
             }}
           />
+          <FieldError message={fieldErrors.endDate} />
         </div>
         <div className="app-input-group">
           <label>End time</label>
           <input
-            className={`app-input${fieldErrors.schedule ? ' app-input--invalid' : ''}`}
+            className={`app-input${fieldErrors.endTime ? ' app-input--invalid' : ''}`}
             type="time"
             value={endTime}
             onChange={(e) => {
               setEndTime(e.target.value);
-              clearFieldError('schedule');
+              clearFieldError('endTime');
+              clearFieldError('endDate');
             }}
           />
+          <FieldError message={fieldErrors.endTime} />
         </div>
       </div>
-      <FormFieldError message={fieldErrors.schedule} />
 
       <div className="app-input-group">
         <label>Address</label>
@@ -230,27 +261,28 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
         <div className="app-input-group">
           <label>Latitude</label>
           <input
-            className={`app-input${fieldErrors.coordinates ? ' app-input--invalid' : ''}`}
+            className={`app-input${fieldErrors.latitude ? ' app-input--invalid' : ''}`}
             value={latitude}
             onChange={(e) => {
               setLatitude(e.target.value);
-              clearFieldError('coordinates');
+              clearFieldError('latitude');
             }}
           />
+          <FieldError message={fieldErrors.latitude} />
         </div>
         <div className="app-input-group">
           <label>Longitude</label>
           <input
-            className={`app-input${fieldErrors.coordinates ? ' app-input--invalid' : ''}`}
+            className={`app-input${fieldErrors.longitude ? ' app-input--invalid' : ''}`}
             value={longitude}
             onChange={(e) => {
               setLongitude(e.target.value);
-              clearFieldError('coordinates');
+              clearFieldError('longitude');
             }}
           />
+          <FieldError message={fieldErrors.longitude} />
         </div>
       </div>
-      <FormFieldError message={fieldErrors.coordinates} />
 
       <div className="app-input-group">
         <label>Status</label>

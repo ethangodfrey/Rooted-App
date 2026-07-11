@@ -13,7 +13,10 @@ export function VendorLeftoversPage() {
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    if (!vendor) return;
+    if (!vendor) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data } = await supabase
       .from('leftover_listings')

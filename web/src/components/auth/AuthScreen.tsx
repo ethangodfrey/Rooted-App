@@ -14,8 +14,10 @@ interface AuthScreenProps {
   submitLabel: string;
   showPassword?: boolean;
   loading?: boolean;
+  submitDisabled?: boolean;
   error?: string | null;
   message?: string | null;
+  beforeSubmit?: React.ReactNode;
   footer?: React.ReactNode;
   socialAuth?: React.ReactNode;
 }
@@ -31,8 +33,10 @@ export function AuthScreen({
   submitLabel,
   showPassword = true,
   loading = false,
+  submitDisabled = false,
   error,
   message,
+  beforeSubmit,
   footer,
   socialAuth,
 }: AuthScreenProps) {
@@ -86,7 +90,13 @@ export function AuthScreen({
           {error ? <p className="app-error">{error}</p> : null}
           {message ? <p className="app-message">{message}</p> : null}
 
-          <button type="submit" className="app-btn app-btn--primary" disabled={loading}>
+          {beforeSubmit}
+
+          <button
+            type="submit"
+            className="app-btn app-btn--primary"
+            disabled={loading || submitDisabled}
+          >
             {loading ? 'Please wait…' : submitLabel}
           </button>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { FormFieldError } from '@/components/ui/FormFieldError';
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { expiresAtFromHours, EXPIRY_PRESETS } from '@/lib/leftovers';
 import { supabase } from '@/lib/supabase';
@@ -47,7 +47,7 @@ export function VendorLeftoverFormPage() {
     Partial<Record<'title' | 'price' | 'quantity' | 'sourceEventId', string>>
   >({});
 
-  function clearFieldError(field: 'title' | 'price' | 'quantity' | 'sourceEventId') {
+  function clearFieldError(field: keyof typeof fieldErrors) {
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -100,17 +100,6 @@ export function VendorLeftoverFormPage() {
     if (!Number.isFinite(qty) || qty < 1) {
       nextFieldErrors.quantity = 'Quantity must be at least 1.';
     }
-    if (pickupMode === 'event' && !sourceEventId) {
-      nextFieldErrors.sourceEventId = 'Select which market this leftover is from.';
-    }
-
-    if (Object.keys(nextFieldErrors).length > 0) {
-      setFieldErrors(nextFieldErrors);
-      setError(null);
-      return;
-    }
-
-    setFieldErrors({});
 
     const event = sourceEventId ? events.find((e) => e.id === sourceEventId) : null;
     let pickupCity = vendor.sell_city;
@@ -125,7 +114,17 @@ export function VendorLeftoverFormPage() {
       pickupAddress = event.address;
       pickupLat = Number(event.latitude);
       pickupLng = Number(event.longitude);
+    } else if (pickupMode === 'event' && !sourceEventId) {
+      nextFieldErrors.sourceEventId = 'Select which market this leftover is from.';
     }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
+      return;
+    }
+
+    setFieldErrors({});
 
     setSaving(true);
     setError(null);
@@ -197,7 +196,7 @@ export function VendorLeftoverFormPage() {
             clearFieldError('title');
           }}
         />
-        <FormFieldError message={fieldErrors.title} />
+        <FieldError message={fieldErrors.title} />
       </div>
 
       <div className="app-input-group">
@@ -223,7 +222,7 @@ export function VendorLeftoverFormPage() {
             }}
             inputMode="decimal"
           />
-          <FormFieldError message={fieldErrors.price} />
+          <FieldError message={fieldErrors.price} />
         </div>
         <div className="app-input-group">
           <label>Quantity</label>
@@ -236,7 +235,7 @@ export function VendorLeftoverFormPage() {
             }}
             inputMode="numeric"
           />
-          <FormFieldError message={fieldErrors.quantity} />
+          <FieldError message={fieldErrors.quantity} />
         </div>
       </div>
 
@@ -279,7 +278,7 @@ export function VendorLeftoverFormPage() {
 
       {pickupMode === 'event' && events.length > 0 ? (
         <>
-          <div className="app-chip-row" style={{ marginBottom: '0.5rem' }}>
+          <div className="app-chip-row" style={{ marginBottom: '0.25rem' }}>
             {events.map((event) => (
               <button
                 key={event.id}
@@ -294,7 +293,7 @@ export function VendorLeftoverFormPage() {
               </button>
             ))}
           </div>
-          <FormFieldError message={fieldErrors.sourceEventId} />
+          <FieldError message={fieldErrors.sourceEventId} />
         </>
       ) : (
         <div className="app-card" style={{ marginBottom: '1rem' }}>

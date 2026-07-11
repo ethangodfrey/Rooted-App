@@ -9,7 +9,8 @@ import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { StatusPill } from '@/src/components/ui/status-pill';
 import { Text } from '@/src/components/ui/text';
-import { formatEventFullDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayFullDate, formatPrice } from '@/src/lib/format';
 import { canCancel } from '@/src/lib/order-status';
 import { supabase } from '@/src/lib/supabase';
 import type { Order } from '@/src/types/database';
@@ -37,6 +38,7 @@ interface OrderDetail extends Order {
 }
 
 export default function ShopperOrderDetailScreen() {
+  const now = useNow(60_000);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function ShopperOrderDetailScreen() {
     const { data, error: queryError } = await supabase
       .from('orders')
       .select(
-        '*, vendor:vendors(business_name), event:events(name, start_datetime, address), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes, expires_at), order_items(id, quantity, item_price, item_title, product:products(name))',
+        '*, vendor:vendors(business_name), event:events(name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state, address), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes, expires_at), order_items(id, quantity, item_price, item_title, product:products(name))',
       )
       .eq('id', id)
       .maybeSingle();
@@ -124,7 +126,7 @@ export default function ShopperOrderDetailScreen() {
             </Text>
             {order.event ? (
               <Text variant="caption" className="mt-0.5">
-                {formatEventFullDate(order.event.start_datetime)}
+                {formatEventDisplayFullDate(order.event, now)}
                 {order.event.address ? ` · ${order.event.address}` : ''}
               </Text>
             ) : order.leftover_listing ? (

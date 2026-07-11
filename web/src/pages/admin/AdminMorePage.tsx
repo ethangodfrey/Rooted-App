@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useServerStatus } from '@/hooks/use-server-status';
+import { DeleteAccountButton } from '@/components/account/DeleteAccountButton';
 import { isApiConfigured } from '@/lib/api';
 import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
 import '@/components/ui/ui.css';
@@ -46,6 +47,7 @@ export function AdminMorePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
+      <DeleteAccountButton />
     </div>
   );
 }

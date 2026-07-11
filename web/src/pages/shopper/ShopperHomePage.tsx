@@ -2,255 +2,174 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
-
 import { useNow } from '@/hooks/use-now';
-
 import { useUserCoords } from '@/hooks/use-user-coords';
-
-import { eventRuntimePhase, eventRuntimeHint, type EventRuntimeFields } from '@/lib/event-runtime';
-
-import { formatEventDate, formatPrice } from '@/lib/format';
-import { fetchNearbyEvents, formatDistanceKm, type NearbyEvent } from '@/lib/geo-search';
-
+import { eventRuntimePhase, eventRuntimeHint, sortEventsByRuntime } from '@/lib/event-runtime';
+import { fetchPublicEvents } from '@/lib/events-query';
+import { formatEventDisplayDate, formatPrice } from '@/lib/format';
+import { distanceMiles, formatDistance } from '@/lib/geo';
 import { fetchCuratedLeftovers, formatExpiresIn, type CuratedLeftover } from '@/lib/leftovers';
 import { getMarketContext } from '@/lib/market-context';
 import { fetchSuggestedProducts, type SuggestedProduct } from '@/lib/suggested-products';
+import type { Event } from '@/types/database';
 
 import '@/components/ui/ui.css';
 
-
-
 function SkeletonTiles({ count = 3 }: { count?: number }) {
-
   return (
-
     <div className="app-hscroll">
-
       {Array.from({ length: count }, (_, i) => (
-
         <div key={i} className="app-skeleton app-skeleton--tile animate-pulse" />
-
       ))}
-
     </div>
-
   );
-
 }
 
-
-
 export function ShopperHomePage() {
-
   const { user, shopper } = useAuth();
-
-  const { coords } = useUserCoords();
-
+  const { coords, coordsReady } = useUserCoords();
   const now = useNow(60_000);
-
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedProduct[]>([]);
-
   const [suggestedLoading, setSuggestedLoading] = useState(true);
-
   const [leftovers, setLeftovers] = useState<CuratedLeftover[]>([]);
-
   const [leftoversLoading, setLeftoversLoading] = useState(true);
-
-  const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
-
-  const [nearbyLoading, setNearbyLoading] = useState(false);
-
-
+  const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(true);
 
   const context = useMemo(
-
     () => getMarketContext(now, user?.name),
-
     [now, user?.name],
-
   );
-
-
-
-  const lat = coords?.latitude ?? null;
-
-  const lng = coords?.longitude ?? null;
 
   const nearbyCoords = useMemo(
-
-    () => (lat != null && lng != null ? { latitude: lat, longitude: lng } : null),
-
-    [lat, lng],
-
+    () =>
+      coords?.latitude != null && coords?.longitude != null
+        ? { latitude: coords.latitude, longitude: coords.longitude }
+        : null,
+    [coords],
   );
 
-
-
   useEffect(() => {
-
     let cancelled = false;
 
     async function loadSuggested() {
-
       setSuggestedLoading(true);
-
       try {
-
         const products = await fetchSuggestedProducts(
-
           shopper?.interests ?? [],
-
           { userCity: user?.city, userState: user?.state },
-
           8,
-
         );
-
         if (!cancelled) setSuggestedProducts(products);
-
       } catch {
-
         if (!cancelled) setSuggestedProducts([]);
-
       } finally {
-
         if (!cancelled) setSuggestedLoading(false);
-
       }
-
     }
 
     loadSuggested();
-
     return () => {
-
       cancelled = true;
-
     };
-
   }, [shopper?.interests, user?.city, user?.state]);
 
-
-
   useEffect(() => {
-
     let cancelled = false;
 
     async function loadLeftovers() {
-
       setLeftoversLoading(true);
-
       try {
-
         const curated = await fetchCuratedLeftovers(
-
           { coords: nearbyCoords, userCity: user?.city, userState: user?.state },
-
           6,
-
         );
-
         if (!cancelled) setLeftovers(curated);
-
       } catch {
-
         if (!cancelled) setLeftovers([]);
-
       } finally {
-
         if (!cancelled) setLeftoversLoading(false);
-
       }
-
     }
 
     loadLeftovers();
-
     return () => {
-
       cancelled = true;
-
     };
-
   }, [nearbyCoords, user?.city, user?.state]);
 
-
-
   useEffect(() => {
+    if (!coordsReady) return;
 
     if (!nearbyCoords) {
-
       setNearbyEvents([]);
-
+      setNearbyLoading(false);
       return;
-
     }
 
-
-
     let cancelled = false;
-
     setNearbyLoading(true);
 
-    void fetchNearbyEvents(nearbyCoords, { limit: 12 }).then((events) => {
-
+    void fetchPublicEvents({ forMap: true, near: nearbyCoords }).then(({ data, error }) => {
       if (cancelled) return;
-
-      setNearbyEvents(events ?? []);
-
+      setNearbyEvents(error ? [] : data);
       setNearbyLoading(false);
-
+    }).catch(() => {
+      if (!cancelled) setNearbyEvents([]);
+      if (!cancelled) setNearbyLoading(false);
     });
 
-
-
     return () => {
-
       cancelled = true;
-
     };
+  }, [nearbyCoords, coordsReady]);
 
-  }, [nearbyCoords]);
-
-
+  const clientToday = now.getDay(); // 0 = Sunday … 6 = Saturday
 
   const openNow = useMemo(
-    () => nearbyEvents.filter((e) => eventRuntimePhase(e as EventRuntimeFields, now) === 'live'),
-    [nearbyEvents, now],
+    () =>
+      sortEventsByRuntime(
+        nearbyEvents.filter((event) => eventRuntimePhase(event, now) === 'live'),
+        now,
+      ),
+    [nearbyEvents, now, clientToday],
   );
 
   const nextOpeningHint = useMemo(() => {
-    const upcoming = nearbyEvents
-      .filter((e) => eventRuntimePhase(e as EventRuntimeFields, now) === 'upcoming')
-      .map((e) => ({ event: e, hint: eventRuntimeHint(e as EventRuntimeFields, now) }))
+    const upcoming = sortEventsByRuntime(
+      nearbyEvents.filter((event) => eventRuntimePhase(event, now) === 'upcoming'),
+      now,
+    )
+      .map((event) => ({ event, hint: eventRuntimeHint(event, now) }))
       .filter((item) => item.hint);
-    return upcoming[0]?.hint ?? null;
-  }, [nearbyEvents, now]);
 
-
+    const opensLaterToday = upcoming.find((item) =>
+      item.hint?.toLowerCase().includes('opens today'),
+    );
+    return opensLaterToday?.hint ?? upcoming[0]?.hint ?? null;
+  }, [nearbyEvents, now, clientToday]);
 
   const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-
   const newThisWeek = useMemo(
-    () => nearbyEvents.filter((e) => new Date(e.start_datetime).getTime() >= weekAgo),
+    () => nearbyEvents.filter((event) => new Date(event.start_datetime).getTime() >= weekAgo),
     [nearbyEvents, weekAgo],
   );
 
+  const distanceFor = (event: Event): string | null => {
+    if (!nearbyCoords || event.latitude == null || event.longitude == null) return null;
+    return `${formatDistance(
+      distanceMiles(nearbyCoords, { latitude: event.latitude, longitude: event.longitude }),
+    )} away`;
+  };
 
+  const openNowLoading = !coordsReady || nearbyLoading;
 
   return (
-
-    <div className="app-screen">
-
+    <div className="app-screen w-full min-w-0">
       <header className="app-greeting">
-
         <h1 className="app-greeting__title">{context.greeting}</h1>
-
         <p className="app-greeting__subtitle">{context.subtitle}</p>
-
       </header>
-
-
 
       <Link
         to={context.isMarketDay ? '/shopper/map' : '/shopper/events'}
@@ -276,235 +195,137 @@ export function ShopperHomePage() {
         </span>
       </Link>
 
-
-
-      {nearbyCoords ? (
-
-        <section className="app-scroll-section">
-
-          <div className="app-scroll-section__header">
-
-            <h2 className="app-scroll-section__title">Open now</h2>
-
-            <Link to="/shopper/map" className="app-inline-link">
-
-              Map
-
-            </Link>
-
-          </div>
-
-          {nearbyLoading ? (
-
-            <SkeletonTiles />
-
-          ) : openNow.length === 0 ? (
-            <p className="app-row-meta">
-              {nextOpeningHint ?? 'No markets open right now — check upcoming below.'}
-            </p>
-          ) : (
-
-            <div className="app-hscroll">
-
-              {openNow.map((event) => (
-
-                <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
-                  <div className="app-hscroll-card__visual" aria-hidden="true">
-                    🧺
-                  </div>
-                  <div className="app-hscroll-card__body">
-                    <span className="app-hscroll-card__badge">Live</span>
-                    <p className="app-hscroll-card__title">{event.name}</p>
-                    <p className="app-hscroll-card__meta">
-                      {event.city ?? ''}
-                      {formatDistanceKm(event.distance_km) ? ` · ${formatDistanceKm(event.distance_km)}` : ''}
-                    </p>
-                  </div>
-                </Link>
-
-              ))}
-
-            </div>
-
-          )}
-
-        </section>
-
-      ) : null}
-
-
-
       <section className="app-scroll-section">
-
         <div className="app-scroll-section__header">
-
-          <h2 className="app-scroll-section__title">New this week</h2>
-
-          <Link to="/shopper/events" className="app-inline-link">
-
-            All markets
-
+          <h2 className="app-scroll-section__title">Open now</h2>
+          <Link to="/shopper/map" className="app-inline-link">
+            Map
           </Link>
-
         </div>
 
-        {nearbyLoading && nearbyCoords ? (
-
+        {openNowLoading ? (
           <SkeletonTiles />
-
-        ) : newThisWeek.length > 0 ? (
-
+        ) : !nearbyCoords ? (
+          <p className="app-row-meta">
+            Enable location access to see markets open near you.
+          </p>
+        ) : openNow.length === 0 ? (
+          <p className="app-row-meta">
+            {nextOpeningHint ?? 'No markets open right now — check upcoming below.'}
+          </p>
+        ) : (
           <div className="app-hscroll">
+            {openNow.map((event) => (
+              <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
+                <div className="app-hscroll-card__visual" aria-hidden="true">
+                  🧺
+                </div>
+                <div className="app-hscroll-card__body">
+                  <span className="app-hscroll-card__badge">Live</span>
+                  <p className="app-hscroll-card__title">{event.name}</p>
+                  <p className="app-hscroll-card__meta">
+                    {formatEventDisplayDate(event, now)}
+                    {event.city ? ` · ${event.city}` : ''}
+                    {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
+      <section className="app-scroll-section">
+        <div className="app-scroll-section__header">
+          <h2 className="app-scroll-section__title">New this week</h2>
+          <Link to="/shopper/events" className="app-inline-link">
+            All markets
+          </Link>
+        </div>
+
+        {openNowLoading ? (
+          <SkeletonTiles />
+        ) : newThisWeek.length > 0 ? (
+          <div className="app-hscroll">
             {newThisWeek.slice(0, 8).map((event) => (
-
               <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
                 <div className="app-hscroll-card__visual" aria-hidden="true">
                   🌿
                 </div>
                 <div className="app-hscroll-card__body">
                   <p className="app-hscroll-card__title">{event.name}</p>
-                  <p className="app-hscroll-card__meta">{formatEventDate(event.start_datetime)}</p>
+                  <p className="app-hscroll-card__meta">{formatEventDisplayDate(event, now)}</p>
                 </div>
               </Link>
-
             ))}
-
           </div>
-
         ) : suggestedLoading ? (
-
           <SkeletonTiles />
-
         ) : suggestedProducts.length > 0 ? (
-
           <div className="app-hscroll">
-
             {suggestedProducts.slice(0, 6).map((product) => (
-
               <Link
-
                 key={product.id}
-
                 to={`/shopper/products/${product.id}`}
-
                 className="app-hscroll-card"
-
               >
-
                 <p className="app-hscroll-card__title">{product.name}</p>
-
                 <p className="app-hscroll-card__meta">
-
                   {product.vendor?.business_name} · {formatPrice(product.price)}
-
                 </p>
-
               </Link>
-
             ))}
-
           </div>
-
         ) : (
-
           <p className="app-row-meta">Fresh picks will appear as vendors and markets update.</p>
-
         )}
-
       </section>
-
-
 
       <section className="app-scroll-section">
-
         <div className="app-scroll-section__header">
-
           <h2 className="app-scroll-section__title">Updates</h2>
-
           <Link to="/shopper/feed" className="app-inline-link">
-
             See all
-
           </Link>
-
         </div>
 
-        <Link to="/shopper/feed" className="app-hscroll-card" style={{ display: 'block', maxWidth: '100%' }}>
-
-          <p className="app-hscroll-card__title">From your saved vendors</p>
-
+        <Link to="/shopper/feed" className="app-hscroll-card app-hscroll-card--full w-full max-w-full">
+          <p className="app-hscroll-card__title w-full">From your saved vendors</p>
           <p className="app-hscroll-card__meta">
-
             Postcards from markets, new products, and vendor news.
-
           </p>
-
         </Link>
-
       </section>
 
-
-
       {!leftoversLoading && leftovers.length > 0 ? (
-
         <section className="app-scroll-section">
-
           <div className="app-scroll-section__header">
-
             <h2 className="app-scroll-section__title">Leftovers near you</h2>
-
             <Link to="/shopper/leftovers" className="app-inline-link">
-
               See all
-
             </Link>
-
           </div>
 
           <div className="app-hscroll">
-
             {leftovers.slice(0, 5).map((listing) => (
-
               <Link
-
                 key={listing.id}
-
                 to={`/shopper/leftovers/${listing.id}`}
-
                 className="app-hscroll-card"
-
               >
-
                 <p className="app-hscroll-card__title">{listing.title}</p>
-
                 <p className="app-hscroll-card__meta">
-
                   {formatPrice(listing.price_cents)} · {formatExpiresIn(listing.hoursLeft)}
-
                 </p>
-
               </Link>
-
             ))}
-
           </div>
-
         </section>
-
       ) : null}
 
-
-
-      <Link to="/shopper/search" className="app-search-link app-search--glass" style={{ marginTop: '0.5rem' }}>
-
+      <Link to="/shopper/search" className="app-search-link app-search--glass mb-4 w-full max-w-full">
         Search markets, vendors, chefs…
-
       </Link>
-
     </div>
-
   );
-
 }
-

@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
 
+import { useNow } from '@/hooks/use-now';
+import { categoryVisual } from '@/lib/category-visuals';
 
-
-import { ProductThumb } from '@/components/ui/ProductThumb';
-
-import { formatEventDate, formatPrice, formatRelativeTime } from '@/lib/format';
+import { formatEventDisplayDate, formatPrice, formatRelativeTime } from '@/lib/format';
 
 import { formatDistanceKm } from '@/lib/geo-search';
 
@@ -55,13 +54,17 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 function ProductVisual({ product }: { product: PopularProduct | SuggestedProduct }) {
-  return (
-    <ProductThumb
-      src={product.displayImageUrl}
-      category={productCategory(product)}
-      size={56}
-    />
-  );
+
+  const visual = categoryVisual(productCategory(product));
+
+  if (product.displayImageUrl) {
+
+    return <img src={product.displayImageUrl} alt="" />;
+
+  }
+
+  return <span aria-hidden="true">{visual.emoji}</span>;
+
 }
 
 
@@ -145,6 +148,7 @@ interface DiscoverBrowseFeedProps {
 
 
 export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
+  const now = useNow(60_000);
 
   if (loading && !data) {
 
@@ -376,7 +380,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
                       <p className="app-hscroll-card__meta">
 
-                        {formatEventDate(event.start_datetime)}
+                        {formatEventDisplayDate(event, now)}
 
                         {event.city ? ` · ${event.city}` : ''}
 

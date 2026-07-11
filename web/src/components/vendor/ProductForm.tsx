@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 
-import { FormFieldError } from '@/components/ui/FormFieldError';
-import { ProductThumb } from '@/components/ui/ProductThumb';
+import { FieldError } from '@/components/ui/FieldError';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadProductImage } from '@/lib/upload';
 import '@/components/ui/ui.css';
@@ -24,9 +24,7 @@ interface ProductFormProps {
   loading?: boolean;
 }
 
-type ProductFieldErrors = Partial<
-  Record<'name' | 'price' | 'limitTotal' | 'limitPerShopper', string>
->;
+type ProductField = 'name' | 'price' | 'limitTotal' | 'limitPerShopper';
 
 function parseOptionalLimit(text: string): number | null | 'invalid' {
   const trimmed = text.trim();
@@ -55,9 +53,9 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
   const [mediaUrls, setMediaUrls] = useState<string[]>(initial?.media_urls ?? []);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProductField, string>>>({});
 
-  function clearFieldError(field: keyof ProductFieldErrors) {
+  function clearFieldError(field: ProductField) {
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -84,11 +82,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const nextFieldErrors: ProductFieldErrors = {};
+    const nextFieldErrors: Partial<Record<ProductField, string>> = {};
 
     if (!name.trim()) {
       nextFieldErrors.name = 'Product name is required.';
     }
+
     const priceValue = Number.parseFloat(priceText);
     if (!Number.isFinite(priceValue) || priceValue < 0) {
       nextFieldErrors.price = 'Enter a valid price (e.g. 12.50).';
@@ -147,7 +146,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
           {mediaUrls.map((url) => (
             <div key={url} style={{ position: 'relative' }}>
-              <ProductThumb src={url} category={category} size={80} />
+              <FallbackImage
+                src={url}
+                variant="product"
+                category={category}
+                style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover' }}
+              />
               <button
                 type="button"
                 onClick={() => setMediaUrls((prev) => prev.filter((u) => u !== url))}
@@ -182,7 +186,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
             clearFieldError('name');
           }}
         />
-        <FormFieldError message={fieldErrors.name} />
+        <FieldError message={fieldErrors.name} />
       </div>
       <div className="app-input-group">
         <label>Description</label>
@@ -205,7 +209,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
             clearFieldError('price');
           }}
         />
-        <FormFieldError message={fieldErrors.price} />
+        <FieldError message={fieldErrors.price} />
       </div>
 
       <label style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -226,7 +230,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
               }}
               placeholder="Leave blank for no cap"
             />
-            <FormFieldError message={fieldErrors.limitTotal} />
+            <FieldError message={fieldErrors.limitTotal} />
           </div>
           <div className="app-input-group">
             <label>Per-shopper limit (optional)</label>
@@ -239,7 +243,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
               }}
               placeholder="Leave blank for no cap"
             />
-            <FormFieldError message={fieldErrors.limitPerShopper} />
+            <FieldError message={fieldErrors.limitPerShopper} />
           </div>
         </>
       ) : null}

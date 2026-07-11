@@ -17,7 +17,7 @@ import {
 } from '@/lib/event-day-filter';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
-import { formatEventDate, formatEventTimeRange } from '@/lib/format';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -59,7 +59,7 @@ export function ShopperEventsPage() {
   }, [loadEvents]);
 
   useEffect(() => {
-    setSelectedDate(startOfDay(now));
+    setSelectedDate(startOfDay(new Date()));
     setVisibleCount(EVENTS_PAGE_SIZE);
   }, [scope]);
 
@@ -176,7 +176,7 @@ export function ShopperEventsPage() {
                     </div>
                     <p className="app-row-title">{event.name}</p>
                     <p className="app-row-meta">
-                      {formatEventDate(event.start_datetime)} · {formatEventTimeRange(event.start_datetime, event.end_datetime)}
+                      {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
                     </p>
                     <p className="app-row-meta">
                       {[event.city, event.state].filter(Boolean).join(', ')}

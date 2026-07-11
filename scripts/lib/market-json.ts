@@ -121,6 +121,7 @@ export function usdaJsonToMarketRows(records: UsdaMarketRecord[]): MarketCsvRow[
       source: 'usda',
       website: normalizeWebsiteUrl(record.website?.trim() ?? '') ?? '',
       market_type: record.market_type ?? marketTypeForDirectory(directory),
+      usda_directory: directory,
       hours_summary: schedule.hoursSummary,
       opening_hours: schedule.openingHours,
       seasonal_schedule: schedule.seasonalSchedule,
