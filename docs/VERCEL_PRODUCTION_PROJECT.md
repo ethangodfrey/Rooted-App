@@ -29,7 +29,7 @@ git pull origin main
 git log --oneline -5
 ```
 
-You should see merges for PR #48 (fulfillment) and PR #49 (security/CORS/settlement).
+You should see merges for PR #48 (fulfillment), PR #49 (security/CORS/settlement), PR #51 (settlement charts), and PR #52 (regional markets RLS) — baseline **`e0ae644`**.
 
 ### 2. Point **Vendorly_Marketplace1** at `main`
 
@@ -80,7 +80,11 @@ Prevents future confusion when `main` pushes.
 
 ```bash
 # Web — open Vendorly_Marketplace1 production URL
-# Should show fulfillment (/profile/orders) and vendor fulfillment (/vendor/fulfillment)
+# Should show fulfillment (/profile/orders), vendor fulfillment (/vendor/fulfillment),
+# and vendor analytics settlement charts (/vendor/analytics → Market settlement)
+
+# Supabase + Vercel post-phase41 rollout (phase42 SQL + backfill):
+# See docs/POST_PHASE41_RELEASE_RUNBOOK.md
 
 # API CORS + webhooks
 API_BASE=https://api.vendorly.app npm run smoke:boundaries
