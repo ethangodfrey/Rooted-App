@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
-import { formatEventDate, formatEventTimeRange } from '@/lib/format';
 import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { sortEventsByRuntime } from '@/lib/event-runtime';
 import { supabase } from '@/lib/supabase';
 import type { Event, VisibilityStatus } from '@/types/database';
@@ -85,7 +85,7 @@ export function AdminEventsPage() {
               </div>
               <p className="app-row-title">{event.name}</p>
               <p className="app-row-meta">
-                {formatEventDate(event.start_datetime)} · {formatEventTimeRange(event.start_datetime, event.end_datetime)}
+                {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
               </p>
               <p className="app-row-meta">{event.city}, {event.state} · {event.visibility_status}</p>
             </Link>

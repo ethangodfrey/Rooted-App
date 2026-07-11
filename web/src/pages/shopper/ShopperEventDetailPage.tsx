@@ -4,7 +4,8 @@ import { Link, useParams } from 'react-router-dom';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { MarketGuideSections } from '@/components/events/MarketGuideSections';
 import { MarketLinks } from '@/components/events/MarketLinks';
-import { formatEventFullDate, formatEventTimeRange } from '@/lib/format';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayFullDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { formatMarketType } from '@/lib/market-type-labels';
 import { extraInfoWithoutSocialLinks } from '@/lib/market-links';
 import { EventThumb } from '@/components/events/EventThumb';
@@ -14,6 +15,7 @@ import '@/components/ui/ui.css';
 
 export function ShopperEventDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const now = useNow(60_000);
   const [event, setEvent] = useState<Event | null>(null);
   const [vendors, setVendors] = useState<{ id: string; business_name: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,9 +48,9 @@ export function ShopperEventDetailPage() {
       </div>
       <h1 className="app-title">{event.name}</h1>
       <p className="app-subtitle">
-        {formatEventFullDate(event.start_datetime, event.timezone)}
+        {formatEventDisplayFullDate(event, now)}
         <br />
-        {formatEventTimeRange(event.start_datetime, event.end_datetime, event.timezone)}
+        {formatEventDisplayTimeRange(event)}
       </p>
 
       {event.description ? (
