@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { CHEF_SERVICE_TYPE_LABEL } from '@/lib/chefs';
 import { supabase } from '@/lib/supabase';
@@ -26,20 +27,37 @@ export function ChefServiceFormPage() {
   const [basePrice, setBasePrice] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'serviceName' | 'basePrice', string>>>({});
+
+  function clearFieldError(field: keyof typeof fieldErrors) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   async function handleSave() {
     if (!chef?.id) return;
     const priceCents =
       priceType === 'custom_quote' ? 0 : Math.round(Number(basePrice) * 100);
+    const nextFieldErrors: Partial<Record<'serviceName' | 'basePrice', string>> = {};
+
     if (!serviceName.trim()) {
-      setError('Enter a service name.');
-      return;
+      nextFieldErrors.serviceName = 'Enter a service name.';
     }
     if (priceType !== 'custom_quote' && (!Number.isFinite(priceCents) || priceCents <= 0)) {
-      setError('Enter a valid price.');
+      nextFieldErrors.basePrice = 'Enter a valid price greater than zero.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
 
+    setFieldErrors({});
     setSaving(true);
     setError(null);
 
@@ -73,11 +91,15 @@ export function ChefServiceFormPage() {
         <label htmlFor="svc-name">Service name</label>
         <input
           id="svc-name"
-          className="app-input"
+          className={`app-input${fieldErrors.serviceName ? ' app-input--invalid' : ''}`}
           value={serviceName}
-          onChange={(e) => setServiceName(e.target.value)}
+          onChange={(e) => {
+            setServiceName(e.target.value);
+            clearFieldError('serviceName');
+          }}
           placeholder="Five-course private dinner"
         />
+        <FieldError message={fieldErrors.serviceName} />
       </div>
       <div className="app-input-group">
         <label htmlFor="svc-type">Service type</label>
@@ -126,11 +148,15 @@ export function ChefServiceFormPage() {
             type="number"
             min="0"
             step="0.01"
-            className="app-input"
+            className={`app-input${fieldErrors.basePrice ? ' app-input--invalid' : ''}`}
             value={basePrice}
-            onChange={(e) => setBasePrice(e.target.value)}
+            onChange={(e) => {
+              setBasePrice(e.target.value);
+              clearFieldError('basePrice');
+            }}
             placeholder="150.00"
           />
+          <FieldError message={fieldErrors.basePrice} />
         </div>
       ) : null}
 

@@ -5,9 +5,11 @@ import {
   getZonedParts,
   isRecurringMarketEvent,
   msUntilRecurringMarketOpens,
+  nextOperatingDayName,
   recurringMarketPhase,
   resolveEventScheduleForEvent,
   resolveEventTimezone,
+  resolveOperatingDayIndices,
 } from '@/lib/event-schedule';
 
 export type EventRuntimePhase = 'upcoming' | 'live' | 'closed' | 'cancelled';
@@ -45,7 +47,8 @@ export function eventRuntimePhase(event: EventRuntimeFields, now: Date): EventRu
   if (isRecurringMarketEvent(event)) {
     const schedule = resolveEventScheduleForEvent(event);
     const timeZone = resolveEventTimezone(event);
-    return recurringMarketPhase(schedule, timeZone, now);
+    const operatingDays = resolveOperatingDayIndices(event);
+    return recurringMarketPhase(schedule, timeZone, now, operatingDays);
   }
 
   return oneOffEventPhase(event.start_datetime, event.end_datetime, now);
@@ -79,7 +82,8 @@ function msUntilEventOpens(event: EventRuntimeFields, now: Date): number {
   if (isRecurringMarketEvent(event)) {
     const schedule = resolveEventScheduleForEvent(event);
     const timeZone = resolveEventTimezone(event);
-    return msUntilRecurringMarketOpens(schedule, timeZone, now);
+    const operatingDays = resolveOperatingDayIndices(event);
+    return msUntilRecurringMarketOpens(schedule, timeZone, now, operatingDays);
   }
   return Math.max(0, new Date(event.start_datetime).getTime() - now.getTime());
 }
@@ -92,10 +96,8 @@ export function eventRuntimeHint(event: EventRuntimeFields, now: Date): string |
   if (isRecurringMarketEvent(event)) {
     const schedule = resolveEventScheduleForEvent(event);
     const timeZone = resolveEventTimezone(event);
+    const operatingDays = resolveOperatingDayIndices(event);
     const { weekday, hour, minute } = getZonedParts(now, timeZone);
-    const targetDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(
-      schedule.dayOfWeek.toLowerCase(),
-    );
     const endMinutes = schedule.endHour * 60;
 
     if (phase === 'live') {
@@ -103,11 +105,11 @@ export function eventRuntimeHint(event: EventRuntimeFields, now: Date): string |
       return `Open now · closes in ${formatDuration(minsLeft * 60_000)}`;
     }
 
-    const ms = msUntilRecurringMarketOpens(schedule, timeZone, now);
-    if (weekday === targetDay) {
+    const ms = msUntilRecurringMarketOpens(schedule, timeZone, now, operatingDays);
+    if (operatingDays.includes(weekday)) {
       return `Opens today in ${formatDuration(ms)}`;
     }
-    return `Next open ${formatWeekdayLabel(schedule.dayOfWeek)} · in ${formatDuration(ms)}`;
+    return `Next open ${formatWeekdayLabel(nextOperatingDayName(schedule, operatingDays, timeZone, now))} · in ${formatDuration(ms)}`;
   }
 
   const start = new Date(event.start_datetime).getTime();

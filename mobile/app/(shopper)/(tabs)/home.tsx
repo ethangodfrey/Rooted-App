@@ -24,7 +24,7 @@ import { useUserCoords } from '@/src/hooks/use-user-coords';
 
 import { eventRuntimePhase, eventRuntimeHint, type EventRuntimeFields } from '@/src/lib/event-runtime';
 
-import { formatEventDate, formatPrice } from '@/src/lib/format';
+import { formatEventDisplayDate, formatPrice } from '@/src/lib/format';
 
 import { fetchNearbyEvents, formatDistanceKm, type NearbyEvent } from '@/src/lib/geo-search';
 
@@ -427,7 +427,7 @@ export default function ShopperHomeScreen() {
 
                   title={event.name}
 
-                  meta={formatEventDate(event.start_datetime)}
+                  meta={formatEventDisplayDate(event, now)}
 
                   onPress={() => router.push(`/(shopper)/events/${event.id}`)}
 

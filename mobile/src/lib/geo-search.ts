@@ -1,4 +1,4 @@
-import { formatDistance, type Coords } from '@/src/lib/geo';
+import { formatDistance, isValidCoords, type Coords } from '@/src/lib/geo';
 import { cachedQuery } from '@/src/lib/query-cache';
 import { supabase } from '@/src/lib/supabase';
 
@@ -88,7 +88,7 @@ export async function fetchNearbyEvents(
   coords: Coords | null | undefined,
   options: NearbySearchOptions = {},
 ): Promise<NearbyEvent[] | null> {
-  if (!coords) return null;
+  if (!isValidCoords(coords)) return null;
   const limit = options.limit ?? 50;
   const radiusKm = options.radiusKm ?? DEFAULT_NEARBY_RADIUS_KM;
   const search = options.search ?? '';
@@ -113,7 +113,7 @@ export async function fetchNearbyVendors(
   coords: Coords | null | undefined,
   options: NearbySearchOptions = {},
 ): Promise<NearbyVendor[] | null> {
-  if (!coords) return null;
+  if (!isValidCoords(coords)) return null;
   const { data, error } = await supabase.rpc('find_nearby_vendors', {
     p_lat: coords.latitude,
     p_lng: coords.longitude,
@@ -131,7 +131,7 @@ export async function fetchNearbyLeftovers(
   coords: Coords | null | undefined,
   options: Omit<NearbySearchOptions, 'search'> = {},
 ): Promise<NearbyLeftover[] | null> {
-  if (!coords) return null;
+  if (!isValidCoords(coords)) return null;
   const { data, error } = await supabase.rpc('find_nearby_leftovers', {
     p_lat: coords.latitude,
     p_lng: coords.longitude,
