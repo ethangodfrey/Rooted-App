@@ -33,6 +33,10 @@ export function getAuthRedirectUrl(): string {
   return `${getAppOrigin()}/auth/callback`;
 }
 
+export function getAuthRedirectUrlForDisplay(): string {
+  return getAuthRedirectUrl();
+}
+
 export function getPasswordResetRedirectUrl(): string {
   return `${getAppOrigin()}/auth/reset-password`;
 }
