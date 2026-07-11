@@ -4,7 +4,7 @@
 
 | Component | Host | URL |
 |-----------|------|-----|
-| Web SPA | Vercel | `vendorlymarketplace.vercel.app` → `vendorly.app` |
+| Web SPA | Vercel **`Vendorly_Marketplace1`** | `vendorly-marketplace1.vercel.app` → `vendorly.app` |
 | Backend API | Railway | `api.vendorly.app` (or `*.up.railway.app`) |
 | Database + Auth | Supabase | `ajedyjbdpjahnhzrxwdj.supabase.co` |
 

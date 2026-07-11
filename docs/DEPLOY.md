@@ -108,6 +108,8 @@ npx vercel link
 
 ## 1. Deploy web to Vercel
 
+**Production Vercel project:** **`Vendorly_Marketplace1`** — see [`VERCEL_PRODUCTION_PROJECT.md`](VERCEL_PRODUCTION_PROJECT.md) if you deployed to the wrong project.
+
 This repo is a monorepo: the Vite app lives in **`web/`**, not at the repo root. Pick **one** deploy approach below.
 
 ### Where is “Root Directory” in Vercel?

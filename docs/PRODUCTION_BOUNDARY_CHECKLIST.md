@@ -22,7 +22,7 @@ Set or confirm:
 | `NODE_ENV` | `production` |
 | `PUBLIC_BASE_URL` | `https://api.vendorly.app` |
 | `WEB_APP_URL` | `https://vendorly.app` |
-| `CORS_ORIGINS` | `https://vendorly.app,https://www.vendorly.app,https://vendorlymarketplace.vercel.app` |
+| `CORS_ORIGINS` | `https://vendorly-marketplace1.vercel.app,https://vendorly.app,https://www.vendorly.app` |
 | `DATABASE_URL` | Supabase pooler URI (port 6543) |
 | `SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 | `STRIPE_WEBHOOK_SECRET` | From Stripe Dashboard → Webhooks |
@@ -35,7 +35,10 @@ Set or confirm:
 
 ## 3. Vercel — frontend production variables
 
-**Dashboard:** Project → **Settings** → **Environment Variables** → **Production**
+**Canonical project:** **`Vendorly_Marketplace1`** (not `vendorly-marketplace` / `rooted-app`).  
+See [`docs/VERCEL_PRODUCTION_PROJECT.md`](VERCEL_PRODUCTION_PROJECT.md) if phases deployed to the wrong project.
+
+**Dashboard:** **Vendorly_Marketplace1** → **Settings** → **Environment Variables** → **Production**
 
 | Variable | Required value |
 |----------|----------------|
