@@ -6,12 +6,16 @@ import { NestFactory } from '@nestjs/core';
 import { json, raw } from 'express';
 
 import { AppModule } from './app.module';
-import { getLanIpv4Addresses, isDevLanOrigin } from './common/network.util';
+import { assertProductionEnv } from './common/config/validate-production-env';
+import { isCorsOriginAllowed } from './common/cors/origin-policy';
+import { getLanIpv4Addresses } from './common/network.util';
 import { posOAuthRedirectUri } from './modules/pos/pos-public-url';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
+
+  assertProductionEnv(config);
 
   const isDev = config.get<string>('NODE_ENV', 'development') !== 'production';
 
@@ -35,23 +39,8 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      if (!origin) {
-        if (isDev) {
-          callback(null, true);
-          return;
-        }
-        callback(null, false);
-        return;
-      }
-      if (allowedOrigins.has(origin)) {
-        callback(null, true);
-        return;
-      }
-      if (isDev && isDevLanOrigin(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(null, false);
+      const allowed = isCorsOriginAllowed(origin, { isDev, allowedOrigins });
+      callback(null, allowed);
     },
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],

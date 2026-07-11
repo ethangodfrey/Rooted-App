@@ -9,11 +9,12 @@ import { Prisma } from '@prisma/client';
 import Stripe from 'stripe';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { sanitizeWebhookErrorMessage } from '../../common/observability/sanitize-error.util';
+import { computePlatformFeeCents, resolvePlatformFeeBps } from '../../common/settlement/platform-fee';
 import { CheckoutInventoryService } from '../checkout/checkout-inventory.service';
 import {
   STRIPE_CHECKOUT_CANCEL_PATH,
   STRIPE_CHECKOUT_SUCCESS_PATH,
-  STRIPE_PLATFORM_FEE_BPS,
 } from './stripe.constants';
 
 export interface CheckoutStripeSessionResult {
@@ -42,6 +43,10 @@ export class StripeService {
 
   isConfigured(): boolean {
     return this.client !== null;
+  }
+
+  private platformFeeBps(): number {
+    return resolvePlatformFeeBps(this.config.get<string>('STRIPE_PLATFORM_FEE_BPS'));
   }
 
   requireClient(): Stripe {
@@ -296,7 +301,7 @@ export class StripeService {
       0,
       row.platform_fee > 0
         ? row.platform_fee
-        : Math.round((row.total * STRIPE_PLATFORM_FEE_BPS) / 10_000),
+        : computePlatformFeeCents(row.total, this.platformFeeBps()),
     );
 
     const successUrl =
@@ -413,7 +418,7 @@ export class StripeService {
         event.id,
         event.type,
         'failed',
-        err instanceof Error ? err.message : 'unknown_error',
+        sanitizeWebhookErrorMessage(err),
       );
       throw err;
     }
