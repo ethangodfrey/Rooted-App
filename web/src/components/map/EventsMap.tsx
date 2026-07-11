@@ -9,7 +9,7 @@ import { useNow } from '@/hooks/use-now';
 import { centroidOfEvents } from '@/lib/event-map-search';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
-import { formatEventDate } from '@/lib/format';
+import { formatEventDisplayDate } from '@/lib/format';
 import type { Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
@@ -220,7 +220,7 @@ export function EventsMap({
                     </div>
                     <strong>{event.name}</strong>
                     <p>
-                      {formatEventDate(event.start_datetime)}
+                      {formatEventDisplayDate(event, now)}
                       {[event.city, event.state].filter(Boolean).length
                         ? ` · ${[event.city, event.state].filter(Boolean).join(', ')}`
                         : ''}

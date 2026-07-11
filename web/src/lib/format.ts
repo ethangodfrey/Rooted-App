@@ -1,13 +1,46 @@
+import {
+  isRecurringMarketEvent,
+  resolveEventDisplayInstant,
+  resolveEventTimezone,
+  type EventScheduleFields,
+} from '@/lib/event-schedule';
+
+const SHORT_DATE: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+};
+
 export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export function formatEventDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+/** Format a calendar date using the device locale with stable en-US month/weekday labels. */
+export function formatLocalDate(date: Date, timeZone?: string | null): string {
+  return date.toLocaleDateString('en-US', {
+    ...SHORT_DATE,
+    ...(timeZone ? { timeZone } : {}),
   });
+}
+
+export function formatEventDate(iso: string, timeZone?: string | null): string {
+  return formatLocalDate(new Date(iso), timeZone);
+}
+
+/** Market card date — uses today's calendar day for live recurring markets. */
+export function formatEventDisplayDate(
+  event: EventScheduleFields & {
+    start_datetime: string;
+    timezone?: string | null;
+    state?: string | null;
+  },
+  now: Date = new Date(),
+): string {
+  const timeZone = resolveEventTimezone(event);
+  const instant = isRecurringMarketEvent(event)
+    ? resolveEventDisplayInstant(event, now)
+    : new Date(event.start_datetime);
+  return formatLocalDate(instant, timeZone);
 }
 
 export function formatEventTimeRange(startIso: string, endIso: string, timeZone?: string | null): string {
@@ -17,7 +50,7 @@ export function formatEventTimeRange(startIso: string, endIso: string, timeZone?
     ...(timeZone ? { timeZone } : {}),
   };
   const suffix = timeZone ? ` ${formatTimezoneLabel(timeZone)}` : '';
-  return `${new Date(startIso).toLocaleTimeString(undefined, timeOpts)} – ${new Date(endIso).toLocaleTimeString(undefined, timeOpts)}${suffix}`;
+  return `${new Date(startIso).toLocaleTimeString('en-US', timeOpts)} – ${new Date(endIso).toLocaleTimeString('en-US', timeOpts)}${suffix}`;
 }
 
 function formatTimezoneLabel(timeZone: string): string {
@@ -33,7 +66,7 @@ function formatTimezoneLabel(timeZone: string): string {
 }
 
 export function formatEventFullDate(iso: string, timeZone?: string | null): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -51,11 +84,11 @@ export function formatRelativeTime(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -65,7 +98,7 @@ export function formatDateTime(iso: string): string {
 
 /** Live clock for the events UI — date + time, updates every second. */
 export function formatCurrentClock(now: Date): string {
-  return now.toLocaleString(undefined, {
+  return now.toLocaleString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

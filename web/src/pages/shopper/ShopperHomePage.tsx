@@ -6,7 +6,7 @@ import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
 import { eventRuntimePhase, eventRuntimeHint, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
-import { formatEventDate, formatPrice } from '@/lib/format';
+import { formatEventDisplayDate, formatPrice } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
 import { fetchCuratedLeftovers, formatExpiresIn, type CuratedLeftover } from '@/lib/leftovers';
 import { getMarketContext } from '@/lib/market-context';
@@ -221,7 +221,8 @@ export function ShopperHomePage() {
                   <span className="app-hscroll-card__badge">Live</span>
                   <p className="app-hscroll-card__title">{event.name}</p>
                   <p className="app-hscroll-card__meta">
-                    {event.city ?? ''}
+                    {formatEventDisplayDate(event, now)}
+                    {event.city ? ` · ${event.city}` : ''}
                     {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
                   </p>
                 </div>
@@ -250,7 +251,7 @@ export function ShopperHomePage() {
                 </div>
                 <div className="app-hscroll-card__body">
                   <p className="app-hscroll-card__title">{event.name}</p>
-                  <p className="app-hscroll-card__meta">{formatEventDate(event.start_datetime)}</p>
+                  <p className="app-hscroll-card__meta">{formatEventDisplayDate(event, now)}</p>
                 </div>
               </Link>
             ))}

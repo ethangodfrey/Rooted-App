@@ -14,7 +14,7 @@ import {
   geocodeUsZip,
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
-import { formatEventDate } from '@/lib/format';
+import { formatEventDisplayDate } from '@/lib/format';
 import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
 import { fetchPublicEvents } from '@/lib/events-query';
 import type { Event } from '@/types/database';
@@ -283,7 +283,7 @@ export function ShopperMapPage() {
                     <div className="app-hscroll-card__body">
                       <p className="app-hscroll-card__title">{event.name}</p>
                       <p className="app-hscroll-card__meta">
-                        {formatEventDate(event.start_datetime)}
+                        {formatEventDisplayDate(event, now)}
                         {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
                       </p>
                       {phase === 'live' ? (
