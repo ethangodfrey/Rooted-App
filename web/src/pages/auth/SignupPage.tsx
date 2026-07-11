@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
 import { OAuthButtons } from '@/components/auth/OAuthButtons';
@@ -10,11 +10,17 @@ export function SignupPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function handleSignup() {
+    if (!accepted) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -51,8 +57,30 @@ export function SignupPage() {
       onSubmit={handleSignup}
       submitLabel="Create account"
       loading={loading}
+      submitDisabled={!accepted}
       error={error}
       message={message}
+      beforeSubmit={
+        <div className="app-consent">
+          <input
+            id="legal-consent"
+            type="checkbox"
+            checked={accepted}
+            onChange={(e) => setAccepted(e.target.checked)}
+          />
+          <label htmlFor="legal-consent">
+            I agree to the{' '}
+            <Link to="/legal/terms" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </Link>
+            .
+          </label>
+        </div>
+      }
       socialAuth={<OAuthButtons disabled={loading} />}
       footer={<AuthLink to="/login">Already have an account? Sign in</AuthLink>}
     />
