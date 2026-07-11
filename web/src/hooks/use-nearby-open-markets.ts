@@ -27,6 +27,8 @@ export function useNearbyOpenMarkets() {
       if (cancelled) return;
       const list = error ? [] : data;
       setOpenCount(list.filter((event) => eventRuntimePhase(event, now) === 'live').length);
+    }).catch(() => {
+      if (!cancelled) setOpenCount(0);
     });
 
     return () => {

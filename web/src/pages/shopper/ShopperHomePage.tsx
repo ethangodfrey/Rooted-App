@@ -114,6 +114,9 @@ export function ShopperHomePage() {
       if (cancelled) return;
       setNearbyEvents(error ? [] : data);
       setNearbyLoading(false);
+    }).catch(() => {
+      if (!cancelled) setNearbyEvents([]);
+      if (!cancelled) setNearbyLoading(false);
     });
 
     return () => {

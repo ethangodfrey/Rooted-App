@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 
 import { useNow } from '@/src/hooks/use-now';
+import { isValidCoords } from '@/src/lib/geo';
 import {
   EVENT_RUNTIME_SYMBOL,
   eventRuntimePhase,
@@ -33,7 +34,7 @@ export function EventMap({
 }: EventMapProps) {
   const now = useNow();
   const mappable = useMemo(
-    () => events.filter((e) => e.latitude != null && e.longitude != null),
+    () => events.filter((e) => isValidCoords(e)),
     [events],
   );
 

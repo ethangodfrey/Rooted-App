@@ -72,12 +72,19 @@ export function ShopperSearchPage() {
       userState: user?.state,
       interests: shopper?.interests ?? [],
       savedVendorIds: saved,
-    }).then((feed) => {
-      if (!cancelled) {
-        setDiscover(feed);
-        setDiscoverLoading(false);
-      }
-    });
+    })
+      .then((feed) => {
+        if (!cancelled) {
+          setDiscover(feed);
+          setDiscoverLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDiscover(null);
+          setDiscoverLoading(false);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -94,13 +101,18 @@ export function ShopperSearchPage() {
     let cancelled = false;
     setLoading(true);
     const handle = setTimeout(async () => {
-      const data = await runUnifiedSearch(trimmed, filter, searchCoords);
-      if (cancelled) return;
-      setResults(data);
-      setLoading(false);
-      if (unifiedSearchTotal(data) > 0) {
-        pushRecentSearch(trimmed);
-        setRecentSearches(readRecentSearches());
+      try {
+        const data = await runUnifiedSearch(trimmed, filter, searchCoords);
+        if (cancelled) return;
+        setResults(data);
+        if (unifiedSearchTotal(data) > 0) {
+          pushRecentSearch(trimmed);
+          setRecentSearches(readRecentSearches());
+        }
+      } catch {
+        if (!cancelled) setResults(EMPTY_RESULTS);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }, 300);
 
