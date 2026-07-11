@@ -3,13 +3,15 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
-import { formatEventDate, formatPrice } from '@/lib/format';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
 export function ShopperProductPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const now = useNow(60_000);
   const [product, setProduct] = useState<{
     id: string;
     name: string;
@@ -20,14 +22,26 @@ export function ShopperProductPage() {
     vendor_id: string;
     vendor: { business_name: string | null } | null;
   } | null>(null);
-  const [availability, setAvailability] = useState<{ available_quantity_presale: number; event: { id: string; name: string; start_datetime: string } | null }[]>([]);
+  const [availability, setAvailability] = useState<{
+    available_quantity_presale: number;
+    event: {
+      id: string;
+      name: string;
+      start_datetime: string;
+      end_datetime?: string | null;
+      timezone?: string | null;
+      hours_summary?: string | null;
+      sync_metadata?: Record<string, unknown>;
+      state?: string | null;
+    } | null;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const [productRes, availRes] = await Promise.all([
         supabase.from('products').select('id, name, description, price, media_urls, reserve_enabled, vendor_id, vendor:vendors(business_name)').eq('id', id).maybeSingle(),
-        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime)').eq('product_id', id).gt('available_quantity_presale', 0),
+        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state)').eq('product_id', id).gt('available_quantity_presale', 0),
       ]);
       setProduct(productRes.data as unknown as typeof product);
       setAvailability((availRes.data as unknown as typeof availability) ?? []);
@@ -70,7 +84,7 @@ export function ShopperProductPage() {
               <div key={i} className="app-card">
                 <p className="app-row-title">{row.event?.name}</p>
                 <p className="app-row-meta">
-                  {row.event ? formatEventDate(row.event.start_datetime) : ''} · {row.available_quantity_presale} available
+                  {row.event ? formatEventDisplayDate(row.event, now) : ''} · {row.available_quantity_presale} available
                 </p>
               </div>
             ))}

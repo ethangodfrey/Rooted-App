@@ -14,7 +14,8 @@ import { HomeSectionSkeleton } from '@/src/components/ui/skeleton';
 
 import { Text } from '@/src/components/ui/text';
 
-import { formatEventDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayDate, formatPrice } from '@/src/lib/format';
 
 import { formatDistanceKm } from '@/src/lib/geo-search';
 
@@ -306,6 +307,7 @@ interface DiscoverBrowseFeedProps {
 
 
 export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
+  const now = useNow(60_000);
 
   if (loading && !data) {
 
@@ -471,7 +473,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
                   meta={[
 
-                    formatEventDate(event.start_datetime),
+                    formatEventDisplayDate(event, now),
 
                     event.city,
 

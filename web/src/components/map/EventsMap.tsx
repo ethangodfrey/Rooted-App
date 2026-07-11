@@ -6,9 +6,10 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { useNow } from '@/hooks/use-now';
+import { centroidOfEvents } from '@/lib/event-map-search';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
-import { formatEventDate } from '@/lib/format';
+import { formatEventDisplayDate } from '@/lib/format';
 import type { Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
@@ -62,6 +63,74 @@ function FlyToTarget({
   return null;
 }
 
+function InitialMapView({
+  userCoords,
+  events,
+}: {
+  userCoords: Coords | null;
+  events: Event[];
+}) {
+  const map = useMap();
+  const resolvedRef = useRef(false);
+
+  useEffect(() => {
+    if (resolvedRef.current) return;
+
+    function centerOnCoords(center: Coords, zoom: number) {
+      map.setView([center.latitude, center.longitude], zoom);
+      resolvedRef.current = true;
+    }
+
+    function fallbackToEvents() {
+      if (resolvedRef.current || events.length === 0) return;
+
+      if (events.length === 1) {
+        centerOnCoords(
+          { latitude: events[0].latitude, longitude: events[0].longitude },
+          FOCUS_ZOOM,
+        );
+        return;
+      }
+
+      const bounds = L.latLngBounds(
+        events.map((event) => [event.latitude, event.longitude] as [number, number]),
+      );
+      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+      resolvedRef.current = true;
+    }
+
+    if (userCoords) {
+      centerOnCoords(userCoords, 9);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      fallbackToEvents();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (resolvedRef.current) return;
+        centerOnCoords(
+          {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+          9,
+        );
+      },
+      () => {
+        console.log('Location access denied, falling back to database bounds.');
+        fallbackToEvents();
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  }, [userCoords, events, map]);
+
+  return null;
+}
+
 interface EventsMapProps {
   events: Event[];
   selectedEventId: string | null;
@@ -87,10 +156,13 @@ export function EventsMap({
 }: EventsMapProps) {
   const liveNow = useNow(60_000);
   const now = nowProp ?? liveNow;
+  const eventCenter = centroidOfEvents(events);
   const initialCenter: [number, number] = userCoords
     ? [userCoords.latitude, userCoords.longitude]
-    : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
-  const initialZoom = userCoords ? 9 : DEFAULT_ZOOM;
+    : eventCenter
+      ? [eventCenter.latitude, eventCenter.longitude]
+      : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
+  const initialZoom = userCoords || eventCenter ? 9 : DEFAULT_ZOOM;
 
   return (
     <div className="events-map-panel relative isolate z-0">
@@ -106,6 +178,8 @@ export function EventsMap({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          <InitialMapView userCoords={userCoords} events={events} />
 
           {events.length > 0 && !focusTarget ? (
             <FitBounds events={events} active={!focusTarget} />
@@ -146,7 +220,7 @@ export function EventsMap({
                     </div>
                     <strong>{event.name}</strong>
                     <p>
-                      {formatEventDate(event.start_datetime)}
+                      {formatEventDisplayDate(event, now)}
                       {[event.city, event.state].filter(Boolean).length
                         ? ` · ${[event.city, event.state].filter(Boolean).join(', ')}`
                         : ''}
