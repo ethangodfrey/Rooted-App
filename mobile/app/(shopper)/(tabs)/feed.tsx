@@ -1,4 +1,3 @@
-import { FontAwesome } from '@expo/vector-icons';
 import { LoadingIndicator } from '@/src/components/ui/loading-indicator';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -134,13 +133,6 @@ export default function ShopperFeedScreen() {
 
   return (
     <Screen scroll={false}>
-      <View className="mb-2">
-        <Text variant="eyebrow" className="mb-2">
-          Stay updated
-        </Text>
-        <Text variant="title">Feed</Text>
-      </View>
-
       <FeedModeSwitch
         mode={mode}
         onModeChange={setMode}
@@ -165,11 +157,11 @@ export default function ShopperFeedScreen() {
         </View>
       ) : posts.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <FontAwesome name="newspaper-o" size={28} color="#9CAF88" />
-          <Text variant="subtitle" className="mt-3 text-center">
+          <Text className="text-3xl">📮</Text>
+          <Text variant="subtitle" className="mt-3 text-center font-semibold">
             {empty.title}
           </Text>
-          <Text variant="caption" className="mt-1 text-center">
+          <Text variant="caption" className="mt-2 text-center">
             {empty.body}
           </Text>
           {mode === 'saved' ? (

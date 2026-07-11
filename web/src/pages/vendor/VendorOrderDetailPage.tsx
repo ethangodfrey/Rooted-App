@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -32,22 +32,26 @@ export function VendorOrderDetailPage() {
       pickup_state: string | null;
       pickup_notes: string | null;
     } | null;
-    order_items: { quantity: number; item_price: number; item_title: string | null; product: { name: string } | null }[];
+    order_items: { id: string; quantity: number; item_price: number; item_title: string | null; product: { name: string } | null }[];
   } | null>(null);
   const [updating, setUpdating] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
+    if (!id) {
+      setOrder(null);
+      return;
+    }
     const { data } = await supabase
       .from('orders')
-      .select('id, order_status, fulfillment_type, total, created_at, notes, event:events(name, start_datetime), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes), order_items(quantity, item_price, item_title, product:products(name))')
+      .select('id, order_status, fulfillment_type, total, created_at, notes, event:events(name, start_datetime), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes), order_items(id, quantity, item_price, item_title, product:products(name))')
       .eq('id', id)
       .maybeSingle();
     setOrder(data as unknown as typeof order);
-  }
+  }, [id]);
 
   useEffect(() => {
-    load();
-  }, [id]);
+    void load();
+  }, [load]);
 
   async function advanceStatus() {
     if (!order) return;
@@ -56,7 +60,7 @@ export function VendorOrderDetailPage() {
     setUpdating(true);
     await supabase.from('orders').update({ order_status: next, updated_at: new Date().toISOString() }).eq('id', order.id).eq('vendor_id', vendor?.id);
     setUpdating(false);
-    load();
+    await load();
   }
 
   if (!order) return <div className="app-loading"><div className="app-spinner" /></div>;
@@ -83,8 +87,8 @@ export function VendorOrderDetailPage() {
       </div>
 
       <div className="app-list" style={{ marginTop: '1rem' }}>
-        {order.order_items.map((item, i) => (
-          <div key={i} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
+        {order.order_items.map((item) => (
+          <div key={item.id} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
             <span>{item.product?.name ?? item.item_title ?? 'Item'} × {item.quantity}</span>
             <span>{formatPrice(item.item_price * item.quantity)}</span>
           </div>

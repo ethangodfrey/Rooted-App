@@ -30,6 +30,7 @@ export interface MarketCsvRow {
   contact_phone?: string | null;
   contact_email?: string | null;
   market_type?: string;
+  usda_directory?: string;
   facebook_url?: string | null;
   instagram_url?: string | null;
 }

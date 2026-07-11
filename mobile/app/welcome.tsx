@@ -1,6 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { Redirect, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Logo } from '@/src/components/Logo';
@@ -11,13 +11,15 @@ import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { hasSeenWelcome, markWelcomeSeen } from '@/src/lib/welcome-storage';
 import { colors } from '@/src/theme/colors';
+import { cardShadow, radius } from '@/src/theme/layout';
 
-const AUTH_WAIT_MS = 5_000;
+const AUTH_WAIT_MS = 1_200;
 
 export default function WelcomeScreen() {
   const { session, isLoading } = useAuth();
   const [checking, setChecking] = useState(true);
   const [authTimedOut, setAuthTimedOut] = useState(false);
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setAuthTimedOut(true), AUTH_WAIT_MS);
@@ -31,6 +33,8 @@ export default function WelcomeScreen() {
 
     async function guard() {
       if (session) {
+        if (redirectedRef.current) return;
+        redirectedRef.current = true;
         router.replace('/');
         return;
       }
@@ -56,7 +60,11 @@ export default function WelcomeScreen() {
   }, [authReady, session]);
 
   if (session) {
-    return <Redirect href="/" />;
+    return (
+      <Screen centered>
+        <LoadingIndicator />
+      </Screen>
+    );
   }
 
   async function handleContinue() {
@@ -74,19 +82,22 @@ export default function WelcomeScreen() {
 
   return (
     <Screen centered>
-      <View className="mb-6 h-16 w-16 items-center justify-center rounded-card bg-honeydew">
-        <FontAwesome name="leaf" size={28} color={colors.primary} />
+      <View
+        className="mb-8 h-20 w-20 items-center justify-center rounded-bento"
+        style={[{ backgroundColor: colors.warmSageAlt }, cardShadow, { borderRadius: radius.bento }]}>
+        <FontAwesome name="leaf" size={32} color={colors.primary} />
       </View>
 
-      <Text variant="eyebrow" className="mb-2 text-center">
+      <Text variant="eyebrow" className="mb-2 text-center text-accent">
         Welcome to
       </Text>
-      <Logo variant="primary" size="large" style={{ marginBottom: 8, alignSelf: 'center' }} />
-      <Text variant="subtitle" className="mb-8 text-center">
-        Discover local markets, follow makers, and reserve pickup from vendors near you.
+      <Logo variant="primary" size="large" showTagline style={{ marginBottom: 16, alignSelf: 'center' }} />
+
+      <Text variant="subtitle" className="mb-8 max-w-xs text-center">
+        Discover farmers markets, local vendors, and chefs in your neighborhood.
       </Text>
 
-      <CtaLink label="Want to get Rooted?" onPress={handleContinue} />
+      <CtaLink label="Get started" onPress={handleContinue} />
     </Screen>
   );
 }

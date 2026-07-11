@@ -1,7 +1,8 @@
-import { AccountSettingsFooter } from '@/src/components/account/account-settings-footer';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { ActionRow } from '@/src/components/ui/action-row';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
@@ -92,6 +93,15 @@ export default function AdminMoreScreen() {
         </Card>
       ) : null}
 
+      <View className="mb-4">
+        <ActionRow
+          icon="shield"
+          title="Credential review"
+          subtitle="Verify vendor & chef documents and award trust badges."
+          onPress={() => router.push('/(admin)/credentials')}
+        />
+      </View>
+
       <Card className="mb-4">
         <Text variant="heading" className="mb-1">
           Pilot admin tools
@@ -105,8 +115,6 @@ export default function AdminMoreScreen() {
       <View className="mt-2">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </View>
-
-      <AccountSettingsFooter />
     </Screen>
   );
 }

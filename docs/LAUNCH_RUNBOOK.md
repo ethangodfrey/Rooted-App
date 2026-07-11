@@ -1,174 +1,224 @@
 # Rooted Launch Runbook
 
-Operational checklist for moving Rooted from pilot to App Store / production. See also the launch readiness analysis in the automation PR description.
+Checklist for promoting Rooted from closed beta to App Store / production. Work top-to-bottom; each section has a verification gate.
 
 **Realistic posture today:** closed beta with a small vendor cohort.  
-**App Store launch:** address every blocker below before submission.
+**App Store target:** complete all **Blockers** sections below.
 
 ---
 
-## 1. Supabase migrations (fresh production)
+## 1. Supabase — fresh production database
 
-Apply SQL in this order in the Supabase SQL Editor. Optional seed files are marked.
+Apply SQL in this exact order in the Supabase SQL Editor (or via migration tooling). Skip seed files if you are importing USDA data separately.
 
-| # | File | Notes |
-|---|------|--------|
-| 1 | `phase1_auth.sql` | Core users, shoppers, vendors |
-| 2 | `phase1_storage_auth_redirect.sql` | Public `auth` bucket for email bridge |
-| 3 | `phase4_events.sql` | Events |
-| 4 | `phase5_seed_denver_events.sql` | Optional dev seed |
-| 5 | `phase5_seed_all_states_events.sql` | Optional broader seed |
-| 6 | `phase6_vendor_events.sql` | Vendor ↔ event |
-| 7 | `phase7_products.sql` | Products |
-| 8 | `phase7_product_media_storage.sql` | Product media bucket |
-| 9 | `phase9_orders.sql` | Orders |
-| 10 | `phase9_reservation_limits.sql` | Presale caps |
-| 11 | `phase10_posts.sql` | Vendor posts |
-| 12 | `phase10_post_scheduling.sql` | Scheduled posts |
-| 13 | `phase10_feed_explore.sql` | Explore feed |
-| 14 | `phase10_feed_saved_vendor_read.sql` | Saved-vendor reads |
-| 15 | `phase11_analytics.sql` | Analytics tables |
-| 16 | `phase12_admin.sql` | Admin RLS |
-| 17 | `phase12_onboarding_role_reset.sql` | Role reset |
-| 18 | `phase12_vendor_application.sql` | Vendor application |
-| 19 | `phase12_pos_integrations.sql` | POS patches |
-| 20 | `phase12b_pos_tables.sql` | POS tables |
-| 21 | `phase12c_pos_rls.sql` | POS RLS |
-| 22 | `phase13_market_agent.sql` | Market discovery |
-| 23 | `phase14_market_details.sql` | Market detail fields |
-| 24 | `phase15_market_history.sql` | Market history |
-| 25 | `phase16_video_posts.sql` | Video posts |
-| 26 | `phase17_admin_agent.sql` | AI vendor triage |
-| 27 | `phase18_admin_agent_feedback.sql` | Agent feedback |
-| 28 | `phase19_post_moderation.sql` | AI post moderation |
-| 29 | `phase20_leftovers.sql` | Leftovers |
-| 30 | `phase21_market_guide.sql` | Market guide |
-| 31 | `phase22_account_deletion.sql` | **Required** for in-app account delete |
+| # | File | Purpose |
+|---|------|---------|
+| 1 | `docs/supabase/phase1_auth.sql` | users, shoppers, vendors, RLS |
+| 2 | `docs/supabase/phase1_storage_auth_redirect.sql` | `auth` storage bucket for email bridge |
+| 3 | `docs/supabase/phase4_events.sql` | events table |
+| 4 | `docs/supabase/phase6_vendor_events.sql` | vendor ↔ event participation |
+| 5 | `docs/supabase/phase7_products.sql` | products + availability |
+| 6 | `docs/supabase/phase7_product_media_storage.sql` | product image storage |
+| 7 | `docs/supabase/phase9_orders.sql` | reserve-for-pickup orders |
+| 8 | `docs/supabase/phase9_reservation_limits.sql` | presale caps |
+| 9 | `docs/supabase/phase10_posts.sql` | vendor feed posts |
+| 10 | `docs/supabase/phase10_post_scheduling.sql` | scheduled posts |
+| 11 | `docs/supabase/phase10_feed_explore.sql` | explore feed |
+| 12 | `docs/supabase/phase10_feed_saved_vendor_read.sql` | saved-vendor feed reads |
+| 13 | `docs/supabase/phase11_analytics.sql` | vendor analytics |
+| 14 | `docs/supabase/phase12_admin.sql` | admin policies |
+| 15 | `docs/supabase/phase12_onboarding_role_reset.sql` | role reset helper |
+| 16 | `docs/supabase/phase12_vendor_application.sql` | vendor application fields |
+| 17 | `docs/supabase/phase12_pos_integrations.sql` | POS integration metadata |
+| 18 | `docs/supabase/phase12b_pos_tables.sql` | POS tables |
+| 19 | `docs/supabase/phase12c_pos_rls.sql` | POS RLS |
+| 20 | `docs/supabase/phase13_market_agent.sql` | market agent |
+| 21 | `docs/supabase/phase14_market_details.sql` | market detail fields |
+| 22 | `docs/supabase/phase15_market_history.sql` | market history |
+| 23 | `docs/supabase/phase16_video_posts.sql` | video posts |
+| 24 | `docs/supabase/phase17_admin_agent.sql` | admin agent |
+| 25 | `docs/supabase/phase18_admin_agent_feedback.sql` | admin agent feedback |
+| 26 | `docs/supabase/phase19_post_moderation.sql` | post moderation |
+| 27 | `docs/supabase/phase20_leftovers.sql` | leftovers |
+| 28 | `docs/supabase/phase21_market_guide.sql` | market guide |
+| 29 | `docs/supabase/phase22_account_deletion.sql` | self-service account deletion |
 
-**Market data imports** (regenerate — do not hand-edit):
+**Optional seeds (dev/staging only):**
 
-```bash
-npm run markets:usda:pipeline   # from repo root
-```
+- `docs/supabase/phase5_seed_denver_events.sql`
+- `docs/supabase/phase5_seed_all_states_events.sql`
 
-Then apply generated `docs/supabase/generated_usda_markets_part*.sql` in numeric order.
+**USDA market data:** regenerate via `npm run markets:usda:import` — do not hand-edit `generated_usda_markets_part*.sql`.
 
 ### Post-migration smoke test
 
-- [ ] Sign up as shopper → role select → interests → home
-- [ ] Sign up as vendor → application → pending approval
-- [ ] Admin can approve vendor (promote `users.role` to `admin` in SQL for first admin)
-- [ ] Create product, link to event, place reservation
-- [ ] Password reset email opens app (see §3)
-- [ ] Delete account from profile removes auth user
+- [ ] Sign up as shopper → role select → interests → home loads
+- [ ] Sign up as vendor → application → pending approval visible in admin
+- [ ] Admin can approve vendor (`update users set role = 'admin' where email = '…'` for first admin)
+- [ ] Reserve-for-pickup order completes (Model A — unpaid until pickup)
+- [ ] Password reset email opens app via hosted redirect (see §2)
+- [ ] Delete account from profile removes user and signs out
 
 ---
 
-## 2. Legal & compliance
+## 2. Auth email links (mobile)
 
-| Item | Status in repo | Action |
-|------|----------------|--------|
-| Privacy policy | `/privacy` on web | Publish web app; set `VITE_APP_URL` / `EXPO_PUBLIC_WEB_APP_URL` |
-| Terms of service | `/terms` on web | Same |
-| Support URL | `/support` on web | Add to App Store Connect |
-| Signup consent | Mobile + web signup | Verify links resolve on production domain |
-| Account deletion | `phase22_account_deletion.sql` + profile UI | Run migration before enabling delete button |
+Password reset and email confirmation **fail on physical devices** without a hosted HTTPS bridge.
 
----
+1. Upload `docs/supabase/auth-redirect.html` to Supabase Storage bucket **`auth`** (public).
+2. Set `EXPO_PUBLIC_AUTH_REDIRECT_URL` in mobile `.env` / EAS secrets to the public URL, e.g.  
+   `https://<project>.supabase.co/storage/v1/object/public/auth/auth-redirect.html`
+3. In Supabase → **Authentication → URL Configuration → Redirect URLs**, add that same URL.
+4. Run `eas build` with the env var baked in; Expo Go uses `mobile://` scheme only in dev.
 
-## 3. Auth deep links (password reset)
-
-1. Upload `docs/supabase/auth-redirect.html` to Supabase Storage bucket `auth` (public).
-2. Set `EXPO_PUBLIC_AUTH_REDIRECT_URL` to the public URL of that file.
-3. Add the same URL under **Authentication → URL Configuration → Redirect URLs** in Supabase.
-4. For production web, set `VITE_APP_URL` to your deployed origin.
-5. Optional: switch `app.json` `scheme` from `mobile` to `rooted` and update `auth-redirect.html` `APP_SCHEME` to match; configure Universal Links later.
+**Verify:** request password reset on a TestFlight build → tap email link → app opens → set new password.
 
 ---
 
-## 4. Mobile App Store build
+## 3. Legal & compliance (App Store blockers)
+
+| Item | Action |
+|------|--------|
+| Privacy policy | Publish at `https://rooted.app/privacy` (or set `EXPO_PUBLIC_LEGAL_PRIVACY_URL`) |
+| Terms of service | Publish at `https://rooted.app/terms` |
+| Support URL | Publish at `https://rooted.app/support` — required in App Store Connect |
+| Signup consent | Mobile + web signup screens link to terms/privacy (implemented) |
+| Account deletion | Run `phase22_account_deletion.sql`; profile screens expose delete (implemented) |
+
+---
+
+## 4. Mobile build & App Store submission
 
 ### Prerequisites
 
-- [ ] Apple Developer Program enrolled
-- [ ] Replace placeholder icons in `mobile/assets/images/` with branded 1024×1024 assets
-- [ ] Run `eas init` and link project (set `extra.eas.projectId` in `app.json`)
-- [ ] Update `mobile/eas.json` submit section with real Apple IDs
+- [ ] Apple Developer Program enrolled ($99/year)
+- [ ] Branded 1024×1024 icon in `mobile/assets/images/icon.png`
+- [ ] Branded splash in `mobile/assets/images/splash-icon.png`
+- [ ] Replace `REPLACE_WITH_EAS_PROJECT_ID` in `mobile/app.json` after `eas init`
+- [ ] Replace placeholder values in `mobile/eas.json` submit section
 
-### Config already in repo
-
-- `ios.bundleIdentifier`: `com.rooted.app`
-- `android.package`: `com.rooted.app`
-- `eas.json` profiles: `development`, `preview`, `production`
-
-### Build & submit
+### EAS commands
 
 ```bash
 cd mobile
+npm install -g eas-cli
+eas login
+eas init                    # links EAS project, updates app.json extra.eas.projectId
 eas build --platform ios --profile production
 eas submit --platform ios --profile production
 ```
 
-Before public release: TestFlight build + App Store screenshots (6.7", 6.5", 5.5").
+`app.json` already sets `ios.bundleIdentifier` / `android.package` to `com.rooted.app`.
+
+### App Store Connect
+
+- [ ] Screenshots: 6.7", 6.5", 5.5" iPhone sizes
+- [ ] Privacy policy URL, support URL, age rating questionnaire
+- [ ] TestFlight internal testing before public release
 
 ---
 
 ## 5. Production infrastructure
 
-| Component | Needed |
-|-----------|--------|
-| Backend API | Hosted HTTPS (Fly.io, Railway, Render, etc.) |
-| Redis | Managed instance if POS queues enabled |
-| Web app | Vercel/Netlify with SPA rewrites to `index.html` |
-| Supabase | Dedicated production project |
-| Secrets | GitHub Environments / Doppler — not committed `.env` files |
-| Mobile env | `EXPO_PUBLIC_API_URL` = production API in EAS secrets |
+| Component | Dev today | Production needed |
+|-----------|-----------|-------------------|
+| Backend API | Docker local | Fly.io / Railway / Render with HTTPS |
+| Redis | Local | Managed Redis (POS job queues) |
+| Web app | `npm run build` → `dist/` | Vercel/Netlify + SPA rewrites |
+| Supabase | Dev project | Dedicated prod project or confirmed prod config |
+| Secrets | Per-package `.env` | GitHub Environments / Doppler / EAS secrets |
+| `EXPO_PUBLIC_API_URL` | LAN IP | `https://api.rooted.app` (or your domain) |
 
-### Health check monitoring
+### Backend health check
 
-Poll `GET /health/ready` on the backend from an uptime service (Better Uptime, Pingdom, etc.).
-
----
-
-## 6. Security before review
-
-| Item | Action |
-|------|--------|
-| Admin dev backdoor | Gated behind `__DEV__` in `mobile/src/lib/admin-dev.ts` — verify production build |
-| CORS no-Origin | Production rejects requests without Origin (see `backend/src/main.ts`) |
-| API rate limiting | **Not yet implemented** — add `@nestjs/throttler` before public launch |
-| Error monitoring | Add Sentry/Crashlytics on mobile, web, backend |
+After deploy, confirm `GET /health/ready` returns 200. Add uptime monitoring (Better Uptime, Pingdom, etc.).
 
 ---
 
-## 7. CI
+## 6. Security before public launch
 
-| Workflow | Path | Checks |
-|----------|------|--------|
-| Backend CI | `.github/workflows/backend-ci.yml` | tsc, test, build |
-| Web & Mobile CI | `.github/workflows/web-mobile-ci.yml` | web build, mobile tsc |
-
----
-
-## 8. Launch product scope (v1.0)
-
-- Ship **Model A**: reserve now, pay at pickup. Do not promise in-app payments.
-- Square POS is the only production-ready POS integration.
-- Hide or label non-farmers-market listings until classification pipeline completes.
+- [ ] Remove or keep `admin-dev` backdoor **dev-only** (`__DEV__` gated — done in code)
+- [ ] Add API rate limiting on public endpoints (webhooks, market photo proxy)
+- [ ] Review CORS — tighten no-Origin requests if not needed
+- [ ] Rotate any secrets committed to dev `.env` files
 
 ---
 
-## 9. Remaining gaps (not in this run)
+## 7. Monitoring (strongly recommended)
 
-- Branded app icon and splash (placeholders exist)
-- EAS project linkage (`eas init`)
-- Universal Links / associated domains
-- Push notifications
-- Offline/network UX
-- Web E2E tests
-- API rate limiting
-- Sentry / crash reporting
+- [ ] Sentry or Crashlytics on mobile
+- [ ] Error tracking on web + backend
+- [ ] Uptime alert on `/health/ready`
 
 ---
 
-*Last updated: June 2026*
+## 8. CI gates (GitHub Actions)
+
+Workflow `.github/workflows/monorepo-ci.yml` runs on every push/PR:
+
+- `web`: `npm run build`
+- `mobile`: `npx tsc --noEmit`
+- `backend`: typecheck, tests, build
+
+Keep these green before merging launch PRs.
+
+---
+
+## 9. Pilot happy path (Model A)
+
+Ship **reserve now, pay at pickup** — do not promise in-app payments.
+
+1. Shopper discovers market on map → views event → browses vendor products
+2. Shopper reserves items → order `payment_status: unpaid`
+3. Vendor sees order in dashboard → marks paid at pickup
+4. Vendor posts to feed → favoriting shoppers see update
+
+Hide or label non-farmers-market listings until classification pipeline completes (~17.5k pending).
+
+---
+
+## 10. Remaining launch caveats (non-blocking)
+
+| Area | Note |
+|------|------|
+| Market classification | ~17.5k listings pending — map may show CSAs/agritourism |
+| Schedule enrichment | Some markets still have wrong hours |
+| Map pin cap | ~100–350 pins nationwide without user location |
+| Toast/Clover POS | Not production-ready — Square only |
+| Push notifications | Not implemented — users refresh manually |
+| Offline UX | No graceful offline states |
+
+---
+
+## Quick env reference
+
+### Mobile (`mobile/.env` or EAS secrets)
+
+```
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_API_URL=https://api.rooted.app
+EXPO_PUBLIC_AUTH_REDIRECT_URL=https://<project>.supabase.co/storage/v1/object/public/auth/auth-redirect.html
+EXPO_PUBLIC_LEGAL_TERMS_URL=https://rooted.app/terms
+EXPO_PUBLIC_LEGAL_PRIVACY_URL=https://rooted.app/privacy
+EXPO_PUBLIC_SUPPORT_URL=https://rooted.app/support
+```
+
+### Web (`web/.env`)
+
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_APP_URL=https://rooted.app
+VITE_API_URL=https://api.rooted.app
+```
+
+### Backend (`backend/.env`)
+
+```
+DATABASE_URL=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+REDIS_URL=
+PUBLIC_BASE_URL=https://api.rooted.app
+```

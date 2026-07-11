@@ -12,6 +12,7 @@ import { MarketsEnrichmentService } from './markets-enrichment.service';
 import { MarketsImageService } from './markets-image.service';
 import { MarketsImageVerifyService } from './markets-image-verify.service';
 import { MarketsNominatimService } from './markets-nominatim.service';
+import { MarketsClassifyAiService } from './markets-classify-ai.service';
 import { MarketsScheduleAiService } from './markets-schedule-ai.service';
 import { MarketsSchedulerService } from './markets-scheduler.service';
 
@@ -28,9 +29,16 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsImageVerifyService,
     MarketsEnrichmentService,
     MarketsScheduleAiService,
+    MarketsClassifyAiService,
     MarketsAgentService,
     MarketsSchedulerService,
   ],
-  exports: [MarketsAgentService, MarketsEnrichmentService, MarketsScheduleAiService, MarketsLinksService],
+  exports: [
+    MarketsAgentService,
+    MarketsEnrichmentService,
+    MarketsScheduleAiService,
+    MarketsClassifyAiService,
+    MarketsLinksService,
+  ],
 })
 export class MarketsModule {}

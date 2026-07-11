@@ -66,6 +66,12 @@ export default function VendorFeedScreen() {
         </View>
         <View className="flex-row gap-2">
           <Pressable
+            onPress={() => router.push('/(vendor)/media/capture')}
+            className="h-11 w-11 items-center justify-center rounded-full bg-honeydew"
+            accessibilityLabel="Capture media">
+            <FontAwesome name="camera" size={16} color="#228B22" />
+          </Pressable>
+          <Pressable
             onPress={() => router.push('/(vendor)/posts/new-video')}
             className="h-11 w-11 items-center justify-center rounded-full bg-forest-100"
             accessibilityLabel="New video post">

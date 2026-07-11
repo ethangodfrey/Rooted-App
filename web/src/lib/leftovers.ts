@@ -1,5 +1,4 @@
-import type { Coords } from '@/lib/geo';
-import { distanceMiles } from '@/lib/geo';
+import { coordsFrom, distanceMiles, type Coords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 
 export type LeftoverStatus = 'active' | 'sold_out' | 'expired' | 'cancelled';
@@ -71,13 +70,10 @@ function locationLabel(listing: LeftoverListing): string {
 }
 
 function listingCoords(listing: LeftoverListing): Coords | null {
-  if (listing.pickup_latitude != null && listing.pickup_longitude != null) {
-    return {
-      latitude: Number(listing.pickup_latitude),
-      longitude: Number(listing.pickup_longitude),
-    };
-  }
-  return null;
+  return coordsFrom({
+    latitude: listing.pickup_latitude,
+    longitude: listing.pickup_longitude,
+  });
 }
 
 export function curateLeftovers(
@@ -146,7 +142,7 @@ export async function fetchCuratedLeftovers(
     .order('expires_at', { ascending: true })
     .limit(80);
 
-  if (error) throw error;
+  if (error) return [];
   return curateLeftovers((data as unknown as LeftoverListing[]) ?? [], context).slice(0, limit);
 }
 

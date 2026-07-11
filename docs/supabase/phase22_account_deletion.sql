@@ -1,5 +1,5 @@
 -- Rooted Phase 22: self-service account deletion (Apple Guideline 5.1.1)
--- Run in Supabase SQL Editor on production before enabling in-app delete.
+-- Run after phase1_auth.sql. Cascades via FK on public.users → auth.users.
 
 create or replace function public.delete_own_account()
 returns void
@@ -13,7 +13,6 @@ begin
   if uid is null then
     raise exception 'Not authenticated';
   end if;
-
   delete from auth.users where id = uid;
 end;
 $$;

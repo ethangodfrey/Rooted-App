@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { resolveApiBaseUrl, isApiUrlConfigured } from '@/lib/api-url';
+import { resolveApiBaseUrl, isApiUrlConfigured, isExplicitPublicApiUrl } from '@/lib/api-url';
 
 export type ServerConnectionStatus = 'unknown' | 'checking' | 'online' | 'offline';
 
@@ -12,7 +12,7 @@ export interface ServerStatusSnapshot {
   checkedAt: string | null;
 }
 
-export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
+export function useServerStatus(pollMs = 30_000, enabled = true): ServerStatusSnapshot {
   const [snapshot, setSnapshot] = useState<ServerStatusSnapshot>({
     status: 'unknown',
     apiUrl: '',
@@ -22,14 +22,7 @@ export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
   });
 
   const check = useCallback(async () => {
-    if (!isApiUrlConfigured()) {
-      setSnapshot({
-        status: 'unknown',
-        apiUrl: '',
-        latencyMs: null,
-        message: 'Backend URL not configured',
-        checkedAt: new Date().toISOString(),
-      });
+    if (!enabled || !isApiUrlConfigured()) {
       return;
     }
 
@@ -63,24 +56,30 @@ export function useServerStatus(pollMs = 30_000): ServerStatusSnapshot {
         checkedAt: new Date().toISOString(),
       });
     } catch {
+      const hint = isExplicitPublicApiUrl()
+        ? 'Check that the deployed API is up.'
+        : import.meta.env.DEV
+          ? 'Start backend (cd backend && npm run start:dev) and allow port 4000 on Windows Firewall.'
+          : 'Set VITE_API_URL to your deployed API.';
       setSnapshot({
         status: 'offline',
         apiUrl,
         latencyMs: null,
-        message: `Cannot reach ${apiUrl}. Start backend (cd backend && npm run start:dev) and allow port 4000 on Windows Firewall.`,
+        message: `Cannot reach ${apiUrl}. ${hint}`,
         checkedAt: new Date().toISOString(),
       });
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     const startDelay = window.setTimeout(() => void check(), 2000);
     const id = window.setInterval(() => void check(), pollMs);
     return () => {
       window.clearTimeout(startDelay);
       window.clearInterval(id);
     };
-  }, [check, pollMs]);
+  }, [check, pollMs, enabled]);
 
   return snapshot;
 }

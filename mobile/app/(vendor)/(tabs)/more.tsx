@@ -1,10 +1,11 @@
-import { AccountSettingsFooter } from '@/src/components/account/account-settings-footer';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { ActionRow } from '@/src/components/ui/action-row';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
+import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
+import { LegalLinks } from '@/src/components/account/legal-links';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
@@ -36,6 +37,18 @@ export default function VendorMoreScreen() {
 
       <View className="mb-4 gap-3">
         <ActionRow
+          icon="shield"
+          title="Compliance & credentials"
+          subtitle="Cottage food requirements, permits, and trust badges."
+          onPress={() => router.push('/(vendor)/compliance')}
+        />
+        <ActionRow
+          icon="th-large"
+          title="Explore showcase"
+          subtitle="Post photos and promotions to the customer Explore feed."
+          onPress={() => router.push('/(vendor)/explore')}
+        />
+        <ActionRow
           icon="paint-brush"
           title="Edit storefront"
           subtitle="Banner, logo, about section, links, and shopper details."
@@ -61,7 +74,17 @@ export default function VendorMoreScreen() {
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </View>
 
-      <AccountSettingsFooter />
+      <LegalLinks />
+
+      <View className="mt-8">
+        <Text variant="eyebrow" className="mb-2">
+          Danger zone
+        </Text>
+        <Text variant="caption" className="mb-3">
+          Permanently delete your account and associated data.
+        </Text>
+        <DeleteAccountButton />
+      </View>
     </Screen>
   );
 }
