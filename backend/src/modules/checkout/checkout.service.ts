@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma, type Event, type Product } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 
+import { computePlatformFeeCents, resolvePlatformFeeBps } from '../../common/settlement/platform-fee';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StripeService } from '../stripe/stripe.service';
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
@@ -10,7 +12,6 @@ import type { CreateCheckoutDto } from './dto/create-checkout.dto';
 
 const PICKUP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const PICKUP_CODE_PATTERN = /^[A-Z0-9]{6}$/;
-const PLATFORM_FEE_BPS = 500;
 
 interface BasketLine {
   productId: string;
@@ -87,10 +88,15 @@ function groupKey(vendorId: string, eventId: string): string {
 @Injectable()
 export class CheckoutService {
   constructor(
+    private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly inventory: CheckoutInventoryService,
     private readonly stripe: StripeService,
   ) {}
+
+  private platformFeeBps(): number {
+    return resolvePlatformFeeBps(this.config.get<string>('STRIPE_PLATFORM_FEE_BPS'));
+  }
 
   async createCheckout(user: AuthenticatedUser, dto: CreateCheckoutDto): Promise<CheckoutResult> {
     if (user.role !== 'shopper') {
@@ -179,7 +185,7 @@ export class CheckoutService {
       const orderIds: string[] = [];
 
       for (const group of groups) {
-        const platformFee = Math.round((group.subtotal * PLATFORM_FEE_BPS) / 10_000);
+        const platformFee = computePlatformFeeCents(group.subtotal, this.platformFeeBps());
         const code = await this.uniquePickupCode(tx);
         const order = await tx.order.create({
           data: {

@@ -1,5 +1,5 @@
-/** Platform fee in basis points (e.g. 500 = 5%). Applied on Connect destination charges. */
-export const STRIPE_PLATFORM_FEE_BPS = 500;
+/** @deprecated Use resolvePlatformFeeBps / DEFAULT_PLATFORM_FEE_BPS from common/settlement. */
+export { DEFAULT_PLATFORM_FEE_BPS as STRIPE_PLATFORM_FEE_BPS } from '../../common/settlement/platform-fee';
 
 export const STRIPE_CHECKOUT_SUCCESS_PATH = '/shopper/orders';
 export const STRIPE_CHECKOUT_CANCEL_PATH = '/shopper/orders';

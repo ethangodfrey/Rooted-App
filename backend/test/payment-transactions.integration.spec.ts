@@ -9,6 +9,7 @@ import { PosImportService } from '../src/modules/pos/services/pos-import.service
 import { PosMappingService } from '../src/modules/pos/services/pos-mapping.service';
 import { PosWebhookService } from '../src/modules/pos/services/pos-webhook.service';
 import type { NormalizedTransaction } from '../src/modules/pos/types/normalized-transaction';
+import type { CheckoutInventoryService } from '../src/modules/checkout/checkout-inventory.service';
 import { StripeService } from '../src/modules/stripe/stripe.service';
 import { createFakeOrderPrisma } from './fake-order-prisma';
 import { createFakePrisma } from './fake-prisma';
@@ -23,6 +24,15 @@ jest.mock('stripe', () => {
     accountLinks: { create: jest.fn() },
   }));
 });
+
+function fakeInventory(): CheckoutInventoryService {
+  return {
+    finalizePaidOrder: jest.fn(async () => undefined),
+    compensateStripeCheckout: jest.fn(async () => undefined),
+    reserveForStripeCheckout: jest.fn(async () => undefined),
+    decrementPresale: jest.fn(async () => undefined),
+  } as unknown as CheckoutInventoryService;
+}
 
 const SQUARE_CONFIG: Record<string, string> = {
   SQUARE_ENVIRONMENT: 'sandbox',
@@ -125,7 +135,7 @@ describe('dual payment transaction processing', () => {
   describe('Stripe checkout → webhook success', () => {
     it('moves an order from unpaid to stripe_pending to paid_online', async () => {
       const fake = createFakeOrderPrisma([stripeOrder()]);
-      const stripe = new StripeService(stripeConfig(), fake.prisma);
+      const stripe = new StripeService(stripeConfig(), fake.prisma, fakeInventory());
 
       await stripe.createOrderCheckoutSession({
         orderId: ORDER_ID,
@@ -139,7 +149,7 @@ describe('dual payment transaction processing', () => {
         data: {
           object: {
             id: 'cs_test_dual',
-            metadata: { order_id: ORDER_ID },
+            metadata: { order_id: ORDER_ID, customer_user_id: CUSTOMER_ID },
             payment_intent: 'pi_success',
           },
         },

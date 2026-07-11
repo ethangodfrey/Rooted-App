@@ -11,6 +11,8 @@ export interface FakeOrderRow {
   stripe_account_id: string | null;
   stripe_charges_enabled: boolean;
   customer_user_id: string;
+  platform_fee?: number;
+  transaction_id?: string | null;
 }
 
 export interface FakeOrderPrisma {
@@ -18,15 +20,42 @@ export interface FakeOrderPrisma {
   orders: FakeOrderRow[];
 }
 
-/** In-memory Prisma double for Stripe checkout + webhook order mutations. */
-export function createFakeOrderPrisma(seed?: FakeOrderRow[]): FakeOrderPrisma {
-  const orders: FakeOrderRow[] = (seed ?? []).map((o) => ({ ...o }));
+function createTxClient(orders: FakeOrderRow[]) {
+  const findOrder = (orderId: string, customerUserId?: string): FakeOrderRow | undefined =>
+    orders.find(
+      (o) =>
+        o.id === orderId &&
+        (customerUserId == null || o.customer_user_id === customerUserId),
+    );
 
-  const findOrder = (orderId: string, customerUserId: string): FakeOrderRow | undefined =>
-    orders.find((o) => o.id === orderId && o.customer_user_id === customerUserId);
+  return {
+    $queryRaw: jest.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = strings.join(' ');
 
-  const prisma = {
-    $queryRaw: jest.fn(async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+      if (sql.includes("payment_status = 'paid_online'") && sql.includes('update public.orders')) {
+        const paymentIntentId = values[0] as string | null;
+        const orderId = values[1] as string;
+        const sessionId = values[2] as string;
+        const row = orders.find(
+          (o) =>
+            o.id === orderId &&
+            o.stripe_checkout_session_id === sessionId &&
+            o.payment_status === 'stripe_pending',
+        );
+        if (!row) return [];
+        row.payment_status = 'paid_online';
+        row.stripe_payment_intent_id = paymentIntentId;
+        return [
+          {
+            id: row.id,
+            transaction_id: row.transaction_id ?? null,
+            vendor_id: row.vendor_id,
+            total: row.total,
+            platform_fee: row.platform_fee ?? 0,
+          },
+        ];
+      }
+
       const [orderId, customerUserId] = values as [string, string];
       const row = findOrder(orderId, customerUserId);
       if (!row) return [];
@@ -44,8 +73,8 @@ export function createFakeOrderPrisma(seed?: FakeOrderRow[]): FakeOrderPrisma {
       ];
     }),
 
-    $executeRaw: jest.fn(async (_strings: TemplateStringsArray, ...values: unknown[]) => {
-      const sql = _strings.join(' ');
+    $executeRaw: jest.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = strings.join(' ');
 
       if (sql.includes("payment_status = 'stripe_pending'")) {
         const [sessionId, orderId] = values as [string, string];
@@ -57,25 +86,26 @@ export function createFakeOrderPrisma(seed?: FakeOrderRow[]): FakeOrderPrisma {
         return 1;
       }
 
-      if (sql.includes("payment_status = 'paid_online'")) {
-        const [paymentIntentId, orderId, sessionId] = values as [
-          string | null,
-          string,
-          string,
-        ];
-        const row = orders.find(
-          (o) => o.id === orderId && o.stripe_checkout_session_id === sessionId,
-        );
-        if (row) {
-          row.payment_status = 'paid_online';
-          row.stripe_payment_intent_id = paymentIntentId;
-        }
-        return row ? 1 : 0;
+      if (sql.includes('vendor_settlements')) {
+        return 1;
       }
 
       return 0;
     }),
+  };
+}
 
+/** In-memory Prisma double for Stripe checkout + webhook order mutations. */
+export function createFakeOrderPrisma(seed?: FakeOrderRow[]): FakeOrderPrisma {
+  const orders: FakeOrderRow[] = (seed ?? []).map((o) => ({ ...o }));
+  const txClient = createTxClient(orders);
+
+  const prisma = {
+    $queryRaw: txClient.$queryRaw,
+    $executeRaw: txClient.$executeRaw,
+    $transaction: jest.fn(async (fn: (client: typeof txClient) => Promise<unknown>) =>
+      fn(txClient),
+    ),
     vendor: {
       findUnique: jest.fn(),
       update: jest.fn(),

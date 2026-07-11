@@ -4,6 +4,7 @@ import {
   HttpCode,
   Post,
   Req,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
@@ -21,7 +22,7 @@ export class StripeWebhooksController {
   @HttpCode(200)
   async receive(@Req() req: Request) {
     if (!this.stripe.isConfigured()) {
-      return { ok: false, reason: 'stripe_not_configured' };
+      throw new ServiceUnavailableException('webhook_not_configured');
     }
 
     const rawBody: Buffer | string = Buffer.isBuffer(req.body)

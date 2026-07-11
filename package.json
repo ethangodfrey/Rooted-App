@@ -35,6 +35,7 @@
     "test:webhook": "npx tsx scripts/test-pos-webhook.ts",
     "test:checkout": "npx tsx scripts/test-checkout-pipeline.ts",
     "health:audit": "npx tsx scripts/autonomous-health-check.ts",
+    "config:audit": "node scripts/audit-production-config.mjs",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
   },
   "dependencies": {
