@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -11,6 +11,113 @@ const statusCopy: Record<string, string> = {
   approved: 'Your storefront is live and visible to shoppers.',
   rejected: 'Your vendor application was not approved. Contact support.',
 };
+
+const surfaceCard =
+  'rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-white)] no-underline text-inherit';
+const surfaceCardHoneydew =
+  'rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-honeydew)] no-underline text-inherit';
+
+function DashboardSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mb-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+        {title}
+      </p>
+      {children}
+    </section>
+  );
+}
+
+function KpiStat({
+  to,
+  value,
+  label,
+  accent,
+}: {
+  to: string;
+  value: number;
+  label: string;
+  accent?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`app-card--pressable flex min-w-0 flex-col items-center p-3 text-center ${accent ? surfaceCardHoneydew : surfaceCard}`}
+    >
+      <p className="m-0 text-2xl font-bold tabular-nums leading-none text-[var(--color-text)]">
+        {value}
+      </p>
+      <p className="m-0 mt-1.5 max-w-full text-[10px] font-semibold uppercase leading-tight tracking-wider text-[var(--color-muted)]">
+        {label}
+      </p>
+    </Link>
+  );
+}
+
+function GrowthCard({
+  to,
+  title,
+  description,
+}: {
+  to: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link to={to} className={`app-card--pressable block p-3 ${surfaceCardHoneydew}`}>
+      <p className="m-0 text-sm font-semibold text-[var(--color-text)]">{title}</p>
+      <p className="m-0 mt-0.5 text-xs leading-snug text-[var(--color-muted)]">{description}</p>
+    </Link>
+  );
+}
+
+function CompactAction({
+  to,
+  title,
+  description,
+}: {
+  to: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`app-card--pressable flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 ${surfaceCard}`}
+    >
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-[var(--color-text)]">{title}</span>
+        {description ? (
+          <span className="mt-0.5 block truncate text-xs text-[var(--color-muted)]">{description}</span>
+        ) : null}
+      </span>
+      <span aria-hidden className="shrink-0 text-sm text-[var(--color-muted)]">
+        ›
+      </span>
+    </Link>
+  );
+}
+
+function OperationTile({
+  to,
+  title,
+  description,
+}: {
+  to: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <Link to={to} className={`app-card--pressable block min-w-0 p-3 ${surfaceCard}`}>
+      <p className="m-0 truncate text-sm font-semibold text-[var(--color-text)]">{title}</p>
+      {description ? (
+        <p className="m-0 mt-0.5 line-clamp-2 text-xs leading-snug text-[var(--color-muted)]">
+          {description}
+        </p>
+      ) : null}
+    </Link>
+  );
+}
 
 export function VendorDashboardPage() {
   const { user, vendor } = useAuth();
@@ -54,65 +161,83 @@ export function VendorDashboardPage() {
   const status = vendor?.approval_status ?? 'pending';
 
   return (
-    <div className="app-screen">
+    <div className="app-screen min-w-0 px-4 pb-10">
       <p className="app-eyebrow">Vendor</p>
       <h1 className="app-title">Dashboard</h1>
-      <p className="app-subtitle">{user?.email ? `Signed in as ${user.email}` : ''}</p>
+      <p className="app-subtitle mb-4">{user?.email ? `Signed in as ${user.email}` : ''}</p>
 
-      <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-        <p className="app-row-meta">Approval status</p>
-        <p className="app-row-title" style={{ textTransform: 'capitalize' }}>{status}</p>
-        <p className="app-row-meta">{statusCopy[status]}</p>
+      <div className={`mb-4 p-3 ${surfaceCardHoneydew}`}>
+        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+          Approval status
+        </p>
+        <p className="m-0 mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{status}</p>
+        <p className="m-0 mt-0.5 text-xs leading-snug text-[var(--color-muted)]">{statusCopy[status]}</p>
       </div>
 
-      <div className="app-dashboard-grid" style={{ marginBottom: '1.5rem' }}>
-        <Link to="/vendor/fulfillment" className="app-card app-card--pressable" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{pendingPickup}</p>
-          <p className="app-row-meta">Pending pickup</p>
-        </Link>
-        <Link to="/vendor/fulfillment" className="app-card app-card--pressable app-card--honeydew" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{fulfilledToday}</p>
-          <p className="app-row-meta">Fulfilled today</p>
-        </Link>
-        <Link to="/vendor/products" className="app-card app-card--pressable" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{activeProducts}</p>
-          <p className="app-row-meta">Active products</p>
-        </Link>
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        <KpiStat to="/vendor/fulfillment" value={pendingPickup} label="Awaiting pickup" />
+        <KpiStat to="/vendor/fulfillment" value={fulfilledToday} label="Fulfilled today" accent />
+        <KpiStat to="/vendor/products" value={activeProducts} label="Active products" />
       </div>
 
-      <Link to="/vendor/analytics" className="app-card app-card--pressable app-card--honeydew" style={{ marginBottom: '1.5rem', display: 'block' }}>
-        <p className="app-row-title">Analytics</p>
-        <p className="app-row-meta">Revenue, units sold, and order trends</p>
-      </Link>
+      <DashboardSection title="Operations">
+        <div className="grid grid-cols-2 gap-2">
+          <OperationTile
+            to="/vendor/fulfillment"
+            title="Fulfillment ledger"
+            description="Mark pickups complete and track live counters"
+          />
+          <OperationTile to="/vendor/products/new" title="Add a product" />
+          <OperationTile to="/vendor/events" title="My events" />
+          <OperationTile to="/vendor/sales/manual" title="Log in-person sale" />
+          <OperationTile
+            to="/vendor/leftovers"
+            title="List leftovers"
+            description="Post unsold items after market days"
+          />
+        </div>
+      </DashboardSection>
 
-      <div className="app-list">
-        <Link to="/vendor/fulfillment" className="app-card app-card--pressable app-card--honeydew">
-          <p className="app-row-title">Fulfillment ledger</p>
-          <p className="app-row-meta">Mark pickups complete and track live counters</p>
-        </Link>
-        <Link to="/vendor/products/new" className="app-card app-card--pressable">+ Add a product</Link>
-        <Link to="/vendor/events" className="app-card app-card--pressable">My events</Link>
-        <Link to="/vendor/posts/new" className="app-card app-card--pressable">+ Create a post</Link>
-        <Link to="/vendor/leftovers" className="app-card app-card--pressable app-card--honeydew">
-          <p className="app-row-title">List leftovers</p>
-          <p className="app-row-meta">Post unsold items after market days</p>
-        </Link>
-        <Link to="/vendor/sales/manual" className="app-card app-card--pressable">Log in-person sale</Link>
-        <Link to="/vendor/pos" className="app-card app-card--pressable">Connect Square POS</Link>
-        <Link to="/vendor/storefront" className="app-card app-card--pressable">Edit storefront</Link>
-        <Link to="/vendor/explore" className="app-card app-card--pressable">
-          <p className="app-row-title">Explore showcase</p>
-          <p className="app-row-meta">Publish portfolio posts to the customer Explore feed</p>
-        </Link>
-        <Link to="/vendor/compliance" className="app-card app-card--pressable">
-          <p className="app-row-title">Food safety checklist</p>
-          <p className="app-row-meta">State cottage food requirements and compliance status</p>
-        </Link>
-        <Link to="/vendor/credentials" className="app-card app-card--pressable">
-          <p className="app-row-title">Verification credentials</p>
-          <p className="app-row-meta">Upload documents to earn trust badges</p>
-        </Link>
-      </div>
+      <DashboardSection title="Storefront & Growth">
+        <div className="flex flex-col gap-2">
+          <GrowthCard
+            to="/vendor/analytics"
+            title="Analytics"
+            description="Revenue, units sold, and order trends"
+          />
+          <GrowthCard
+            to="/vendor/storefront"
+            title="Edit storefront"
+            description="Update your shop profile, photos, and pickup details"
+          />
+          <GrowthCard
+            to="/vendor/explore"
+            title="Explore showcase"
+            description="Publish portfolio posts to the customer Explore feed"
+          />
+          <GrowthCard
+            to="/vendor/posts/new"
+            title="Create a post"
+            description="Share updates, photos, and announcements with shoppers"
+          />
+        </div>
+      </DashboardSection>
+
+      <DashboardSection title="Compliance & Settings">
+        <div className="flex flex-col gap-1.5">
+          <CompactAction to="/vendor/pos" title="Connect Square POS" />
+          <CompactAction
+            to="/vendor/compliance"
+            title="Food safety checklist"
+            description="Cottage food requirements and compliance status"
+          />
+          <CompactAction
+            to="/vendor/credentials"
+            title="Verification credentials"
+            description="Upload documents to earn trust badges"
+          />
+        </div>
+      </DashboardSection>
     </div>
   );
 }
