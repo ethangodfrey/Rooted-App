@@ -4,6 +4,7 @@ import { InteractionManager } from 'react-native';
 
 import { useAuth } from '@/src/hooks/use-auth';
 import type { Coords } from '@/src/lib/geo';
+import { coordsFrom, isValidCoords } from '@/src/lib/geo';
 import { readCachedCoords, writeCachedCoords } from '@/src/lib/location-cache';
 import { markLocationPermissionAsked } from '@/src/lib/location-preferences';
 
@@ -13,7 +14,10 @@ async function geocodeSubmittedLocation(query: string): Promise<Coords | null> {
   try {
     const results = await Location.geocodeAsync(query);
     if (results.length > 0) {
-      return { latitude: results[0].latitude, longitude: results[0].longitude };
+      return coordsFrom({
+        latitude: results[0].latitude,
+        longitude: results[0].longitude,
+      });
     }
   } catch {
     // geocoding unavailable
@@ -26,7 +30,10 @@ async function resolveGpsCoords(): Promise<Coords | null> {
     const pos = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
-    return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+    return coordsFrom({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+    });
   } catch {
     return null;
   }
@@ -38,6 +45,7 @@ function applyCoords(
   setCoords: (c: Coords) => void,
   setSource: (s: CoordsSource) => void,
 ) {
+  if (!isValidCoords(coords)) return;
   setCoords(coords);
   setSource(source);
   void writeCachedCoords(coords);
@@ -96,7 +104,7 @@ export function useUserCoords() {
     let active = true;
 
     void readCachedCoords().then((persisted) => {
-      if (!active || !persisted) return;
+      if (!active || !persisted || !isValidCoords(persisted)) return;
       setCoords(persisted);
       setSource('submitted');
     });

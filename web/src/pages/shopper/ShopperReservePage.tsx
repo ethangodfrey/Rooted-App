@@ -2,15 +2,30 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { createCheckout } from '@/lib/checkout-api';
-import { formatEventFullDate, formatPrice } from '@/lib/format';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayFullDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
 export function ShopperReservePage() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
+  const now = useNow(60_000);
   const [product, setProduct] = useState<{ id: string; name: string; price: number } | null>(null);
-  const [options, setOptions] = useState<{ available_quantity_presale: number; event: { id: string; name: string; start_datetime: string; city: string | null } | null }[]>([]);
+  const [options, setOptions] = useState<{
+    available_quantity_presale: number;
+    event: {
+      id: string;
+      name: string;
+      start_datetime: string;
+      end_datetime?: string | null;
+      timezone?: string | null;
+      hours_summary?: string | null;
+      sync_metadata?: Record<string, unknown>;
+      city: string | null;
+      state?: string | null;
+    } | null;
+  }[]>([]);
   const [eventId, setEventId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
@@ -22,7 +37,7 @@ export function ShopperReservePage() {
     async function load() {
       const [productRes, availRes] = await Promise.all([
         supabase.from('products').select('id, name, price, reserve_enabled').eq('id', productId).maybeSingle(),
-        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime, city, state)').eq('product_id', productId).gt('available_quantity_presale', 0),
+        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, city, state)').eq('product_id', productId).gt('available_quantity_presale', 0),
       ]);
       setProduct(productRes.data);
       const opts = (availRes.data as unknown as typeof options) ?? [];
@@ -74,7 +89,7 @@ export function ShopperReservePage() {
           <option value="">Select event</option>
           {options.map((opt) => (
             <option key={opt.event?.id} value={opt.event?.id}>
-              {opt.event?.name} — {opt.event ? formatEventFullDate(opt.event.start_datetime) : ''}
+              {opt.event?.name} — {opt.event ? formatEventDisplayFullDate(opt.event, now) : ''}
             </option>
           ))}
         </select>

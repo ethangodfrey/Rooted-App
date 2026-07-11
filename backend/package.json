@@ -4,6 +4,7 @@
   "description": "Vendorly backend service (POS integrations, analytics ingestion).",
   "private": true,
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -24,7 +25,8 @@
     "markets:images:google": "ts-node scripts/run-markets-images-google.ts",
     "markets:images:purge": "ts-node scripts/run-markets-images-purge.ts",
     "admin:agent": "ts-node scripts/run-admin-agent.ts",
-    "admin:posts": "ts-node scripts/run-admin-post-agent.ts"
+    "admin:posts": "ts-node scripts/run-admin-post-agent.ts",
+    "pos:inventory-worker": "ts-node scripts/run-pos-inventory-worker.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.0",
@@ -40,6 +42,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "geo-tz": "^8.1.4",
+    "ioredis": "^5.11.1",
     "jose": "^6.2.3",
     "luxon": "^3.6.1",
     "reflect-metadata": "^0.2.2",

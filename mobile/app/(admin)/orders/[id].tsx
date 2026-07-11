@@ -8,7 +8,8 @@ import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { StatusPill } from '@/src/components/ui/status-pill';
 import { Text } from '@/src/components/ui/text';
-import { formatEventFullDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayFullDate, formatPrice } from '@/src/lib/format';
 import { ORDER_STATUS_LABEL } from '@/src/lib/order-status';
 import { supabase } from '@/src/lib/supabase';
 import type { Order } from '@/src/types/database';
@@ -33,6 +34,7 @@ interface AdminOrderDetail extends Order {
 }
 
 export default function AdminOrderDetailScreen() {
+  const now = useNow(60_000);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<AdminOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function AdminOrderDetailScreen() {
     const { data, error: fetchError } = await supabase
       .from('orders')
       .select(
-        '*, vendor:vendors(business_name, category), event:events(name, start_datetime, address, city, state), order_items(id, quantity, item_price, product:products(name))',
+        '*, vendor:vendors(business_name, category), event:events(name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state, address, city), order_items(id, quantity, item_price, product:products(name))',
       )
       .eq('id', id)
       .maybeSingle();
@@ -128,7 +130,7 @@ export default function AdminOrderDetailScreen() {
         </Text>
         {order.event?.start_datetime ? (
           <Text variant="caption" className="mb-3">
-            {formatEventFullDate(order.event.start_datetime)}
+            {formatEventDisplayFullDate(order.event, now)}
           </Text>
         ) : null}
         {location ? (

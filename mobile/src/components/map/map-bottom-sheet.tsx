@@ -13,7 +13,7 @@ import { EventLiveClock } from '@/src/components/events/event-live-clock';
 import { EventStatusBadge } from '@/src/components/events/event-status-badge';
 import { Text } from '@/src/components/ui/text';
 import { eventRuntimePhase } from '@/src/lib/event-runtime';
-import { formatEventDate } from '@/src/lib/format';
+import { formatEventDisplayDate } from '@/src/lib/format';
 import { colors } from '@/src/theme/colors';
 import { floatingShadow, radius } from '@/src/theme/layout';
 import type { Event } from '@/src/types/database';
@@ -122,7 +122,7 @@ const EventListRow = memo(function EventListRow({
           {event.name}
         </Text>
         <Text variant="caption" className="mt-0.5" numberOfLines={1}>
-          {formatEventDate(event.start_datetime)}
+          {formatEventDisplayDate(event, now)}
           {[event.city, event.state].filter(Boolean).length
             ? ` · ${[event.city, event.state].filter(Boolean).join(', ')}`
             : ''}

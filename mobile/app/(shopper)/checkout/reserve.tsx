@@ -24,7 +24,8 @@ import { TextArea } from '@/src/components/ui/text-area';
 
 import { useAuth } from '@/src/hooks/use-auth';
 
-import { formatEventFullDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayFullDate, formatPrice } from '@/src/lib/format';
 
 import { supabase } from '@/src/lib/supabase';
 
@@ -43,6 +44,14 @@ interface AvailabilityOption {
     name: string;
 
     start_datetime: string;
+
+    end_datetime?: string | null;
+
+    timezone?: string | null;
+
+    hours_summary?: string | null;
+
+    sync_metadata?: Record<string, unknown>;
 
     city: string | null;
 
@@ -101,10 +110,9 @@ function effectiveAvailable(opt: AvailabilityOption): number {
 
 
 export default function ReserveScreen() {
-
   const { productId } = useLocalSearchParams<{ productId: string }>();
-
   const { user } = useAuth();
+  const now = useNow(60_000);
 
   const [product, setProduct] = useState<ReserveProduct | null>(null);
 
@@ -162,7 +170,7 @@ export default function ReserveScreen() {
 
           .select(
 
-            'available_quantity_presale, reserved_quantity, event:events(id, name, start_datetime, city, state)',
+            'available_quantity_presale, reserved_quantity, event:events(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, city, state)',
 
           )
 
@@ -490,7 +498,7 @@ export default function ReserveScreen() {
 
                         <Text variant="caption" className="mt-0.5">
 
-                          {formatEventFullDate(opt.event.start_datetime)}
+                          {formatEventDisplayFullDate(opt.event, now)}
 
                           {opt.event.city ? ` · ${opt.event.city}` : ''}
 

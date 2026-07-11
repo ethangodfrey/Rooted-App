@@ -16,6 +16,7 @@ import { MediaModule } from './modules/media/media.module';
 import { PosModule } from './modules/pos/pos.module';
 
 import { StripeModule } from './modules/stripe/stripe.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -49,6 +50,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosModule,
     MarketsModule,
     StripeModule,
+    TenantsModule,
   ],
 })
 export class AppModule {}

@@ -17,7 +17,7 @@ import {
 } from '@/lib/event-day-filter';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
-import { formatEventDate, formatEventTimeRange } from '@/lib/format';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -126,7 +126,7 @@ export function ShopperEventsPage() {
       {loading ? (
         <div className="app-list">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="app-skeleton app-skeleton--card" />
+            <div key={i} className="app-skeleton app-skeleton--card animate-pulse" />
           ))}
         </div>
       ) : displayedEvents.length === 0 ? (
@@ -176,7 +176,7 @@ export function ShopperEventsPage() {
                     </div>
                     <p className="app-row-title">{event.name}</p>
                     <p className="app-row-meta">
-                      {formatEventDate(event.start_datetime)} · {formatEventTimeRange(event.start_datetime, event.end_datetime)}
+                      {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
                     </p>
                     <p className="app-row-meta">
                       {[event.city, event.state].filter(Boolean).join(', ')}
