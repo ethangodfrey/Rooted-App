@@ -5,6 +5,10 @@ export const POST_TYPE_LABEL: Record<PostType, string> = {
   product: 'Product',
   event: 'Event',
   promo: 'Promo',
+  promotion: 'Promotion',
+  launch: 'Launch',
+  restock: 'Restock',
+  announcement: 'Announcement',
 };
 
 export const POST_TYPE_ICON: Record<PostType, string> = {
@@ -12,4 +16,8 @@ export const POST_TYPE_ICON: Record<PostType, string> = {
   product: '🛍️',
   event: '📅',
   promo: '✨',
+  promotion: '✨',
+  launch: '🚀',
+  restock: '🧺',
+  announcement: '📣',
 };

@@ -129,9 +129,9 @@ export default function ProductDetailScreen() {
                   showsHorizontalScrollIndicator={false}
                   className="mt-3"
                   contentContainerClassName="gap-3">
-                  {product.media_urls.slice(1).map((url) => (
+                  {product.media_urls.slice(1).map((url, index) => (
                     <Image
-                      key={url}
+                      key={`${url}-${index}`}
                       source={{ uri: url }}
                       className="h-20 w-20 rounded-xl bg-line"
                     />

@@ -59,7 +59,7 @@ export function ShopperEventsPage() {
   }, [loadEvents]);
 
   useEffect(() => {
-    setSelectedDate(startOfDay(now));
+    setSelectedDate(startOfDay(new Date()));
     setVisibleCount(EVENTS_PAGE_SIZE);
   }, [scope]);
 

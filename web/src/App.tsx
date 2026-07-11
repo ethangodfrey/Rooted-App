@@ -38,6 +38,7 @@ import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
 import { ShopperChefBookingPage } from '@/pages/shopper/ShopperChefBookingPage';
 import { ShopperChefPage } from '@/pages/shopper/ShopperChefPage';
 import { ShopperChefsPage } from '@/pages/shopper/ShopperChefsPage';
+import { CheckoutSuccessPage } from '@/pages/shopper/CheckoutSuccessPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
 import { ShopperEventsPage } from '@/pages/shopper/ShopperEventsPage';
 import { ShopperExplorePage } from '@/pages/shopper/ShopperExplorePage';
@@ -123,6 +124,7 @@ export default function App() {
         <Route path="/shopper/bookings/:id" element={<ShopperBookingDetailPage />} />
         <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
         <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
         <Route path="/shopper/saved" element={<ShopperSavedPage />} />
         <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
