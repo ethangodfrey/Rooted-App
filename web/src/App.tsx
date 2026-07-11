@@ -33,6 +33,7 @@ import { SignupPage } from '@/pages/auth/SignupPage';
 import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
 import { TermsOfServicePage } from '@/pages/legal/TermsOfServicePage';
 import { LandingPage } from '@/pages/marketing/LandingPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
 import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
@@ -196,6 +197,8 @@ export default function App() {
         <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
         <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
       </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
