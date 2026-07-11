@@ -75,6 +75,41 @@ export function formatEventFullDate(iso: string, timeZone?: string | null): stri
   });
 }
 
+/** Detail-page date — uses the next occurrence for live recurring markets. */
+export function formatEventDisplayFullDate(
+  event: EventScheduleFields & {
+    start_datetime: string;
+    timezone?: string | null;
+    state?: string | null;
+  },
+  now: Date = new Date(),
+): string {
+  const timeZone = resolveEventTimezone(event);
+  const instant = isRecurringMarketEvent(event)
+    ? resolveEventDisplayInstant(event, now)
+    : new Date(event.start_datetime);
+  return instant.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    ...(timeZone ? { timeZone } : {}),
+  });
+}
+
+/** Time range for market cards/detail — schedule hours from seed datetimes. */
+export function formatEventDisplayTimeRange(
+  event: EventScheduleFields & {
+    start_datetime: string;
+    end_datetime: string;
+    timezone?: string | null;
+    state?: string | null;
+  },
+): string {
+  const timeZone = resolveEventTimezone(event);
+  return formatEventTimeRange(event.start_datetime, event.end_datetime, timeZone);
+}
+
 export function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
