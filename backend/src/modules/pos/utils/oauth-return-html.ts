@@ -7,7 +7,7 @@ function escapeHtml(value: string): string {
 }
 
 /**
- * Safari on iOS cannot open exp:// or mobile:// links from an HTTPS page — not
+ * Safari on iOS cannot open exp:// or vendorly:// links from an HTTPS page — not
  * via redirect, JavaScript, or tap. Show a manual "switch back to the app" page.
  */
 export function renderOAuthReturnHtml(
@@ -17,8 +17,8 @@ export function renderOAuthReturnHtml(
   const title = status === 'success' ? 'Square connected' : 'Connection failed';
   const message =
     status === 'success'
-      ? 'Close this Safari tab and switch back to the Rooted app. Point of Sale should show Square as connected.'
-      : 'Close this Safari tab, switch back to Rooted, and try Connect Square again.';
+      ? 'Close this Safari tab and switch back to the Vendorly app. Point of Sale should show Square as connected.'
+      : 'Close this Safari tab, switch back to Vendorly, and try Connect Square again.';
   const detailBlock =
     detail && status === 'error'
       ? `<p class="detail">${escapeHtml(detail.slice(0, 600))}</p>`
@@ -29,7 +29,7 @@ export function renderOAuthReturnHtml(
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rooted - ${title}</title>
+  <title>Vendorly - ${title}</title>
   <style>
     body {
       font-family: system-ui, sans-serif;

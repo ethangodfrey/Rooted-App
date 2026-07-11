@@ -179,15 +179,41 @@ function focusChartDays(
   };
 }
 
-export async function loadVendorAnalytics(
+const ANALYTICS_CACHE_TTL_MS = 5 * 60_000;
+const analyticsCache = new Map<
+  string,
+  { fetchedAt: number; data: VendorAnalyticsData }
+>();
+
+function analyticsCacheKey(vendorId: string, range: AnalyticsRange | 'all'): string {
+  return `${vendorId}:${range}`;
+}
+
+export function clearVendorAnalyticsCache(vendorId?: string): void {
+  if (!vendorId) {
+    analyticsCache.clear();
+    return;
+  }
+  for (const key of analyticsCache.keys()) {
+    if (key.startsWith(`${vendorId}:`)) analyticsCache.delete(key);
+  }
+}
+
+async function fetchVendorAnalyticsUncached(
   vendorId: string,
-  range: AnalyticsRange | 'all' = 30,
+  range: AnalyticsRange | 'all',
 ): Promise<VendorAnalyticsData> {
   const end = startOfDay(new Date());
   end.setHours(23, 59, 59, 999);
+  const allTime = range === 'all';
   const start =
     range === 'all'
-      ? new Date(0)
+      ? (() => {
+          const s = new Date(end);
+          s.setDate(s.getDate() - 364);
+          s.setHours(0, 0, 0, 0);
+          return s;
+        })()
       : (() => {
           const s = new Date(end);
           s.setDate(s.getDate() - (range - 1));
@@ -195,24 +221,50 @@ export async function loadVendorAnalytics(
           return s;
         })();
 
-  const chartRange: AnalyticsRange = range === 'all' ? 90 : range;
+  const chartRange: AnalyticsRange = range === 'all' ? 365 : range;
   const dailyRevenue = buildDaySeries(chartRange);
   const revenueByDate = indexByDate(dailyRevenue);
   const unitsByDate = new Map(dailyRevenue.map((d) => [d.date, 0]));
   const sortedDayKeys = () =>
     [...revenueByDate.keys()].sort((a, b) => a.localeCompare(b));
 
-  const [ordersRes, txRes] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('order_status, total, created_at, updated_at')
-      .eq('vendor_id', vendorId),
-    supabase
-      .from('inventory_transactions')
-      .select(
-        'transaction_type, quantity_change, created_at, product:products(name, price)',
-      )
-      .eq('vendor_id', vendorId),
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+
+  let ordersQuery = supabase
+    .from('orders')
+    .select('order_status, total, created_at, updated_at')
+    .eq('vendor_id', vendorId)
+    .gte('created_at', startIso);
+  let txQuery = supabase
+    .from('inventory_transactions')
+    .select(
+      'transaction_type, quantity_change, created_at, product:products(name, price)',
+    )
+    .eq('vendor_id', vendorId)
+    .gte('created_at', startIso);
+
+  if (!allTime) {
+    ordersQuery = ordersQuery.lte('created_at', endIso);
+    txQuery = txQuery.lte('created_at', endIso);
+  }
+
+  const posPromise = isApiConfigured
+    ? Promise.race([
+        posApi.transactions({
+          since: startIso,
+          limit: 50,
+        }),
+        new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), 3_000);
+        }),
+      ]).catch(() => null)
+    : Promise.resolve(null);
+
+  const [ordersRes, txRes, posPayload] = await Promise.all([
+    ordersQuery,
+    txQuery,
+    posPromise,
   ]);
 
   const orders =
@@ -243,8 +295,6 @@ export async function loadVendorAnalytics(
     existing.revenue += revenue;
     productMap.set(name, existing);
   };
-
-  const allTime = range === 'all';
 
   for (const o of orders) {
     if (!inRange(o.created_at, start, end, allTime)) continue;
@@ -290,36 +340,28 @@ export async function loadVendorAnalytics(
   let recentPosSales: PosImportedTransaction[] = [];
   let unmappedPosLineItems = 0;
 
-  if (isApiConfigured) {
-    try {
-      const pos = await posApi.transactions({
-        ...(allTime ? {} : { since: start.toISOString() }),
-        limit: 200,
-      });
-      posLoaded = true;
-      const inRangeTxns = pos.items.filter(
-        (txn) => allTime || inRange(txn.soldAt, start, end),
-      );
-      cardSalesCount = inRangeTxns.length;
-      for (const txn of inRangeTxns) {
-        cardSalesRevenue += txn.netAmount ?? 0;
-        addRevenue(revenueByDate, txn.soldAt, 'cardSales', txn.netAmount ?? 0);
+  if (posPayload) {
+    posLoaded = true;
+    const inRangeTxns = posPayload.items.filter(
+      (txn) => allTime || inRange(txn.soldAt, start, end),
+    );
+    cardSalesCount = inRangeTxns.length;
+    for (const txn of inRangeTxns) {
+      cardSalesRevenue += txn.netAmount ?? 0;
+      addRevenue(revenueByDate, txn.soldAt, 'cardSales', txn.netAmount ?? 0);
 
-        const dateKey = toDateKey(new Date(txn.soldAt));
-        ensureDayBucket(revenueByDate, dateKey);
-        unitsByDate.set(dateKey, unitsByDate.get(dateKey) ?? 0);
-        for (const li of txn.lineItems ?? []) {
-          unitsSold += li.quantity;
-          unitsByDate.set(dateKey, (unitsByDate.get(dateKey) ?? 0) + li.quantity);
-          if (!li.productId) unmappedPosLineItems += 1;
-          const name = li.product?.name ?? li.name;
-          bumpProduct(name, li.quantity, li.grossAmount);
-        }
+      const dateKey = toDateKey(new Date(txn.soldAt));
+      ensureDayBucket(revenueByDate, dateKey);
+      unitsByDate.set(dateKey, unitsByDate.get(dateKey) ?? 0);
+      for (const li of txn.lineItems ?? []) {
+        unitsSold += li.quantity;
+        unitsByDate.set(dateKey, (unitsByDate.get(dateKey) ?? 0) + li.quantity);
+        if (!li.productId) unmappedPosLineItems += 1;
+        const name = li.product?.name ?? li.name;
+        bumpProduct(name, li.quantity, li.grossAmount);
       }
-      recentPosSales = inRangeTxns.slice(0, 10);
-    } catch {
-      // POS optional — dashboard still renders Supabase metrics.
     }
+    recentPosSales = inRangeTxns.slice(0, 10);
   }
 
   if (!posLoaded) {
@@ -360,7 +402,7 @@ export async function loadVendorAnalytics(
 
   return {
     range: chartRange,
-    rangeLabel: range === 'all' ? 'All time' : RANGE_LABELS[range],
+    rangeLabel: range === 'all' ? 'Last 12 months' : RANGE_LABELS[range],
     reservationRevenue,
     inPersonRevenue,
     cardSalesRevenue,
@@ -380,6 +422,23 @@ export async function loadVendorAnalytics(
     unmappedPosLineItems,
     posDataLoaded: posLoaded,
   };
+}
+
+export async function loadVendorAnalytics(
+  vendorId: string,
+  range: AnalyticsRange | 'all' = 30,
+  options?: { force?: boolean },
+): Promise<VendorAnalyticsData> {
+  const key = analyticsCacheKey(vendorId, range);
+  if (!options?.force) {
+    const hit = analyticsCache.get(key);
+    if (hit && Date.now() - hit.fetchedAt < ANALYTICS_CACHE_TTL_MS) {
+      return hit.data;
+    }
+  }
+  const data = await fetchVendorAnalyticsUncached(vendorId, range);
+  analyticsCache.set(key, { fetchedAt: Date.now(), data });
+  return data;
 }
 
 /** Convert cents to dollars for chart libraries that expect numeric magnitudes. */

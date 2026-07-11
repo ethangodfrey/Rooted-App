@@ -68,8 +68,8 @@ export function VerticalBarChart({
   const max = maxValue > 0 ? maxValue : 1;
   return (
     <div className="analytics-bars">
-      {data.map((d) => (
-        <div key={d.label} className="analytics-bar-group">
+      {data.map((d, index) => (
+        <div key={`${d.label}-${index}`} className="analytics-bar-group">
           <div className="analytics-bar-stack">
             <div
               className="analytics-bar"
@@ -104,11 +104,11 @@ export function StackedRevenueChart({
 
   return (
     <div className="analytics-bars">
-      {data.map((d) => {
+      {data.map((d, index) => {
         const total = d.reservations + d.inPerson + d.cardSales;
         const scale = (v: number) => (total > 0 ? (v / max) * 140 : 0);
         return (
-          <div key={d.label} className="analytics-bar-group">
+          <div key={`${d.label}-${index}`} className="analytics-bar-group">
             <div className="analytics-bar-stack">
               <div
                 className="analytics-bar"
@@ -146,8 +146,8 @@ export function HorizontalBarChart({
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
     <div className="analytics-hbars">
-      {data.map((d) => (
-        <div key={d.label}>
+      {data.map((d, index) => (
+        <div key={`${d.label}-${index}`}>
           <div className="analytics-hbar-row">
             <span className="analytics-hbar-label" title={d.label}>
               {d.label}
@@ -201,9 +201,9 @@ export function PieLegend({ slices, formatValue }: { slices: ChartSlice[]; forma
   const total = slices.reduce((s, x) => s + x.value, 0);
   return (
     <div style={{ marginTop: '0.75rem' }}>
-      {slices.map((s) => (
+      {slices.map((s, index) => (
         <LegendRow
-          key={s.label}
+          key={`${s.label}-${index}`}
           color={s.color}
           label={s.label}
           value={formatValue ? formatValue(s.value) : String(s.value)}

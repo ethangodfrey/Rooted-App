@@ -1,3 +1,4 @@
+/** Dev-only admin promotion shortcut — never active in production builds. */
 export const ADMIN_DEV_EMAIL = 'ethangodfreyy@icloud.com';
 
 export function isAdminDevEmail(email: string | null | undefined): boolean {

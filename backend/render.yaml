@@ -1,0 +1,19 @@
+# Render blueprint reference — set secrets in the Render dashboard, not here.
+# Docs: docs/DEPLOY.md
+
+services:
+  - type: web
+    name: vendorly-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      # Set in Render dashboard (sync: false):
+      # DATABASE_URL, REDIS_URL, SUPABASE_URL, POS_CREDENTIAL_KEY,
+      # PUBLIC_BASE_URL, WEB_APP_URL, CORS_ORIGINS, STRIPE_*, SQUARE_*, etc.

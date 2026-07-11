@@ -1,6 +1,8 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { ActionRow } from '@/src/components/ui/action-row';
 import { Button } from '@/src/components/ui/button';
 import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { Card } from '@/src/components/ui/card';
@@ -91,6 +93,15 @@ export default function AdminMoreScreen() {
           </Text>
         </Card>
       ) : null}
+
+      <View className="mb-4">
+        <ActionRow
+          icon="shield"
+          title="Credential review"
+          subtitle="Verify vendor & chef documents and award trust badges."
+          onPress={() => router.push('/(admin)/credentials')}
+        />
+      </View>
 
       <Card className="mb-4">
         <Text variant="heading" className="mb-1">

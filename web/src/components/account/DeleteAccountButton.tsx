@@ -11,13 +11,12 @@ export function DeleteAccountButton() {
 
   async function handleDelete() {
     const confirmed = window.confirm(
-      'Delete your account permanently? This removes all your data and cannot be undone.',
+      'Delete your Rooted account permanently? This cannot be undone. Your profile, orders history, and saved vendors will be removed.',
     );
     if (!confirmed) return;
 
     setLoading(true);
     setError(null);
-
     const { error: deleteError } = await deleteOwnAccount();
     setLoading(false);
 
@@ -30,16 +29,19 @@ export function DeleteAccountButton() {
   }
 
   return (
-    <div style={{ marginTop: '1rem' }}>
-      {error ? <p className="app-error">{error}</p> : null}
+    <div className="delete-account">
       <button
         type="button"
-        className="app-btn app-btn--secondary"
+        className="app-btn app-btn--danger"
         disabled={loading}
         onClick={handleDelete}
-        style={{ color: 'var(--color-danger, #b91c1c)' }}>
+      >
         {loading ? 'Deleting…' : 'Delete account'}
       </button>
+      {error ? <p className="app-error" style={{ marginTop: '0.75rem' }}>{error}</p> : null}
+      <p className="app-row-meta" style={{ marginTop: '0.5rem' }}>
+        Permanently removes your account and profile data.
+      </p>
     </div>
   );
 }

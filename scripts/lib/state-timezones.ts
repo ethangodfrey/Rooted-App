@@ -113,5 +113,5 @@ function stateAbbrFromName(name: string): string {
     wyoming: 'WY',
     'district of columbia': 'DC',
   };
-  return map[name.trim().toLowerCase()] ?? raw.slice(0, 2).toUpperCase();
+  return map[name.trim().toLowerCase()] ?? name.slice(0, 2).toUpperCase();
 }

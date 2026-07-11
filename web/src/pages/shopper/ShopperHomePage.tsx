@@ -1,82 +1,57 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
-import { DiscoverThumb } from '@/components/discover/DiscoverThumb';
-import { formatEventDate, formatPrice } from '@/lib/format';
-import { formatDistance } from '@/lib/geo';
+import { useNow } from '@/hooks/use-now';
+import { useUserCoords } from '@/hooks/use-user-coords';
+import { eventRuntimePhase, eventRuntimeHint, sortEventsByRuntime } from '@/lib/event-runtime';
+import { fetchPublicEvents } from '@/lib/events-query';
+import { formatEventDisplayDate, formatPrice } from '@/lib/format';
+import { distanceMiles, formatDistance } from '@/lib/geo';
 import { fetchCuratedLeftovers, formatExpiresIn, type CuratedLeftover } from '@/lib/leftovers';
-import { pickListingDisplayImage } from '@/lib/product-image';
+import { getMarketContext } from '@/lib/market-context';
 import { fetchSuggestedProducts, type SuggestedProduct } from '@/lib/suggested-products';
-import { supabase } from '@/lib/supabase';
+import type { Event } from '@/types/database';
+
 import '@/components/ui/ui.css';
 
-type Filter = 'all' | 'events' | 'vendors' | 'products';
-
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'events', label: 'Events' },
-  { key: 'vendors', label: 'Vendors' },
-  { key: 'products', label: 'Products' },
-];
+function SkeletonTiles({ count = 3 }: { count?: number }) {
+  return (
+    <div className="app-hscroll">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="app-skeleton app-skeleton--tile animate-pulse" />
+      ))}
+    </div>
+  );
+}
 
 export function ShopperHomePage() {
   const { user, shopper } = useAuth();
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
-  const [loading, setLoading] = useState(false);
+  const { coords, coordsReady } = useUserCoords();
+  const now = useNow(60_000);
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedProduct[]>([]);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [leftovers, setLeftovers] = useState<CuratedLeftover[]>([]);
   const [leftoversLoading, setLeftoversLoading] = useState(true);
-  const [results, setResults] = useState<{
-    events: { id: string; name: string; city: string | null; state: string | null; start_datetime: string }[];
-    vendors: { id: string; business_name: string | null; category: string | null }[];
-    products: { id: string; name: string; price: number; vendor: { business_name: string | null } | null }[];
-  }>({ events: [], vendors: [], products: [] });
+  const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(true);
 
-  const trimmed = query.trim();
-  const active = trimmed.length >= 2;
+  const context = useMemo(
+    () => getMarketContext(now, user?.name),
+    [now, user?.name],
+  );
 
-  useEffect(() => {
-    if (!active) {
-      setResults({ events: [], vendors: [], products: [] });
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    const handle = setTimeout(async () => {
-      const like = `%${trimmed}%`;
-      const [eventsRes, vendorsRes, productsRes] = await Promise.all([
-        filter === 'all' || filter === 'events'
-          ? supabase.from('events').select('id, name, city, state, start_datetime').eq('visibility_status', 'public').ilike('name', like).limit(10)
-          : Promise.resolve({ data: [] }),
-        filter === 'all' || filter === 'vendors'
-          ? supabase.from('vendors').select('id, business_name, category').eq('approval_status', 'approved').ilike('business_name', like).limit(10)
-          : Promise.resolve({ data: [] }),
-        filter === 'all' || filter === 'products'
-          ? supabase.from('products').select('id, name, price, vendor:vendors(business_name)').eq('status', 'active').ilike('name', like).limit(10)
-          : Promise.resolve({ data: [] }),
-      ]);
-
-      if (cancelled) return;
-      setResults({
-        events: eventsRes.data ?? [],
-        vendors: vendorsRes.data ?? [],
-        products: (productsRes.data as typeof results.products) ?? [],
-      });
-      setLoading(false);
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
-  }, [trimmed, filter, active]);
+  const nearbyCoords = useMemo(
+    () =>
+      coords?.latitude != null && coords?.longitude != null
+        ? { latitude: coords.latitude, longitude: coords.longitude }
+        : null,
+    [coords],
+  );
 
   useEffect(() => {
     let cancelled = false;
+
     async function loadSuggested() {
       setSuggestedLoading(true);
       try {
@@ -92,6 +67,7 @@ export function ShopperHomePage() {
         if (!cancelled) setSuggestedLoading(false);
       }
     }
+
     loadSuggested();
     return () => {
       cancelled = true;
@@ -100,13 +76,14 @@ export function ShopperHomePage() {
 
   useEffect(() => {
     let cancelled = false;
+
     async function loadLeftovers() {
       setLeftoversLoading(true);
       try {
-        const curated = await fetchCuratedLeftovers({
-          userCity: user?.city,
-          userState: user?.state,
-        }, 6);
+        const curated = await fetchCuratedLeftovers(
+          { coords: nearbyCoords, userCity: user?.city, userState: user?.state },
+          6,
+        );
         if (!cancelled) setLeftovers(curated);
       } catch {
         if (!cancelled) setLeftovers([]);
@@ -114,173 +91,241 @@ export function ShopperHomePage() {
         if (!cancelled) setLeftoversLoading(false);
       }
     }
+
     loadLeftovers();
     return () => {
       cancelled = true;
     };
-  }, [user?.city, user?.state]);
+  }, [nearbyCoords, user?.city, user?.state]);
 
-  const total = results.events.length + results.vendors.length + results.products.length;
+  useEffect(() => {
+    if (!coordsReady) return;
+
+    if (!nearbyCoords) {
+      setNearbyEvents([]);
+      setNearbyLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setNearbyLoading(true);
+
+    void fetchPublicEvents({ forMap: true, near: nearbyCoords }).then(({ data, error }) => {
+      if (cancelled) return;
+      setNearbyEvents(error ? [] : data);
+      setNearbyLoading(false);
+    }).catch(() => {
+      if (!cancelled) setNearbyEvents([]);
+      if (!cancelled) setNearbyLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nearbyCoords, coordsReady]);
+
+  const clientToday = now.getDay(); // 0 = Sunday … 6 = Saturday
+
+  const openNow = useMemo(
+    () =>
+      sortEventsByRuntime(
+        nearbyEvents.filter((event) => eventRuntimePhase(event, now) === 'live'),
+        now,
+      ),
+    [nearbyEvents, now, clientToday],
+  );
+
+  const nextOpeningHint = useMemo(() => {
+    const upcoming = sortEventsByRuntime(
+      nearbyEvents.filter((event) => eventRuntimePhase(event, now) === 'upcoming'),
+      now,
+    )
+      .map((event) => ({ event, hint: eventRuntimeHint(event, now) }))
+      .filter((item) => item.hint);
+
+    const opensLaterToday = upcoming.find((item) =>
+      item.hint?.toLowerCase().includes('opens today'),
+    );
+    return opensLaterToday?.hint ?? upcoming[0]?.hint ?? null;
+  }, [nearbyEvents, now, clientToday]);
+
+  const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const newThisWeek = useMemo(
+    () => nearbyEvents.filter((event) => new Date(event.start_datetime).getTime() >= weekAgo),
+    [nearbyEvents, weekAgo],
+  );
+
+  const distanceFor = (event: Event): string | null => {
+    if (!nearbyCoords || event.latitude == null || event.longitude == null) return null;
+    return `${formatDistance(
+      distanceMiles(nearbyCoords, { latitude: event.latitude, longitude: event.longitude }),
+    )} away`;
+  };
+
+  const openNowLoading = !coordsReady || nearbyLoading;
 
   return (
-    <div className="app-screen">
-      <p className="app-eyebrow">Discover local</p>
-      <h1 className="app-title">Search</h1>
+    <div className="app-screen w-full min-w-0">
+      <header className="app-greeting">
+        <h1 className="app-greeting__title">{context.greeting}</h1>
+        <p className="app-greeting__subtitle">{context.subtitle}</p>
+      </header>
 
-      <input
-        className="app-search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search events, vendors, products"
-      />
+      <Link
+        to={context.isMarketDay ? '/shopper/map' : '/shopper/events'}
+        className={`app-hero-card${context.isMarketDay ? ' app-hero-card--market-day' : ''}`}
+      >
+        <div className="app-hero-card__content">
+          <p className="app-hero-card__eyebrow">
+            {context.isMarketDay ? 'Market day' : 'Discover local'}
+          </p>
+          <p className="app-hero-card__title">
+            {context.isMarketDay
+              ? 'Weekend markets are open near you'
+              : 'Your neighborhood food scene'}
+          </p>
+          <p className="app-hero-card__body">
+            {context.isMarketDay
+              ? "See what's happening on the map — pins show live and upcoming markets."
+              : 'Browse farmers markets, reserve pickup, and support local vendors.'}
+          </p>
+        </div>
+        <span className="app-hero-card__chevron" aria-hidden="true">
+          ›
+        </span>
+      </Link>
 
-      <div className="app-chip-row">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            className={`app-chip${filter === f.key ? ' app-chip--selected' : ''}`}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <section className="app-scroll-section">
+        <div className="app-scroll-section__header">
+          <h2 className="app-scroll-section__title">Open now</h2>
+          <Link to="/shopper/map" className="app-inline-link">
+            Map
+          </Link>
+        </div>
 
-      {!active ? (
-        <div className="app-list">
-          <div style={{ marginBottom: '1.25rem' }}>
-            <h2 style={{ fontSize: '1.25rem', margin: '0 0 1rem' }}>For you</h2>
-
-            <h3 style={{ fontSize: '1rem', margin: '0 0 0.75rem' }}>Suggested products</h3>
-            {suggestedLoading ? (
-              <div className="app-loading"><div className="app-spinner" /></div>
-            ) : suggestedProducts.length === 0 ? (
-              <p className="app-row-meta" style={{ marginBottom: '1.25rem' }}>
-                No product matches yet for your interests — browse events to discover vendors.
-              </p>
-            ) : (
-              <div className="app-list" style={{ marginBottom: '1.25rem' }}>
-                {suggestedProducts.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/shopper/products/${product.id}`}
-                    className="app-card app-card--pressable app-row"
-                  >
-                    <DiscoverThumb
-                      imageUrl={product.displayImageUrl}
-                      category={product.category ?? product.matchedInterest}
-                    />
-                    <div className="app-row-body">
-                      <p className="app-row-title">{product.name}</p>
-                      <p className="app-row-meta">
-                        {product.vendor?.business_name} · {formatPrice(product.price)}
-                      </p>
-                      <p className="app-row-meta" style={{ color: 'var(--color-forest)' }}>
-                        {product.matchedInterest}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <h3 style={{ fontSize: '1rem', margin: 0 }}>Leftovers near you</h3>
-              <Link to="/shopper/leftovers" className="app-row-meta" style={{ fontWeight: 600, color: 'var(--color-forest)' }}>
-                See all
+        {openNowLoading ? (
+          <SkeletonTiles />
+        ) : !nearbyCoords ? (
+          <p className="app-row-meta">
+            Enable location access to see markets open near you.
+          </p>
+        ) : openNow.length === 0 ? (
+          <p className="app-row-meta">
+            {nextOpeningHint ?? 'No markets open right now — check upcoming below.'}
+          </p>
+        ) : (
+          <div className="app-hscroll">
+            {openNow.map((event) => (
+              <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
+                <div className="app-hscroll-card__visual" aria-hidden="true">
+                  🧺
+                </div>
+                <div className="app-hscroll-card__body">
+                  <span className="app-hscroll-card__badge">Live</span>
+                  <p className="app-hscroll-card__title">{event.name}</p>
+                  <p className="app-hscroll-card__meta">
+                    {formatEventDisplayDate(event, now)}
+                    {event.city ? ` · ${event.city}` : ''}
+                    {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
+                  </p>
+                </div>
               </Link>
-            </div>
-            {leftoversLoading ? (
-              <div className="app-loading"><div className="app-spinner" /></div>
-            ) : leftovers.length === 0 ? (
-              <p className="app-row-meta">No active deals right now — check after market days.</p>
-            ) : (
-              <div className="app-list">
-                {leftovers.slice(0, 4).map((listing) => (
-                  <Link
-                    key={listing.id}
-                    to={`/shopper/leftovers/${listing.id}`}
-                    className="app-card app-card--pressable app-row"
-                  >
-                    <DiscoverThumb
-                      imageUrl={pickListingDisplayImage(listing.media_url)}
-                      category={listing.vendor?.category ?? 'Food & Drink'}
-                    />
-                    <div className="app-row-body">
-                      <p className="app-row-title">{listing.title}</p>
-                      <p className="app-row-meta">
-                        {listing.vendor?.business_name} · {formatPrice(listing.price_cents)}
-                      </p>
-                      <p className="app-row-meta" style={{ color: 'var(--color-warn)' }}>
-                        {formatExpiresIn(listing.hoursLeft)} · {listing.quantity_remaining} left
-                      </p>
-                      <p className="app-row-meta">
-                        {listing.locationLabel}
-                        {listing.distanceMiles != null ? ` · ${formatDistance(listing.distanceMiles)}` : ''}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="app-scroll-section">
+        <div className="app-scroll-section__header">
+          <h2 className="app-scroll-section__title">New this week</h2>
+          <Link to="/shopper/events" className="app-inline-link">
+            All markets
+          </Link>
+        </div>
+
+        {openNowLoading ? (
+          <SkeletonTiles />
+        ) : newThisWeek.length > 0 ? (
+          <div className="app-hscroll">
+            {newThisWeek.slice(0, 8).map((event) => (
+              <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
+                <div className="app-hscroll-card__visual" aria-hidden="true">
+                  🌿
+                </div>
+                <div className="app-hscroll-card__body">
+                  <p className="app-hscroll-card__title">{event.name}</p>
+                  <p className="app-hscroll-card__meta">{formatEventDisplayDate(event, now)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : suggestedLoading ? (
+          <SkeletonTiles />
+        ) : suggestedProducts.length > 0 ? (
+          <div className="app-hscroll">
+            {suggestedProducts.slice(0, 6).map((product) => (
+              <Link
+                key={product.id}
+                to={`/shopper/products/${product.id}`}
+                className="app-hscroll-card"
+              >
+                <p className="app-hscroll-card__title">{product.name}</p>
+                <p className="app-hscroll-card__meta">
+                  {product.vendor?.business_name} · {formatPrice(product.price)}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="app-row-meta">Fresh picks will appear as vendors and markets update.</p>
+        )}
+      </section>
+
+      <section className="app-scroll-section">
+        <div className="app-scroll-section__header">
+          <h2 className="app-scroll-section__title">Updates</h2>
+          <Link to="/shopper/feed" className="app-inline-link">
+            See all
+          </Link>
+        </div>
+
+        <Link to="/shopper/feed" className="app-hscroll-card app-hscroll-card--full w-full max-w-full">
+          <p className="app-hscroll-card__title w-full">From your saved vendors</p>
+          <p className="app-hscroll-card__meta">
+            Postcards from markets, new products, and vendor news.
+          </p>
+        </Link>
+      </section>
+
+      {!leftoversLoading && leftovers.length > 0 ? (
+        <section className="app-scroll-section">
+          <div className="app-scroll-section__header">
+            <h2 className="app-scroll-section__title">Leftovers near you</h2>
+            <Link to="/shopper/leftovers" className="app-inline-link">
+              See all
+            </Link>
           </div>
 
-          <p className="app-row-meta">Type at least 2 characters to search, or jump in:</p>
-          <Link to="/shopper/events" className="app-card app-card--pressable">
-            <h3 className="app-row-title">Browse events</h3>
-            <p className="app-row-meta">Markets and pop-ups near you.</p>
-          </Link>
-          <Link to="/shopper/map" className="app-card app-card--pressable">
-            <h3 className="app-row-title">Explore the map</h3>
-            <p className="app-row-meta">See events around you.</p>
-          </Link>
-          <Link to="/shopper/leftovers" className="app-card app-card--pressable">
-            <h3 className="app-row-title">Market leftovers</h3>
-            <p className="app-row-meta">Rescue unsold goods sorted by time and distance.</p>
-          </Link>
-        </div>
-      ) : loading ? (
-        <div className="app-loading"><div className="app-spinner" /></div>
-      ) : total === 0 ? (
-        <div className="app-empty">No matches for &ldquo;{trimmed}&rdquo;</div>
-      ) : (
-        <div className="app-list">
-          {results.events.map((event) => (
-            <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-card app-card--pressable app-row">
-              <div className="app-row-icon">📅</div>
-              <div className="app-row-body">
-                <p className="app-row-title">{event.name}</p>
-                <p className="app-row-meta">
-                  {formatEventDate(event.start_datetime)}
-                  {event.city ? ` · ${event.city}` : ''}
+          <div className="app-hscroll">
+            {leftovers.slice(0, 5).map((listing) => (
+              <Link
+                key={listing.id}
+                to={`/shopper/leftovers/${listing.id}`}
+                className="app-hscroll-card"
+              >
+                <p className="app-hscroll-card__title">{listing.title}</p>
+                <p className="app-hscroll-card__meta">
+                  {formatPrice(listing.price_cents)} · {formatExpiresIn(listing.hoursLeft)}
                 </p>
-              </div>
-            </Link>
-          ))}
-          {results.vendors.map((vendor) => (
-            <Link key={vendor.id} to={`/shopper/vendors/${vendor.id}`} className="app-card app-card--pressable app-row">
-              <div className="app-row-icon">🏪</div>
-              <div className="app-row-body">
-                <p className="app-row-title">{vendor.business_name ?? 'Vendor'}</p>
-                {vendor.category ? <p className="app-row-meta">{vendor.category}</p> : null}
-              </div>
-            </Link>
-          ))}
-          {results.products.map((product) => (
-            <Link key={product.id} to={`/shopper/products/${product.id}`} className="app-card app-card--pressable app-row">
-              <div className="app-row-icon">🛒</div>
-              <div className="app-row-body">
-                <p className="app-row-title">{product.name}</p>
-                <p className="app-row-meta">
-                  {formatPrice(product.price)}
-                  {product.vendor?.business_name ? ` · ${product.vendor.business_name}` : ''}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <Link to="/shopper/search" className="app-search-link app-search--glass mb-4 w-full max-w-full">
+        Search markets, vendors, chefs…
+      </Link>
     </div>
   );
 }

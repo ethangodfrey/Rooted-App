@@ -37,7 +37,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (quicksandLoaded && fontsLoaded) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync();
     }
   }, [quicksandLoaded, fontsLoaded]);
 
@@ -67,6 +67,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(shopper)" />
         <Stack.Screen name="(vendor)" />
+        <Stack.Screen name="(chef)" />
         <Stack.Screen name="(admin)" />
       </Stack>
     </ThemeProvider>

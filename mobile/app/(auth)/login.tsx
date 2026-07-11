@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AuthLink, AuthScreen } from '@/src/components/auth/auth-screen';
-import { AuthLegalFooter } from '@/src/components/auth/auth-legal-footer';
+import { OAuthButtons } from '@/src/components/auth/oauth-buttons';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 import { isAdminDevEmail } from '@/src/lib/admin-dev';
@@ -118,9 +118,17 @@ export default function LoginScreen() {
       submitLabel="Sign in"
       loading={loading}
       error={error}
+      socialAuth={
+        <OAuthButtons
+          disabled={loading}
+          onSuccess={async () => {
+            await refreshUser();
+            router.replace('/');
+          }}
+        />
+      }
       footer={
         <>
-          <AuthLegalFooter />
           <AuthLink href="/(auth)/forgot-password">Forgot password?</AuthLink>
           <AuthLink href="/(auth)/signup">Create an account</AuthLink>
           {showAdminLogin ? (
