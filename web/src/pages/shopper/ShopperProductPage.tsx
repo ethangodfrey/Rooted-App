@@ -5,6 +5,7 @@ import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { useNow } from '@/hooks/use-now';
 import { formatEventDisplayDate, formatPrice } from '@/lib/format';
+import { vendorPath } from '@/lib/market-routes';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -58,7 +59,7 @@ export function ShopperProductPage() {
 
   return (
     <div className="app-screen">
-      <Link to={`/shopper/vendors/${product.vendor_id}`} className="app-back-link">← {product.vendor?.business_name ?? 'Vendor'}</Link>
+      <Link to={vendorPath(product.vendor_id)} className="app-back-link">← {product.vendor?.business_name ?? 'Vendor'}</Link>
 
       <FallbackImage
         src={product.media_urls[0]}

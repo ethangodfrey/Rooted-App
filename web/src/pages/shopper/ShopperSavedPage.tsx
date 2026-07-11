@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { useSavedItems } from '@/hooks/use-saved-items';
 import { formatPrice } from '@/lib/format';
+import { vendorPath } from '@/lib/market-routes';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -65,7 +66,7 @@ export function ShopperSavedPage() {
           id: v.id,
           title: v.business_name ?? 'Vendor',
           meta: v.category,
-          to: `/shopper/vendors/${v.id}`,
+          to: vendorPath(v.id),
           icon: '🏪',
         });
       }

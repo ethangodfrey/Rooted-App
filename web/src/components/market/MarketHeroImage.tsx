@@ -1,0 +1,23 @@
+import { useState } from 'react';
+
+import { resolveMarketHeroUrl, type MarketImageFields } from '@/lib/market-image';
+
+interface MarketHeroImageProps {
+  event: MarketImageFields;
+  className?: string;
+}
+
+export function MarketHeroImage({ event, className = '' }: MarketHeroImageProps) {
+  const [failed, setFailed] = useState(false);
+  const src = resolveMarketHeroUrl(event);
+
+  return (
+    <img
+      src={failed ? resolveMarketHeroUrl({}) : src}
+      alt=""
+      className={`h-48 w-full rounded-2xl object-cover shadow-sm md:h-56 lg:h-64 ${className}`.trim()}
+      onError={() => setFailed(true)}
+      style={{ background: 'linear-gradient(135deg, #1a3d2e 0%, #2d5a3d 50%, #4a7c59 100%)' }}
+    />
+  );
+}
