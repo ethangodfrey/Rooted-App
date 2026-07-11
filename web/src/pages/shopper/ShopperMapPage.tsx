@@ -277,7 +277,7 @@ export function ShopperMapPage() {
                   <button
                     key={event.id}
                     type="button"
-                    className={`app-hscroll-card app-hscroll-card--full w-full max-w-full cursor-pointer border-0 text-left${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                    className={`app-hscroll-card shopper-map-carousel-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
                     onClick={() => previewEvent(event.id)}
                   >
                     <div className="app-hscroll-card__body">

@@ -155,7 +155,7 @@ export function VendorProductAvailabilityPage() {
             <div key={ev.id} className="app-card">
               <p className="app-row-title">{ev.name}</p>
               <p className="app-row-meta">{formatEventDisplayDate(ev, now)}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
+              <div className="app-form-grid" style={{ marginTop: '0.75rem' }}>
                 <div className="app-input-group" style={{ margin: 0 }}>
                   <label>Presale qty</label>
                   <input

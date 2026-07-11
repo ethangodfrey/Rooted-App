@@ -126,7 +126,7 @@ export function ShopperEventsPage() {
       {loading ? (
         <div className="app-list">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="app-skeleton app-skeleton--card" />
+            <div key={i} className="app-skeleton app-skeleton--card animate-pulse" />
           ))}
         </div>
       ) : displayedEvents.length === 0 ? (

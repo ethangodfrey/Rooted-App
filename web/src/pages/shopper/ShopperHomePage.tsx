@@ -19,7 +19,7 @@ function SkeletonTiles({ count = 3 }: { count?: number }) {
   return (
     <div className="app-hscroll">
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="app-skeleton app-skeleton--tile" />
+        <div key={i} className="app-skeleton app-skeleton--tile animate-pulse" />
       ))}
     </div>
   );
