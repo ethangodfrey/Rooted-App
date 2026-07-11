@@ -1,12 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMapFetchOrigin } from '@/hooks/use-map-fetch-origin';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
 import {
   capEventsNear,
   MAP_MARKER_LIMIT,
-  MAP_SIDEBAR_LIMIT,
 } from '@/lib/events-display-limits';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import {
@@ -31,7 +29,6 @@ const FOCUS_ZOOM = 11;
 const LIST_NOW_MS = 60_000;
 
 export function ShopperMapPage() {
-  const navigate = useNavigate();
   const { coords } = useUserCoords();
   const fetchOrigin = useMapFetchOrigin(coords);
   const now = useNow(LIST_NOW_MS);
@@ -168,7 +165,7 @@ export function ShopperMapPage() {
     });
   }, [filteredEvents, sortOrigin, now]);
 
-  const sidebarEvents = sortedEvents.slice(0, MAP_SIDEBAR_LIMIT);
+  const listEvents = sortedEvents.slice(0, MAP_MARKER_LIMIT);
 
   const distanceFor = useCallback(
     (event: Event): string | null => {
@@ -179,13 +176,6 @@ export function ShopperMapPage() {
       );
     },
     [coords, searchCenter],
-  );
-
-  const openEventDetail = useCallback(
-    (id: string) => {
-      navigate(`/shopper/events/${id}`);
-    },
-    [navigate],
   );
 
   const previewEvent = useCallback(
@@ -279,19 +269,18 @@ export function ShopperMapPage() {
             ) : null}
           </div>
 
-          {sidebarEvents.length > 0 ? (
-            <div className="shopper-map-list shopper-map-carousel">
-              <div className="app-hscroll pb-1">
-                {sidebarEvents.map((event) => {
-                  const phase = eventRuntimePhase(event, now);
-                  return (
-                    <button
-                      key={event.id}
-                      type="button"
-                      className={`app-hscroll-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
-                      style={{ flex: '0 0 min(85vw, 280px)', textAlign: 'left', border: 'none', cursor: 'pointer', font: 'inherit' }}
-                      onClick={() => openEventDetail(event.id)}
-                    >
+          {listEvents.length > 0 ? (
+            <div className="shopper-map-list flex w-full flex-col space-y-4 px-4 pb-32 md:max-h-[min(68vh,520px)] md:overflow-y-auto md:px-0 md:pb-0">
+              {listEvents.map((event) => {
+                const phase = eventRuntimePhase(event, now);
+                return (
+                  <button
+                    key={event.id}
+                    type="button"
+                    className={`app-hscroll-card app-hscroll-card--full w-full max-w-full cursor-pointer border-0 text-left${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                    onClick={() => previewEvent(event.id)}
+                  >
+                    <div className="app-hscroll-card__body">
                       <p className="app-hscroll-card__title">{event.name}</p>
                       <p className="app-hscroll-card__meta">
                         {formatEventDate(event.start_datetime)}
@@ -300,10 +289,10 @@ export function ShopperMapPage() {
                       {phase === 'live' ? (
                         <span className="app-hscroll-card__badge">Live</span>
                       ) : null}
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           ) : null}
         </div>
