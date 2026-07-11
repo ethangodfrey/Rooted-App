@@ -33,12 +33,12 @@ export function getAuthRedirectUrl(): string {
   return `${getAppOrigin()}/auth/callback`;
 }
 
-export function getPasswordResetRedirectUrl(): string {
-  return `${getAppOrigin()}/auth/reset-password`;
-}
-
 export function getAuthRedirectUrlForDisplay(): string {
   return getAuthRedirectUrl();
+}
+
+export function getPasswordResetRedirectUrl(): string {
+  return `${getAppOrigin()}/auth/reset-password`;
 }
 
 export function resolveAuthRedirect(

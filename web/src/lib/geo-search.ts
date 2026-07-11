@@ -1,4 +1,4 @@
-import { formatDistance, parseCoords, type Coords } from '@/lib/geo';
+import { formatDistance, isValidCoords, type Coords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 
 const KM_PER_MILE = 1.609344;
@@ -54,7 +54,7 @@ export async function fetchNearbyEvents(
   coords: Coords | null | undefined,
   options: NearbySearchOptions = {},
 ): Promise<NearbyEvent[] | null> {
-  if (!coords) return null;
+  if (!isValidCoords(coords)) return null;
 
   const { data, error } = await supabase.rpc('find_nearby_events', {
     p_lat: coords.latitude,
@@ -65,8 +65,7 @@ export async function fetchNearbyEvents(
   });
 
   if (error) return null;
-  const rows = (data as NearbyEvent[] | null) ?? [];
-  return rows.filter((row) => parseCoords(row.latitude, row.longitude) !== null);
+  return (data as NearbyEvent[] | null) ?? [];
 }
 
 /** Approved vendors near `coords` (only those with populated coordinates). */
@@ -74,7 +73,7 @@ export async function fetchNearbyVendors(
   coords: Coords | null | undefined,
   options: NearbySearchOptions = {},
 ): Promise<NearbyVendor[] | null> {
-  if (!coords) return null;
+  if (!isValidCoords(coords)) return null;
 
   const { data, error } = await supabase.rpc('find_nearby_vendors', {
     p_lat: coords.latitude,

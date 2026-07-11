@@ -1,22 +1,21 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMapFetchOrigin } from '@/hooks/use-map-fetch-origin';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
 import {
   capEventsNear,
   MAP_MARKER_LIMIT,
-  MAP_SIDEBAR_LIMIT,
 } from '@/lib/events-display-limits';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import {
   centroidOfEvents,
   filterEventsForMapSearch,
+  geocodePlaceQuery,
   geocodeUsZip,
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
-import { formatEventDate } from '@/lib/format';
-import { distanceMiles, formatDistance, parseCoords, type Coords } from '@/lib/geo';
+import { formatEventDisplayDate } from '@/lib/format';
+import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
 import { fetchPublicEvents } from '@/lib/events-query';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -30,7 +29,6 @@ const FOCUS_ZOOM = 11;
 const LIST_NOW_MS = 60_000;
 
 export function ShopperMapPage() {
-  const navigate = useNavigate();
   const { coords } = useUserCoords();
   const fetchOrigin = useMapFetchOrigin(coords);
   const now = useNow(LIST_NOW_MS);
@@ -41,18 +39,32 @@ export function ShopperMapPage() {
   const [searchCenter, setSearchCenter] = useState<Coords | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<Coords | null>(null);
+  const hasInitializedFocusRef = useRef(false);
+
+  const eventFetchOrigin = searchCenter ?? fetchOrigin ?? coords;
 
   useEffect(() => {
     const parsed = parseMapSearchQuery(query);
-    if (!parsed.zip) {
+    if (!parsed.trimmed) {
       setSearchCenter(null);
       return;
     }
 
     let cancelled = false;
     const handle = setTimeout(async () => {
-      const center = await geocodeUsZip(parsed.zip!);
-      if (!cancelled) setSearchCenter(center);
+      if (parsed.zip) {
+        const center = await geocodeUsZip(parsed.zip);
+        if (!cancelled) setSearchCenter(center);
+        return;
+      }
+
+      if (parsed.textTerms.length > 0) {
+        const center = await geocodePlaceQuery(parsed.textTerms.join(' '));
+        if (!cancelled) setSearchCenter(center);
+        return;
+      }
+
+      if (!cancelled) setSearchCenter(null);
     }, 350);
 
     return () => {
@@ -64,7 +76,7 @@ export function ShopperMapPage() {
   useEffect(() => {
     if (!query.trim()) return;
     const parsed = parseMapSearchQuery(query);
-    if (parsed.zip && searchCenter) {
+    if ((parsed.zip || parsed.textTerms.length > 0) && searchCenter) {
       setFocusTarget(searchCenter);
       setSelectedEventId(null);
       return;
@@ -79,6 +91,22 @@ export function ShopperMapPage() {
   }, [query, searchCenter, events]);
 
   useEffect(() => {
+    if (hasInitializedFocusRef.current || query.trim()) return;
+    if (coords) {
+      setFocusTarget(coords);
+      hasInitializedFocusRef.current = true;
+      return;
+    }
+    if (!loading && events.length > 0) {
+      const center = centroidOfEvents(events);
+      if (center) {
+        setFocusTarget(center);
+        hasInitializedFocusRef.current = true;
+      }
+    }
+  }, [coords, events, loading, query]);
+
+  useEffect(() => {
     let active = true;
 
     async function load() {
@@ -86,7 +114,7 @@ export function ShopperMapPage() {
       setError(null);
       const { data, error: queryError } = await fetchPublicEvents({
         forMap: true,
-        near: fetchOrigin,
+        near: eventFetchOrigin,
       });
 
       if (!active) return;
@@ -104,7 +132,7 @@ export function ShopperMapPage() {
     return () => {
       active = false;
     };
-  }, [fetchOrigin]);
+  }, [eventFetchOrigin]);
 
   const filteredEvents = useMemo(
     () => filterEventsForMapSearch(events, query, searchCenter),
@@ -130,30 +158,24 @@ export function ShopperMapPage() {
     return [...runtimeSorted].sort((a, b) => {
       const phaseDiff = phaseRank(a) - phaseRank(b);
       if (phaseDiff !== 0) return phaseDiff;
-      const aCoords = parseCoords(a.latitude, a.longitude);
-      const bCoords = parseCoords(b.latitude, b.longitude);
-      if (!aCoords || !bCoords) return 0;
-      return distanceMiles(sortOrigin, aCoords) - distanceMiles(sortOrigin, bCoords);
+      return (
+        distanceMiles(sortOrigin, { latitude: a.latitude, longitude: a.longitude }) -
+        distanceMiles(sortOrigin, { latitude: b.latitude, longitude: b.longitude })
+      );
     });
   }, [filteredEvents, sortOrigin, now]);
 
-  const sidebarEvents = sortedEvents.slice(0, MAP_SIDEBAR_LIMIT);
+  const listEvents = sortedEvents.slice(0, MAP_MARKER_LIMIT);
 
   const distanceFor = useCallback(
     (event: Event): string | null => {
       const origin = searchCenter ?? coords;
-      const eventCoords = parseCoords(event.latitude, event.longitude);
-      if (!origin || !eventCoords) return null;
-      return formatDistance(distanceMiles(origin, eventCoords));
+      if (!origin) return null;
+      return formatDistance(
+        distanceMiles(origin, { latitude: event.latitude, longitude: event.longitude }),
+      );
     },
     [coords, searchCenter],
-  );
-
-  const openEventDetail = useCallback(
-    (id: string) => {
-      navigate(`/shopper/events/${id}`);
-    },
-    [navigate],
   );
 
   const previewEvent = useCallback(
@@ -162,10 +184,8 @@ export function ShopperMapPage() {
         mapEvents.find((item) => item.id === id) ??
         sortedEvents.find((item) => item.id === id);
       if (!event) return;
-      const eventCoords = parseCoords(event.latitude, event.longitude);
-      if (!eventCoords) return;
       setSelectedEventId(id);
-      setFocusTarget(eventCoords);
+      setFocusTarget({ latitude: event.latitude, longitude: event.longitude });
     },
     [mapEvents, sortedEvents],
   );
@@ -211,11 +231,15 @@ export function ShopperMapPage() {
         </div>
       ) : error ? (
         <div className="app-empty">Couldn&apos;t load events: {error}</div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="app-empty">No mapped events match your search.</div>
       ) : (
         <div className="shopper-map-layout">
-          <div>
+          <div className="relative z-0 min-w-0">
+            {filteredEvents.length === 0 ? (
+              <p className="app-empty" style={{ marginBottom: '0.75rem' }}>
+                No mapped events match your search.
+              </p>
+            ) : null}
+
             <Suspense
               fallback={
                 <div className="events-map-panel">
@@ -230,7 +254,7 @@ export function ShopperMapPage() {
                 now={now}
                 selectedEventId={selectedEventId}
                 userCoords={coords}
-                focusTarget={focusTarget}
+                focusTarget={focusTarget ?? searchCenter}
                 focusZoom={FOCUS_ZOOM}
                 onPreviewEvent={previewEvent}
                 onRecenter={() => (coords ? recenterOnUser() : requestUserLocation())}
@@ -245,31 +269,32 @@ export function ShopperMapPage() {
             ) : null}
           </div>
 
-          <div className="shopper-map-list shopper-map-carousel">
-            <div className="app-hscroll" style={{ marginBottom: '1rem' }}>
-              {sidebarEvents.map((event) => {
+          {listEvents.length > 0 ? (
+            <div className="shopper-map-list flex w-full flex-col space-y-4 px-4 pb-32 md:max-h-[min(68vh,520px)] md:overflow-y-auto md:px-0 md:pb-0">
+              {listEvents.map((event) => {
                 const phase = eventRuntimePhase(event, now);
                 return (
                   <button
                     key={event.id}
                     type="button"
-                    className={`app-hscroll-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
-                    style={{ flex: '0 0 min(85vw, 280px)', textAlign: 'left', border: 'none', cursor: 'pointer', font: 'inherit' }}
-                    onClick={() => openEventDetail(event.id)}
+                    className={`app-hscroll-card shopper-map-carousel-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                    onClick={() => previewEvent(event.id)}
                   >
-                    <p className="app-hscroll-card__title">{event.name}</p>
-                    <p className="app-hscroll-card__meta">
-                      {formatEventDate(event.start_datetime)}
-                      {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
-                    </p>
-                    {phase === 'live' ? (
-                      <span className="app-hscroll-card__badge">Live</span>
-                    ) : null}
+                    <div className="app-hscroll-card__body">
+                      <p className="app-hscroll-card__title">{event.name}</p>
+                      <p className="app-hscroll-card__meta">
+                        {formatEventDisplayDate(event, now)}
+                        {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
+                      </p>
+                      {phase === 'live' ? (
+                        <span className="app-hscroll-card__badge">Live</span>
+                      ) : null}
+                    </div>
                   </button>
                 );
               })}
             </div>
-          </div>
+          ) : null}
         </div>
       )}
     </div>

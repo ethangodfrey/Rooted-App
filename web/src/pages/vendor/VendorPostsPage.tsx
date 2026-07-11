@@ -18,7 +18,10 @@ export function VendorPostsPage() {
 
   useEffect(() => {
     async function load() {
-      if (!vendor) return;
+      if (!vendor) {
+        setLoading(false);
+        return;
+      }
       const { data } = await supabase
         .from('posts')
         .select(

@@ -7,19 +7,28 @@ import { CloverAdapter } from './adapters/clover/clover.adapter';
 import { SquareAdapter } from './adapters/square/square.adapter';
 import { ToastAdapter } from './adapters/toast/toast.adapter';
 import { AdminPosController } from './controllers/admin-pos.controller';
+import { PosActivityController } from './controllers/pos-activity.controller';
 import { PosConnectionsController } from './controllers/pos-connections.controller';
 import { PosMappingsController } from './controllers/pos-mappings.controller';
 import { PosOAuthController } from './controllers/pos-oauth.controller';
 import { PosSyncController } from './controllers/pos-sync.controller';
 import { PosWebhooksController } from './controllers/pos-webhooks.controller';
 import { PosAggregationProcessor } from './jobs/pos-aggregation.processor';
+import { PosInventoryFlushProcessor, PosInventoryIngestProcessor } from './jobs/pos-inventory.processor';
+import { PosInventoryJobsService } from './jobs/pos-inventory-jobs.service';
+import {
+  POS_INVENTORY_FLUSH_QUEUE,
+  POS_INVENTORY_INGEST_QUEUE,
+} from './jobs/pos-inventory-queue.constants';
 import { PosJobsService } from './jobs/pos-jobs.service';
 import { POS_AGGREGATION_QUEUE, POS_SYNC_QUEUE } from './jobs/pos-queue.constants';
 import { PosSchedulerService } from './jobs/pos-scheduler.service';
 import { PosSyncProcessor } from './jobs/pos-sync.processor';
 import { PosAnalyticsService } from './services/pos-analytics.service';
+import { PosActivityDashboardService } from './services/pos-activity-dashboard.service';
 import { PosConnectionService } from './services/pos-connection.service';
 import { PosImportService } from './services/pos-import.service';
+import { PosInventorySyncService } from './services/pos-inventory-sync.service';
 import { PosMappingService } from './services/pos-mapping.service';
 import { PosSyncService } from './services/pos-sync.service';
 import { PosWebhookService } from './services/pos-webhook.service';
@@ -30,7 +39,14 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 @Module({
   imports: [
     ...(posQueuesEnabled
-      ? [BullModule.registerQueue({ name: POS_SYNC_QUEUE }, { name: POS_AGGREGATION_QUEUE })]
+      ? [
+          BullModule.registerQueue(
+            { name: POS_SYNC_QUEUE },
+            { name: POS_AGGREGATION_QUEUE },
+            { name: POS_INVENTORY_INGEST_QUEUE },
+            { name: POS_INVENTORY_FLUSH_QUEUE },
+          ),
+        ]
       : []),
   ],
   controllers: [
@@ -39,6 +55,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosMappingsController,
     PosOAuthController,
     PosWebhooksController,
+    PosActivityController,
     AdminPosController,
   ],
   providers: [
@@ -52,11 +69,21 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosSyncService,
     PosImportService,
     PosMappingService,
+    PosInventorySyncService,
     PosWebhookService,
     PosAnalyticsService,
+    PosActivityDashboardService,
     // Jobs
     PosJobsService,
-    ...(posQueuesEnabled ? [PosSyncProcessor, PosAggregationProcessor] : []),
+    PosInventoryJobsService,
+    ...(posQueuesEnabled
+      ? [
+          PosSyncProcessor,
+          PosAggregationProcessor,
+          PosInventoryIngestProcessor,
+          PosInventoryFlushProcessor,
+        ]
+      : []),
     PosSchedulerService,
   ],
 })

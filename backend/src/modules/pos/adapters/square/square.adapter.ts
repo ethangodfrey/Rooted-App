@@ -247,17 +247,10 @@ export class SquareAdapter implements PosProviderAdapter {
   }
 
   /**
-   * Creates a Square Webhook Subscription pointed at our receiver and returns the
-   * subscription id + its per-subscription `signature_key` (stored as the
-   * connection's webhook secret for byte-for-byte signature verification).
-   *
-   * The event types below must also be enabled on the Square application's
-   * Webhooks configuration. TODO: verify the enabled set against your app config.
-   */
-  /**
    * Square webhook subscriptions are application-scoped and must be managed with
    * the app's access token from the Developer Dashboard — not a merchant OAuth
-   * token. One subscription covers all sellers who authorize this application.
+   * token. One subscription covers all sellers who authorize this application,
+   * and its `signature_key` is stored for byte-for-byte verification.
    */
   async registerWebhook(
     _credentials: ProviderCredentials,

@@ -46,21 +46,34 @@ export function normalizeUrl(raw: string): string | null {
   return `https://${trimmed}`;
 }
 
+export function validateVendorApplicationFields(
+  input: VendorApplicationInput,
+  attested: boolean,
+): Partial<Record<keyof VendorApplicationInput | 'attested' | 'social', string>> {
+  const errors: Partial<Record<keyof VendorApplicationInput | 'attested' | 'social', string>> = {};
+
+  if (!input.business_name.trim()) errors.business_name = 'Business name is required.';
+  if (!input.product_summary.trim()) errors.product_summary = 'Describe what you sell.';
+  if (!input.category) errors.category = 'Pick a product category.';
+  if (!input.sell_city.trim()) errors.sell_city = 'City is required.';
+  if (!input.sell_state.trim()) errors.sell_state = 'State is required.';
+  if (input.selling_channels.length === 0) {
+    errors.selling_channels = 'Select at least one place you sell.';
+  }
+  if (!input.instagram_url && !input.website_url) {
+    errors.social = 'Add Instagram or a website so we can verify your business.';
+  }
+  if (!attested) errors.attested = 'Confirm the attestation to submit your application.';
+
+  return errors;
+}
+
 export function validateVendorApplication(
   input: VendorApplicationInput,
   attested: boolean,
 ): string | null {
-  if (!input.business_name.trim()) return 'Business name is required.';
-  if (!input.product_summary.trim()) return 'Describe what you sell.';
-  if (!input.category) return 'Pick a product category.';
-  if (!input.sell_city.trim()) return 'City is required.';
-  if (!input.sell_state.trim()) return 'State is required.';
-  if (input.selling_channels.length === 0) return 'Select at least one place you sell.';
-  if (!input.instagram_url && !input.website_url) {
-    return 'Add Instagram or a website so we can verify your business.';
-  }
-  if (!attested) return 'Confirm the attestation to submit your application.';
-  return null;
+  const errors = validateVendorApplicationFields(input, attested);
+  return Object.values(errors)[0] ?? null;
 }
 
 export function isVendorApplicationComplete(vendor: Vendor | null | undefined): boolean {

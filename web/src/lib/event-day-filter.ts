@@ -1,20 +1,10 @@
 import {
   getZonedParts,
   isRecurringMarketEvent,
-  resolveEventScheduleForEvent,
   resolveEventTimezone,
+  resolveOperatingDayIndices,
   type EventScheduleFields,
 } from '@/lib/event-schedule';
-
-const WEEKDAY_TO_JS: Record<string, number> = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
-};
 
 export const WEEK_STRIP_DAYS = 21;
 
@@ -43,13 +33,12 @@ export function eventOccursOnCalendarDay(event: EventDayFields, calendarDay: Dat
   const day = startOfDay(calendarDay);
 
   if (isRecurringMarketEvent(event)) {
-    const schedule = resolveEventScheduleForEvent(event);
     const timeZone = resolveEventTimezone(event);
-    const targetDay = WEEKDAY_TO_JS[schedule.dayOfWeek.toLowerCase()] ?? 6;
+    const operatingDays = resolveOperatingDayIndices(event);
     const probe = new Date(day);
     probe.setHours(12, 0, 0, 0);
     const { weekday } = getZonedParts(probe, timeZone);
-    return weekday === targetDay;
+    return operatingDays.includes(weekday);
   }
 
   return localDayKey(new Date(event.start_datetime)) === localDayKey(day);

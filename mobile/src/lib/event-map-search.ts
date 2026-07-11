@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 
-import { distanceMiles, parseCoords, type Coords } from '@/src/lib/geo';
+import { coordsFrom, distanceMiles, isValidCoords, type Coords } from '@/src/lib/geo';
 import type { Event } from '@/src/types/database';
 
 export const ZIP_SEARCH_RADIUS_MILES = 35;
@@ -93,10 +93,9 @@ export function filterEventsForMapSearch(
   if (parsed.zip) {
     const zipMatches = filtered.filter((event) => eventMatchesZip(event, parsed.zip!));
     const nearbyMatches = searchCenter
-      ? filtered.filter((event) => {
-          const eventCoords = parseCoords(event.latitude, event.longitude);
-          return eventCoords != null && distanceMiles(searchCenter, eventCoords) <= radius;
-        })
+      ? filtered.filter(
+          (event) => isValidCoords(event) && distanceMiles(searchCenter, event) <= radius,
+        )
       : [];
 
     const merged = new Map<string, Event>();
@@ -110,20 +109,15 @@ export function filterEventsForMapSearch(
 }
 
 export function centroidOfEvents(events: Event[]): Coords | null {
-  const mappable = events
-    .map((event) => parseCoords(event.latitude, event.longitude))
-    .filter((coords): coords is Coords => coords !== null);
-
+  const mappable = events.filter((event) => isValidCoords(event));
   if (mappable.length === 0) return null;
-
   const totals = mappable.reduce(
-    (acc, coords) => ({
-      latitude: acc.latitude + coords.latitude,
-      longitude: acc.longitude + coords.longitude,
+    (acc, event) => ({
+      latitude: acc.latitude + event.latitude,
+      longitude: acc.longitude + event.longitude,
     }),
     { latitude: 0, longitude: 0 },
   );
-
   return {
     latitude: totals.latitude / mappable.length,
     longitude: totals.longitude / mappable.length,
@@ -134,7 +128,10 @@ export async function geocodeUsZip(zip: string): Promise<Coords | null> {
   try {
     const results = await Location.geocodeAsync(`${zip}, USA`);
     if (results.length === 0) return null;
-    return parseCoords(results[0].latitude, results[0].longitude);
+    return coordsFrom({
+      latitude: results[0].latitude,
+      longitude: results[0].longitude,
+    });
   } catch {
     return null;
   }

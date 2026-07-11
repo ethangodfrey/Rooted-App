@@ -29,15 +29,18 @@ export function ExploreShowcaseManager({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const creatorKey =
-    creator.creatorType === 'vendor' ? creator.vendorId : creator.chefId;
+  const creatorType = creator.creatorType;
+  const creatorId = creatorType === 'vendor' ? creator.vendorId : creator.chefId;
 
   const load = useCallback(async () => {
+    const loadCreator: ExploreCreator =
+      creatorType === 'vendor'
+        ? { creatorType, vendorId: creatorId }
+        : { creatorType, chefId: creatorId };
     setLoading(true);
-    setItems(await fetchExploreContentForCreator(creator));
+    setItems(await fetchExploreContentForCreator(loadCreator));
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creator.creatorType, creatorKey]);
+  }, [creatorType, creatorId]);
 
   useEffect(() => {
     void load();

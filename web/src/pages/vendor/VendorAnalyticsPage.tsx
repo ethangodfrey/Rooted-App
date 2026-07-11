@@ -289,8 +289,8 @@ export function VendorAnalyticsPage() {
       {data.topProducts.length > 0 ? (
         <ChartCard title="Item breakdown" subtitle="Units and revenue by product">
           <div className="app-list">
-            {data.topProducts.map((p) => (
-              <div key={p.name} className="app-row">
+            {data.topProducts.map((p, index) => (
+              <div key={`${p.name}-${index}`} className="app-row">
                 <div>
                   <p className="app-row-title">{p.name}</p>
                   <p className="app-row-meta">{p.units} units</p>

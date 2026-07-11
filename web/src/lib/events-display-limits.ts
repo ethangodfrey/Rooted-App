@@ -1,4 +1,4 @@
-import { distanceMiles, parseCoords, type Coords } from '@/lib/geo';
+import { distanceMiles, isValidCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 export const EVENTS_PAGE_SIZE = 40;
@@ -20,10 +20,12 @@ export function capEventsNear(
   }
 
   const ranked = [...events].sort((a, b) => {
-    const aCoords = parseCoords(a.latitude, a.longitude);
-    const bCoords = parseCoords(b.latitude, b.longitude);
-    const aDist = aCoords ? distanceMiles(origin, aCoords) : Number.POSITIVE_INFINITY;
-    const bDist = bCoords ? distanceMiles(origin, bCoords) : Number.POSITIVE_INFINITY;
+    const aDist = isValidCoords(a)
+      ? distanceMiles(origin, { latitude: a.latitude, longitude: a.longitude })
+      : Number.POSITIVE_INFINITY;
+    const bDist = isValidCoords(b)
+      ? distanceMiles(origin, { latitude: b.latitude, longitude: b.longitude })
+      : Number.POSITIVE_INFINITY;
     const distDiff = aDist - bDist;
     if (distDiff !== 0) return distDiff;
     return a.id.localeCompare(b.id);

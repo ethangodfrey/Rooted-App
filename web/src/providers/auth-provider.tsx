@@ -53,29 +53,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const requestId = ++profileRequestRef.current;
     setIsProfileLoading(true);
 
-    const profile = await fetchUserProfile(userId);
-    if (requestId !== profileRequestRef.current) return;
+    try {
+      const profile = await fetchUserProfile(userId);
+      if (requestId !== profileRequestRef.current) return;
 
-    setUser(profile.user);
-    setShopper(profile.shopper);
-    setVendor(profile.vendor);
-    setChef(profile.chef);
-    setIsProfileLoading(false);
+      setUser(profile.user);
+      setShopper(profile.shopper);
+      setVendor(profile.vendor);
+      setChef(profile.chef);
 
-    const cacheRole = profile.user?.role;
-    if (
-      cacheRole === 'shopper' ||
-      cacheRole === 'vendor' ||
-      cacheRole === 'chef' ||
-      cacheRole === 'admin'
-    ) {
-      await writeAuthRouteCache({
-        userId,
-        role: cacheRole,
-        hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
-        vendorComplete: isVendorApplicationComplete(profile.vendor),
-        chefComplete: isChefProfileComplete(profile.chef),
-      });
+      const cacheRole = profile.user?.role;
+      if (
+        cacheRole === 'shopper' ||
+        cacheRole === 'vendor' ||
+        cacheRole === 'chef' ||
+        cacheRole === 'admin'
+      ) {
+        await writeAuthRouteCache({
+          userId,
+          role: cacheRole,
+          hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
+          vendorComplete: isVendorApplicationComplete(profile.vendor),
+          chefComplete: isChefProfileComplete(profile.chef),
+        });
+      }
+    } catch {
+      // Network/unexpected failure: keep any cached profile state so routing can
+      // fall back to the auth-route cache instead of hanging on a spinner.
+    } finally {
+      if (requestId === profileRequestRef.current) {
+        setIsProfileLoading(false);
+      }
     }
   }, []);
 

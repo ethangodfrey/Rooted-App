@@ -3,33 +3,32 @@ export interface Coords {
   longitude: number;
 }
 
-export function isValidLatitude(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= -90 && value <= 90;
+/** True when latitude/longitude are finite and within valid Earth bounds. */
+export function isValidCoords(
+  value: { latitude?: number | null; longitude?: number | null } | null | undefined,
+): value is Coords {
+  if (!value) return false;
+  const { latitude, longitude } = value;
+  return (
+    latitude != null &&
+    longitude != null &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
 }
 
-export function isValidLongitude(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= -180 && value <= 180;
-}
-
-/** Parse lat/lng from DB strings or numbers; returns null for null, NaN, or out-of-range values. */
-export function parseCoords(latitude: unknown, longitude: unknown): Coords | null {
-  const lat = typeof latitude === 'number' ? latitude : Number(latitude);
-  const lng = typeof longitude === 'number' ? longitude : Number(longitude);
-  if (!isValidLatitude(lat) || !isValidLongitude(lng)) return null;
-  return { latitude: lat, longitude: lng };
-}
-
-export function hasValidCoords(value: { latitude: unknown; longitude: unknown }): boolean {
-  return parseCoords(value.latitude, value.longitude) !== null;
-}
-
-export function filterEventsWithCoords<T extends { latitude: unknown; longitude: unknown }>(
-  events: T[],
-): T[] {
-  return events.filter(hasValidCoords);
+export function coordsFrom(
+  value: { latitude?: number | null; longitude?: number | null } | null | undefined,
+): Coords | null {
+  return isValidCoords(value) ? { latitude: value.latitude, longitude: value.longitude } : null;
 }
 
 export function distanceMiles(a: Coords, b: Coords): number {
+  if (!isValidCoords(a) || !isValidCoords(b)) return Number.POSITIVE_INFINITY;
   const R = 3958.8;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(b.latitude - a.latitude);

@@ -1,4 +1,4 @@
-import { distanceMiles, parseCoords, type Coords } from '@/lib/geo';
+import { distanceMiles, isValidCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 export const ZIP_SEARCH_RADIUS_MILES = 35;
@@ -91,10 +91,9 @@ export function filterEventsForMapSearch(
   if (parsed.zip) {
     const zipMatches = filtered.filter((event) => eventMatchesZip(event, parsed.zip!));
     const nearbyMatches = searchCenter
-      ? filtered.filter((event) => {
-          const eventCoords = parseCoords(event.latitude, event.longitude);
-          return eventCoords != null && distanceMiles(searchCenter, eventCoords) <= radius;
-        })
+      ? filtered.filter(
+          (event) => isValidCoords(event) && distanceMiles(searchCenter, event) <= radius,
+        )
       : [];
 
     const merged = new Map<string, Event>();
@@ -108,36 +107,36 @@ export function filterEventsForMapSearch(
 }
 
 export function centroidOfEvents(events: Event[]): Coords | null {
-  const mappable = events
-    .map((event) => parseCoords(event.latitude, event.longitude))
-    .filter((coords): coords is Coords => coords !== null);
-
+  const mappable = events.filter((event) => isValidCoords(event));
   if (mappable.length === 0) return null;
-
   const totals = mappable.reduce(
-    (acc, coords) => ({
-      latitude: acc.latitude + coords.latitude,
-      longitude: acc.longitude + coords.longitude,
+    (acc, event) => ({
+      latitude: acc.latitude + event.latitude,
+      longitude: acc.longitude + event.longitude,
     }),
     { latitude: 0, longitude: 0 },
   );
-
   return {
     latitude: totals.latitude / mappable.length,
     longitude: totals.longitude / mappable.length,
   };
 }
 
-export async function geocodeUsZip(zip: string): Promise<Coords | null> {
+const NOMINATIM_USER_AGENT = 'RootedApp/1.0 (farmers market map search)';
+
+async function nominatimCoords(
+  params: Record<string, string>,
+): Promise<Coords | null> {
   try {
     const url = new URL('https://nominatim.openstreetmap.org/search');
-    url.searchParams.set('postalcode', zip);
-    url.searchParams.set('country', 'US');
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
     url.searchParams.set('format', 'json');
     url.searchParams.set('limit', '1');
 
     const res = await fetch(url.toString(), {
-      headers: { 'User-Agent': 'RootedApp/1.0 (farmers market map search)' },
+      headers: { 'User-Agent': NOMINATIM_USER_AGENT },
     });
     if (!res.ok) return null;
 
@@ -153,4 +152,21 @@ export async function geocodeUsZip(zip: string): Promise<Coords | null> {
   } catch {
     return null;
   }
+}
+
+export async function geocodeUsZip(zip: string): Promise<Coords | null> {
+  return nominatimCoords({ postalcode: zip, country: 'US' });
+}
+
+/** Geocode a city or place name (e.g. "Newark", "Portland OR") for map refetch/centering. */
+export async function geocodePlaceQuery(place: string): Promise<Coords | null> {
+  const trimmed = place.trim();
+  if (!trimmed) return null;
+
+  const withCountry = trimmed.toLowerCase().includes('usa')
+    || trimmed.toLowerCase().includes('united states')
+    ? trimmed
+    : `${trimmed}, USA`;
+
+  return nominatimCoords({ q: withCountry });
 }

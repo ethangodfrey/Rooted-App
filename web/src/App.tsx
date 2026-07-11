@@ -30,7 +30,10 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
+import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from '@/pages/legal/TermsOfServicePage';
 import { LandingPage } from '@/pages/marketing/LandingPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
 import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
@@ -38,6 +41,7 @@ import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
 import { ShopperChefBookingPage } from '@/pages/shopper/ShopperChefBookingPage';
 import { ShopperChefPage } from '@/pages/shopper/ShopperChefPage';
 import { ShopperChefsPage } from '@/pages/shopper/ShopperChefsPage';
+import { CheckoutSuccessPage } from '@/pages/shopper/CheckoutSuccessPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
 import { ShopperEventsPage } from '@/pages/shopper/ShopperEventsPage';
 import { ShopperExplorePage } from '@/pages/shopper/ShopperExplorePage';
@@ -68,6 +72,7 @@ import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
+import { VendorPosActivityPage } from '@/pages/vendor/VendorPosActivityPage';
 import { VendorPosConnectedPage } from '@/pages/vendor/VendorPosConnectedPage';
 import { VendorPosConnectionPage } from '@/pages/vendor/VendorPosConnectionPage';
 import { VendorPosMappingsPage } from '@/pages/vendor/VendorPosMappingsPage';
@@ -87,6 +92,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+
+      <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/legal/terms" element={<TermsOfServicePage />} />
 
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
@@ -122,6 +130,7 @@ export default function App() {
         <Route path="/shopper/bookings/:id" element={<ShopperBookingDetailPage />} />
         <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
         <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
         <Route path="/shopper/saved" element={<ShopperSavedPage />} />
         <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
@@ -150,6 +159,7 @@ export default function App() {
         <Route path="/vendor/events" element={<VendorEventsPage />} />
         <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
         <Route path="/vendor/pos" element={<VendorPosPage />} />
+        <Route path="/vendor/pos/activity" element={<VendorPosActivityPage />} />
         <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />
         <Route path="/vendor/pos/mappings" element={<VendorPosMappingsPage />} />
         <Route path="/vendor/pos/:id" element={<VendorPosConnectionPage />} />
@@ -187,6 +197,8 @@ export default function App() {
         <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
         <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
       </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
