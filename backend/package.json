@@ -26,7 +26,8 @@
     "markets:images:purge": "ts-node scripts/run-markets-images-purge.ts",
     "admin:agent": "ts-node scripts/run-admin-agent.ts",
     "admin:posts": "ts-node scripts/run-admin-post-agent.ts",
-    "pos:inventory-worker": "ts-node scripts/run-pos-inventory-worker.ts"
+    "pos:inventory-worker": "ts-node scripts/run-pos-inventory-worker.ts",
+    "seed:stress-transactions": "ts-node scripts/seed-stress-transactions.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.0",
