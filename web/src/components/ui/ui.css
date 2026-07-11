@@ -921,6 +921,28 @@
   gap: 0.75rem;
 }
 
+.app-topbar__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: var(--color-honeydew);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.app-topbar__avatar:active {
+  transform: scale(0.96);
+}
+
 .app-topbar__email {
   font-size: 0.8125rem;
   color: var(--color-muted);

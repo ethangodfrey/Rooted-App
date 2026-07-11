@@ -9,6 +9,8 @@ export type TabIconName =
   | 'orders'
   | 'products'
   | 'posts'
+  | 'messages'
+  | 'store'
   | 'services'
   | 'bookings'
   | 'portfolio'
@@ -99,9 +101,18 @@ export function TabIcon({ name, size = 20, color = 'currentColor' }: TabIconProp
         </svg>
       );
     case 'posts':
+    case 'messages':
       return (
         <svg {...common}>
           <path d="M5 5h14v10H8l-3 3V5Z" />
+        </svg>
+      );
+    case 'store':
+      return (
+        <svg {...common}>
+          <path d="M4 10h16" />
+          <path d="M6 10V7l2-3h8l2 3v3" />
+          <path d="M6 10v10h12V10" />
         </svg>
       );
     case 'services':

@@ -1,25 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
+import {
+  buildVendorMobileTabs,
+  VENDOR_SIDEBAR_TABS,
+} from '@/components/navigation/vendor-tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
-
-const VENDOR_TABS = [
-  { to: '/vendor/dashboard', label: 'Home', icon: 'dashboard' as const },
-  { to: '/vendor/fulfillment', label: 'Fulfill', icon: 'orders' as const },
-  { to: '/vendor/orders', label: 'Orders', icon: 'orders' as const },
-  { to: '/vendor/products', label: 'Products', icon: 'products' as const },
-  { to: '/vendor/posts', label: 'Posts', icon: 'posts' as const },
-  { to: '/vendor/profile', label: 'Profile', icon: 'profile' as const },
-];
 
 export function VendorLayout() {
   const { user, vendor, session, isProfileLoading } = useAuth();
   const location = useLocation();
   const onSetup = location.pathname.startsWith('/vendor/setup');
   const [routeCache, setRouteCache] = useState<AuthRouteCache | null | undefined>(undefined);
+
+  const mobileTabs = useMemo(
+    () => (vendor?.id ? buildVendorMobileTabs(vendor.id) : []),
+    [vendor?.id],
+  );
 
   useEffect(() => {
     void readAuthRouteCache().then(setRouteCache);
@@ -59,5 +59,7 @@ export function VendorLayout() {
     return <Outlet />;
   }
 
-  return <AppShell role="vendor" tabs={VENDOR_TABS} />;
+  return (
+    <AppShell role="vendor" tabs={VENDOR_SIDEBAR_TABS} mobileTabs={mobileTabs} />
+  );
 }

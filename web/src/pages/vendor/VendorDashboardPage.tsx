@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
+import { IconBadge, type IconName } from '@/components/vendor/dashboard-icons';
 import { useAuth } from '@/hooks/use-auth';
 import { PENDING_PICKUP_STATUSES } from '@/lib/order-fulfillment';
 import { supabase } from '@/lib/supabase';
@@ -17,7 +18,7 @@ const pressable = 'active:scale-[0.99] transition-all';
 const groupedSurface =
   'overflow-hidden rounded-xl border border-stone-200/40 bg-stone-100/40 divide-y divide-stone-200/60';
 
-const tileSurface = `block min-w-0 rounded-xl border border-stone-200/40 bg-stone-100/60 p-3 no-underline text-inherit ${pressable}`;
+const tileSurface = `flex min-h-[74px] min-w-0 items-start gap-2.5 rounded-xl border border-stone-200/40 bg-stone-100/60 p-3 no-underline text-inherit ${pressable}`;
 
 function ChevronRight({ className = '' }: { className?: string }) {
   return (
@@ -73,57 +74,63 @@ function KpiStat({
   );
 }
 
+type BadgeTone = 'amber' | 'emerald' | 'teal' | 'orange' | 'stone' | 'sky' | 'rose';
+
 function OperationTile({
   to,
   title,
   subtitle,
+  icon,
+  tone,
 }: {
   to: string;
   title: string;
   subtitle?: string;
+  icon: IconName;
+  tone: BadgeTone;
 }) {
   return (
-    <Link
-      to={to}
-      className={`${tileSurface}${subtitle ? ' min-h-[74px]' : ''}`}
-    >
-      <p className="m-0 truncate text-sm font-semibold text-stone-800">{title}</p>
-      {subtitle ? (
-        <p className="m-0 mt-0.5 line-clamp-2 text-xs leading-snug text-stone-500">{subtitle}</p>
-      ) : null}
+    <Link to={to} className={tileSurface}>
+      <IconBadge name={icon} tone={tone} />
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-stone-800">{title}</span>
+        {subtitle ? (
+          <span className="mt-0.5 block line-clamp-2 text-xs leading-snug text-stone-500">
+            {subtitle}
+          </span>
+        ) : null}
+      </span>
     </Link>
   );
 }
 
-function GrowthRow({
+function ListRow({
   to,
   title,
   subtitle,
+  icon,
+  tone,
 }: {
   to: string;
   title: string;
   subtitle?: string;
+  icon: IconName;
+  tone: BadgeTone;
 }) {
   return (
     <Link
       to={to}
-      className={`app-card--pressable block p-3.5 no-underline text-inherit ${pressable}`}
+      className={`app-card--pressable flex items-center justify-between bg-transparent p-3.5 text-left no-underline active:bg-stone-100/80 ${pressable}`}
     >
-      <p className="m-0 text-sm font-semibold text-stone-800">{title}</p>
-      {subtitle ? (
-        <p className="m-0 mt-0.5 text-xs leading-snug text-stone-500">{subtitle}</p>
-      ) : null}
-    </Link>
-  );
-}
-
-function SettingsRow({ to, title }: { to: string; title: string }) {
-  return (
-    <Link
-      to={to}
-      className={`app-card--pressable flex items-center justify-between p-3.5 no-underline text-inherit ${pressable}`}
-    >
-      <span className="truncate text-sm font-medium text-stone-800">{title}</span>
+      <span className="flex min-w-0 items-center gap-3">
+        <IconBadge name={icon} tone={tone} />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-stone-800">{title}</span>
+          {subtitle ? (
+            <span className="mt-0.5 block truncate text-xs text-stone-500">{subtitle}</span>
+          ) : null}
+        </span>
+      </span>
       <ChevronRight />
     </Link>
   );
@@ -172,16 +179,16 @@ export function VendorDashboardPage() {
 
   return (
     <div className="app-screen min-w-0 px-4 pb-10">
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">Dashboard</h1>
-      <p className="app-subtitle mb-4">{user?.email ? `Signed in as ${user.email}` : ''}</p>
-
-      <div className="mb-4 rounded-xl border border-stone-200/40 bg-stone-100/60 p-3">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-stone-500">
-          Approval status
-        </p>
-        <p className="m-0 mt-1 text-sm font-semibold capitalize text-stone-800">{status}</p>
-        <p className="m-0 mt-0.5 text-xs leading-snug text-stone-500">{statusCopy[status]}</p>
+      <div className="mb-5 rounded-2xl bg-gradient-to-tr from-orange-600 via-amber-600 to-amber-500 p-5 text-white shadow-md">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-white/80">Vendor</p>
+        <h1 className="m-0 mt-1 text-2xl font-bold tracking-tight">Dashboard</h1>
+        {user?.email ? (
+          <p className="m-0 mt-1 text-sm text-white/85">Signed in as {user.email}</p>
+        ) : null}
+        <span className="mt-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-medium capitalize text-white backdrop-blur-md">
+          {status}
+        </span>
+        <p className="m-0 mt-2 text-xs leading-snug text-white/90">{statusCopy[status]}</p>
       </div>
 
       <div className="mb-5 grid grid-cols-3 gap-3">
@@ -191,33 +198,73 @@ export function VendorDashboardPage() {
       </div>
 
       <DashboardSection title="Operations">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           <OperationTile
             to="/vendor/fulfillment"
             title="Fulfillment ledger"
             subtitle="Track live pickups"
+            icon="check-square"
+            tone="emerald"
           />
-          <OperationTile to="/vendor/products/new" title="Add a product" subtitle="Create new listing" />
-          <OperationTile to="/vendor/events" title="My events" />
-          <OperationTile to="/vendor/sales/manual" title="Log in-person sale" />
-          <OperationTile to="/vendor/leftovers" title="List leftovers" subtitle="Post unsold items" />
+          <OperationTile
+            to="/vendor/products/new"
+            title="Add a product"
+            subtitle="Create new listing"
+            icon="plus"
+            tone="orange"
+          />
+          <OperationTile
+            to="/vendor/events"
+            title="My events"
+            icon="calendar"
+            tone="sky"
+          />
+          <OperationTile
+            to="/vendor/sales/manual"
+            title="Log in-person sale"
+            icon="receipt"
+            tone="stone"
+          />
+          <OperationTile
+            to="/vendor/leftovers"
+            title="List leftovers"
+            subtitle="Post unsold items"
+            icon="recycle"
+            tone="rose"
+          />
         </div>
       </DashboardSection>
 
       <DashboardSection title="Storefront & Growth">
         <div className={groupedSurface}>
-          <GrowthRow to="/vendor/analytics" title="Analytics" subtitle="Revenue & order trends" />
-          <GrowthRow to="/vendor/storefront" title="Edit storefront" />
-          <GrowthRow to="/vendor/explore" title="Explore showcase" />
-          <GrowthRow to="/vendor/posts/new" title="Create a post" />
+          <ListRow
+            to="/vendor/analytics"
+            title="Analytics"
+            subtitle="Revenue & order trends"
+            icon="trending-up"
+            tone="amber"
+          />
+          <ListRow to="/vendor/storefront" title="Edit storefront" icon="store" tone="stone" />
+          <ListRow to="/vendor/explore" title="Explore showcase" icon="grid" tone="sky" />
+          <ListRow to="/vendor/posts/new" title="Create a post" icon="message" tone="stone" />
         </div>
       </DashboardSection>
 
       <DashboardSection title="Compliance & Settings">
         <div className={groupedSurface}>
-          <SettingsRow to="/vendor/pos" title="Connect Square POS" />
-          <SettingsRow to="/vendor/compliance" title="Food safety checklist" />
-          <SettingsRow to="/vendor/credentials" title="Verification credentials" />
+          <ListRow to="/vendor/pos" title="Connect Square POS" icon="credit-card" tone="stone" />
+          <ListRow
+            to="/vendor/compliance"
+            title="Food safety checklist"
+            icon="shield-check"
+            tone="teal"
+          />
+          <ListRow
+            to="/vendor/credentials"
+            title="Verification credentials"
+            icon="badge"
+            tone="stone"
+          />
         </div>
       </DashboardSection>
     </div>
