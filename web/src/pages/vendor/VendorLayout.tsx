@@ -8,6 +8,7 @@ import { isVendorApplicationComplete } from '@/lib/vendor-application';
 
 const VENDOR_TABS = [
   { to: '/vendor/dashboard', label: 'Home', icon: 'dashboard' as const },
+  { to: '/vendor/fulfillment', label: 'Fulfill', icon: 'orders' as const },
   { to: '/vendor/orders', label: 'Orders', icon: 'orders' as const },
   { to: '/vendor/products', label: 'Products', icon: 'products' as const },
   { to: '/vendor/posts', label: 'Posts', icon: 'posts' as const },

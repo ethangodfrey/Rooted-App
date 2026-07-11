@@ -13,3 +13,16 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   completed: 'Completed',
   canceled: 'Canceled',
 };
+
+export function nextVendorStatus(status: OrderStatus): OrderStatus | null {
+  switch (status) {
+    case 'accepted':
+      return 'preparing';
+    case 'preparing':
+      return 'ready_for_pickup';
+    case 'ready_for_pickup':
+      return 'fulfilled';
+    default:
+      return null;
+  }
+}
