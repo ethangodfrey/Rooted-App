@@ -1,7 +1,7 @@
 {
-  "name": "rooted",
+  "name": "vendorly",
   "private": true,
-  "description": "Rooted monorepo tooling (market seed scripts)",
+  "description": "Vendorly monorepo tooling (market seed scripts)",
   "scripts": {
     "markets:baseline": "npx tsx scripts/exportBaselineMarketsCsv.ts",
     "markets:cities": "npx tsx scripts/fetchCityMarketsCsv.ts",
@@ -19,23 +19,32 @@
     "markets:usda:enrich": "npm run markets:enrich --prefix backend",
     "markets:usda:fix-schedules": "npm run markets:usda:fix-schedules --prefix backend",
     "markets:schedule:ai": "npm run markets:schedule:ai --prefix backend --",
-    "markets:fix-times": "npm run markets:fix-times --prefix backend --",
     "markets:build": "npm run markets:baseline && npm run markets:cities && npm run markets:merge && npm run markets:import",
     "markets:build:full": "npm run markets:baseline && npm run markets:cities && npm run markets:fetch && npm run markets:merge && npm run markets:import",
     "markets:links": "npm run markets:links --prefix backend",
     "markets:dedupe": "npm run markets:dedupe --prefix backend",
+    "markets:classify": "npm run markets:classify --prefix backend --",
     "markets:agent": "npm run markets:agent --prefix backend",
     "markets:enrich": "npm run markets:enrich --prefix backend --",
     "markets:images": "npm run markets:images --prefix backend --",
     "markets:images:google": "npm run markets:images:google --prefix backend --",
     "markets:images:purge": "npm run markets:images:purge --prefix backend --",
+    "markets:seed-photos": "node scripts/seed-market-photos.js",
     "admin:agent": "npm run admin:agent --prefix backend",
-    "admin:posts": "npm run admin:posts --prefix backend"
+    "admin:posts": "npm run admin:posts --prefix backend",
+    "test:webhook": "npx tsx scripts/test-pos-webhook.ts",
+    "test:checkout": "npx tsx scripts/test-checkout-pipeline.ts",
+    "health:audit": "npx tsx scripts/autonomous-health-check.ts",
+    "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.107.0",
+    "@vercel/node": "^5.3.0",
+    "bullmq": "^5.34.0",
     "expo": "^56.0.11"
   },
   "devDependencies": {
+    "@types/luxon": "^3.7.2",
     "@types/react": "~19.2.14",
     "luxon": "^3.6.1",
     "typescript": "~6.0.3"

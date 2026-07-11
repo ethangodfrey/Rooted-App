@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { rootedStackScreenOptions } from '@/src/components/navigation/rooted-stack-options';
 import { useState } from 'react';
 
@@ -10,6 +10,7 @@ import { supabase } from '@/src/lib/supabase';
 
 export default function NewPostScreen() {
   const { vendor } = useAuth();
+  const params = useLocalSearchParams<{ mediaUrl?: string; mediaType?: 'image' | 'video' }>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,6 +22,7 @@ export default function NewPostScreen() {
       vendor_id: vendor.id,
       post_type: values.post_type,
       caption: values.caption,
+      content: values.caption,
       media_url: values.media_url,
       media_type: values.media_type ?? 'image',
       product_id: values.product_id,
@@ -47,7 +49,16 @@ export default function NewPostScreen() {
       />
       <Screen scroll>
         {error ? <Text className="mb-3 text-sm text-danger">{error}</Text> : null}
-        <PostForm submitLabel="Publish post" loading={saving} onSubmit={handleCreate} />
+        <PostForm
+          initial={{
+            media_url: params.mediaUrl ?? null,
+            media_type: params.mediaType ?? 'image',
+          }}
+          mediaKind={params.mediaType ?? 'image'}
+          submitLabel="Publish post"
+          loading={saving}
+          onSubmit={handleCreate}
+        />
       </Screen>
     </>
   );

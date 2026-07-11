@@ -1,15 +1,16 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { useNow } from '@/hooks/use-now';
+import { centroidOfEvents } from '@/lib/event-map-search';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
-import { formatEventDate } from '@/lib/format';
-import type { Coords } from '@/lib/geo';
+import { formatEventDisplayDate } from '@/lib/format';
+import { isValidCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 import './events-map.css';
@@ -34,12 +35,18 @@ function FitBounds({ events, active }: { events: Event[]; active: boolean }) {
   useEffect(() => {
     if (!active || events.length === 0 || hasFittedRef.current) return;
 
-    const bounds = L.latLngBounds(
-      events.map((event) => [event.latitude, event.longitude] as [number, number]),
-    );
+    const mappable = events.filter((event) => isValidCoords(event));
+    if (mappable.length === 0) return;
 
-    map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
-    hasFittedRef.current = true;
+    try {
+      const bounds = L.latLngBounds(
+        mappable.map((event) => [event.latitude, event.longitude] as [number, number]),
+      );
+      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+      hasFittedRef.current = true;
+    } catch {
+      // Skip corrupt or degenerate coordinate sets rather than crashing the map.
+    }
   }, [events, map, active]);
 
   return null;
@@ -58,6 +65,74 @@ function FlyToTarget({
     if (!target) return;
     map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
   }, [target, zoom, map]);
+
+  return null;
+}
+
+function InitialMapView({
+  userCoords,
+  events,
+}: {
+  userCoords: Coords | null;
+  events: Event[];
+}) {
+  const map = useMap();
+  const resolvedRef = useRef(false);
+
+  useEffect(() => {
+    if (resolvedRef.current) return;
+
+    function centerOnCoords(center: Coords, zoom: number) {
+      map.setView([center.latitude, center.longitude], zoom);
+      resolvedRef.current = true;
+    }
+
+    function fallbackToEvents() {
+      if (resolvedRef.current || events.length === 0) return;
+
+      if (events.length === 1) {
+        centerOnCoords(
+          { latitude: events[0].latitude, longitude: events[0].longitude },
+          FOCUS_ZOOM,
+        );
+        return;
+      }
+
+      const bounds = L.latLngBounds(
+        events.map((event) => [event.latitude, event.longitude] as [number, number]),
+      );
+      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+      resolvedRef.current = true;
+    }
+
+    if (userCoords) {
+      centerOnCoords(userCoords, 9);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      fallbackToEvents();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (resolvedRef.current) return;
+        centerOnCoords(
+          {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+          9,
+        );
+      },
+      () => {
+        console.log('Location access denied, falling back to database bounds.');
+        fallbackToEvents();
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  }, [userCoords, events, map]);
 
   return null;
 }
@@ -87,18 +162,26 @@ export function EventsMap({
 }: EventsMapProps) {
   const liveNow = useNow(60_000);
   const now = nowProp ?? liveNow;
+  const mappableEvents = useMemo(
+    () => events.filter((event) => isValidCoords(event)),
+    [events],
+  );
+  const eventCenter = centroidOfEvents(events);
   const initialCenter: [number, number] = userCoords
     ? [userCoords.latitude, userCoords.longitude]
-    : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
-  const initialZoom = userCoords ? 9 : DEFAULT_ZOOM;
+    : eventCenter
+      ? [eventCenter.latitude, eventCenter.longitude]
+      : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
+  const initialZoom = userCoords || eventCenter ? 9 : DEFAULT_ZOOM;
 
   return (
-    <div className="events-map-panel">
-      <div className="events-map-frame">
+    <div className="events-map-panel relative isolate z-0">
+      <div className="events-map-frame relative h-[50vh] min-h-[280px] w-full overflow-hidden rounded-2xl md:h-[60vh] md:min-h-[360px]">
         <MapContainer
           center={initialCenter}
           zoom={initialZoom}
           scrollWheelZoom
+          className="h-full w-full rounded-2xl"
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
@@ -106,12 +189,16 @@ export function EventsMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {events.length > 0 && !focusTarget ? (
-            <FitBounds events={events} active={!focusTarget} />
-          ) : null}
-          {focusTarget ? <FlyToTarget target={focusTarget} zoom={focusZoom} /> : null}
+          <InitialMapView userCoords={userCoords} events={mappableEvents} />
 
-          {userCoords ? (
+          {mappableEvents.length > 0 && !focusTarget ? (
+            <FitBounds events={mappableEvents} active={!focusTarget} />
+          ) : null}
+          {focusTarget && isValidCoords(focusTarget) ? (
+            <FlyToTarget target={focusTarget} zoom={focusZoom} />
+          ) : null}
+
+          {userCoords && isValidCoords(userCoords) ? (
             <Marker
               position={[userCoords.latitude, userCoords.longitude]}
               icon={L.divIcon({
@@ -125,7 +212,7 @@ export function EventsMap({
             </Marker>
           ) : null}
 
-          {events.map((event) => {
+          {mappableEvents.map((event) => {
             const distance = getDistanceLabel?.(event);
             const phase = eventRuntimePhase(event, now);
             const links = extractMarketLinks(event);
@@ -145,7 +232,7 @@ export function EventsMap({
                     </div>
                     <strong>{event.name}</strong>
                     <p>
-                      {formatEventDate(event.start_datetime)}
+                      {formatEventDisplayDate(event, now)}
                       {[event.city, event.state].filter(Boolean).length
                         ? ` · ${[event.city, event.state].filter(Boolean).join(', ')}`
                         : ''}
@@ -185,7 +272,7 @@ export function EventsMap({
       {onRecenter ? (
         <button
           type="button"
-          className="events-map-recenter"
+          className="events-map-recenter z-[1000]"
           onClick={onRecenter}
           aria-label="Center on my location"
           title="Center on my location"

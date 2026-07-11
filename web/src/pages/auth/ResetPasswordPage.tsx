@@ -85,7 +85,7 @@ export function ResetPasswordPage() {
 
   return (
     <div className="app-screen app-screen--narrow" style={{ paddingTop: '4rem' }}>
-      <p className="app-eyebrow">Rooted</p>
+      <p className="app-eyebrow">Vendorly</p>
       <h1 className="app-title">Set a new password</h1>
       <p className="app-subtitle">Choose a new password for your account.</p>
 

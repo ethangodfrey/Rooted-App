@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { InteractionManager, View } from 'react-native';
 import type MapView from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -73,39 +73,51 @@ export default function ShopperMapScreen() {
   useEffect(() => {
     let active = true;
 
-    async function init() {
-      const { data, error: queryError } = await fetchPublicEvents({
-        forMap: true,
-        near: fetchOrigin,
-      });
+    const task = InteractionManager.runAfterInteractions(() => {
+      async function init() {
+        const { data, error: queryError } = await fetchPublicEvents({
+          forMap: true,
+        });
 
-      if (!active) return;
+        if (!active) return;
 
-      if (queryError) {
-        setError(queryError);
-      } else {
-        setEvents(data);
+        if (queryError) {
+          setError(queryError);
+        } else {
+          setEvents(data);
+        }
+
+        setLoading(false);
       }
 
-      if (fetchOrigin) {
-        setRegion({ ...fetchOrigin, ...DEFAULT_DELTA });
-      }
+      void init();
+    });
 
-      setLoading(false);
-    }
-
-    init();
     return () => {
       active = false;
+      task.cancel();
     };
-  }, [fetchOrigin]);
+  }, []);
+
+  const userCenter = fetchOrigin ?? coords;
+
+  useEffect(() => {
+    if (!userCenter) return;
+    setRegion((prev) => {
+      const isDefault =
+        Math.abs(prev.latitude - FALLBACK_REGION.latitude) < 0.001 &&
+        Math.abs(prev.longitude - FALLBACK_REGION.longitude) < 0.001;
+      if (!isDefault) return prev;
+      return { ...userCenter, ...DEFAULT_DELTA };
+    });
+  }, [userCenter]);
 
   const filteredEvents = useMemo(
     () => filterEventsForMapSearch(events, query, searchCenter),
     [events, query, searchCenter],
   );
 
-  const sortOrigin = searchCenter ?? fetchOrigin ?? coords;
+  const sortOrigin = searchCenter ?? userCenter;
 
   const mapEvents = useMemo(
     () => capEventsNear(filteredEvents, sortOrigin, MAP_MARKER_LIMIT).items,
@@ -223,6 +235,21 @@ export default function ShopperMapScreen() {
         style={{ paddingHorizontal: pagePadding }}>
         <Text variant="subtitle" className="text-center">
           Couldn&apos;t load events: {error}
+        </Text>
+      </View>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <View
+        className="flex-1 items-center justify-center bg-canvas"
+        style={{ paddingHorizontal: pagePadding }}>
+        <Text variant="subtitle" className="mb-2 text-center">
+          No markets with map locations yet
+        </Text>
+        <Text variant="caption" className="text-center text-muted">
+          Try search by city or ZIP, or browse the Events tab.
         </Text>
       </View>
     );

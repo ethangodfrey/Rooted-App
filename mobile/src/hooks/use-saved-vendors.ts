@@ -1,55 +1,37 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
-import { useAuth } from '@/src/hooks/use-auth';
-import { supabase } from '@/src/lib/supabase';
+import { useSavedItems } from '@/src/hooks/use-saved-items';
 
 /**
- * Reads and mutates the signed-in shopper's `saved_vendors` array.
- * Applies optimistic updates and reverts on failure.
+ * Vendor-specific wrapper around unified `saved_items`.
+ * Keeps legacy call sites working while persisting to saved_items.
  */
 export function useSavedVendors() {
-  const { user, shopper, refreshUser } = useAuth();
-  const [saved, setSaved] = useState<string[]>(shopper?.saved_vendors ?? []);
-  const [pending, setPending] = useState(false);
+  const { savedVendorIds, isSaved, toggle, pending, refresh } = useSavedItems();
 
-  useEffect(() => {
-    setSaved(shopper?.saved_vendors ?? []);
-  }, [shopper?.saved_vendors]);
+  const isSavedVendor = useCallback((vendorId: string) => isSaved('vendor', vendorId), [isSaved]);
 
-  const isSaved = useCallback((vendorId: string) => saved.includes(vendorId), [saved]);
-
-  const toggle = useCallback(
+  const toggleVendor = useCallback(
     async (vendorId: string) => {
-      if (!user) return;
-      const previous = saved;
-      const next = previous.includes(vendorId)
-        ? previous.filter((id) => id !== vendorId)
-        : [...previous, vendorId];
-
-      setSaved(next);
-      setPending(true);
-      const { error } = await supabase
-        .from('shoppers')
-        .update({ saved_vendors: next })
-        .eq('user_id', user.id);
-      setPending(false);
-
-      if (error) {
-        setSaved(previous);
-        return;
-      }
-      await refreshUser();
+      await toggle({ itemType: 'vendor', itemId: vendorId });
     },
-    [saved, user, refreshUser],
+    [toggle],
   );
 
   const remove = useCallback(
     async (vendorId: string) => {
-      if (!saved.includes(vendorId)) return;
-      await toggle(vendorId);
+      if (!isSavedVendor(vendorId)) return;
+      await toggleVendor(vendorId);
     },
-    [saved, toggle],
+    [isSavedVendor, toggleVendor],
   );
 
-  return { saved, isSaved, toggle, remove, pending };
+  return {
+    saved: savedVendorIds,
+    isSaved: isSavedVendor,
+    toggle: toggleVendor,
+    remove,
+    pending,
+    refresh,
+  };
 }

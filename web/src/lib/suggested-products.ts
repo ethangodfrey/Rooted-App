@@ -148,3 +148,84 @@ export async function fetchSuggestedProducts(
   if (error) throw error;
   return rankSuggestedProducts((data as unknown as ProductRow[]) ?? [], interests, context).slice(0, limit);
 }
+
+export interface PopularProduct {
+  id: string;
+  name: string;
+  price: number;
+  category: string | null;
+  displayImageUrl: string | null;
+  vendor: {
+    business_name: string | null;
+    category: string | null;
+    sell_city: string | null;
+    sell_state: string | null;
+  } | null;
+}
+
+function scorePopularProduct(
+  row: ProductRow,
+  userCity: string | null,
+  userState: string | null,
+): number {
+  let score = 0;
+  const displayImageUrl = pickProductDisplayImage({
+    mediaUrls: row.media_urls,
+    vendorLogoUrl: row.vendor?.logo_url,
+  });
+  const hasProductPhoto = (row.media_urls ?? []).some((url) => isTrustedMediaUrl(url));
+  if (hasProductPhoto) score += 2;
+  else if (displayImageUrl) score += 0.5;
+  const vendorCity = normalizeCity(row.vendor?.sell_city);
+  const vendorState = normalizeState(row.vendor?.sell_state);
+  if (userCity && vendorCity && userCity === vendorCity) score += 1;
+  else if (userState && vendorState && userState === vendorState) score += 0.5;
+  return score;
+}
+
+/** Recent active products, optionally boosted by user location — no interests required. */
+export async function fetchPopularProducts(
+  context: SuggestedProductsContext = {},
+  limit = 8,
+): Promise<PopularProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select(
+      'id, name, price, media_urls, category, created_at, vendor:vendors(business_name, category, sell_city, sell_state, logo_url, approval_status)',
+    )
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error) throw error;
+
+  const userCity = normalizeCity(context.userCity);
+  const userState = normalizeState(context.userState);
+
+  return ((data as unknown as ProductRow[]) ?? [])
+    .filter((row) => row.vendor?.approval_status === 'approved')
+    .map((row) => ({ row, score: scorePopularProduct(row, userCity, userState) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return new Date(b.row.created_at).getTime() - new Date(a.row.created_at).getTime();
+    })
+    .slice(0, limit)
+    .map(({ row }) => ({
+      id: row.id,
+      name: row.name,
+      price: row.price,
+      category: row.category,
+      displayImageUrl: pickProductDisplayImage({
+        mediaUrls: row.media_urls,
+        vendorLogoUrl: row.vendor?.logo_url,
+      }),
+      vendor: row.vendor
+        ? {
+            business_name: row.vendor.business_name,
+            category: row.vendor.category,
+            sell_city: row.vendor.sell_city,
+            sell_state: row.vendor.sell_state,
+          }
+        : null,
+    }));
+}

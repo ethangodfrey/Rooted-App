@@ -4,23 +4,18 @@ import { Link, useParams } from 'react-router-dom';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { MarketGuideSections } from '@/components/events/MarketGuideSections';
 import { MarketLinks } from '@/components/events/MarketLinks';
-import { formatEventFullDate, formatEventTimeRange } from '@/lib/format';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayFullDate, formatEventDisplayTimeRange } from '@/lib/format';
+import { formatMarketType } from '@/lib/market-type-labels';
 import { extraInfoWithoutSocialLinks } from '@/lib/market-links';
 import { EventThumb } from '@/components/events/EventThumb';
 import { supabase } from '@/lib/supabase';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
-function formatMarketType(value: string | null): string | null {
-  if (!value) return null;
-  return value
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-}
-
 export function ShopperEventDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const now = useNow(60_000);
   const [event, setEvent] = useState<Event | null>(null);
   const [vendors, setVendors] = useState<{ id: string; business_name: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +40,7 @@ export function ShopperEventDetailPage() {
   if (!event) return <div className="app-empty">Event not found.</div>;
 
   return (
-    <div className="app-screen">
+    <div className="app-screen app-screen--narrow">
       <Link to="/shopper/events" className="app-back-link">← Events</Link>
       <EventThumb event={event} large />
       <div style={{ marginBottom: '0.75rem' }}>
@@ -53,9 +48,9 @@ export function ShopperEventDetailPage() {
       </div>
       <h1 className="app-title">{event.name}</h1>
       <p className="app-subtitle">
-        {formatEventFullDate(event.start_datetime, event.timezone)}
+        {formatEventDisplayFullDate(event, now)}
         <br />
-        {formatEventTimeRange(event.start_datetime, event.end_datetime, event.timezone)}
+        {formatEventDisplayTimeRange(event)}
       </p>
 
       {event.description ? (
@@ -106,7 +101,7 @@ export function ShopperEventDetailPage() {
 
       {vendors.length > 0 ? (
         <>
-          <h2 style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>Vendors on Rooted</h2>
+          <h2 style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>Vendors on Vendorly</h2>
           <div className="app-list">
             {vendors.map((vendor) => (
               <Link key={vendor.id} to={`/shopper/vendors/${vendor.id}`} className="app-card app-card--pressable">
