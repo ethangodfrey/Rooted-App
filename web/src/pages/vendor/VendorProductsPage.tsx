@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { ProductImage } from '@/components/ui/ProductImage';
 import { useAuth } from '@/hooks/use-auth';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -44,11 +45,13 @@ export function VendorProductsPage() {
           {products.map((product) => (
             <div key={product.id} className="app-card">
               <Link to={`/vendor/products/${product.id}/edit`} className="app-row" style={{ textDecoration: 'none', color: 'inherit' }}>
-                {product.media_urls[0] ? (
-                  <img src={product.media_urls[0]} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
-                ) : (
-                  <div className="app-row-icon">🛍️</div>
-                )}
+                <ProductImage
+                  src={product.media_urls[0]}
+                  category={product.category}
+                  name={product.name}
+                  size={48}
+                  rounded="md"
+                />
                 <div className="app-row-body">
                   <p className="app-row-title">{product.name}</p>
                   <p className="app-row-meta">{formatPrice(product.price)} · {product.status}</p>

@@ -36,7 +36,15 @@ export function ShopperEventDetailPage() {
     load();
   }, [id]);
 
-  if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
+  if (loading) {
+    return (
+      <div className="app-screen">
+        <div className="app-skeleton app-skeleton--card" style={{ height: 220, marginBottom: '1rem' }} />
+        <div className="app-skeleton app-skeleton--heading" style={{ width: '60%', height: 28, marginBottom: '0.75rem' }} />
+        <div className="app-skeleton app-skeleton--card" style={{ height: 120 }} />
+      </div>
+    );
+  }
   if (!event) return <div className="app-empty">Event not found.</div>;
 
   return (
