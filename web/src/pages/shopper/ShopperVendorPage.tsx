@@ -1,26 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useMemo } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
-import { CartCheckoutSlider } from '@/components/checkout/CartCheckoutSlider';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
 import { VendorProductMenu } from '@/components/vendor/VendorProductMenu';
 import { VendorStorefrontSkeleton } from '@/components/vendor/VendorStorefrontSkeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { useCart } from '@/hooks/use-cart';
 import { useNow } from '@/hooks/use-now';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { useVendorStorefront } from '@/hooks/use-vendor-storefront';
-import { formatEventDisplayDate, formatPrice } from '@/lib/format';
-import { marketPath, vendorPath } from '@/lib/market-routes';
+import { formatEventDisplayDate } from '@/lib/format';
+import { vendorPath } from '@/lib/market-routes';
 import type { MenuProduct } from '@/lib/product-menu';
-import {
-  cartLineCount,
-  cartSubtotal,
-  loadStorefrontCart,
-  saveStorefrontCart,
-  upsertCartLine,
-  type StorefrontCart,
-} from '@/lib/storefront-cart';
+import type { PresaleCartMarket } from '@/lib/presale-cart';
 import {
   parseThemeSettings,
   resolveAccentColor,
@@ -28,13 +21,14 @@ import {
 
 export function ShopperVendorPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const marketQueryId = searchParams.get('market');
   const now = useNow(60_000);
   const { user } = useAuth();
   const { isSaved, toggle, pending } = useSavedVendors();
+  const { cart, addToCart, openDrawer, itemCount, inventoryError, clearInventoryError } = useCart();
   const { vendor, products, upcomingMarkets, distanceLabel, loading, error } =
     useVendorStorefront(id);
-  const [cart, setCart] = useState<StorefrontCart | null>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const accent = useMemo(() => {
     if (!vendor) return '#228B22';
@@ -44,54 +38,53 @@ export function ShopperVendorPage() {
 
   const bannerUrl = vendor?.banner_url ?? vendor?.logo_url ?? null;
 
-  const persistCart = useCallback((next: StorefrontCart) => {
-    setCart(next);
-    saveStorefrontCart(next);
-  }, []);
+  const activeMarket = useMemo((): PresaleCartMarket | null => {
+    if (cart?.marketId) {
+      const fromUpcoming = upcomingMarkets.find((m) => m.id === cart.marketId);
+      if (fromUpcoming) return fromUpcoming;
+      return {
+        id: cart.marketId,
+        name: cart.marketName,
+        city: cart.marketCity,
+        state: cart.marketState,
+        address: cart.marketAddress,
+        start_datetime: cart.pickupSchedule.start_datetime,
+        end_datetime: cart.pickupSchedule.end_datetime,
+        timezone: cart.pickupSchedule.timezone,
+        hours_summary: cart.pickupSchedule.hours_summary,
+        sync_metadata: cart.pickupSchedule.sync_metadata,
+      };
+    }
+
+    if (marketQueryId) {
+      const matched = upcomingMarkets.find((m) => m.id === marketQueryId);
+      if (matched) return matched;
+    }
+
+    if (upcomingMarkets.length === 1) return upcomingMarkets[0];
+    return null;
+  }, [cart, marketQueryId, upcomingMarkets]);
 
   const handleAddToCart = useCallback(
-    (product: MenuProduct) => {
+    async (product: MenuProduct) => {
       if (!vendor || !id || !product.reserve_enabled) return;
-      const base: StorefrontCart =
-        cart ??
-        ({
-          vendorId: id,
-          vendorName: vendor.business_name ?? 'Vendor',
-          eventId: null,
-          eventName: null,
-          lines: [],
-          updatedAt: new Date().toISOString(),
-        } as StorefrontCart);
 
-      persistCart(
-        upsertCartLine(base, {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          mediaUrl: product.media_urls?.[0] ?? null,
-          quantity: 1,
-        }),
-      );
-    },
-    [cart, id, persistCart, vendor],
-  );
+      let market = activeMarket;
+      if (!market && upcomingMarkets.length > 0) {
+        market = upcomingMarkets[0];
+      }
+      if (!market) return;
 
-  useEffect(() => {
-    if (!id || !vendor) return;
-    setCart(
-      loadStorefrontCart(id) ?? {
+      await addToCart({
+        productId: product.id,
         vendorId: id,
         vendorName: vendor.business_name ?? 'Vendor',
-        eventId: null,
-        eventName: null,
-        lines: [],
-        updatedAt: new Date().toISOString(),
-      },
-    );
-  }, [id, vendor]);
-
-  const lineCount = useMemo(() => cartLineCount(cart), [cart]);
-  const subtotal = useMemo(() => cartSubtotal(cart), [cart]);
+        market,
+        mediaUrl: product.media_urls?.[0] ?? null,
+      });
+    },
+    [activeMarket, addToCart, id, upcomingMarkets, vendor],
+  );
 
   if (loading) {
     return <VendorStorefrontSkeleton />;
@@ -119,14 +112,25 @@ export function ShopperVendorPage() {
         >
           ← Back
         </Link>
-        <button
-          type="button"
-          className="app-btn app-btn--secondary app-btn--small"
-          disabled={pending}
-          onClick={() => toggle(id)}
-        >
-          {saved ? '♥ Saved' : '♡ Save vendor'}
-        </button>
+        <div className="flex items-center gap-2">
+          {itemCount > 0 ? (
+            <button
+              type="button"
+              className="app-btn app-btn--secondary app-btn--small"
+              onClick={() => openDrawer()}
+            >
+              Cart ({itemCount})
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="app-btn app-btn--secondary app-btn--small"
+            disabled={pending}
+            onClick={() => toggle(id)}
+          >
+            {saved ? '♥ Saved' : '♡ Save vendor'}
+          </button>
+        </div>
       </div>
 
       <div
@@ -177,6 +181,26 @@ export function ShopperVendorPage() {
         {distanceLabel ? (
           <p className="mb-3 text-sm font-medium text-emerald-700">{distanceLabel} away</p>
         ) : null}
+        {activeMarket ? (
+          <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            Presale pickup: <strong>{activeMarket.name}</strong>
+            {formatEventDisplayDate(activeMarket, now)
+              ? ` · ${formatEventDisplayDate(activeMarket, now)}`
+              : ''}
+          </p>
+        ) : upcomingMarkets.length > 1 ? (
+          <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Select a market from upcoming markets below before adding items to your cart.
+          </p>
+        ) : null}
+        {inventoryError ? (
+          <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            {inventoryError}
+            <button type="button" className="ml-2 underline" onClick={clearInventoryError}>
+              Dismiss
+            </button>
+          </p>
+        ) : null}
         {vendor.business_description ? (
           <p className="mb-4 text-sm leading-relaxed text-stone-600">{vendor.business_description}</p>
         ) : null}
@@ -193,8 +217,12 @@ export function ShopperVendorPage() {
               {upcomingMarkets.map((m) => (
                 <li key={m.id}>
                   <Link
-                    to={marketPath(m.id)}
-                    className="block rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm transition hover:border-emerald-300 hover:bg-emerald-50/50"
+                    to={vendorPath(vendor.id, m.id)}
+                    className={`block rounded-lg border px-3 py-2 text-sm transition ${
+                      activeMarket?.id === m.id
+                        ? 'border-emerald-400 bg-emerald-50/70'
+                        : 'border-stone-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/50'
+                    }`}
                   >
                     <span className="font-medium text-stone-900">{m.name}</span>
                     {formatEventDisplayDate(m, now) ? (
@@ -218,41 +246,11 @@ export function ShopperVendorPage() {
         <VendorProductMenu
           products={products}
           accentColor={accent}
-          onAddToCart={handleAddToCart}
+          onAddToCart={(product) => void handleAddToCart(product)}
         />
 
         <ReviewsSection targetType="vendor" targetId={id} />
       </div>
-
-      {lineCount > 0 && cart ? (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-white/95 px-4 py-3 backdrop-blur sm:mx-auto sm:max-w-3xl">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {lineCount} in cart · {formatPrice(subtotal)}
-              </p>
-              <p className="text-xs text-slate-500">Synced with vendor POS on checkout</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCheckoutOpen(true)}
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
-              style={{ backgroundColor: accent }}
-            >
-              Checkout
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {cart ? (
-        <CartCheckoutSlider
-          open={checkoutOpen}
-          onClose={() => setCheckoutOpen(false)}
-          cart={cart}
-          onCartChange={persistCart}
-        />
-      ) : null}
 
       {user?.role === 'admin' ? (
         <p className="px-4 pb-6 text-xs text-stone-400">

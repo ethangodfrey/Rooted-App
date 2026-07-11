@@ -81,6 +81,4 @@ export function ShopperLayout() {
 
 
   return <AppShell role="shopper" tabs={SHOPPER_TABS} mapFabHref={SHOPPER_MAP_HREF} />;
-
 }
-

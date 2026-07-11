@@ -97,7 +97,7 @@ export function ShopperEventDetailPage() {
 
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-semibold text-stone-900">Attending vendors</h2>
-        <AttendingVendorGrid vendors={vendors} userCoords={coords} />
+        <AttendingVendorGrid vendors={vendors} userCoords={coords} marketId={event.id} />
       </section>
 
       <MarketGuideSections event={event} />
