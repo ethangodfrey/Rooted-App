@@ -7,6 +7,8 @@ export interface SettlementOrderInput {
   totalCents: number;
   /** Persisted platform fee in cents; derived from total when omitted. */
   platformFeeCents?: number;
+  /** Fulfillment/completion timestamp for chronological chart grouping. */
+  completedAt?: string;
 }
 
 export interface SettlementLineItem {
