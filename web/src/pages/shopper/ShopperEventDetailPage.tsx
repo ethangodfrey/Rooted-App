@@ -54,7 +54,7 @@ export function ShopperEventDetailPage() {
       <div style={{ marginBottom: '0.75rem' }}>
         <EventStatusBadge event={event} showHint size="md" />
       </div>
-      <h1 className="app-title">{event.name}</h1>
+      <h1 className="app-title" style={{ overflowWrap: 'anywhere' }}>{event.name}</h1>
       <p className="app-subtitle">
         {formatEventDisplayFullDate(event, now)}
         <br />
