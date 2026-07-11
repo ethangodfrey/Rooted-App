@@ -1,5 +1,7 @@
 import { api } from '@/lib/api';
 
+export type CheckoutPaymentMethod = 'pickup' | 'stripe';
+
 export interface CheckoutLineInput {
   productId: string;
   eventId: string;
@@ -31,15 +33,39 @@ export interface CheckoutReceipt {
   items: CheckoutReceiptItem[];
 }
 
+export interface CheckoutStripeSession {
+  orderId: string;
+  vendorId: string;
+  vendorName: string | null;
+  sessionId: string;
+  url: string | null;
+}
+
 export interface CheckoutResult {
   transactionId: string;
   totalAmount: number;
   status: string;
+  paymentMethod: CheckoutPaymentMethod;
   orders: CheckoutReceipt[];
+  stripeSessions?: CheckoutStripeSession[];
 }
 
-export function createCheckout(items: CheckoutLineInput[]): Promise<CheckoutResult> {
-  return api.post<CheckoutResult>('/checkout', { items });
+export interface CreateCheckoutOptions {
+  paymentMethod?: CheckoutPaymentMethod;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+export function createCheckout(
+  items: CheckoutLineInput[],
+  options: CreateCheckoutOptions = {},
+): Promise<CheckoutResult> {
+  return api.post<CheckoutResult>('/checkout', {
+    items,
+    paymentMethod: options.paymentMethod ?? 'pickup',
+    successUrl: options.successUrl,
+    cancelUrl: options.cancelUrl,
+  });
 }
 
 export function fetchCheckout(transactionId: string): Promise<CheckoutResult> {

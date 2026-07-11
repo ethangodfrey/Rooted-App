@@ -62,6 +62,7 @@ async function bootstrap() {
   // register a raw body parser scoped to the webhook path before the JSON
   // parser takes over everything else.
   app.use('/pos/webhooks', raw({ type: '*/*', limit: '2mb' }));
+  app.use('/webhooks/stripe', raw({ type: '*/*', limit: '2mb' }));
   app.use('/stripe/webhooks', raw({ type: '*/*', limit: '2mb' }));
   app.use('/api/webhooks/stripe', raw({ type: '*/*', limit: '2mb' }));
   app.use(json({ limit: '2mb' }));
