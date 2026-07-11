@@ -87,6 +87,77 @@ export interface EventScheduleFields {
   hours_summary?: string | null;
 }
 
+/** Map day names/abbreviations to JS weekday index (0 = Sunday … 6 = Saturday). */
+export function dayNameToIndex(day: string): number | null {
+  const normalized = day.trim().toLowerCase().replace(/s$/, '');
+  if (normalized in WEEKDAY_TO_JS) {
+    return WEEKDAY_TO_JS[normalized];
+  }
+
+  const abbrev = normalized.slice(0, 2);
+  if (abbrev in DAY_MAP) {
+    return DAY_MAP[abbrev];
+  }
+
+  return null;
+}
+
+function parseHourToken(hourRaw: string, minuteRaw: string | undefined, meridiem?: string): number {
+  let hour = Number(hourRaw);
+  const minute = Number(minuteRaw ?? 0);
+  if (!Number.isFinite(hour)) return 8;
+
+  const suffix = meridiem?.toLowerCase();
+  if (suffix === 'pm' && hour < 12) hour += 12;
+  if (suffix === 'am' && hour === 12) hour = 0;
+
+  return hour + (Number.isFinite(minute) ? minute / 60 : 0);
+}
+
+/** Parse human summaries like "Saturdays 8am–1pm". */
+export function parseHumanOpeningHours(raw: string | null | undefined): ResolvedEventSchedule | null {
+  if (!raw?.trim()) return null;
+  const text = raw.trim();
+
+  const dayMatch = text.match(
+    /\b(sundays?|mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|saturdays?)\b/i,
+  );
+  if (!dayMatch) return null;
+
+  const dayOfWeek = dayMatch[1].toLowerCase().replace(/s$/, '');
+  const timeMatch = text.match(
+    /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
+  );
+
+  if (!timeMatch) {
+    return { dayOfWeek, startHour: 8, endHour: 13 };
+  }
+
+  const startHour = Math.floor(
+    parseHourToken(timeMatch[1], timeMatch[2], timeMatch[3] || inferMeridiem(timeMatch[1], timeMatch[3])),
+  );
+  const endHour = Math.ceil(
+    parseHourToken(timeMatch[4], timeMatch[5], timeMatch[6] || inferMeridiem(timeMatch[4], timeMatch[6])),
+  );
+
+  return {
+    dayOfWeek,
+    startHour: Number.isFinite(startHour) ? startHour : 8,
+    endHour: Number.isFinite(endHour) ? endHour : 13,
+  };
+}
+
+function inferMeridiem(hourRaw: string, explicit?: string): string | undefined {
+  if (explicit) return explicit;
+  const hour = Number(hourRaw);
+  if (!Number.isFinite(hour)) return undefined;
+  return hour >= 8 && hour <= 11 ? 'am' : hour >= 1 && hour <= 6 ? 'pm' : undefined;
+}
+
+function parseHoursText(raw: string | null | undefined): ResolvedEventSchedule | null {
+  return parseOsmOpeningHours(raw) ?? parseHumanOpeningHours(raw);
+}
+
 /** Best-effort parse of OSM opening_hours (e.g. "Sa 08:00-13:00"). */
 export function parseOsmOpeningHours(raw: string | null | undefined): ResolvedEventSchedule | null {
   if (!raw?.trim()) return null;
@@ -95,9 +166,7 @@ export function parseOsmOpeningHours(raw: string | null | undefined): ResolvedEv
   const match = text.match(
     /(Mo|Tu|We|Th|Fr|Sa|Su)[^\d]*(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/i,
   );
-  if (!match) {
-    return { dayOfWeek: 'saturday', startHour: 8, endHour: 13 };
-  }
+  if (!match) return null;
 
   const dayKey = match[1].toLowerCase();
   const dayOfWeek = WEEKDAY_NAMES[DAY_MAP[dayKey.slice(0, 2)] ?? 6] ?? 'saturday';
@@ -114,12 +183,22 @@ export function parseOsmOpeningHours(raw: string | null | undefined): ResolvedEv
 export function resolveEventSchedule(metadata: Record<string, unknown> | undefined): ResolvedEventSchedule {
   const openingHours =
     typeof metadata?.opening_hours === 'string' ? metadata.opening_hours : null;
-  const parsed = parseOsmOpeningHours(openingHours);
+  const parsed = parseHoursText(openingHours);
 
-  const day =
-    typeof metadata?.typical_day === 'string'
-      ? metadata.typical_day.toLowerCase()
-      : parsed?.dayOfWeek ?? 'saturday';
+  const typicalDay =
+    typeof metadata?.typical_day === 'string' ? metadata.typical_day.toLowerCase() : null;
+  const typicalIndex = typicalDay ? dayNameToIndex(typicalDay) : null;
+  const parsedIndex = parsed ? dayNameToIndex(parsed.dayOfWeek) : null;
+
+  let day = typicalDay ?? parsed?.dayOfWeek ?? 'saturday';
+  if (
+    typicalIndex != null &&
+    parsedIndex != null &&
+    typicalIndex !== parsedIndex &&
+    typeof metadata?.opening_hours === 'string'
+  ) {
+    day = parsed?.dayOfWeek ?? day;
+  }
 
   const startHour =
     typeof metadata?.start_hour === 'number' ? metadata.start_hour : parsed?.startHour ?? 8;
@@ -142,11 +221,12 @@ export function isRecurringMarketEvent(event: EventScheduleFields): boolean {
     metadata &&
     (typeof metadata.opening_hours === 'string' ||
       typeof metadata.typical_day === 'string' ||
-      typeof metadata.start_hour === 'number')
+      typeof metadata.start_hour === 'number' ||
+      Array.isArray(metadata.runs_on_days))
   ) {
     return true;
   }
-  return parseOsmOpeningHours(event.hours_summary) != null;
+  return parseHoursText(event.hours_summary) != null;
 }
 
 export function resolveEventScheduleForEvent(event: EventScheduleFields): ResolvedEventSchedule {
@@ -155,37 +235,63 @@ export function resolveEventScheduleForEvent(event: EventScheduleFields): Resolv
     metadata &&
     (typeof metadata.opening_hours === 'string' ||
       typeof metadata.typical_day === 'string' ||
-      typeof metadata.start_hour === 'number')
+      typeof metadata.start_hour === 'number' ||
+      Array.isArray(metadata.runs_on_days))
   ) {
     return resolveEventSchedule(metadata);
   }
-  return parseOsmOpeningHours(event.hours_summary) ?? resolveEventSchedule(metadata);
+  return parseHoursText(event.hours_summary) ?? resolveEventSchedule(metadata);
+}
+
+/** All operating weekdays for a recurring market (0 = Sunday … 6 = Saturday). */
+export function resolveOperatingDayIndices(event: EventScheduleFields): number[] {
+  const metadata = event.sync_metadata ?? {};
+
+  if (Array.isArray(metadata.runs_on_days)) {
+    const fromRuns = metadata.runs_on_days
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => dayNameToIndex(value))
+      .filter((value): value is number => value != null);
+    if (fromRuns.length > 0) {
+      return [...new Set(fromRuns)].sort((a, b) => a - b);
+    }
+  }
+
+  const hoursText =
+    (typeof metadata.opening_hours === 'string' ? metadata.opening_hours : null) ??
+    event.hours_summary;
+  const parsed = parseHoursText(hoursText);
+  if (parsed) {
+    const index = dayNameToIndex(parsed.dayOfWeek);
+    if (index != null) return [index];
+  }
+
+  const schedule = resolveEventScheduleForEvent(event);
+  return [dayNameToIndex(schedule.dayOfWeek) ?? 6];
 }
 
 export function getZonedParts(
   date: Date,
   timeZone: string,
 ): { weekday: number; hour: number; minute: number } {
+  const weekdayName = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'long',
+  })
+    .format(date)
+    .toLowerCase();
+
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
-    weekday: 'short',
-    hour: 'numeric',
-    minute: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
   }).formatToParts(date);
 
-  const weekdayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
+  const weekday = dayNameToIndex(weekdayName) ?? date.getDay();
 
   return {
-    weekday: weekdayMap[parts.find((p) => p.type === 'weekday')?.value ?? 'Sun'] ?? 0,
+    weekday,
     hour: Number(parts.find((p) => p.type === 'hour')?.value ?? 0),
     minute: Number(parts.find((p) => p.type === 'minute')?.value ?? 0),
   };
@@ -195,14 +301,18 @@ export function recurringMarketPhase(
   schedule: ResolvedEventSchedule,
   timeZone: string,
   now: Date,
+  operatingDays: number[] = [dayNameToIndex(schedule.dayOfWeek) ?? 6],
 ): 'live' | 'upcoming' {
-  const targetDay = WEEKDAY_TO_JS[schedule.dayOfWeek.toLowerCase()] ?? 6;
   const { weekday, hour, minute } = getZonedParts(now, timeZone);
   const nowMinutes = hour * 60 + minute;
   const startMinutes = schedule.startHour * 60;
   const endMinutes = schedule.endHour * 60;
 
-  if (weekday === targetDay && nowMinutes >= startMinutes && nowMinutes < endMinutes) {
+  if (
+    operatingDays.includes(weekday) &&
+    nowMinutes >= startMinutes &&
+    nowMinutes <= endMinutes
+  ) {
     return 'live';
   }
 
@@ -213,30 +323,51 @@ export function msUntilRecurringMarketOpens(
   schedule: ResolvedEventSchedule,
   timeZone: string,
   now: Date,
+  operatingDays: number[] = [dayNameToIndex(schedule.dayOfWeek) ?? 6],
 ): number {
-  const targetDay = WEEKDAY_TO_JS[schedule.dayOfWeek.toLowerCase()] ?? 6;
   const { weekday, hour, minute } = getZonedParts(now, timeZone);
   const nowMinutes = hour * 60 + minute;
   const startMinutes = schedule.startHour * 60;
   const endMinutes = schedule.endHour * 60;
 
-  let daysAhead = (targetDay - weekday + 7) % 7;
-  if (daysAhead === 0) {
-    if (nowMinutes < startMinutes) {
-      return (startMinutes - nowMinutes) * 60_000;
-    }
-    if (nowMinutes >= endMinutes) {
+  let best: number | null = null;
+
+  for (const targetDay of operatingDays) {
+    let daysAhead = (targetDay - weekday + 7) % 7;
+
+    if (daysAhead === 0) {
+      if (nowMinutes < startMinutes) {
+        const candidate = (startMinutes - nowMinutes) * 60_000;
+        best = best == null ? candidate : Math.min(best, candidate);
+        continue;
+      }
+      if (nowMinutes <= endMinutes) {
+        return 0;
+      }
       daysAhead = 7;
-    } else {
-      return 0;
     }
+
+    const minutesUntilOpen = daysAhead * 24 * 60 + (startMinutes - nowMinutes);
+    const candidate = Math.max(0, minutesUntilOpen * 60_000);
+    best = best == null ? candidate : Math.min(best, candidate);
   }
 
-  const minutesUntilOpen = daysAhead * 24 * 60 + (startMinutes - nowMinutes);
-  return Math.max(0, minutesUntilOpen * 60_000);
+  return best ?? 0;
 }
 
 export function formatWeekdayLabel(dayOfWeek: string): string {
-  const key = dayOfWeek.toLowerCase();
+  const key = dayOfWeek.toLowerCase().replace(/s$/, '');
   return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+export function nextOperatingDayName(
+  schedule: ResolvedEventSchedule,
+  operatingDays: number[],
+  timeZone: string,
+  now: Date,
+): string {
+  const { weekday } = getZonedParts(now, timeZone);
+  const sorted = [...operatingDays].sort((a, b) => a - b);
+  const next = sorted.find((day) => day > weekday) ?? sorted[0];
+  return WEEKDAY_NAMES[next] ?? schedule.dayOfWeek;
 }

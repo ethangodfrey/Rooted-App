@@ -121,13 +121,15 @@ export function ShopperHomePage() {
     };
   }, [nearbyCoords, coordsReady]);
 
+  const clientToday = now.getDay(); // 0 = Sunday … 6 = Saturday
+
   const openNow = useMemo(
     () =>
       sortEventsByRuntime(
         nearbyEvents.filter((event) => eventRuntimePhase(event, now) === 'live'),
         now,
       ),
-    [nearbyEvents, now],
+    [nearbyEvents, now, clientToday],
   );
 
   const nextOpeningHint = useMemo(() => {
@@ -137,8 +139,12 @@ export function ShopperHomePage() {
     )
       .map((event) => ({ event, hint: eventRuntimeHint(event, now) }))
       .filter((item) => item.hint);
-    return upcoming[0]?.hint ?? null;
-  }, [nearbyEvents, now]);
+
+    const opensLaterToday = upcoming.find((item) =>
+      item.hint?.toLowerCase().includes('opens today'),
+    );
+    return opensLaterToday?.hint ?? upcoming[0]?.hint ?? null;
+  }, [nearbyEvents, now, clientToday]);
 
   const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
   const newThisWeek = useMemo(
