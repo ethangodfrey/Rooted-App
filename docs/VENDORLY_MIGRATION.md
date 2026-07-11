@@ -64,8 +64,11 @@ docs/supabase/phase37_vendor_media_feed_storage.sql # vendor feed media bucket +
 docs/supabase/phase38_ranked_vendor_feed.sql # cached hyper-local ranked vendor feed RPC
 docs/supabase/phase39_payments_kyc_ledger.sql # settlement holds + 1099-K compliance ledger
 docs/supabase/phase42_regional_markets.sql # regional markets + vendor registrations + orders.market_id RLS
+docs/supabase/phase42a_seed_markets_from_events.sql # seed markets.event_id from legacy events (pre-backfill)
 docs/supabase/phase42b_backfill_orders_market_id.sql # post-phase42: backfill orders.market_id from event_id
 ```
+
+**Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).
 
 Optional (any time after `phase1_auth.sql`):
 
