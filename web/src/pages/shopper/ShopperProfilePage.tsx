@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 
 import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
 import { useAuth } from '@/hooks/use-auth';
-
+import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
+import { LegalLinks } from '@/components/account/LegalLinks';
 import '@/components/ui/ui.css';
 
 
@@ -108,6 +109,8 @@ export function ShopperProfilePage() {
 
       </button>
 
+      <LegalLinks />
+      <DeleteAccountSection />
     </div>
 
   );

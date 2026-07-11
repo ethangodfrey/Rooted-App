@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { FieldError } from '@/components/ui/FieldError';
-import { ProductImage } from '@/components/ui/ProductImage';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadProductImage } from '@/lib/upload';
 import '@/components/ui/ui.css';
@@ -23,6 +23,8 @@ interface ProductFormProps {
   onSubmit: (values: ProductFormValues) => Promise<void> | void;
   loading?: boolean;
 }
+
+type ProductField = 'name' | 'price' | 'limitTotal' | 'limitPerShopper';
 
 function parseOptionalLimit(text: string): number | null | 'invalid' {
   const trimmed = text.trim();
@@ -50,10 +52,10 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
   );
   const [mediaUrls, setMediaUrls] = useState<string[]>(initial?.media_urls ?? []);
   const [uploading, setUploading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProductField, string>>>({});
 
-  function clearFieldError(field: string) {
+  function clearFieldError(field: ProductField) {
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -65,13 +67,13 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    setFormError(null);
+    setError(null);
     setUploading(true);
     try {
       const url = await uploadProductImage(user.id, file);
       setMediaUrls((prev) => [...prev, url]);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to upload photo.');
+      setError(err instanceof Error ? err.message : 'Failed to upload photo.');
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -80,17 +82,15 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const nextErrors: Record<string, string> = {};
+    const nextFieldErrors: Partial<Record<ProductField, string>> = {};
 
     if (!name.trim()) {
-      nextErrors.name = 'Product name is required.';
+      nextFieldErrors.name = 'Product name is required.';
     }
 
     const priceValue = Number.parseFloat(priceText);
-    if (!priceText.trim()) {
-      nextErrors.price = 'Enter a price for this product.';
-    } else if (!Number.isFinite(priceValue) || priceValue < 0) {
-      nextErrors.price = 'Enter a valid price (e.g. 12.50).';
+    if (!Number.isFinite(priceValue) || priceValue < 0) {
+      nextFieldErrors.price = 'Enter a valid price (e.g. 12.50).';
     }
 
     let limitTotalValue: number | null = null;
@@ -98,14 +98,14 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
     if (reserveEnabled) {
       const parsed = parseOptionalLimit(limitTotal);
       if (parsed === 'invalid') {
-        nextErrors.limitTotal = 'Reservation limit must be a whole number of 1 or more.';
+        nextFieldErrors.limitTotal = 'Reservation limit must be a whole number of 1 or more.';
       } else {
         limitTotalValue = parsed;
       }
 
       const parsedPer = parseOptionalLimit(limitPerShopper);
       if (parsedPer === 'invalid') {
-        nextErrors.limitPerShopper = 'Per-shopper limit must be a whole number of 1 or more.';
+        nextFieldErrors.limitPerShopper = 'Per-shopper limit must be a whole number of 1 or more.';
       } else {
         limitPerShopperValue = parsedPer;
       }
@@ -115,18 +115,18 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
         limitPerShopperValue != null &&
         limitPerShopperValue > limitTotalValue
       ) {
-        nextErrors.limitPerShopper = 'Per-shopper limit cannot exceed the total reservation limit.';
+        nextFieldErrors.limitPerShopper = 'Per-shopper limit cannot exceed the total reservation limit.';
       }
     }
 
-    if (Object.keys(nextErrors).length > 0) {
-      setFieldErrors(nextErrors);
-      setFormError(null);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
 
     setFieldErrors({});
-    setFormError(null);
+    setError(null);
     await onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -146,7 +146,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
           {mediaUrls.map((url) => (
             <div key={url} style={{ position: 'relative' }}>
-              <ProductImage src={url} category={category} size={80} rounded="lg" />
+              <FallbackImage
+                src={url}
+                variant="product"
+                category={category}
+                style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover' }}
+              />
               <button
                 type="button"
                 onClick={() => setMediaUrls((prev) => prev.filter((u) => u !== url))}
@@ -172,43 +177,28 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       </div>
 
       <div className="app-input-group">
-        <label htmlFor="product-name">Name</label>
+        <label>Name</label>
         <input
-          id="product-name"
           className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
           value={name}
           onChange={(e) => {
             setName(e.target.value);
             clearFieldError('name');
           }}
-          aria-invalid={Boolean(fieldErrors.name)}
-          aria-describedby={fieldErrors.name ? 'product-name-error' : undefined}
         />
-        <FieldError id="product-name-error" message={fieldErrors.name} />
+        <FieldError message={fieldErrors.name} />
       </div>
       <div className="app-input-group">
-        <label htmlFor="product-description">Description</label>
-        <textarea
-          id="product-description"
-          className="app-textarea"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+        <label>Description</label>
+        <textarea className="app-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div className="app-input-group">
-        <label htmlFor="product-category">Category</label>
+        <label>Category</label>
+        <input className="app-input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Produce, Baked goods" />
+      </div>
+      <div className="app-input-group">
+        <label>Price (USD)</label>
         <input
-          id="product-category"
-          className="app-input"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          placeholder="e.g. Produce, Baked goods"
-        />
-      </div>
-      <div className="app-input-group">
-        <label htmlFor="product-price">Price (USD)</label>
-        <input
-          id="product-price"
           className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
           type="number"
           step="0.01"
@@ -218,10 +208,8 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
             setPriceText(e.target.value);
             clearFieldError('price');
           }}
-          aria-invalid={Boolean(fieldErrors.price)}
-          aria-describedby={fieldErrors.price ? 'product-price-error' : undefined}
         />
-        <FieldError id="product-price-error" message={fieldErrors.price} />
+        <FieldError message={fieldErrors.price} />
       </div>
 
       <label style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -232,9 +220,8 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       {reserveEnabled ? (
         <>
           <div className="app-input-group">
-            <label htmlFor="product-limit-total">Total reservation limit (optional)</label>
+            <label>Total reservation limit (optional)</label>
             <input
-              id="product-limit-total"
               className={`app-input${fieldErrors.limitTotal ? ' app-input--invalid' : ''}`}
               value={limitTotal}
               onChange={(e) => {
@@ -242,15 +229,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
                 clearFieldError('limitTotal');
               }}
               placeholder="Leave blank for no cap"
-              aria-invalid={Boolean(fieldErrors.limitTotal)}
-              aria-describedby={fieldErrors.limitTotal ? 'product-limit-total-error' : undefined}
             />
-            <FieldError id="product-limit-total-error" message={fieldErrors.limitTotal} />
+            <FieldError message={fieldErrors.limitTotal} />
           </div>
           <div className="app-input-group">
-            <label htmlFor="product-limit-shopper">Per-shopper limit (optional)</label>
+            <label>Per-shopper limit (optional)</label>
             <input
-              id="product-limit-shopper"
               className={`app-input${fieldErrors.limitPerShopper ? ' app-input--invalid' : ''}`}
               value={limitPerShopper}
               onChange={(e) => {
@@ -258,15 +242,13 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
                 clearFieldError('limitPerShopper');
               }}
               placeholder="Leave blank for no cap"
-              aria-invalid={Boolean(fieldErrors.limitPerShopper)}
-              aria-describedby={fieldErrors.limitPerShopper ? 'product-limit-shopper-error' : undefined}
             />
-            <FieldError id="product-limit-shopper-error" message={fieldErrors.limitPerShopper} />
+            <FieldError message={fieldErrors.limitPerShopper} />
           </div>
         </>
       ) : null}
 
-      {formError ? <p className="app-error">{formError}</p> : null}
+      {error ? <p className="app-error">{error}</p> : null}
 
       <button type="submit" className="app-btn app-btn--primary" disabled={loading || uploading}>
         {loading ? 'Saving…' : submitLabel}

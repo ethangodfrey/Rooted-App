@@ -1,0 +1,219 @@
+import type { PosConnection } from '@prisma/client';
+
+import { SquareAdapter } from '../src/modules/pos/adapters/square/square.adapter';
+import { PosImportService } from '../src/modules/pos/services/pos-import.service';
+import { PosMappingService } from '../src/modules/pos/services/pos-mapping.service';
+import { PosAnalyticsService } from '../src/modules/pos/services/pos-analytics.service';
+import type { NormalizedTransaction } from '../src/modules/pos/types/normalized-transaction';
+import type { ConfigService } from '@nestjs/config';
+import { StripeService } from '../src/modules/stripe/stripe.service';
+import { createFakePrisma } from './fake-prisma';
+
+const constructEvent = jest.fn();
+jest.mock('stripe', () => {
+  return jest.fn().mockImplementation(() => ({
+    webhooks: { constructEvent },
+    accounts: { retrieve: jest.fn(), create: jest.fn() },
+    checkout: { sessions: { create: jest.fn() } },
+    accountLinks: { create: jest.fn() },
+  }));
+});
+
+const VENDOR_ID = '11111111-1111-1111-1111-111111111111';
+const CONNECTION_ID = '33333333-3333-3333-3333-333333333333';
+const SYNC_RUN_ID = '44444444-4444-4444-4444-444444444444';
+
+function squareAdapter(): SquareAdapter {
+  return new SquareAdapter({
+    get: (key: string, def?: string) => {
+      const config: Record<string, string> = {
+        SQUARE_ENVIRONMENT: 'sandbox',
+        SQUARE_APPLICATION_ID: 'app-id',
+        SQUARE_APPLICATION_SECRET: 'app-secret',
+        PUBLIC_BASE_URL: 'https://api.test',
+      };
+      return key in config ? config[key] : def;
+    },
+  } as unknown as ConfigService);
+}
+
+function normalizeSquareOrder(adapter: SquareAdapter, order: unknown): NormalizedTransaction {
+  return (
+    adapter as unknown as { normalizeOrder: (o: unknown) => NormalizedTransaction }
+  ).normalizeOrder(order);
+}
+
+function connection(): PosConnection {
+  return {
+    id: CONNECTION_ID,
+    vendorId: VENDOR_ID,
+    provider: 'SQUARE',
+    providerLocationId: null,
+  } as unknown as PosConnection;
+}
+
+describe('Dual payment transaction parsing (Stripe + Square)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('Stripe checkout webhooks mutate order payment state', () => {
+    it('transitions stripe_pending orders to paid_online on success payloads', async () => {
+      const executeRaw = jest.fn();
+      const prisma = { $executeRaw: executeRaw, $queryRaw: jest.fn(), vendor: {} } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_success',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_live_ok',
+            payment_intent: 'pi_live_ok',
+            metadata: { order_id: 'order-1', vendor_id: VENDOR_ID },
+          },
+        },
+      } as never);
+
+      expect(executeRaw).toHaveBeenCalledTimes(1);
+      expect(executeRaw.mock.calls[0]).toEqual(
+        expect.arrayContaining(['order-1', 'pi_live_ok', 'cs_live_ok']),
+      );
+    });
+
+    it('does not mutate orders on malformed success payloads missing order_id', async () => {
+      const executeRaw = jest.fn();
+      const prisma = { $executeRaw: executeRaw, $queryRaw: jest.fn(), vendor: {} } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_bad',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_live_bad',
+            payment_intent: 'pi_live_bad',
+            metadata: {},
+          },
+        },
+      } as never);
+
+      expect(executeRaw).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Square POS payloads drive imported transaction state', () => {
+    const adapter = squareAdapter();
+
+    it('imports completed Square sales and marks transactions COMPLETED', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-ok-1',
+        location_id: 'L1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 1200, currency: 'USD' },
+        line_items: [
+          {
+            uid: 'li-1',
+            name: 'Eggs',
+            quantity: '1',
+            gross_sales_money: { amount: 1200 },
+          },
+        ],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [txn]);
+
+      expect(result).toMatchObject({ imported: 1, skipped: 0, updated: 0 });
+      expect(fake.store.transactions[0]).toMatchObject({
+        providerTransactionId: 'sq-ok-1',
+        state: 'COMPLETED',
+        grossAmount: 1200,
+      });
+    });
+
+    it('updates imported transactions to REFUNDED on Square refund failure payloads', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const completed = normalizeSquareOrder(adapter, {
+        id: 'sq-refund-1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 900, currency: 'USD' },
+        refunded_money: { amount: 0 },
+        line_items: [{ uid: 'li-1', name: 'Jam', quantity: '1', gross_sales_money: { amount: 900 } }],
+      });
+
+      await importer.importTransactions(connection(), SYNC_RUN_ID, [completed]);
+
+      const refunded = normalizeSquareOrder(adapter, {
+        id: 'sq-refund-1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 900, currency: 'USD' },
+        refunded_money: { amount: 900 },
+        line_items: [{ uid: 'li-1', name: 'Jam', quantity: '1', gross_sales_money: { amount: 900 } }],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [refunded]);
+
+      expect(result).toMatchObject({ imported: 0, skipped: 0, updated: 1 });
+      expect(fake.store.transactions[0].state).toBe('REFUNDED');
+    });
+
+    it('maps canceled Square orders to VOIDED and still imports auditably', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const voided = normalizeSquareOrder(adapter, {
+        id: 'sq-void-1',
+        state: 'CANCELED',
+        total_money: { amount: 0, currency: 'USD' },
+        line_items: [],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [voided]);
+
+      expect(result.imported).toBe(1);
+      expect(fake.store.transactions[0]).toMatchObject({
+        providerTransactionId: 'sq-void-1',
+        state: 'VOIDED',
+        grossAmount: 0,
+      });
+    });
+  });
+});

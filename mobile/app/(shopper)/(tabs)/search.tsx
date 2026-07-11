@@ -18,7 +18,8 @@ import { useAuth } from '@/src/hooks/use-auth';
 import { useSavedVendors } from '@/src/hooks/use-saved-vendors';
 import { useUserCoords } from '@/src/hooks/use-user-coords';
 import { fetchDiscoverFeed, type DiscoverFeedData } from '@/src/lib/discover-feed';
-import { formatEventDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayDate, formatPrice } from '@/src/lib/format';
 import { formatDistanceKm } from '@/src/lib/geo-search';
 import { formatCents } from '@/src/lib/role-utils';
 import {
@@ -49,6 +50,7 @@ const EMPTY: UnifiedSearchResults = {
 
 export default function SearchTabScreen() {
   const { user, shopper } = useAuth();
+  const now = useNow(60_000);
   const { saved } = useSavedVendors();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<UnifiedSearchFilter>('all');
@@ -209,7 +211,7 @@ export default function SearchTabScreen() {
                   </Text>
                   <Text variant="caption">
                     {[event.city, event.state].filter(Boolean).join(', ')} ·{' '}
-                    {formatEventDate(event.start_datetime)}
+                    {formatEventDisplayDate(event, now)}
                     {formatDistanceKm(event.distance_km)
                       ? ` · ${formatDistanceKm(event.distance_km)}`
                       : ''}

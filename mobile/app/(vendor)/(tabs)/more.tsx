@@ -2,8 +2,11 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { ActionRow } from '@/src/components/ui/action-row';
+import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
+import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
+import { LegalLinks } from '@/src/components/account/legal-links';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
@@ -68,8 +71,21 @@ export default function VendorMoreScreen() {
         />
       </View>
 
-      <View className="mt-2">
+      <View className="mt-2 gap-3">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
+        <DeleteAccountButton />
+      </View>
+
+      <LegalLinks />
+
+      <View className="mt-8">
+        <Text variant="eyebrow" className="mb-2">
+          Danger zone
+        </Text>
+        <Text variant="caption" className="mb-3">
+          Permanently delete your account and associated data.
+        </Text>
+        <DeleteAccountButton />
       </View>
     </Screen>
   );

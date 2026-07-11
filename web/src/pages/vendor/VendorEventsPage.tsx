@@ -5,7 +5,7 @@ import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { useAuth } from '@/hooks/use-auth';
 import { useNow } from '@/hooks/use-now';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
-import { formatEventDate, formatEventTimeRange } from '@/lib/format';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -116,7 +116,7 @@ export function VendorEventsPage() {
                 </div>
                 <p className="app-row-title">{event.name}</p>
                 <p className="app-row-meta">
-                  {formatEventDate(event.start_datetime)} · {formatEventTimeRange(event.start_datetime, event.end_datetime)}
+                  {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
                 </p>
                 {event.city ? <p className="app-row-meta">{event.city}, {event.state}</p> : null}
                 <button

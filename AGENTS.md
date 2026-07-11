@@ -7,6 +7,7 @@ You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food mar
 | Path | What it is |
 |------|------------|
 | `web/` | Vite + React customer/vendor/admin web app |
+| `tenant-web/` | Next.js edge multi-tenant routing gateway |
 | `mobile/` | Expo React Native app (customer/vendor/chef/admin) |
 | `backend/` | NestJS API (markets, POS, admin agents) |
 | `scripts/` | USDA market seed/import pipelines |
@@ -22,7 +23,7 @@ You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food mar
 
 1. **Broken UX** — map pins, market detail links, auth bootstrap spinners, role routing
 2. **Data quality** — market schedules, dead links, market classification
-3. **TypeScript / lint** — `web`: `npm run build`, `mobile`: `npx tsc --noEmit`, `backend`: `npm run build`
+3. **TypeScript / lint** — `web`: `npm run build`, `tenant-web`: `npm run build --prefix tenant-web`, `mobile`: `npx tsc --noEmit`, `backend`: `npm run build`
 4. **Small improvements** — performance, copy, missing null checks
 
 ## Key commands
@@ -34,15 +35,15 @@ npm run markets:links
 npm run markets:classify -- --limit 5
 npm run markets:usda:pipeline
 
-# Supabase (manual): phase22 + phase23 in docs/supabase/
+# Supabase (manual): phase22 + phase23 + phase32 in docs/supabase/
 
 # Backend (cd backend)
 npm run start:dev
 npm run markets:classify -- --limit 5
 
-# Web (cd web)
-npm run dev
-npm run build
+# Tenant-web Next.js gateway (edge multi-tenant routing)
+npm run build --prefix tenant-web
+
 
 # Mobile (cd mobile)
 npx tsc --noEmit

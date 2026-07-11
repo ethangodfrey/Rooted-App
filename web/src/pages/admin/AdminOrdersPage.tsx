@@ -105,7 +105,7 @@ export function AdminOrdersPage() {
       ) : (
         <div className="app-list">
           {filtered.map((order) => {
-            const itemCount = order.order_items.reduce((s, i) => s + i.quantity, 0);
+            const itemCount = (order.order_items ?? []).reduce((s, i) => s + i.quantity, 0);
             return (
               <Link key={order.id} to={`/admin/orders/${order.id}`} className="app-card app-card--pressable app-row">
                 <div className="app-row-body">

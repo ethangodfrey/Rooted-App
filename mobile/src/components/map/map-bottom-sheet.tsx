@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useCallback, useRef, useState, memo } from 'react';
+import { useCallback, useMemo, useRef, useState, memo } from 'react';
 import { Dimensions, FlatList, PanResponder, Pressable, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -13,7 +13,7 @@ import { EventLiveClock } from '@/src/components/events/event-live-clock';
 import { EventStatusBadge } from '@/src/components/events/event-status-badge';
 import { Text } from '@/src/components/ui/text';
 import { eventRuntimePhase } from '@/src/lib/event-runtime';
-import { formatEventDate } from '@/src/lib/format';
+import { formatEventDisplayDate } from '@/src/lib/format';
 import { colors } from '@/src/theme/colors';
 import { floatingShadow, radius } from '@/src/theme/layout';
 import type { Event } from '@/src/types/database';
@@ -122,7 +122,7 @@ const EventListRow = memo(function EventListRow({
           {event.name}
         </Text>
         <Text variant="caption" className="mt-0.5" numberOfLines={1}>
-          {formatEventDate(event.start_datetime)}
+          {formatEventDisplayDate(event, now)}
           {[event.city, event.state].filter(Boolean).length
             ? ` · ${[event.city, event.state].filter(Boolean).join(', ')}`
             : ''}
@@ -168,24 +168,26 @@ export function MapBottomSheet({
     [hiddenOffset, translateY],
   );
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) =>
-        Math.abs(gesture.dy) > Math.abs(gesture.dx) && Math.abs(gesture.dy) > 6,
-      onPanResponderGrant: () => {
-        dragStartY.current = translateY.value;
-      },
-      onPanResponderMove: (_, gesture) => {
-        const next = dragStartY.current + gesture.dy;
-        translateY.value = Math.min(hiddenOffset, Math.max(0, next));
-      },
-      onPanResponderRelease: (_, gesture) => {
-        const mid = hiddenOffset / 2;
-        const shouldExpand = translateY.value < mid || gesture.vy < -0.4;
-        snapTo(shouldExpand);
-      },
-    }),
-  ).current;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          Math.abs(gesture.dy) > Math.abs(gesture.dx) && Math.abs(gesture.dy) > 6,
+        onPanResponderGrant: () => {
+          dragStartY.current = translateY.value;
+        },
+        onPanResponderMove: (_, gesture) => {
+          const next = dragStartY.current + gesture.dy;
+          translateY.value = Math.min(hiddenOffset, Math.max(0, next));
+        },
+        onPanResponderRelease: (_, gesture) => {
+          const mid = hiddenOffset / 2;
+          const shouldExpand = translateY.value < mid || gesture.vy < -0.4;
+          snapTo(shouldExpand);
+        },
+      }),
+    [hiddenOffset, snapTo, translateY],
+  );
 
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -225,8 +227,7 @@ export function MapBottomSheet({
             />
           </View>
 
-          <Pressable
-            onPress={() => snapTo(!expanded)}
+          <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -234,7 +235,7 @@ export function MapBottomSheet({
               paddingHorizontal: 20,
               paddingBottom: 12,
             }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
+            <Pressable onPress={() => snapTo(!expanded)} style={{ flex: 1, paddingRight: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text variant="heading">Nearby events</Text>
                 <FontAwesome
@@ -251,7 +252,7 @@ export function MapBottomSheet({
               <View style={{ marginTop: 10 }}>
                 <EventLiveClock compact />
               </View>
-            </View>
+            </Pressable>
             {onViewAll ? (
               <Pressable
                 onPress={onViewAll}
@@ -266,7 +267,7 @@ export function MapBottomSheet({
                 </Text>
               </Pressable>
             ) : null}
-          </Pressable>
+          </View>
         </View>
 
         {events.length === 0 ? (

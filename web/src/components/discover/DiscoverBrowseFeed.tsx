@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
 
+import { useNow } from '@/hooks/use-now';
+import { categoryVisual } from '@/lib/category-visuals';
 
-
-import { ProductImage } from '@/components/ui/ProductImage';
-
-import { formatEventDate, formatPrice, formatRelativeTime } from '@/lib/format';
+import { formatEventDisplayDate, formatPrice, formatRelativeTime } from '@/lib/format';
 
 import { formatDistanceKm } from '@/lib/geo-search';
 
@@ -32,7 +31,7 @@ function SkeletonTiles({ count = 3 }: { count?: number }) {
 
       {Array.from({ length: count }, (_, i) => (
 
-        <div key={i} className="app-skeleton app-skeleton--tile" />
+        <div key={i} className="app-skeleton app-skeleton--tile animate-pulse" />
 
       ))}
 
@@ -55,15 +54,17 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 function ProductVisual({ product }: { product: PopularProduct | SuggestedProduct }) {
-  return (
-    <ProductImage
-      src={product.displayImageUrl}
-      category={productCategory(product)}
-      name={product.name}
-      size="full"
-      rounded="md"
-    />
-  );
+
+  const visual = categoryVisual(productCategory(product));
+
+  if (product.displayImageUrl) {
+
+    return <img src={product.displayImageUrl} alt="" />;
+
+  }
+
+  return <span aria-hidden="true">{visual.emoji}</span>;
+
 }
 
 
@@ -147,6 +148,7 @@ interface DiscoverBrowseFeedProps {
 
 
 export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
+  const now = useNow(60_000);
 
   if (loading && !data) {
 
@@ -156,11 +158,11 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
         <section className="app-scroll-section">
 
-          <div className="app-skeleton app-skeleton--heading" style={{ width: '45%', marginBottom: '0.75rem' }} />
+          <div className="app-skeleton app-skeleton--heading animate-pulse" style={{ width: '45%', marginBottom: '0.75rem' }} />
 
           {Array.from({ length: 2 }, (_, i) => (
 
-            <div key={i} className="app-skeleton app-skeleton--card" style={{ height: 120, marginBottom: '0.75rem' }} />
+            <div key={i} className="app-skeleton app-skeleton--card animate-pulse" style={{ height: 120, marginBottom: '0.75rem' }} />
 
           ))}
 
@@ -168,7 +170,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
         <section className="app-scroll-section">
 
-          <div className="app-skeleton app-skeleton--heading" style={{ width: '40%', marginBottom: '0.75rem' }} />
+          <div className="app-skeleton app-skeleton--heading animate-pulse" style={{ width: '40%', marginBottom: '0.75rem' }} />
 
           <SkeletonTiles />
 
@@ -176,7 +178,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
         <section className="app-scroll-section">
 
-          <div className="app-skeleton app-skeleton--heading" style={{ width: '35%', marginBottom: '0.75rem' }} />
+          <div className="app-skeleton app-skeleton--heading animate-pulse" style={{ width: '35%', marginBottom: '0.75rem' }} />
 
           <SkeletonTiles />
 
@@ -378,7 +380,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
                       <p className="app-hscroll-card__meta">
 
-                        {formatEventDate(event.start_datetime)}
+                        {formatEventDisplayDate(event, now)}
 
                         {event.city ? ` · ${event.city}` : ''}
 

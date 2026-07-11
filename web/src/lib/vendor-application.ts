@@ -46,20 +46,11 @@ export function normalizeUrl(raw: string): string | null {
   return `https://${trimmed}`;
 }
 
-export function validateVendorApplication(
-  input: VendorApplicationInput,
-  attested: boolean,
-): string | null {
-  const fieldErrors = validateVendorApplicationFields(input, attested);
-  const firstError = Object.values(fieldErrors)[0];
-  return firstError ?? null;
-}
-
 export function validateVendorApplicationFields(
   input: VendorApplicationInput,
   attested: boolean,
-): Record<string, string> {
-  const errors: Record<string, string> = {};
+): Partial<Record<keyof VendorApplicationInput | 'attested' | 'social', string>> {
+  const errors: Partial<Record<keyof VendorApplicationInput | 'attested' | 'social', string>> = {};
 
   if (!input.business_name.trim()) errors.business_name = 'Business name is required.';
   if (!input.product_summary.trim()) errors.product_summary = 'Describe what you sell.';
@@ -70,12 +61,19 @@ export function validateVendorApplicationFields(
     errors.selling_channels = 'Select at least one place you sell.';
   }
   if (!input.instagram_url && !input.website_url) {
-    errors.instagram_url = 'Add Instagram or a website so we can verify your business.';
-    errors.website_url = 'Add Instagram or a website so we can verify your business.';
+    errors.social = 'Add Instagram or a website so we can verify your business.';
   }
-  if (!attested) errors.attestation = 'Confirm the attestation to submit your application.';
+  if (!attested) errors.attested = 'Confirm the attestation to submit your application.';
 
   return errors;
+}
+
+export function validateVendorApplication(
+  input: VendorApplicationInput,
+  attested: boolean,
+): string | null {
+  const errors = validateVendorApplicationFields(input, attested);
+  return Object.values(errors)[0] ?? null;
 }
 
 export function isVendorApplicationComplete(vendor: Vendor | null | undefined): boolean {

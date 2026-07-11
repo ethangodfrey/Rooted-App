@@ -10,13 +10,19 @@ import { Screen } from '@/src/components/ui/screen';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
-import { formatEventDate } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayDate } from '@/src/lib/format';
 import { supabase } from '@/src/lib/supabase';
 
 interface AttendedEvent {
   id: string;
   name: string;
   start_datetime: string;
+  end_datetime?: string | null;
+  timezone?: string | null;
+  hours_summary?: string | null;
+  sync_metadata?: Record<string, unknown>;
+  state?: string | null;
 }
 
 interface QtyEntry {
@@ -27,6 +33,7 @@ interface QtyEntry {
 export default function ProductAvailabilityScreen() {
   const { id: productId } = useLocalSearchParams<{ id: string }>();
   const { vendor } = useAuth();
+  const now = useNow(60_000);
   const [events, setEvents] = useState<AttendedEvent[]>([]);
   const [quantities, setQuantities] = useState<Record<string, QtyEntry>>({});
   const [loading, setLoading] = useState(true);
@@ -40,7 +47,7 @@ export default function ProductAvailabilityScreen() {
     const [participationRes, availabilityRes] = await Promise.all([
       supabase
         .from('vendor_events')
-        .select('events!inner(id, name, start_datetime)')
+        .select('events!inner(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state)')
         .eq('vendor_id', vendor.id),
       supabase
         .from('product_event_availability')
@@ -168,7 +175,7 @@ export default function ProductAvailabilityScreen() {
                       {ev.name}
                     </Text>
                     <Text variant="caption" className="mb-3">
-                      {formatEventDate(ev.start_datetime)}
+                      {formatEventDisplayDate(ev, now)}
                     </Text>
                     <View className="flex-row gap-3">
                       <View className="flex-1">
