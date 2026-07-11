@@ -12,17 +12,36 @@ const statusCopy: Record<string, string> = {
   rejected: 'Your vendor application was not approved. Contact support.',
 };
 
-const surfaceCard =
-  'rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-white)] no-underline text-inherit';
-const surfaceCardHoneydew =
-  'rounded-xl border border-[var(--color-border)]/40 bg-[var(--color-honeydew)] no-underline text-inherit';
+const pressable = 'active:scale-[0.99] transition-all';
+
+const groupedSurface =
+  'overflow-hidden rounded-xl border border-stone-200/40 bg-stone-100/40 divide-y divide-stone-200/60';
+
+const tileSurface = `block min-w-0 rounded-xl border border-stone-200/40 bg-stone-100/60 p-3 no-underline text-inherit ${pressable}`;
+
+function ChevronRight({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      className={`shrink-0 text-stone-400 ${className}`}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
 
 function DashboardSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mb-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-        {title}
-      </p>
+    <section className="mb-5">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">{title}</p>
       {children}
     </section>
   );
@@ -42,58 +61,14 @@ function KpiStat({
   return (
     <Link
       to={to}
-      className={`app-card--pressable flex min-w-0 flex-col items-center p-3 text-center ${accent ? surfaceCardHoneydew : surfaceCard}`}
+      className={`app-card--pressable flex min-w-0 flex-col items-center rounded-xl border border-stone-200/40 p-3 text-center no-underline ${pressable} ${
+        accent ? 'bg-stone-100/80' : 'bg-stone-100/60'
+      }`}
     >
-      <p className="m-0 text-2xl font-bold tabular-nums leading-none text-[var(--color-text)]">
-        {value}
-      </p>
-      <p className="m-0 mt-1.5 max-w-full text-[10px] font-semibold uppercase leading-tight tracking-wider text-[var(--color-muted)]">
+      <p className="m-0 text-2xl font-bold tabular-nums leading-none text-stone-800">{value}</p>
+      <p className="m-0 mt-1.5 max-w-full text-[10px] font-semibold uppercase leading-tight tracking-wider text-stone-500">
         {label}
       </p>
-    </Link>
-  );
-}
-
-function GrowthCard({
-  to,
-  title,
-  description,
-}: {
-  to: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Link to={to} className={`app-card--pressable block p-3 ${surfaceCardHoneydew}`}>
-      <p className="m-0 text-sm font-semibold text-[var(--color-text)]">{title}</p>
-      <p className="m-0 mt-0.5 text-xs leading-snug text-[var(--color-muted)]">{description}</p>
-    </Link>
-  );
-}
-
-function CompactAction({
-  to,
-  title,
-  description,
-}: {
-  to: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className={`app-card--pressable flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 ${surfaceCard}`}
-    >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-[var(--color-text)]">{title}</span>
-        {description ? (
-          <span className="mt-0.5 block truncate text-xs text-[var(--color-muted)]">{description}</span>
-        ) : null}
-      </span>
-      <span aria-hidden className="shrink-0 text-sm text-[var(--color-muted)]">
-        ›
-      </span>
     </Link>
   );
 }
@@ -101,20 +76,55 @@ function CompactAction({
 function OperationTile({
   to,
   title,
-  description,
+  subtitle,
 }: {
   to: string;
   title: string;
-  description?: string;
+  subtitle?: string;
 }) {
   return (
-    <Link to={to} className={`app-card--pressable block min-w-0 p-3 ${surfaceCard}`}>
-      <p className="m-0 truncate text-sm font-semibold text-[var(--color-text)]">{title}</p>
-      {description ? (
-        <p className="m-0 mt-0.5 line-clamp-2 text-xs leading-snug text-[var(--color-muted)]">
-          {description}
-        </p>
+    <Link
+      to={to}
+      className={`${tileSurface}${subtitle ? ' min-h-[74px]' : ''}`}
+    >
+      <p className="m-0 truncate text-sm font-semibold text-stone-800">{title}</p>
+      {subtitle ? (
+        <p className="m-0 mt-0.5 line-clamp-2 text-xs leading-snug text-stone-500">{subtitle}</p>
       ) : null}
+    </Link>
+  );
+}
+
+function GrowthRow({
+  to,
+  title,
+  subtitle,
+}: {
+  to: string;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`app-card--pressable block p-3.5 no-underline text-inherit ${pressable}`}
+    >
+      <p className="m-0 text-sm font-semibold text-stone-800">{title}</p>
+      {subtitle ? (
+        <p className="m-0 mt-0.5 text-xs leading-snug text-stone-500">{subtitle}</p>
+      ) : null}
+    </Link>
+  );
+}
+
+function SettingsRow({ to, title }: { to: string; title: string }) {
+  return (
+    <Link
+      to={to}
+      className={`app-card--pressable flex items-center justify-between p-3.5 no-underline text-inherit ${pressable}`}
+    >
+      <span className="truncate text-sm font-medium text-stone-800">{title}</span>
+      <ChevronRight />
     </Link>
   );
 }
@@ -166,12 +176,12 @@ export function VendorDashboardPage() {
       <h1 className="app-title">Dashboard</h1>
       <p className="app-subtitle mb-4">{user?.email ? `Signed in as ${user.email}` : ''}</p>
 
-      <div className={`mb-4 p-3 ${surfaceCardHoneydew}`}>
-        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+      <div className="mb-4 rounded-xl border border-stone-200/40 bg-stone-100/60 p-3">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-stone-500">
           Approval status
         </p>
-        <p className="m-0 mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{status}</p>
-        <p className="m-0 mt-0.5 text-xs leading-snug text-[var(--color-muted)]">{statusCopy[status]}</p>
+        <p className="m-0 mt-1 text-sm font-semibold capitalize text-stone-800">{status}</p>
+        <p className="m-0 mt-0.5 text-xs leading-snug text-stone-500">{statusCopy[status]}</p>
       </div>
 
       <div className="mb-5 grid grid-cols-3 gap-3">
@@ -185,57 +195,29 @@ export function VendorDashboardPage() {
           <OperationTile
             to="/vendor/fulfillment"
             title="Fulfillment ledger"
-            description="Mark pickups complete and track live counters"
+            subtitle="Track live pickups"
           />
-          <OperationTile to="/vendor/products/new" title="Add a product" />
+          <OperationTile to="/vendor/products/new" title="Add a product" subtitle="Create new listing" />
           <OperationTile to="/vendor/events" title="My events" />
           <OperationTile to="/vendor/sales/manual" title="Log in-person sale" />
-          <OperationTile
-            to="/vendor/leftovers"
-            title="List leftovers"
-            description="Post unsold items after market days"
-          />
+          <OperationTile to="/vendor/leftovers" title="List leftovers" subtitle="Post unsold items" />
         </div>
       </DashboardSection>
 
       <DashboardSection title="Storefront & Growth">
-        <div className="flex flex-col gap-2">
-          <GrowthCard
-            to="/vendor/analytics"
-            title="Analytics"
-            description="Revenue, units sold, and order trends"
-          />
-          <GrowthCard
-            to="/vendor/storefront"
-            title="Edit storefront"
-            description="Update your shop profile, photos, and pickup details"
-          />
-          <GrowthCard
-            to="/vendor/explore"
-            title="Explore showcase"
-            description="Publish portfolio posts to the customer Explore feed"
-          />
-          <GrowthCard
-            to="/vendor/posts/new"
-            title="Create a post"
-            description="Share updates, photos, and announcements with shoppers"
-          />
+        <div className={groupedSurface}>
+          <GrowthRow to="/vendor/analytics" title="Analytics" subtitle="Revenue & order trends" />
+          <GrowthRow to="/vendor/storefront" title="Edit storefront" />
+          <GrowthRow to="/vendor/explore" title="Explore showcase" />
+          <GrowthRow to="/vendor/posts/new" title="Create a post" />
         </div>
       </DashboardSection>
 
       <DashboardSection title="Compliance & Settings">
-        <div className="flex flex-col gap-1.5">
-          <CompactAction to="/vendor/pos" title="Connect Square POS" />
-          <CompactAction
-            to="/vendor/compliance"
-            title="Food safety checklist"
-            description="Cottage food requirements and compliance status"
-          />
-          <CompactAction
-            to="/vendor/credentials"
-            title="Verification credentials"
-            description="Upload documents to earn trust badges"
-          />
+        <div className={groupedSurface}>
+          <SettingsRow to="/vendor/pos" title="Connect Square POS" />
+          <SettingsRow to="/vendor/compliance" title="Food safety checklist" />
+          <SettingsRow to="/vendor/credentials" title="Verification credentials" />
         </div>
       </DashboardSection>
     </div>
