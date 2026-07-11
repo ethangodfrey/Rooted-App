@@ -8,9 +8,11 @@ export function useUserCoords() {
   const { user, shopper } = useAuth();
   const [coords, setCoords] = useState<Coords | null>(null);
   const [source, setSource] = useState<'gps' | 'profile' | null>(null);
+  const [coordsReady, setCoordsReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setCoordsReady(false);
 
     async function resolveProfileCoords() {
       const hasProfileLocation =
@@ -19,7 +21,10 @@ export function useUserCoords() {
         Boolean(user?.zip_code?.trim()) ||
         Boolean(shopper?.default_location?.trim());
 
-      if (!hasProfileLocation) return;
+      if (!hasProfileLocation) {
+        if (!cancelled) setCoordsReady(true);
+        return;
+      }
 
       const geocoded = await geocodeAddress({
         city: user?.city,
@@ -27,9 +32,12 @@ export function useUserCoords() {
         postalCode: user?.zip_code,
       });
 
-      if (!cancelled && geocoded) {
-        setCoords(geocoded);
-        setSource('profile');
+      if (!cancelled) {
+        if (geocoded) {
+          setCoords(geocoded);
+          setSource('profile');
+        }
+        setCoordsReady(true);
       }
     }
 
@@ -48,8 +56,10 @@ export function useUserCoords() {
           longitude: position.coords.longitude,
         });
         setSource('gps');
+        setCoordsReady(true);
       },
       () => {
+        console.log('Location access denied, falling back to profile geocode.');
         void resolveProfileCoords();
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
@@ -60,5 +70,5 @@ export function useUserCoords() {
     };
   }, [user?.city, user?.state, user?.zip_code, shopper?.default_location]);
 
-  return { coords, source };
+  return { coords, source, coordsReady };
 }
