@@ -1,5 +1,5 @@
--- Vendorly Phase 32 — Event schedule fields in search_index metadata
--- Run in Supabase SQL Editor after phase31_leftovers_search.sql.
+-- Vendorly Phase 35 — Event schedule fields in search_index metadata
+-- Run in Supabase SQL Editor after phase34_storefront_checkout.sql.
 --
 -- phase31 event rows only carried start_datetime in metadata, so client-side
 -- formatEventDisplayDate could not resolve recurring market days from search_all
