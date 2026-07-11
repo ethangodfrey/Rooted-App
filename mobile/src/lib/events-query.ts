@@ -1,7 +1,7 @@
 import { dedupeEvents } from '@/src/lib/dedupe-events';
 import { filterShopperEvents } from '@/src/lib/market-type-labels';
 import type { EventsScope } from '@/src/lib/location-preferences';
-import { filterMappableEvents, type Coords } from '@/src/lib/geo';
+import { isValidCoords, type Coords } from '@/src/lib/geo';
 import { supabase } from '@/src/lib/supabase';
 import type { Event } from '@/src/types/database';
 
@@ -37,7 +37,7 @@ export async function fetchPublicEvents(
 ): Promise<{ data: Event[]; error: string | null; truncated: boolean }> {
   const scope = options.scope ?? 'nationwide';
   const forMap = options.forMap ?? false;
-  const near = options.near ?? null;
+  const near = isValidCoords(options.near) ? options.near : null;
 
   let query = supabase
     .from('events')
@@ -70,13 +70,10 @@ export async function fetchPublicEvents(
     .order('start_datetime', { ascending: true })
     .order('name', { ascending: true });
 
-  let events = filterShopperEvents(dedupeEvents((data ?? []) as Event[]));
-  if (forMap) {
-    events = filterMappableEvents(events);
-  }
+  const deduped = filterShopperEvents(dedupeEvents((data ?? []) as Event[]));
 
   return {
-    data: events,
+    data: forMap ? deduped.filter((event) => isValidCoords(event)) : deduped,
     error: error?.message ?? null,
     truncated,
   };
@@ -107,7 +104,5 @@ export async function fetchFeaturedPublicMarkets(
 
   const { data, error } = await query;
   if (error) return [];
-  return filterMappableEvents(
-    filterShopperEvents(dedupeEvents((data ?? []) as Event[])),
-  ).slice(0, limit);
+  return filterShopperEvents(dedupeEvents((data ?? []) as Event[])).slice(0, limit);
 }

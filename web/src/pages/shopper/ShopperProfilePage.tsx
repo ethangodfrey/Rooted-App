@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 
 
 
+import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
 import { useAuth } from '@/hooks/use-auth';
-
+import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
+import { LegalLinks } from '@/components/account/LegalLinks';
 import '@/components/ui/ui.css';
 
 
@@ -26,11 +28,7 @@ export function ShopperProfilePage() {
     <div className="app-screen app-screen--narrow app-screen--titled">
 
       <div className="app-profile-header">
-        {user?.profile_photo ? (
-          <img src={user.profile_photo} alt="" className="profile-avatar" />
-        ) : (
-          <div className="profile-avatar profile-avatar--placeholder">{initials}</div>
-        )}
+        <ProfilePhoto photoUrl={user?.profile_photo} initials={initials} />
         <div>
           <p className="app-row-title" style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>
             {displayName}
@@ -111,6 +109,8 @@ export function ShopperProfilePage() {
 
       </button>
 
+      <LegalLinks />
+      <DeleteAccountSection />
     </div>
 
   );

@@ -1,4 +1,4 @@
-import { distanceMiles, isValidCoordValue, type Coords } from '@/lib/geo';
+import { distanceMiles, isValidCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 export const EVENTS_PAGE_SIZE = 40;
@@ -20,11 +20,11 @@ export function capEventsNear(
   }
 
   const ranked = [...events].sort((a, b) => {
-    const aDist = isValidCoordValue(a.latitude, a.longitude)
-      ? distanceMiles(origin, { latitude: Number(a.latitude), longitude: Number(a.longitude) })
+    const aDist = isValidCoords(a)
+      ? distanceMiles(origin, { latitude: a.latitude, longitude: a.longitude })
       : Number.POSITIVE_INFINITY;
-    const bDist = isValidCoordValue(b.latitude, b.longitude)
-      ? distanceMiles(origin, { latitude: Number(b.latitude), longitude: Number(b.longitude) })
+    const bDist = isValidCoords(b)
+      ? distanceMiles(origin, { latitude: b.latitude, longitude: b.longitude })
       : Number.POSITIVE_INFINITY;
     const distDiff = aDist - bDist;
     if (distDiff !== 0) return distDiff;

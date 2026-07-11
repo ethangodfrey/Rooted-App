@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 
-import { distanceMiles, filterMappableEvents, parseCoords, type Coords } from '@/src/lib/geo';
+import { coordsFrom, distanceMiles, isValidCoords, type Coords } from '@/src/lib/geo';
 import type { Event } from '@/src/types/database';
 
 export const ZIP_SEARCH_RADIUS_MILES = 35;
@@ -93,10 +93,9 @@ export function filterEventsForMapSearch(
   if (parsed.zip) {
     const zipMatches = filtered.filter((event) => eventMatchesZip(event, parsed.zip!));
     const nearbyMatches = searchCenter
-      ? filtered.filter((event) => {
-          const eventCoords = parseCoords(event.latitude, event.longitude);
-          return eventCoords != null && distanceMiles(searchCenter, eventCoords) <= radius;
-        })
+      ? filtered.filter(
+          (event) => isValidCoords(event) && distanceMiles(searchCenter, event) <= radius,
+        )
       : [];
 
     const merged = new Map<string, Event>();
@@ -110,13 +109,12 @@ export function filterEventsForMapSearch(
 }
 
 export function centroidOfEvents(events: Event[]): Coords | null {
-  const mappable = filterMappableEvents(events);
+  const mappable = events.filter((event) => isValidCoords(event));
   if (mappable.length === 0) return null;
-
   const totals = mappable.reduce(
     (acc, event) => ({
-      latitude: acc.latitude + Number(event.latitude),
-      longitude: acc.longitude + Number(event.longitude),
+      latitude: acc.latitude + event.latitude,
+      longitude: acc.longitude + event.longitude,
     }),
     { latitude: 0, longitude: 0 },
   );
@@ -130,7 +128,10 @@ export async function geocodeUsZip(zip: string): Promise<Coords | null> {
   try {
     const results = await Location.geocodeAsync(`${zip}, USA`);
     if (results.length === 0) return null;
-    return { latitude: results[0].latitude, longitude: results[0].longitude };
+    return coordsFrom({
+      latitude: results[0].latitude,
+      longitude: results[0].longitude,
+    });
   } catch {
     return null;
   }

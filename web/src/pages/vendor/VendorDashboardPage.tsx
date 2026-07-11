@@ -43,7 +43,7 @@ export function VendorDashboardPage() {
         <p className="app-row-meta">{statusCopy[status]}</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="app-dashboard-grid" style={{ marginBottom: '1.5rem' }}>
         <Link to="/vendor/orders" className="app-card app-card--pressable">
           <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{pendingOrders}</p>
           <p className="app-row-meta">Pending orders</p>

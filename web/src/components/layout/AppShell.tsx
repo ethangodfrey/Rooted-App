@@ -106,9 +106,12 @@ export function AppShell({
 
 
 
-      <div className="app-layout">
+      <div className="app-layout min-w-0">
 
-        <nav className="app-sidebar" aria-label={`${role} navigation`}>
+        <nav
+          className="app-sidebar hidden md:flex md:flex-col"
+          aria-label={`${role} navigation`}
+        >
 
           {tabs.map((tab) => (
 
@@ -138,7 +141,7 @@ export function AppShell({
 
 
 
-        <main className="app-main">
+        <main className="app-main min-w-0 w-full pb-32 md:pb-0">
 
           <Outlet />
 
@@ -189,7 +192,7 @@ export function AppShell({
       {mapFabHref ? (
         <NavLink
           to={mapFabHref}
-          className={`app-map-fab${fabCompact ? ' app-map-fab--compact' : ''}${nearbyMarketsOpen ? ' app-map-fab--pulse' : ''}`}
+          className={`app-map-fab fixed bottom-24 right-4 z-40 md:hidden${fabCompact ? ' app-map-fab--compact' : ''}${nearbyMarketsOpen ? ' app-map-fab--pulse' : ''}`}
           aria-label="Open map"
         >
           <TabIcon name="map" size={22} color="var(--color-surface)" />

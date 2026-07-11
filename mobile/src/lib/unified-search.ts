@@ -1,5 +1,6 @@
 import type { Coords } from '@/src/lib/geo';
 import { fetchNearbyEvents } from '@/src/lib/geo-search';
+import { EVENT_LIST_SELECT } from '@/src/lib/events-query';
 import { supabase } from '@/src/lib/supabase';
 
 export type UnifiedSearchFilter = 'all' | 'markets' | 'vendors' | 'chefs' | 'products';
@@ -10,6 +11,10 @@ export interface MarketSearchResult {
   city: string | null;
   state: string | null;
   start_datetime: string;
+  end_datetime?: string | null;
+  timezone?: string | null;
+  hours_summary?: string | null;
+  sync_metadata?: Record<string, unknown>;
   /** Distance from the user in km when geo-ranked; null for the text fallback. */
   distance_km?: number | null;
 }
@@ -73,6 +78,9 @@ const EMPTY: UnifiedSearchResults = {
   leftovers: [],
 };
 
+const EVENT_SCHEDULE_ENRICH_SELECT =
+  'id, end_datetime, timezone, hours_summary, sync_metadata, state';
+
 /**
  * Row shape returned by the `search_all` RPC (phase28_search_index.sql). The
  * unified `search_index` materialized view ranks vendors / chefs / events /
@@ -121,6 +129,35 @@ function metaNumber(meta: Record<string, unknown> | null, key: string): number |
   return typeof value === 'number' ? value : null;
 }
 
+function metaObject(meta: Record<string, unknown> | null, key: string): Record<string, unknown> | undefined {
+  const value = meta?.[key];
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function mapMarketSearchRow(
+  id: string,
+  name: string,
+  city: string | null,
+  state: string | null,
+  metadata: Record<string, unknown> | null,
+  distanceKm: number | null,
+): MarketSearchResult {
+  return {
+    id,
+    name,
+    city,
+    state,
+    start_datetime: metaString(metadata, 'start_datetime') ?? '',
+    end_datetime: metaString(metadata, 'end_datetime'),
+    timezone: metaString(metadata, 'timezone'),
+    hours_summary: metaString(metadata, 'hours_summary'),
+    sync_metadata: metaObject(metadata, 'sync_metadata'),
+    distance_km: distanceKm,
+  };
+}
+
 /** Maps ranked `search_all` rows into the per-vertical result buckets. */
 function mapSearchAllRows(rows: SearchAllRow[]): Omit<UnifiedSearchResults, 'services'> {
   const markets: MarketSearchResult[] = [];
@@ -132,14 +169,16 @@ function mapSearchAllRows(rows: SearchAllRow[]): Omit<UnifiedSearchResults, 'ser
   for (const row of rows) {
     switch (row.entity_type) {
       case 'event':
-        markets.push({
-          id: row.entity_id,
-          name: row.title ?? '',
-          city: row.city,
-          state: row.state,
-          start_datetime: metaString(row.metadata, 'start_datetime') ?? '',
-          distance_km: row.distance_km,
-        });
+        markets.push(
+          mapMarketSearchRow(
+            row.entity_id,
+            row.title ?? '',
+            row.city,
+            row.state,
+            row.metadata,
+            row.distance_km,
+          ),
+        );
         break;
       case 'vendor':
         vendors.push({
@@ -181,6 +220,46 @@ function mapSearchAllRows(rows: SearchAllRow[]): Omit<UnifiedSearchResults, 'ser
   }
 
   return { markets, vendors, chefs, products, leftovers };
+}
+
+/** Fills schedule fields when geo RPC rows omit hours_summary / sync_metadata. */
+async function enrichMarketScheduleFields(markets: MarketSearchResult[]): Promise<MarketSearchResult[]> {
+  const needsEnrich = markets.filter((market) => !market.hours_summary && !market.sync_metadata);
+  if (needsEnrich.length === 0) return markets;
+
+  const { data } = await supabase
+    .from('events')
+    .select(EVENT_SCHEDULE_ENRICH_SELECT)
+    .in(
+      'id',
+      needsEnrich.map((market) => market.id),
+    );
+
+  if (!data?.length) return markets;
+
+  const byId = new Map(
+    (data as {
+      id: string;
+      end_datetime: string | null;
+      timezone: string | null;
+      hours_summary: string | null;
+      sync_metadata: Record<string, unknown> | null;
+      state: string | null;
+    }[]).map((row) => [row.id, row]),
+  );
+
+  return markets.map((market) => {
+    const extra = byId.get(market.id);
+    if (!extra) return market;
+    return {
+      ...market,
+      end_datetime: market.end_datetime ?? extra.end_datetime,
+      timezone: market.timezone ?? extra.timezone,
+      hours_summary: market.hours_summary ?? extra.hours_summary,
+      sync_metadata: market.sync_metadata ?? extra.sync_metadata ?? undefined,
+      state: market.state ?? extra.state,
+    };
+  });
 }
 
 /**
@@ -231,7 +310,11 @@ export async function runUnifiedSearch(
   const mapped = mapSearchAllRows(data as SearchAllRow[]);
   const services = wantChefs ? await fetchChefServices(trimmed) : [];
 
-  const results = { ...mapped, services };
+  const results = {
+    ...mapped,
+    markets: await enrichMarketScheduleFields(mapped.markets),
+    services,
+  };
   const wantMarkets = filter === 'all' || filter === 'markets';
   if (wantMarkets && mapped.markets.length === 0) {
     const fallback = await runUnifiedSearchFallback(trimmed, filter, coords);
@@ -267,7 +350,7 @@ async function runUnifiedSearchFallback(
     wantMarkets && geoMarkets === null
       ? supabase
           .from('events')
-          .select('id, name, city, state, start_datetime')
+          .select(EVENT_LIST_SELECT)
           .eq('visibility_status', 'public')
           .or(`name.ilike.${like},city.ilike.${like},state.ilike.${like}`)
           .order('start_datetime', { ascending: true })
@@ -307,8 +390,22 @@ async function runUnifiedSearchFallback(
       : Promise.resolve({ data: [] as ChefServiceSearchResult[] }),
   ]);
 
+  const fallbackMarkets =
+    geoMarkets ??
+    ((marketsRes.data ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id),
+      name: String(row.name ?? ''),
+      city: (row.city as string | null) ?? null,
+      state: (row.state as string | null) ?? null,
+      start_datetime: String(row.start_datetime ?? ''),
+      end_datetime: (row.end_datetime as string | null) ?? null,
+      timezone: (row.timezone as string | null) ?? null,
+      hours_summary: (row.hours_summary as string | null) ?? null,
+      sync_metadata: (row.sync_metadata as Record<string, unknown> | undefined) ?? undefined,
+    }));
+
   return {
-    markets: geoMarkets ?? (marketsRes.data as MarketSearchResult[]) ?? [],
+    markets: await enrichMarketScheduleFields(fallbackMarkets),
     vendors: (vendorsRes.data as VendorSearchResult[]) ?? [],
     chefs: (chefsRes.data as ChefSearchResult[]) ?? [],
     products: (productsRes.data as unknown as ProductSearchResult[]) ?? [],
@@ -327,14 +424,16 @@ async function geoRankedMarkets(
 ): Promise<MarketSearchResult[] | null> {
   const nearby = await fetchNearbyEvents(coords, { search: query, limit: 30 });
   if (!nearby) return null;
-  return nearby.map((event) => ({
+  const markets = nearby.map((event) => ({
     id: event.id,
     name: event.name,
     city: event.city,
     state: event.state,
     start_datetime: event.start_datetime,
+    end_datetime: event.end_datetime,
     distance_km: event.distance_km,
   }));
+  return enrichMarketScheduleFields(markets);
 }
 
 export function unifiedSearchTotal(results: UnifiedSearchResults): number {

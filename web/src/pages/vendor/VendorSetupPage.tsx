@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { geocodeAddress } from '@/lib/geocode';
 import { resetRoleSelection } from '@/lib/reset-role-selection';
@@ -8,9 +9,10 @@ import { supabase } from '@/lib/supabase';
 import {
   normalizeUrl,
   SELLING_CHANNEL_OPTIONS,
-  validateVendorApplication,
+  validateVendorApplicationFields,
   VENDOR_CATEGORY_OPTIONS,
   type SellingChannel,
+  type VendorApplicationInput,
 } from '@/lib/vendor-application';
 import '@/components/ui/ui.css';
 
@@ -33,7 +35,20 @@ export function VendorSetupPage() {
   const [website, setWebsite] = useState(vendor?.website_url ?? '');
   const [attested, setAttested] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof VendorApplicationInput | 'social' | 'attested', string>>
+  >({});
+
+  function clearFieldError(field: keyof typeof fieldErrors) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function toggleChannel(option: SellingChannel) {
     setChannels((prev) =>
@@ -57,12 +72,15 @@ export function VendorSetupPage() {
       website_url: normalizeUrl(website),
     };
 
-    const validationError = validateVendorApplication(application, attested);
-    if (validationError) {
-      setError(validationError);
+    const validationErrors = validateVendorApplicationFields(application, attested);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError(null);
       return;
     }
 
+    setFieldErrors({});
+    setError(null);
     setLoading(true);
     const now = new Date().toISOString();
 
@@ -115,24 +133,49 @@ export function VendorSetupPage() {
 
   async function handleBack() {
     if (!session?.user) return;
-    await resetRoleSelection(session.user.id, 'vendor');
+    setBacking(true);
+    setError(null);
+    const { error: resetError } = await resetRoleSelection(session.user.id, 'vendor');
+    setBacking(false);
+    if (resetError) {
+      setError(resetError);
+      return;
+    }
     await refreshUser();
     navigate('/onboarding/role-select');
   }
 
   return (
     <div className="app-screen app-screen--narrow">
-      <button type="button" className="app-back-link" onClick={handleBack}>← Change role</button>
+      <button type="button" className="app-back-link" onClick={handleBack} disabled={loading || backing}>
+        ← Change role
+      </button>
       <p className="app-eyebrow">Vendor onboarding</p>
       <h1 className="app-title">Tell us about your business</h1>
 
       <div className="app-input-group">
         <label>Business name</label>
-        <input className="app-input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.business_name ? ' app-input--invalid' : ''}`}
+          value={businessName}
+          onChange={(e) => {
+            setBusinessName(e.target.value);
+            clearFieldError('business_name');
+          }}
+        />
+        <FieldError message={fieldErrors.business_name} />
       </div>
       <div className="app-input-group">
         <label>What do you sell?</label>
-        <textarea className="app-textarea" value={productSummary} onChange={(e) => setProductSummary(e.target.value)} />
+        <textarea
+          className={`app-textarea${fieldErrors.product_summary ? ' app-textarea--invalid' : ''}`}
+          value={productSummary}
+          onChange={(e) => {
+            setProductSummary(e.target.value);
+            clearFieldError('product_summary');
+          }}
+        />
+        <FieldError message={fieldErrors.product_summary} />
       </div>
       <div className="app-input-group">
         <label>About (optional)</label>
@@ -142,11 +185,20 @@ export function VendorSetupPage() {
       <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Category</p>
       <div className="app-chip-row">
         {VENDOR_CATEGORY_OPTIONS.map((opt) => (
-          <button key={opt} type="button" className={`app-chip${category === opt ? ' app-chip--selected' : ''}`} onClick={() => setCategory(opt)}>
+          <button
+            key={opt}
+            type="button"
+            className={`app-chip${category === opt ? ' app-chip--selected' : ''}`}
+            onClick={() => {
+              setCategory(opt);
+              clearFieldError('category');
+            }}
+          >
             {opt}
           </button>
         ))}
       </div>
+      <FieldError message={fieldErrors.category} />
 
       <div className="app-input-group">
         <label>Street address</label>
@@ -158,13 +210,32 @@ export function VendorSetupPage() {
           autoComplete="street-address"
         />
       </div>
-      <div className="app-input-group">
-        <label>City</label>
-        <input className="app-input" value={sellCity} onChange={(e) => setSellCity(e.target.value)} />
-      </div>
-      <div className="app-input-group">
-        <label>State</label>
-        <input className="app-input" value={sellState} onChange={(e) => setSellState(e.target.value)} maxLength={2} />
+      <div className="app-form-grid">
+        <div className="app-input-group">
+          <label>City</label>
+          <input
+            className={`app-input${fieldErrors.sell_city ? ' app-input--invalid' : ''}`}
+            value={sellCity}
+            onChange={(e) => {
+              setSellCity(e.target.value);
+              clearFieldError('sell_city');
+            }}
+          />
+          <FieldError message={fieldErrors.sell_city} />
+        </div>
+        <div className="app-input-group">
+          <label>State</label>
+          <input
+            className={`app-input${fieldErrors.sell_state ? ' app-input--invalid' : ''}`}
+            value={sellState}
+            onChange={(e) => {
+              setSellState(e.target.value);
+              clearFieldError('sell_state');
+            }}
+            maxLength={2}
+          />
+          <FieldError message={fieldErrors.sell_state} />
+        </div>
       </div>
       <div className="app-input-group">
         <label>ZIP code</label>
@@ -181,11 +252,20 @@ export function VendorSetupPage() {
       <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Where do you sell?</p>
       <div className="app-chip-row">
         {SELLING_CHANNEL_OPTIONS.map((opt) => (
-          <button key={opt} type="button" className={`app-chip${channels.includes(opt) ? ' app-chip--selected' : ''}`} onClick={() => toggleChannel(opt)}>
+          <button
+            key={opt}
+            type="button"
+            className={`app-chip${channels.includes(opt) ? ' app-chip--selected' : ''}`}
+            onClick={() => {
+              toggleChannel(opt);
+              clearFieldError('selling_channels');
+            }}
+          >
             {opt}
           </button>
         ))}
       </div>
+      <FieldError message={fieldErrors.selling_channels} />
 
       <div className="app-input-group">
         <label>Primary market (optional)</label>
@@ -193,17 +273,40 @@ export function VendorSetupPage() {
       </div>
       <div className="app-input-group">
         <label>Instagram URL</label>
-        <input className="app-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
+          value={instagram}
+          onChange={(e) => {
+            setInstagram(e.target.value);
+            clearFieldError('social');
+          }}
+        />
       </div>
       <div className="app-input-group">
         <label>Website URL</label>
-        <input className="app-input" value={website} onChange={(e) => setWebsite(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
+          value={website}
+          onChange={(e) => {
+            setWebsite(e.target.value);
+            clearFieldError('social');
+          }}
+        />
+        <FieldError message={fieldErrors.social} />
       </div>
 
       <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <input type="checkbox" checked={attested} onChange={(e) => setAttested(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={attested}
+          onChange={(e) => {
+            setAttested(e.target.checked);
+            clearFieldError('attested');
+          }}
+        />
         <span className="app-row-meta">I confirm this information is accurate and represents my business.</span>
       </label>
+      <FieldError message={fieldErrors.attested} />
 
       {error ? <p className="app-error">{error}</p> : null}
 
