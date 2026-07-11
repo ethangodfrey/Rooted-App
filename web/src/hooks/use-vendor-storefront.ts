@@ -11,6 +11,7 @@ export interface VendorUpcomingMarket {
   name: string;
   city: string | null;
   state: string | null;
+  address: string | null;
   start_datetime: string;
   end_datetime: string;
   timezone: string | null;
@@ -65,7 +66,7 @@ export function useVendorStorefront(vendorId: string | undefined): UseVendorStor
           .from('vendor_events')
           .select(
             `event:events(
-              id, name, city, state, start_datetime, end_datetime,
+              id, name, city, state, address, start_datetime, end_datetime,
               timezone, hours_summary, sync_metadata, latitude, longitude
             )`,
           )

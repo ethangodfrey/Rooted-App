@@ -6,6 +6,7 @@ import { TabIcon } from '@/components/navigation/TabIcon';
 import type { AppTab } from '@/components/navigation/shopper-tabs';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
 import { useAuth } from '@/hooks/use-auth';
+import { useCart } from '@/hooks/use-cart';
 import { useNearbyOpenMarkets } from '@/hooks/use-nearby-open-markets';
 
 import '@/components/ui/ui.css';
@@ -50,6 +51,7 @@ export function AppShell({
 }) {
 
   const { user, signOut } = useAuth();
+  const { itemCount, openDrawer } = useCart();
   const location = useLocation();
   const homeTo = ROLE_HOME[role];
   const nearbyMarketsOpen = useNearbyOpenMarkets();
@@ -87,6 +89,17 @@ export function AppShell({
         )}
 
         <div className="app-topbar__actions">
+          {role === 'shopper' ? (
+            <button
+              type="button"
+              className="app-btn app-btn--ghost app-btn--small cart-fab"
+              aria-label={`Open presale cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
+              onClick={() => openDrawer()}
+            >
+              Cart
+              {itemCount > 0 ? <span className="cart-fab__badge">{itemCount}</span> : null}
+            </button>
+          ) : null}
 
           <span className="app-topbar__email">{user?.email}</span>
 

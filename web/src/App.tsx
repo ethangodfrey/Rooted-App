@@ -2,6 +2,7 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 
 import { GuestOnly } from '@/components/layout/GuestOnly';
 import { RequireAuth } from '@/components/layout/RequireAuth';
+import { ShopperCartHost } from '@/components/cart/ShopperCartHost';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
@@ -106,6 +107,7 @@ export default function App() {
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<RequireAuth />}>
+        <Route element={<ShopperCartHost />}>
         <Route path="/app" element={<DashboardRedirect />} />
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
@@ -198,6 +200,7 @@ export default function App() {
         <Route path="/admin/events/:id" element={<AdminEventDetailPage />} />
         <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
         <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

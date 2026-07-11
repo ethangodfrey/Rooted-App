@@ -8,6 +8,7 @@ import { coordsFrom, distanceMiles, formatDistance, isValidCoords, type Coords }
 interface AttendingVendorGridProps {
   vendors: MarketAttendingVendor[];
   userCoords: Coords | null;
+  marketId: string;
 }
 
 function vendorDistanceLabel(vendor: MarketAttendingVendor, userCoords: Coords | null): string | null {
@@ -17,7 +18,7 @@ function vendorDistanceLabel(vendor: MarketAttendingVendor, userCoords: Coords |
   return formatDistance(distanceMiles(userCoords, vendorCoords));
 }
 
-export function AttendingVendorGrid({ vendors, userCoords }: AttendingVendorGridProps) {
+export function AttendingVendorGrid({ vendors, userCoords, marketId }: AttendingVendorGridProps) {
   if (vendors.length === 0) {
     return (
       <p className="app-row-meta rounded-2xl bg-slate-50 px-4 py-6 text-center">
@@ -36,7 +37,7 @@ export function AttendingVendorGrid({ vendors, userCoords }: AttendingVendorGrid
         return (
           <Link
             key={vendor.id}
-            to={vendorPath(vendor.id)}
+            to={vendorPath(vendor.id, marketId)}
             className="app-card app-card--pressable flex flex-row items-center gap-3 p-3 transition hover:shadow-md"
           >
             <FallbackImage
