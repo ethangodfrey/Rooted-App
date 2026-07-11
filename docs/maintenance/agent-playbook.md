@@ -137,7 +137,7 @@ Reference: `agent-os/standards/deploy/troubleshooting.md` § `/health/ready` 503
 
 ### Diagnosis
 
-- Probe URL (default): `https://rooted-app-mu.vercel.app/api/webhooks/pos-sync?provider=SQUARE`
+- Probe URL (default): `https://vendorly-marketplace1.vercel.app/api/webhooks/pos-sync?provider=SQUARE` (**Vendorly_Marketplace1**)
 - Expect: `200` + `{ "ok": true, "endpoint": "pos-sync-ingest" }`
 - Check root `vercel.json` — `/api/*` must **not** rewrite to SPA index
 

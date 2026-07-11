@@ -183,15 +183,14 @@ npm run preview
 
 Open http://localhost:4173 and confirm pages load. `npm run build` must pass before deploying.
 
-### 2. Create the Vercel project
+### 2. Create or use the Vercel project
 
-1. Sign in at [vercel.com/new](https://vercel.com/new) and **Import** this Git repository.
-2. **Root Directory:** set to `web` (monorepo — do not deploy from repo root).
-3. Vercel should detect **Vite** automatically. Confirm:
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-   - **Install Command:** `npm install`
-4. Add **Environment Variables** (Production, and Preview if you want PR previews):
+**Use the existing project `Vendorly_Marketplace1`** — do not create another production project.
+
+1. [vercel.com/dashboard](https://vercel.com/dashboard) → **Vendorly_Marketplace1**
+2. **Settings → Git** → `ethangodfrey/Rooted-App`, branch `main`
+3. **Root Directory:** `web` **or** repo root (with root `vercel.json`) — match what the project already uses
+4. Add **Environment Variables** (Production):
 
    | Name | Example value |
    |------|---------------|
@@ -208,6 +207,7 @@ Or deploy from CLI (after [installing Vercel CLI](https://vercel.com/docs/cli)):
 cd web
 npx vercel login
 npx vercel link
+# Select: Vendorly_Marketplace1
 npx vercel --prod
 ```
 

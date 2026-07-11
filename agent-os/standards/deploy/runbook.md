@@ -1,9 +1,12 @@
 # Deploy phase runbook
 
+**Vercel production project:** `Vendorly_Marketplace1` — see [`docs/VERCEL_PRODUCTION_PROJECT.md`](../../docs/VERCEL_PRODUCTION_PROJECT.md).
+
 Use this when guiding production deploy. Work **in order**; do not skip env + redeploy steps.
 
 ## Phase gate: web live
 
+- [ ] Vercel project = **`Vendorly_Marketplace1`** (disconnect other repo-linked projects to save deploy quota)
 - [ ] Vercel Production env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_URL`
 - [ ] Redeploy Vercel (clear build cache)
 - [ ] Supabase → Auth → Site URL = Vercel domain

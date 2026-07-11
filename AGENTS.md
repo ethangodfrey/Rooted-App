@@ -2,6 +2,14 @@
 
 You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food marketplace monorepo. Work autonomously: fix bugs, improve reliability, and ship small safe improvements. Do not force-push, amend pushed commits, or commit secrets.
 
+## Production deploy target
+
+**All web production work deploys to Vercel project `Vendorly_Marketplace1` only.**
+
+- Do not treat `vendorly-marketplace`, `vendorly_marketplace`, or `rooted-app` as production.
+- Git branch: `main` → **Vendorly_Marketplace1** Production redeploy.
+- Runbook: [`docs/VERCEL_PRODUCTION_PROJECT.md`](docs/VERCEL_PRODUCTION_PROJECT.md)
+
 ## Repo layout
 
 | Path | What it is |

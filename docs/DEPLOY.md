@@ -343,7 +343,7 @@ After Vercel domain is known, set on the backend and **redeploy**:
 
 ```env
 WEB_APP_URL=https://vendorly.app
-CORS_ORIGINS=https://vendorly.app,https://www.vendorly.app,https://rooted-app.vercel.app
+CORS_ORIGINS=https://vendorly-marketplace1.vercel.app,https://vendorly.app,https://www.vendorly.app
 PUBLIC_BASE_URL=https://api.vendorly.app
 ```
 

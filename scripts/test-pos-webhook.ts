@@ -83,7 +83,7 @@ function resolveTargetUrl(): string {
   if (cli) return cli;
   return (
     process.env.POS_WEBHOOK_TEST_URL?.trim() ||
-    'https://rooted-app-mu.vercel.app/api/webhooks/pos-sync?provider=SQUARE'
+    'https://vendorly-marketplace1.vercel.app/api/webhooks/pos-sync?provider=SQUARE'
   );
 }
 

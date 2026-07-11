@@ -5,11 +5,11 @@
  *
  * Usage:
  *   npm run test:checkout
- *   npm run test:checkout -- --url https://rooted-app-mu.vercel.app
+ *   npm run test:checkout -- --url https://vendorly-marketplace1.vercel.app
  *
  * Environment (loaded from .env, backend/.env):
  *   REDIS_URL / DATABASE_URL / VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
- *   CHECKOUT_TEST_URL              Default: https://rooted-app-mu.vercel.app/api/checkout/initiate
+ *   CHECKOUT_TEST_URL              Default: https://vendorly-marketplace1.vercel.app/api/checkout/initiate
  *   CHECKOUT_TEST_ACCESS_TOKEN     Shopper JWT (skips email/password sign-in)
  *   CHECKOUT_TEST_EMAIL            Shopper email for sign-in
  *   CHECKOUT_TEST_PASSWORD         Shopper password for sign-in
@@ -95,7 +95,7 @@ function resolveCheckoutUrl(): string {
   }
   return (
     process.env.CHECKOUT_TEST_URL?.trim() ||
-    'https://rooted-app-mu.vercel.app/api/checkout/initiate'
+    'https://vendorly-marketplace1.vercel.app/api/checkout/initiate'
   );
 }
 

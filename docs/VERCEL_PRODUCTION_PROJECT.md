@@ -1,5 +1,7 @@
 # Vercel production project — Vendorly_Marketplace1
 
+**This is the only Vercel project used for Vendorly web production.** All agents, deploy runbooks, and smoke scripts target this project.
+
 ## Canonical production target
 
 | Field | Value |
@@ -10,6 +12,10 @@
 | **Build** | Repo root + root `vercel.json` (`npm run build --prefix web` → `web/dist`) |
 
 > **Do not** use `vendorly-marketplace`, `vendorly_marketplace`, or `rooted-app` for new production deploys unless you intentionally maintain a staging clone.
+
+## Deploy quota (Hobby plan)
+
+If you hit Vercel’s daily deploy limit, **disconnect Git** on other projects linked to this repo (`vendorly-marketplace`, `rooted-app`, etc.). Only **Vendorly_Marketplace1** should auto-deploy from `main`.
 
 ## If phases landed on the wrong Vercel project
 

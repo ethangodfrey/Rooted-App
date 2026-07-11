@@ -32,7 +32,7 @@ const QUEUE_NAMES = [
 ] as const;
 
 const DEFAULT_PROBE_URL =
-  'https://rooted-app-mu.vercel.app/api/webhooks/pos-sync?provider=SQUARE';
+  'https://vendorly-marketplace1.vercel.app/api/webhooks/pos-sync?provider=SQUARE';
 
 type CheckStatus = 'pass' | 'warn' | 'fail' | 'skip';
 
