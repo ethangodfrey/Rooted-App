@@ -10,8 +10,10 @@ import {
   StackedRevenueChart,
   VerticalBarChart,
 } from '@/components/analytics/SimpleCharts';
+import { SettlementDashboard } from '@/components/vendor/SettlementDashboard';
 import '@/components/analytics/analytics.css';
 import { useAuth } from '@/hooks/use-auth';
+import { useVendorSettlementOrders } from '@/hooks/use-vendor-settlement-orders';
 import { isApiConfigured } from '@/lib/api';
 import { formatDateTime, formatPrice } from '@/lib/format';
 import { ORDER_STATUS_LABEL } from '@/lib/order-status';
@@ -90,6 +92,11 @@ function downloadCsv(metrics: VendorAnalyticsData) {
 
 export function VendorAnalyticsPage() {
   const { vendor } = useAuth();
+  const {
+    orders: settlementOrders,
+    loading: settlementLoading,
+    error: settlementError,
+  } = useVendorSettlementOrders(vendor?.id);
   const [range, setRange] = useState<AnalyticsRange>(30);
   const [data, setData] = useState<VendorAnalyticsData | null>(null);
 
@@ -175,6 +182,17 @@ export function VendorAnalyticsPage() {
           </button>
         ))}
       </div>
+
+      <ChartCard
+        title="Market settlement"
+        subtitle="Post-pickup totals from fulfilled presale orders (integer-cent math)"
+      >
+        <SettlementDashboard
+          orders={settlementOrders}
+          loading={settlementLoading}
+          error={settlementError}
+        />
+      </ChartCard>
 
       <div className="analytics-grid">
         <div className="app-card app-card--honeydew">
