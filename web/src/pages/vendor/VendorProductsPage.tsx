@@ -14,7 +14,10 @@ export function VendorProductsPage() {
 
   useEffect(() => {
     async function load() {
-      if (!vendor) return;
+      if (!vendor) {
+        setLoading(false);
+        return;
+      }
       const { data } = await supabase.from('products').select('*').eq('vendor_id', vendor.id).order('created_at', { ascending: false });
       setProducts(data ?? []);
       setLoading(false);

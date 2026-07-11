@@ -35,6 +35,7 @@ export function VendorSetupPage() {
   const [website, setWebsite] = useState(vendor?.website_url ?? '');
   const [attested, setAttested] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof VendorApplicationInput | 'social' | 'attested', string>>
@@ -132,14 +133,23 @@ export function VendorSetupPage() {
 
   async function handleBack() {
     if (!session?.user) return;
-    await resetRoleSelection(session.user.id, 'vendor');
+    setBacking(true);
+    setError(null);
+    const { error: resetError } = await resetRoleSelection(session.user.id, 'vendor');
+    setBacking(false);
+    if (resetError) {
+      setError(resetError);
+      return;
+    }
     await refreshUser();
     navigate('/onboarding/role-select');
   }
 
   return (
     <div className="app-screen app-screen--narrow">
-      <button type="button" className="app-back-link" onClick={handleBack}>← Change role</button>
+      <button type="button" className="app-back-link" onClick={handleBack} disabled={loading || backing}>
+        ← Change role
+      </button>
       <p className="app-eyebrow">Vendor onboarding</p>
       <h1 className="app-title">Tell us about your business</h1>
 
