@@ -151,7 +151,10 @@
 .app-screen {
   max-width: 720px;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-5) 6rem;
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-5) var(--space-5) 8rem;
+  box-sizing: border-box;
 }
 
 .app-screen--narrow {
@@ -730,7 +733,7 @@
 .app-shell {
   min-height: 100vh;
   background: var(--color-cream);
-  padding-bottom: calc(var(--app-tabbar-height) + 1.5rem);
+  padding-bottom: calc(var(--app-tabbar-height) + 6.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .app-topbar {
@@ -839,7 +842,7 @@
   display: none;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .app-shell {
     padding-bottom: 0;
   }
@@ -1106,10 +1109,6 @@
 /* —— Market Day redesign —— */
 
 .app-map-fab {
-  position: fixed;
-  right: 1.25rem;
-  bottom: calc(var(--app-tabbar-height) + 1.75rem + env(safe-area-inset-bottom));
-  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1153,7 +1152,7 @@
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .app-map-fab {
     display: none;
   }
@@ -1257,6 +1256,7 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: var(--space-3);
+  min-width: 0;
 }
 
 .app-scroll-section__title {
@@ -1264,6 +1264,9 @@
   font-weight: 600;
   margin: 0;
   letter-spacing: -0.01em;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: break-word;
 }
 
 .app-hscroll {
@@ -1291,6 +1294,14 @@
   color: inherit;
   overflow: hidden;
   transition: transform 0.1s ease;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.app-hscroll-card--full {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
 }
 
 .app-hscroll-card:hover {
@@ -1312,18 +1323,27 @@
 
 .app-hscroll-card__body {
   padding: var(--space-4);
+  min-width: 0;
+  width: 100%;
 }
 
 .app-hscroll-card__title {
   font-weight: 600;
   font-size: 1rem;
   margin: 0 0 0.25rem;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .app-hscroll-card__meta {
   font-size: 0.875rem;
   color: var(--color-muted);
   margin: 0;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .app-hscroll-card__badge {
