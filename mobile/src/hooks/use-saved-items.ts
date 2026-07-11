@@ -59,13 +59,17 @@ export function useSavedItems() {
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('saved_items')
       .select('*')
       .eq('customer_id', user.id)
       .order('created_at', { ascending: false });
 
-    setItems((data ?? []) as SavedItem[]);
+    if (error) {
+      setItems([]);
+    } else {
+      setItems((data ?? []) as SavedItem[]);
+    }
     setLoaded(true);
   }, [user?.id]);
 
