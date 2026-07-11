@@ -29,6 +29,7 @@ docs/supabase/phase37_vendor_media_feed_storage.sql
 docs/supabase/phase38_ranked_vendor_feed.sql
 docs/supabase/phase39_payments_kyc_ledger.sql
 docs/supabase/phase42_regional_markets.sql
+docs/supabase/phase42b_backfill_orders_market_id.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):
@@ -43,6 +44,7 @@ Phase37 provisions the public signed-upload media bucket for vendor feeds.
 Phase38 adds the cached hyper-local ranked vendor feed RPC.
 Phase39 adds settlement holds and 1099-K compliance rollups.
 Phase42 adds regional marketplace isolation (`regions`, `markets`, vendor registrations, `orders.market_id` + RLS).
+Phase42b backfills `orders.market_id` from `markets.event_id` after phase42 is applied.
 
 ## Key RPCs
 

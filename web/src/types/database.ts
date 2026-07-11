@@ -76,7 +76,7 @@ export type VendorCertificationStatus = 'pending' | 'approved' | 'expired';
 export type VendorSettlementStatus = 'pending' | 'available' | 'released' | 'held';
 export type RegionStatus = 'ACTIVE' | 'INACTIVE';
 export type MarketStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
-export type MarketRegistrationStatus = 'requested' | 'approved' | 'declined' | 'suspended';
+export type MarketRegistrationStatus = 'requested' | 'approved' | 'denied' | 'suspended';
 export type RegionalPosProvider = 'SQUARE' | 'TOAST' | 'CLOVER';
 
 export interface GeographicBounds {

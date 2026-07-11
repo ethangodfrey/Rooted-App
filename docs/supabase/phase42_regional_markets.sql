@@ -77,7 +77,7 @@ create table if not exists public.vendor_market_registrations (
   vendor_id uuid not null references public.vendors (id) on delete cascade,
   market_id uuid not null references public.markets (id) on delete cascade,
   registration_status text not null default 'requested'
-    check (registration_status in ('requested', 'approved', 'declined', 'suspended')),
+    check (registration_status in ('requested', 'approved', 'denied', 'suspended')),
   booth_label text,
   notes text,
   created_at timestamptz not null default now(),
@@ -160,6 +160,13 @@ create policy "Vendors read registered markets"
       where v.user_id = auth.uid()
     )
   );
+
+-- Vendors with approved registration may update market profile fields (e.g. POS provider).
+drop policy if exists "Vendors update registered market profiles" on public.markets;
+create policy "Vendors update registered market profiles"
+  on public.markets for update
+  using (id in (select public.vendor_approved_market_ids()))
+  with check (id in (select public.vendor_approved_market_ids()));
 
 drop policy if exists "Admins manage markets" on public.markets;
 create policy "Admins manage markets"
