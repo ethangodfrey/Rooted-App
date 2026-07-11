@@ -114,7 +114,7 @@ function usdaRowValues(row: MarketCsvRow): string {
     schedule_source: row.schedule_source ?? 'default',
     source: 'usda',
     zipcode: row.zipcode?.trim() || null,
-    usda_directory: row.market_type ?? 'farmers_market',
+    usda_directory: row.usda_directory ?? (row.source?.startsWith('usda:') ? row.source.slice(5) : 'farmersmarket'),
     contact_name: row.contact_name ?? null,
     contact_phone: row.contact_phone ?? null,
     contact_email: row.contact_email ?? null,

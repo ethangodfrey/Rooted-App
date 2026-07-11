@@ -11,8 +11,11 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    ".expo/types/**/*.ts"
+  ],
+  "exclude": [
+    ".expo/types/**/*.ts"
   ]
 }

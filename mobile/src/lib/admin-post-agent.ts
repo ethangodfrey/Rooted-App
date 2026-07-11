@@ -90,7 +90,7 @@ export async function recordPostModerationFeedback(options: {
     },
   });
 
-  if (error) {
+  if (error && __DEV__) {
     console.warn('Failed to record post moderation feedback:', error.message);
   }
 }

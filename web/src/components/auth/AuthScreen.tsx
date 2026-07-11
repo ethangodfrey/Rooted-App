@@ -19,6 +19,7 @@ interface AuthScreenProps {
   message?: string | null;
   beforeSubmit?: React.ReactNode;
   footer?: React.ReactNode;
+  socialAuth?: React.ReactNode;
 }
 
 export function AuthScreen({
@@ -37,20 +38,22 @@ export function AuthScreen({
   message,
   beforeSubmit,
   footer,
+  socialAuth,
 }: AuthScreenProps) {
   return (
-    <div className="app-shell">
-      <div className="app-screen app-screen--narrow" style={{ paddingTop: '4rem' }}>
+    <div className="auth-screen">
+      <div className="auth-screen__inner">
         <Link to="/" className="auth-home-link">
           ← Back to home
         </Link>
-        <Logo size="medium" />
-        <h1 className="app-title" style={{ marginTop: '1rem' }}>
-          {title}
-        </h1>
+        <div className="auth-screen__logo">
+          <Logo size="medium" />
+        </div>
+        <h1 className="app-title">{title}</h1>
         {subtitle ? <p className="app-subtitle">{subtitle}</p> : null}
 
         <form
+          className="app-card auth-screen__form"
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
@@ -96,9 +99,11 @@ export function AuthScreen({
           >
             {loading ? 'Please wait…' : submitLabel}
           </button>
+
+          {socialAuth}
         </form>
 
-        {footer ? <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>{footer}</div> : null}
+        {footer ? <div className="auth-screen__footer">{footer}</div> : null}
       </div>
     </div>
   );
@@ -106,7 +111,7 @@ export function AuthScreen({
 
 export function AuthLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link to={to} style={{ color: 'var(--color-primary)', fontWeight: 600, display: 'block', marginTop: '0.75rem' }}>
+    <Link to={to} className="auth-screen__link">
       {children}
     </Link>
   );

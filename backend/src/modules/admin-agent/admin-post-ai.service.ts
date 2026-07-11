@@ -120,7 +120,7 @@ export class AdminPostAiService {
           messages: [
             {
               role: 'system',
-              content: `You are a content moderator for Rooted, a local makers/farmers market marketplace feed.
+              content: `You are a content moderator for Vendorly, a local food marketplace feed.
 Vendors post promotions, product launches, restocks, and market-day updates (text, photos, short videos).
 
 Return JSON only:

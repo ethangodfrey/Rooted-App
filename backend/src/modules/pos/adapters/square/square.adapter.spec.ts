@@ -169,4 +169,156 @@ describe('SquareAdapter', () => {
       del.mockRestore();
     });
   });
+
+  describe('normalizeOrder (Square transaction parsing)', () => {
+    const normalizeOrder = (order: unknown) =>
+      (adapter as unknown as { normalizeOrder: (o: unknown) => unknown }).normalizeOrder(order);
+
+    it('parses a completed card sale with line items and tips', () => {
+      const normalized = normalizeOrder({
+        id: 'order-success-1',
+        location_id: 'L1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 1500, currency: 'USD' },
+        total_discount_money: { amount: 100 },
+        total_tax_money: { amount: 100 },
+        net_amounts: { total_money: { amount: 1400 } },
+        refunded_money: { amount: 0 },
+        tenders: [
+          {
+            type: 'CARD',
+            tip_money: { amount: 200 },
+            card_details: { card: { card_brand: 'VISA' } },
+          },
+        ],
+        line_items: [
+          {
+            uid: 'li-1',
+            catalog_object_id: 'cat-abc',
+            name: 'Sourdough Loaf',
+            quantity: '2',
+            base_price_money: { amount: 600 },
+            gross_sales_money: { amount: 1200 },
+            total_discount_money: { amount: 0 },
+            total_tax_money: { amount: 100 },
+          },
+        ],
+      });
+
+      expect(normalized).toMatchObject({
+        providerTransactionId: 'order-success-1',
+        state: 'COMPLETED',
+        currency: 'USD',
+        grossAmount: 1500,
+        discountAmount: 100,
+        taxAmount: 100,
+        tipAmount: 200,
+        netAmount: 1400,
+        tenderType: 'CARD',
+        cardBrand: 'VISA',
+        lineItems: [
+          expect.objectContaining({
+            name: 'Sourdough Loaf',
+            quantity: 2,
+            unitPrice: 600,
+            grossAmount: 1200,
+          }),
+        ],
+      });
+    });
+
+    it('maps canceled orders to VOIDED state', () => {
+      const normalized = normalizeOrder({
+        id: 'order-void-1',
+        state: 'CANCELED',
+        total_money: { amount: 0, currency: 'USD' },
+        line_items: [],
+      });
+
+      expect(normalized).toMatchObject({
+        providerTransactionId: 'order-void-1',
+        state: 'VOIDED',
+        grossAmount: 0,
+        lineItems: [],
+      });
+    });
+
+    it('marks fully refunded completed orders as REFUNDED', () => {
+      const normalized = normalizeOrder({
+        id: 'order-refund-1',
+        state: 'COMPLETED',
+        total_money: { amount: 2000, currency: 'USD' },
+        refunded_money: { amount: 2000 },
+        line_items: [],
+      });
+
+      expect(normalized).toMatchObject({
+        state: 'REFUNDED',
+        grossAmount: 2000,
+      });
+    });
+
+    it('marks partially refunded orders as PARTIALLY_REFUNDED', () => {
+      const normalized = normalizeOrder({
+        id: 'order-partial-1',
+        state: 'COMPLETED',
+        total_money: { amount: 2000, currency: 'USD' },
+        refunded_money: { amount: 500 },
+        line_items: [],
+      });
+
+      expect(normalized).toMatchObject({
+        state: 'PARTIALLY_REFUNDED',
+      });
+    });
+
+    it('synthesizes a register sale line when line_items are missing', () => {
+      const normalized = normalizeOrder({
+        id: 'order-register-1',
+        state: 'COMPLETED',
+        total_money: { amount: 850, currency: 'USD' },
+        net_amounts: { total_money: { amount: 850 } },
+        line_items: [],
+      });
+
+      expect(normalized).toMatchObject({
+        grossAmount: 850,
+        lineItems: [
+          expect.objectContaining({
+            name: 'Register sale',
+            quantity: 1,
+            grossAmount: 850,
+          }),
+        ],
+      });
+    });
+
+    it('coerces invalid money and quantity values to safe defaults', () => {
+      const normalized = normalizeOrder({
+        id: 'order-edge-1',
+        state: 'COMPLETED',
+        total_money: { amount: 'not-a-number', currency: 'USD' },
+        line_items: [
+          {
+            uid: 'li-edge',
+            name: '',
+            quantity: '0',
+            gross_sales_money: { amount: undefined },
+          },
+        ],
+      });
+
+      expect(normalized).toMatchObject({
+        grossAmount: 0,
+        lineItems: [
+          expect.objectContaining({
+            quantity: 1,
+            grossAmount: 0,
+            name: 'Register item',
+          }),
+        ],
+      });
+    });
+  });
 });

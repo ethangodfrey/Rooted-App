@@ -22,7 +22,7 @@ import { useAuth } from '@/src/hooks/use-auth';
 import { isApiConfigured } from '@/src/lib/api';
 import { formatPrice } from '@/src/lib/format';
 import { ORDER_STATUS_LABEL } from '@/src/lib/order-status';
-import { triggerStalePosSync } from '@/src/lib/pos-sync';
+import { refreshPosSyncState } from '@/src/lib/pos-sync';
 import {
   ANALYTICS_COLORS,
   centsToChartValue,
@@ -57,7 +57,6 @@ export default function AnalyticsDashboardScreen() {
   const { vendor } = useAuth();
   const [range, setRange] = useState<AnalyticsRange>(30);
   const [data, setData] = useState<VendorAnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const chartWidth = Dimensions.get('window').width - 64;
 
@@ -66,28 +65,27 @@ export default function AnalyticsDashboardScreen() {
       let active = true;
       let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 
-      async function loadMetrics() {
-        if (!vendor) return;
-        const result = await loadVendorAnalytics(vendor.id, range);
-        if (active) setData(result);
-      }
-
       async function load() {
-        if (!vendor) {
-          setLoading(false);
-          return;
-        }
-        setLoading(true);
+        if (!vendor) return;
+
+        const metricsPromise = loadVendorAnalytics(vendor.id, range);
+
+        void refreshPosSyncState().then(({ triggered }) => {
+          if (!active || !triggered) return;
+          refreshTimer = setTimeout(() => {
+            if (active) {
+              void loadVendorAnalytics(vendor.id, range, { force: true }).then((result) => {
+                if (active) setData(result);
+              });
+            }
+          }, 2500);
+        });
+
         try {
-          const triggered = await triggerStalePosSync();
-          await loadMetrics();
-          if (triggered) {
-            refreshTimer = setTimeout(() => {
-              if (active) void loadMetrics();
-            }, 2500);
-          }
-        } finally {
-          if (active) setLoading(false);
+          const result = await metricsPromise;
+          if (active) setData(result);
+        } catch {
+          // keep prior chart data visible on refresh failure
         }
       }
       load();
@@ -181,7 +179,7 @@ export default function AnalyticsDashboardScreen() {
           ...rootedStackScreenOptions,
         }}
       />
-      {loading || !data ? (
+      {!data ? (
         <View className="flex-1 items-center justify-center bg-canvas">
           <LoadingIndicator />
         </View>

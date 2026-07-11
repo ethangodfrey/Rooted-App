@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
+import { createSessionFromUrl, getOAuthErrorFromUrl } from '@/lib/auth-callback';
+import { supabase } from '@/lib/supabase';
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -11,21 +13,41 @@ export function AuthCallbackPage() {
   useEffect(() => {
     async function handleCallback() {
       try {
+        const href = window.location.href;
+        const oauthError = getOAuthErrorFromUrl(href);
+        if (oauthError) {
+          throw new Error(oauthError);
+        }
+
+        if (href.includes('code=') || href.includes('access_token')) {
+          const exchanged = await createSessionFromUrl(href);
+          if (!exchanged) {
+            const { data } = await supabase.auth.getSession();
+            if (!data.session) {
+              throw new Error('Sign-in session was not created. Try again.');
+            }
+          }
+        }
+
         await refreshUser();
         navigate('/app', { replace: true });
-      } catch {
-        setError('Could not complete sign-in. Try signing in manually.');
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Could not complete sign-in. Try signing in manually.',
+        );
       }
     }
 
-    const timer = setTimeout(handleCallback, 500);
-    return () => clearTimeout(timer);
+    void handleCallback();
   }, [navigate, refreshUser]);
 
   if (error) {
     return (
       <div className="app-screen app-screen--narrow">
         <p className="app-error">{error}</p>
+        <Link to="/login" className="auth-screen__link" style={{ display: 'block', marginTop: '1rem' }}>
+          Back to sign in
+        </Link>
       </div>
     );
   }
