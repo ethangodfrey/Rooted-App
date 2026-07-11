@@ -1,4 +1,4 @@
--- Rooted Phase 22: self-service account deletion (Apple Guideline 5.1.1)
+-- Rooted Phase 22b: self-service account deletion (Apple Guideline 5.1.1)
 -- Run after phase1_auth.sql. Cascades via FK on public.users → auth.users.
 
 create or replace function public.delete_own_account()

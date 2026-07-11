@@ -1,5 +1,5 @@
--- Vendorly Phase 34 — vendor media feed storage
--- Run in Supabase SQL Editor after phase33_production_mvp_core_schema.sql.
+-- Vendorly Phase 37 — vendor media feed storage
+-- Run in Supabase SQL Editor after phase36_production_mvp_core_schema.sql.
 --
 -- Public bucket for vendor feed images/videos. The backend `/api/vendor/upload`
 -- endpoint enforces stricter per-kind limits (5MB images, 50MB videos) before

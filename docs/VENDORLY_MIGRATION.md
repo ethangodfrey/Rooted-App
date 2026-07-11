@@ -59,6 +59,16 @@ docs/supabase/phase32_multi_tenant.sql       # tenant domains + POS metadata for
 docs/supabase/phase33_explore_hybrid_feed.sql # hybrid explore feed RPC (geo + engagement)
 docs/supabase/phase34_storefront_checkout.sql # multi-line storefront cart checkout
 docs/supabase/phase35_search_event_schedule.sql # search_index event schedule metadata for display dates
+docs/supabase/phase36_production_mvp_core_schema.sql # production MVP transaction + vendor profile schema
+docs/supabase/phase37_vendor_media_feed_storage.sql # vendor feed media bucket + signed uploads
+docs/supabase/phase38_ranked_vendor_feed.sql # cached hyper-local ranked vendor feed RPC
+docs/supabase/phase39_payments_kyc_ledger.sql # settlement holds + 1099-K compliance ledger
+```
+
+Optional (any time after `phase1_auth.sql`):
+
+```
+docs/supabase/phase22b_account_deletion.sql # self-service account deletion (Apple 5.1.1)
 ```
 
 `phase24` enables the `postgis` extension, adds generated `geography` columns

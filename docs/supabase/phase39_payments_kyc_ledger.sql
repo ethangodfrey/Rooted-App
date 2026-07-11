@@ -1,5 +1,5 @@
--- Vendorly Phase 36 — payments KYC, escrow, and tax compliance ledger
--- Run in Supabase SQL Editor after phase35_ranked_vendor_feed.sql.
+-- Vendorly Phase 39 — payments KYC, escrow, and tax compliance ledger
+-- Run in Supabase SQL Editor after phase38_ranked_vendor_feed.sql.
 
 create table if not exists public.vendor_settlements (
   id uuid primary key default gen_random_uuid(),

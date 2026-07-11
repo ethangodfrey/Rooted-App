@@ -1,5 +1,5 @@
--- Vendorly Phase 33 — Production MVP core marketplace schema
--- Run in Supabase SQL Editor after phase32_stripe_messaging.sql.
+-- Vendorly Phase 36 — Production MVP core marketplace schema
+-- Run in Supabase SQL Editor after phase35_search_event_schedule.sql.
 --
 -- Safe to RE-RUN (columns use IF NOT EXISTS; policies use DROP IF EXISTS).
 -- This phase is additive: it preserves the existing Rooted reservation flow
