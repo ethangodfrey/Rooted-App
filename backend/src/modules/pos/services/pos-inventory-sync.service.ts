@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 
 import { PrismaService } from '../../../prisma/prisma.service';
+import { POS_INVENTORY_TX_TYPE } from '../pos.constants';
 import {
   POS_INVENTORY_COALESCE_MS,
   type PosInventoryFlushJobData,
@@ -234,7 +235,7 @@ export class PosInventorySyncService implements OnModuleDestroy {
             vendorId: state.vendorId,
             productId,
             eventId,
-            transactionType: 'pos_inventory_sync',
+            transactionType: POS_INVENTORY_TX_TYPE,
             quantityChange: hasAbsolute ? 0 : change,
             source: `pos-inventory:${state.provider}:${state.providerCatalogObjectId}`,
             notes: hasAbsolute
@@ -294,7 +295,7 @@ export class PosInventorySyncService implements OnModuleDestroy {
             vendorId: data.vendorId,
             productId: data.productId,
             eventId: data.eventId,
-            transactionType: 'pos_inventory_sync',
+            transactionType: POS_INVENTORY_TX_TYPE,
             quantityChange: -qty,
             source: `checkout-sync:${providerLabel}${catalogSuffix}`,
             notes: `POS channel sync after order ${data.orderId}`,
