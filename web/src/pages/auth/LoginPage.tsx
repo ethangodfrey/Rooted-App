@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
 import { OAuthButtons } from '@/components/auth/OAuthButtons';
+import { SupabaseConfigNotice } from '@/components/auth/SupabaseConfigNotice';
 import { getOAuthErrorFromUrl } from '@/lib/auth-callback';
 import { getAuthRedirectUrlForDisplay } from '@/lib/auth-redirect';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -47,17 +48,7 @@ export function LoginPage() {
   }
 
   if (!isSupabaseConfigured) {
-    return (
-      <div className="auth-screen">
-        <div className="auth-screen__inner">
-          <Link to="/" className="auth-home-link">← Back to home</Link>
-          <h1 className="app-title">Supabase not configured</h1>
-          <p className="app-subtitle">
-            Copy web/.env.example to web/.env and add your Supabase project URL and anon key.
-          </p>
-        </div>
-      </div>
-    );
+    return <SupabaseConfigNotice />;
   }
 
   return (

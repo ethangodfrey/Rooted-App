@@ -1,4 +1,4 @@
-import { distanceMiles, type Coords } from '@/lib/geo';
+import { distanceMiles, isValidCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 export type EventsScope = 'local' | 'nationwide';
@@ -12,7 +12,7 @@ export function sortEventsByDistance(events: Event[], coords: Coords): Event[] {
     .map((event) => ({
       event,
       distance:
-        event.latitude != null && event.longitude != null
+        isValidCoords(event)
           ? distanceMiles(coords, { latitude: event.latitude, longitude: event.longitude })
           : Number.POSITIVE_INFINITY,
     }))

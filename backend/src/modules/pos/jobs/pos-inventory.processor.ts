@@ -8,6 +8,7 @@ import {
   POS_INVENTORY_INGEST_QUEUE,
   POS_INVENTORY_JOBS,
   type PosInventoryFlushJobData,
+  type PosInventoryOnlineSaleJobData,
   type PosInventoryWebhookJobData,
 } from './pos-inventory-queue.constants';
 import { PosInventorySyncService } from '../services/pos-inventory-sync.service';
@@ -30,18 +31,24 @@ export class PosInventoryIngestProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<PosInventoryWebhookJobData>): Promise<void> {
+  async process(job: Job<PosInventoryWebhookJobData | PosInventoryOnlineSaleJobData>): Promise<void> {
+    if (job.name === POS_INVENTORY_JOBS.ONLINE_SALE_DEDUCT) {
+      await this.inventory.applyOnlineSaleDeduction(job.data as PosInventoryOnlineSaleJobData);
+      return;
+    }
+
     if (job.name !== POS_INVENTORY_JOBS.INGEST_WEBHOOK) return;
 
-    const target = await this.inventory.resolveTarget(job.data);
+    const webhookData = job.data as PosInventoryWebhookJobData;
+    const target = await this.inventory.resolveTarget(webhookData);
     if (!target) {
       this.logger.debug(
-        `Skipping inventory webhook ${job.data.providerEventId}: no mapped product/event`,
+        `Skipping inventory webhook ${webhookData.providerEventId}: no mapped product/event`,
       );
       return;
     }
 
-    const coalesce = await this.inventory.bufferWebhook(job.data, target);
+    const coalesce = await this.inventory.bufferWebhook(webhookData, target);
     if (!coalesce.scheduledFlush || !this.flushQueue) return;
 
     const flushData: PosInventoryFlushJobData = {

@@ -11,7 +11,8 @@ import { EventThumb } from '@/src/components/events/event-thumb';
 import { MarketLinks } from '@/src/components/events/market-links';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
-import { formatEventFullDate, formatEventTimeRange } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayFullDate, formatEventDisplayTimeRange } from '@/src/lib/format';
 import { formatMarketType } from '@/src/lib/market-type-labels';
 import { extraInfoWithoutSocialLinks } from '@/src/lib/market-links';
 import {
@@ -54,6 +55,7 @@ function DetailRow({
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const now = useNow(60_000);
   const [event, setEvent] = useState<Event | null>(null);
   const [vendors, setVendors] = useState<AttendingVendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,12 +213,12 @@ export default function EventDetailScreen() {
             <DetailRow
               icon="calendar"
               label="Date"
-              value={formatEventFullDate(event.start_datetime, event.timezone)}
+              value={formatEventDisplayFullDate(event, now)}
             />
             <DetailRow
               icon="clock-o"
               label="Time"
-              value={formatEventTimeRange(event.start_datetime, event.end_datetime, event.timezone)}
+              value={formatEventDisplayTimeRange(event)}
             />
             {event.hours_summary ? (
               <DetailRow icon="repeat" label="Schedule" value={event.hours_summary} />

@@ -6,6 +6,8 @@ export const POS_INVENTORY_JOBS = {
   INGEST_WEBHOOK: 'ingest-webhook',
   /** Debounced flush after coalescing rapid deltas for one product/event pair. */
   FLUSH_COALESCED: 'flush-coalesced',
+  /** Online storefront purchase — deduct dual-channel stock + audit row. */
+  ONLINE_SALE_DEDUCT: 'online-sale-deduct',
 } as const;
 
 /** Milliseconds to buffer rapid duplicate product updates before writing once. */
@@ -33,4 +35,15 @@ export interface PosInventoryFlushJobData {
   eventId: string;
   vendorId: string;
   coalesceKey: string;
+}
+
+/** Payload enqueued after a successful in-app storefront checkout. */
+export interface PosInventoryOnlineSaleJobData {
+  orderId: string;
+  vendorId: string;
+  eventId: string;
+  productId: string;
+  quantity: number;
+  provider?: PosInventoryProvider | null;
+  providerCatalogObjectId?: string | null;
 }

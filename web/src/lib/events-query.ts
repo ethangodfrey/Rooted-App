@@ -1,7 +1,7 @@
 import { dedupeEvents } from '@/lib/dedupe-events';
 import { filterShopperEvents } from '@/lib/market-type-labels';
 import type { EventsScope } from '@/lib/events-list';
-import type { Coords } from '@/lib/geo';
+import { isValidCoords, type Coords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 import type { Event } from '@/types/database';
 
@@ -38,7 +38,7 @@ export async function fetchPublicEvents(
 ): Promise<{ data: Event[]; error: string | null; truncated: boolean }> {
   const scope = options.scope ?? 'nationwide';
   const forMap = options.forMap ?? false;
-  const near = options.near ?? null;
+  const near = isValidCoords(options.near) ? options.near : null;
 
   let query = supabase
     .from('events')
@@ -71,8 +71,10 @@ export async function fetchPublicEvents(
     .order('start_datetime', { ascending: true })
     .order('name', { ascending: true });
 
+  const deduped = filterShopperEvents(dedupeEvents((data ?? []) as Event[]));
+
   return {
-    data: filterShopperEvents(dedupeEvents((data ?? []) as Event[])),
+    data: forMap ? deduped.filter((event) => isValidCoords(event)) : deduped,
     error: error?.message ?? null,
     truncated,
   };

@@ -2,13 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { EventForm } from '@/components/admin/EventForm';
-import { formatEventDate, formatEventTimeRange } from '@/lib/format';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayFullDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
 export function AdminEventDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const now = useNow(60_000);
   const [event, setEvent] = useState<Event | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -72,7 +74,7 @@ export function AdminEventDetailPage() {
       <Link to="/admin/events" className="app-back-link">← Events</Link>
       <h1 className="app-title">{event.name}</h1>
       <p className="app-subtitle">
-        {formatEventDate(event.start_datetime)} · {formatEventTimeRange(event.start_datetime, event.end_datetime)}
+        {formatEventDisplayFullDate(event, now)} · {formatEventDisplayTimeRange(event)}
       </p>
 
       <div className="app-card" style={{ marginBottom: '1rem' }}>

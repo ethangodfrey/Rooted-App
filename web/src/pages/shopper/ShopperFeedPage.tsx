@@ -136,7 +136,7 @@ export function ShopperFeedPage() {
 
           {Array.from({ length: 3 }, (_, i) => (
 
-            <div key={i} className="app-skeleton app-skeleton--card" style={{ height: 140 }} />
+            <div key={i} className="app-skeleton app-skeleton--card animate-pulse" style={{ height: 140 }} />
 
           ))}
 

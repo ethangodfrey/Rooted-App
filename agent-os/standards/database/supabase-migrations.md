@@ -19,6 +19,8 @@ docs/supabase/phase28_search_index.sql
 docs/supabase/phase29_search_refresh_cron.sql
 docs/supabase/phase30_chef_geo.sql
 docs/supabase/phase31_leftovers_search.sql
+docs/supabase/phase33_explore_hybrid_feed.sql
+docs/supabase/phase34_storefront_checkout.sql
 ```
 
 Optional next: `phase32_stripe_messaging.sql` (Stripe Connect + messaging).
@@ -26,6 +28,7 @@ Optional next: `phase32_stripe_messaging.sql` (Stripe Connect + messaging).
 ## Key RPCs
 
 - `search_all()` — unified ranked search (vendors, chefs, events, products, leftovers)
+- `explore_hybrid_feed()` — geo + engagement ranked vendor posts + showcase feed (phase33)
 - `find_nearby_events/vendors/chefs/leftovers()` — PostGIS geo ranking
 - `refresh_search_index()` — matview refresh (pg_cron every 10 min via phase29)
 

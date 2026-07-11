@@ -22,6 +22,7 @@ import {
   POS_INVENTORY_INGEST_QUEUE,
   POS_INVENTORY_JOBS,
   type PosInventoryFlushJobData,
+  type PosInventoryOnlineSaleJobData,
   type PosInventoryWebhookJobData,
 } from '../src/modules/pos/jobs/pos-inventory-queue.constants';
 import { PosInventorySyncService } from '../src/modules/pos/services/pos-inventory-sync.service';
@@ -37,6 +38,11 @@ async function bootstrap(): Promise<void> {
   const ingestWorker = new Worker<PosInventoryWebhookJobData>(
     POS_INVENTORY_INGEST_QUEUE,
     async (job) => {
+      if (job.name === POS_INVENTORY_JOBS.ONLINE_SALE_DEDUCT) {
+        await inventory.applyOnlineSaleDeduction(job.data as PosInventoryOnlineSaleJobData);
+        return;
+      }
+
       if (job.name !== POS_INVENTORY_JOBS.INGEST_WEBHOOK) return;
       const target = await inventory.resolveTarget(job.data);
       if (!target) return;
