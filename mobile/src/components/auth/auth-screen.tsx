@@ -23,6 +23,7 @@ interface AuthScreenProps {
   error?: string | null;
   message?: string | null;
   footer?: ReactNode;
+  socialAuth?: ReactNode;
 }
 
 export function AuthScreen({
@@ -40,6 +41,7 @@ export function AuthScreen({
   error,
   message,
   footer,
+  socialAuth,
 }: AuthScreenProps) {
   return (
     <KeyboardAvoidingView
@@ -50,7 +52,7 @@ export function AuthScreen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={layoutStyles.screenColumn}>
-          <Logo variant="primary" size="medium" style={{ marginBottom: 8 }} />
+          <Logo variant="primary" size="medium" showTagline style={{ marginBottom: 8 }} />
           <Text variant="title" className="mb-2">
             {title}
           </Text>
@@ -89,6 +91,8 @@ export function AuthScreen({
           <View className="mt-2">
             <Button label={submitLabel} loading={loading} onPress={onSubmit} />
           </View>
+
+          {socialAuth}
 
           {footer}
         </View>

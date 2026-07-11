@@ -62,6 +62,29 @@ and **Clover** behind a provider-agnostic adapter architecture.
 - **Async + resilient.** Syncs and aggregations run on BullMQ with exponential
   backoff retries. Webhooks return fast and defer work to the queue.
 
+### Real-time inventory webhooks (market hours)
+
+For bursty `inventory.*` / `stock.*` events during live markets, use the
+**tenant-web** ingest route instead of blocking the Nest webhook handler:
+
+```
+Square/Toast ──▶ tenant-web POST /api/webhooks/pos-sync
+                      │ verify signature (no DB)
+                      │ BullMQ enqueue (Upstash Redis)
+                      └──▶ 200 OK immediately
+                                │
+                                ▼
+              pos-inventory-ingest queue (concurrency 20)
+                                │ Redis HINCRBY/HSET coalesce (3s window)
+                                ▼
+              pos-inventory-flush queue (concurrency 10)
+                                │ atomic SQL UPDATE product_event_availability
+                                └──▶ inventory_transactions audit row
+```
+
+Run workers: `npm run pos:inventory-worker --prefix backend` (or Nest processors
+when `POS_QUEUES_ENABLED=true`).
+
 ---
 
 ## 2. Data model (Prisma)
@@ -435,7 +458,7 @@ it is unset, POS features hide themselves gracefully.
 - `mobile/src/lib/pos-api.ts` — typed POS endpoint client.
 - `app/(vendor)/pos/index.tsx` — list connections + "Connect Square" (opens the
   OAuth flow via `WebBrowser.openAuthSessionAsync`; backend bounces back to the
-  `APP_DEEP_LINK`, which must match the app scheme `mobile://pos/connected`).
+  `APP_DEEP_LINK`, which must match the app scheme `vendorly://pos/connected`).
 - `app/(vendor)/pos/[id].tsx` — connection status, manual "Sync now", recent sync
   runs, and disconnect.
 - `app/(vendor)/pos/mappings.tsx` — match imported register items to Rooted

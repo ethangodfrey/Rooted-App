@@ -16,7 +16,7 @@ export function VerificationCues({ vendor, showLinks = true }: VerificationCuesP
   const ready = isApplicationReadyForReview(vendor);
 
   return (
-    <Card className={`mb-4 ${ready ? 'bg-honeydew' : 'bg-honeydew'}`}>
+    <Card subtle className="mb-4">
       <Text variant="heading" className="mb-1">
         Verification checklist
       </Text>

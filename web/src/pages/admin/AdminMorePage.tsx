@@ -1,15 +1,14 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-import { AccountLegalSection } from '@/components/account/AccountLegalSection';
 import { useAuth } from '@/hooks/use-auth';
 import { useServerStatus } from '@/hooks/use-server-status';
 import { isApiConfigured } from '@/lib/api';
+import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
 import '@/components/ui/ui.css';
 
 export function AdminMorePage() {
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const server = useServerStatus(15_000);
+  const server = useServerStatus(15_000, isApiConfigured);
 
   return (
     <div className="app-screen">
@@ -22,11 +21,15 @@ export function AdminMorePage() {
       </div>
 
       <div className="app-list">
+        <Link to="/admin/credentials" className="app-card app-card--pressable">
+          <p className="app-row-title">Credential review</p>
+          <p className="app-row-meta">Verify vendor & chef documents and award trust badges</p>
+        </Link>
         <div className="app-card">
           <p className="app-row-title">Backend API</p>
           <p className="app-row-meta">
             {!isApiConfigured
-              ? 'Not configured — set VITE_API_URL'
+              ? `Optional — not deployed. ${BACKEND_UNAVAILABLE_COPY}`
               : server.status === 'online'
                 ? `Connected · ${server.apiUrl}${server.latencyMs != null ? ` · ${server.latencyMs}ms` : ''}`
                 : server.status === 'checking'
@@ -43,8 +46,6 @@ export function AdminMorePage() {
       <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
         Sign out
       </button>
-
-      <AccountLegalSection onAccountDeleted={() => navigate('/login')} />
     </div>
   );
 }

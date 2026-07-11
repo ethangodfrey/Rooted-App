@@ -9,4 +9,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   ready_for_pickup: 'Ready for pickup',
   fulfilled: 'Fulfilled',
   cancelled: 'Cancelled',
+  pending: 'Pending',
+  completed: 'Completed',
+  canceled: 'Canceled',
 };

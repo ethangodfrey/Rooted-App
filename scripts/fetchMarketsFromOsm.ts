@@ -12,7 +12,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { discoverMarketsForState, type DiscoveryMode } from './lib/deep-market-discovery';
-import { dedupeMarkets, marketsToCsv } from './lib/market-csv';
+import { dedupeMarkets, marketsToCsv, type MarketCsvRow } from './lib/market-csv';
 import { US_STATE_BBOXES } from './lib/us-state-bboxes';
 
 const DEFAULT_OUTPUT = resolve(process.cwd(), 'data/markets-osm.csv');
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
   );
   console.log(`Estimated time: ~${eta} minutes (Nominatim rate limit ~1 req/sec)\n`);
 
-  const all = [];
+  const all: MarketCsvRow[] = [];
   const failures: { state: string; error: string }[] = [];
 
   for (let i = 0; i < targets.length; i++) {

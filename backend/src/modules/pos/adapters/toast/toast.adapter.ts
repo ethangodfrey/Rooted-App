@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { type AxiosInstance } from 'axios';
 
@@ -22,6 +22,22 @@ import type {
 } from '../../types/provider.types';
 import type { PosProviderAdapter } from '../provider-adapter.interface';
 
+function parseJsonObject(raw: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function stringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 /**
  * Toast adapter.
  *
@@ -36,7 +52,6 @@ export class ToastAdapter implements PosProviderAdapter {
   // Modeled as API_KEY (client credentials) rather than user-facing OAuth.
   readonly authType = 'API_KEY' as const;
 
-  private readonly logger = new Logger(ToastAdapter.name);
   private readonly http: AxiosInstance;
   private readonly baseUrl: string;
 
@@ -134,13 +149,13 @@ export class ToastAdapter implements PosProviderAdapter {
       signatureValid = false;
     }
 
-    const payload = JSON.parse(raw || '{}');
+    const payload = parseJsonObject(raw);
     return {
-      providerEventId: payload.eventId ?? payload.guid ?? '',
-      eventType: payload.eventType ?? 'unknown',
+      providerEventId: stringField(payload, 'eventId') ?? stringField(payload, 'guid') ?? '',
+      eventType: stringField(payload, 'eventType') ?? 'unknown',
       signatureValid,
-      providerMerchantId: payload.restaurantGuid,
-      providerLocationId: payload.restaurantGuid,
+      providerMerchantId: stringField(payload, 'restaurantGuid'),
+      providerLocationId: stringField(payload, 'restaurantGuid'),
     };
   }
 

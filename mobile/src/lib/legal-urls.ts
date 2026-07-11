@@ -1,23 +1,21 @@
-function trimTrailingSlash(url: string): string {
-  return url.replace(/\/$/, '');
+function trimEnv(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.replace(/\/$/, '') : null;
 }
 
-export function getWebAppUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_WEB_URL?.trim();
-  if (configured) return trimTrailingSlash(configured);
-  return 'https://rooted.app';
+/** Public web app origin for legal pages and support links. */
+export function getWebAppOrigin(): string {
+  return trimEnv(process.env.EXPO_PUBLIC_WEB_APP_URL) ?? 'https://rooted.app';
 }
 
 export function getPrivacyPolicyUrl(): string {
-  return `${getWebAppUrl()}/privacy`;
+  return `${getWebAppOrigin()}/privacy`;
 }
 
 export function getTermsOfServiceUrl(): string {
-  return `${getWebAppUrl()}/terms`;
+  return `${getWebAppOrigin()}/terms`;
 }
 
 export function getSupportUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_SUPPORT_URL?.trim();
-  if (configured) return configured;
-  return 'mailto:support@rooted.app';
+  return `${getWebAppOrigin()}/support`;
 }

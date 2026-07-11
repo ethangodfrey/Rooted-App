@@ -3,9 +3,9 @@ import { Text as RNText, type TextProps } from 'react-native';
 type Variant = 'eyebrow' | 'title' | 'heading' | 'subtitle' | 'body' | 'caption';
 
 const variantClasses: Record<Variant, string> = {
-  eyebrow: 'text-sm font-medium uppercase tracking-wide text-primary',
-  title: 'text-2xl font-bold text-ink leading-tight',
-  heading: 'text-lg font-medium text-ink leading-snug',
+  eyebrow: 'text-sm font-semibold text-accent',
+  title: 'text-[28px] font-bold text-ink leading-tight',
+  heading: 'text-lg font-semibold text-ink leading-snug',
   subtitle: 'text-base font-normal text-muted leading-6',
   body: 'text-base font-normal text-ink leading-6',
   caption: 'text-sm font-normal text-muted leading-5',

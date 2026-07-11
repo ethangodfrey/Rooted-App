@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { type AxiosInstance } from 'axios';
 
@@ -22,6 +22,45 @@ import type {
 } from '../../types/provider.types';
 import type { PosProviderAdapter } from '../provider-adapter.interface';
 
+function parseJsonObject(raw: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function stringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function firstMerchantEvent(payload: Record<string, unknown>): {
+  merchantId?: string;
+  objectId?: string;
+  eventType?: string;
+} {
+  const merchants = payload.merchants;
+  if (!merchants || typeof merchants !== 'object' || Array.isArray(merchants)) return {};
+
+  const merchantEntries = merchants as Record<string, unknown>;
+  const merchantId = Object.keys(merchantEntries)[0];
+  const events = merchantId ? merchantEntries[merchantId] : undefined;
+  if (!Array.isArray(events)) return { merchantId };
+
+  const first = events[0];
+  if (!first || typeof first !== 'object' || Array.isArray(first)) return { merchantId };
+  const event = first as Record<string, unknown>;
+  return {
+    merchantId,
+    objectId: stringField(event, 'objectId'),
+    eventType: stringField(event, 'type'),
+  };
+}
+
 /**
  * Clover adapter (OAuth2). Reads orders/payments scoped to a merchant id.
  *
@@ -36,7 +75,6 @@ export class CloverAdapter implements PosProviderAdapter {
   readonly provider = 'CLOVER' as const;
   readonly authType = 'OAUTH' as const;
 
-  private readonly logger = new Logger(CloverAdapter.name);
   private readonly http: AxiosInstance;
   private readonly apiBaseUrl: string;
   private readonly oauthBaseUrl: string;
@@ -166,13 +204,12 @@ export class CloverAdapter implements PosProviderAdapter {
       signatureValid = false;
     }
 
-    const payload = JSON.parse(raw || '{}');
-    const merchants = payload.merchants ?? {};
-    const merchantId = Object.keys(merchants)[0];
-    const objectId: string | undefined = merchants[merchantId]?.[0]?.objectId;
+    const payload = parseJsonObject(raw);
+    const { merchantId, objectId, eventType } = firstMerchantEvent(payload);
+    const timestamp = stringField(payload, 'ts') ?? String(payload.ts ?? '');
     return {
-      providerEventId: `${merchantId ?? ''}:${objectId ?? ''}:${payload.ts ?? ''}`,
-      eventType: merchants[merchantId]?.[0]?.type ?? 'unknown',
+      providerEventId: `${merchantId ?? ''}:${objectId ?? ''}:${timestamp}`,
+      eventType: eventType ?? 'unknown',
       signatureValid,
       providerMerchantId: merchantId,
       providerLocationId: merchantId,

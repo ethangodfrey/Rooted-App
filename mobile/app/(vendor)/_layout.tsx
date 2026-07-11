@@ -5,22 +5,23 @@ import { useAuth } from '@/src/hooks/use-auth';
 import { isVendorApplicationComplete } from '@/src/lib/vendor-application';
 
 export default function VendorLayout() {
-  const { session, user, vendor, isLoading, cacheReady, trustedCache } = useAuth();
+  const { session, user, vendor, isLoading, isProfileLoading, cacheReady, trustedCache } =
+    useAuth();
   const segments = useSegments();
   const onSetupRoute = segments.includes('profile' as never);
 
-  if (!isLoading && !session) {
-    return <Redirect href="/(auth)/login" />;
+  if (isLoading && !session) {
+    return <AuthLoadingShell />;
   }
 
-  if (!cacheReady) {
-    return <AuthLoadingShell />;
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   const role = user?.role ?? trustedCache?.role ?? null;
 
-  if (!role) {
-    return <Redirect href="/(onboarding)/role-select" />;
+  if (!role && (isProfileLoading || !cacheReady)) {
+    return <AuthLoadingShell />;
   }
 
   if (role !== 'vendor') {

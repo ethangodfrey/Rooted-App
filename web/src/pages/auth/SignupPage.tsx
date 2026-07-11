@@ -1,23 +1,23 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-import { AuthLegalNotice } from '@/components/account/AccountLegalSection';
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
 import { getAuthRedirectUrl } from '@/lib/auth-redirect';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export function SignupPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function handleSignup() {
-    if (!acceptedTerms) {
-      setError('Please agree to the Terms of Service and Privacy Policy.');
+    if (!accepted) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue.');
       return;
     }
 
@@ -46,10 +46,22 @@ export function SignupPage() {
     setMessage('Check your email to confirm your account, then sign in.');
   }
 
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="app-screen app-screen--narrow">
+        <Link to="/" className="auth-home-link">← Back to home</Link>
+        <h1 className="app-title">Supabase not configured</h1>
+        <p className="app-subtitle">
+          Copy web/.env.example to web/.env and add your Supabase project URL and anon key.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <AuthScreen
-      title="Join Rooted"
-      subtitle="Discover local events and reserve pickup from nearby vendors."
+      title="Join Vendorly"
+      subtitle="Your local food marketplace — farmers markets, private chefs, and home cooks in one place."
       email={email}
       password={password}
       onEmailChange={setEmail}
@@ -57,25 +69,32 @@ export function SignupPage() {
       onSubmit={handleSignup}
       submitLabel="Create account"
       loading={loading}
+      submitDisabled={!accepted}
       error={error}
       message={message}
-      footer={
-        <>
-          <label className="auth-consent">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-            />
-            <span>
-              I agree to the <a href="/terms">Terms of Service</a> and{' '}
-              <a href="/privacy">Privacy Policy</a>.
-            </span>
+      beforeSubmit={
+        <div className="app-consent">
+          <input
+            id="legal-consent"
+            type="checkbox"
+            checked={accepted}
+            onChange={(e) => setAccepted(e.target.checked)}
+          />
+          <label htmlFor="legal-consent">
+            I agree to the{' '}
+            <Link to="/legal/terms" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </Link>
+            .
           </label>
-          <AuthLegalNotice />
-          <AuthLink to="/login">Already have an account? Sign in</AuthLink>
-        </>
+        </div>
       }
+      socialAuth={<OAuthButtons disabled={loading} />}
+      footer={<AuthLink to="/login">Already have an account? Sign in</AuthLink>}
     />
   );
 }

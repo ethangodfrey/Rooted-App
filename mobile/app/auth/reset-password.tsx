@@ -135,7 +135,7 @@ export default function ResetPasswordScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={layoutStyles.screenColumn}>
         <Text variant="eyebrow" className="mb-2">
-          Rooted
+          Vendorly
         </Text>
         <Text variant="title" className="mb-2">
           Set a new password

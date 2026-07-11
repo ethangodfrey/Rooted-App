@@ -1,10 +1,11 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 
 import { GuestOnly } from '@/components/layout/GuestOnly';
 import { RequireAuth } from '@/components/layout/RequireAuth';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
+import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
@@ -14,18 +15,36 @@ import { AdminPostDetailPage } from '@/pages/admin/AdminPostDetailPage';
 import { AdminPostsPage } from '@/pages/admin/AdminPostsPage';
 import { AdminVendorDetailPage } from '@/pages/admin/AdminVendorDetailPage';
 import { AdminVendorsPage } from '@/pages/admin/AdminVendorsPage';
+import { ChefBookingDetailPage } from '@/pages/chef/ChefBookingDetailPage';
+import { ChefBookingsPage } from '@/pages/chef/ChefBookingsPage';
+import { ChefCredentialsPage } from '@/pages/chef/ChefCredentialsPage';
+import { ChefDashboardPage } from '@/pages/chef/ChefDashboardPage';
+import { ChefLayout } from '@/pages/chef/ChefLayout';
+import { ChefPortfolioPage } from '@/pages/chef/ChefPortfolioPage';
+import { ChefProfilePage } from '@/pages/chef/ChefProfilePage';
+import { ChefServiceFormPage } from '@/pages/chef/ChefServiceFormPage';
+import { ChefServicesPage } from '@/pages/chef/ChefServicesPage';
+import { ChefSetupPage } from '@/pages/chef/ChefSetupPage';
 import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
+import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from '@/pages/legal/TermsOfServicePage';
 import { LandingPage } from '@/pages/marketing/LandingPage';
-import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
-import { TermsPage } from '@/pages/marketing/TermsPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
+import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
+import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
+import { ShopperChefBookingPage } from '@/pages/shopper/ShopperChefBookingPage';
+import { ShopperChefPage } from '@/pages/shopper/ShopperChefPage';
+import { ShopperChefsPage } from '@/pages/shopper/ShopperChefsPage';
+import { CheckoutSuccessPage } from '@/pages/shopper/CheckoutSuccessPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
 import { ShopperEventsPage } from '@/pages/shopper/ShopperEventsPage';
+import { ShopperExplorePage } from '@/pages/shopper/ShopperExplorePage';
 import { ShopperFeedPage } from '@/pages/shopper/ShopperFeedPage';
 import { ShopperHomePage } from '@/pages/shopper/ShopperHomePage';
 import { ShopperLeftoverDetailPage } from '@/pages/shopper/ShopperLeftoverDetailPage';
@@ -38,16 +57,22 @@ import { ShopperProductPage } from '@/pages/shopper/ShopperProductPage';
 import { ShopperProfileEditPage } from '@/pages/shopper/ShopperProfileEditPage';
 import { ShopperProfilePage } from '@/pages/shopper/ShopperProfilePage';
 import { ShopperReservePage } from '@/pages/shopper/ShopperReservePage';
+import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
+import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
+import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
+import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
 import { VendorDashboardPage } from '@/pages/vendor/VendorDashboardPage';
 import { VendorEventsPage } from '@/pages/vendor/VendorEventsPage';
+import { VendorExplorePage } from '@/pages/vendor/VendorExplorePage';
 import { VendorLeftoverFormPage } from '@/pages/vendor/VendorLeftoverFormPage';
 import { VendorLeftoversPage } from '@/pages/vendor/VendorLeftoversPage';
 import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
+import { VendorPosActivityPage } from '@/pages/vendor/VendorPosActivityPage';
 import { VendorPosConnectedPage } from '@/pages/vendor/VendorPosConnectedPage';
 import { VendorPosConnectionPage } from '@/pages/vendor/VendorPosConnectionPage';
 import { VendorPosMappingsPage } from '@/pages/vendor/VendorPosMappingsPage';
@@ -67,8 +92,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermsPage />} />
+
+      <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/legal/terms" element={<TermsOfServicePage />} />
 
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
@@ -85,7 +111,10 @@ export default function App() {
         <Route path="/onboarding/interests" element={<InterestsPage />} />
 
         <Route path="/shopper" element={<ShopperLayout />}>
+          <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<ShopperHomePage />} />
+          <Route path="search" element={<ShopperSearchPage />} />
+          <Route path="explore" element={<ShopperExplorePage />} />
           <Route path="events" element={<ShopperEventsPage />} />
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="feed" element={<ShopperFeedPage />} />
@@ -94,9 +123,16 @@ export default function App() {
 
         <Route path="/shopper/events/:id" element={<ShopperEventDetailPage />} />
         <Route path="/shopper/vendors/:id" element={<ShopperVendorPage />} />
+        <Route path="/shopper/chefs" element={<ShopperChefsPage />} />
+        <Route path="/shopper/chefs/:id" element={<ShopperChefPage />} />
+        <Route path="/shopper/chefs/book/:serviceId" element={<ShopperChefBookingPage />} />
+        <Route path="/shopper/bookings" element={<ShopperBookingsPage />} />
+        <Route path="/shopper/bookings/:id" element={<ShopperBookingDetailPage />} />
         <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
         <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
+        <Route path="/shopper/saved" element={<ShopperSavedPage />} />
         <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
         <Route path="/shopper/orders/:id" element={<ShopperOrderDetailPage />} />
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
@@ -123,17 +159,35 @@ export default function App() {
         <Route path="/vendor/events" element={<VendorEventsPage />} />
         <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
         <Route path="/vendor/pos" element={<VendorPosPage />} />
+        <Route path="/vendor/pos/activity" element={<VendorPosActivityPage />} />
         <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />
         <Route path="/vendor/pos/mappings" element={<VendorPosMappingsPage />} />
         <Route path="/vendor/pos/:id" element={<VendorPosConnectionPage />} />
         <Route path="/vendor/storefront" element={<VendorStorefrontPage />} />
         <Route path="/vendor/preview" element={<VendorPreviewPage />} />
+        <Route path="/vendor/explore" element={<VendorExplorePage />} />
+        <Route path="/vendor/compliance" element={<VendorCompliancePage />} />
+        <Route path="/vendor/credentials" element={<VendorCredentialsPage />} />
+
+        <Route path="/chef" element={<ChefLayout />}>
+          <Route path="setup" element={<ChefSetupPage />} />
+          <Route path="dashboard" element={<ChefDashboardPage />} />
+          <Route path="services" element={<ChefServicesPage />} />
+          <Route path="bookings" element={<ChefBookingsPage />} />
+          <Route path="portfolio" element={<ChefPortfolioPage />} />
+          <Route path="profile" element={<ChefProfilePage />} />
+        </Route>
+
+        <Route path="/chef/services/new" element={<ChefServiceFormPage />} />
+        <Route path="/chef/bookings/:id" element={<ChefBookingDetailPage />} />
+        <Route path="/chef/credentials" element={<ChefCredentialsPage />} />
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="posts" element={<AdminPostsPage />} />
+          <Route path="credentials" element={<AdminCredentialsPage />} />
           <Route path="more" element={<AdminMorePage />} />
         </Route>
 
@@ -143,6 +197,8 @@ export default function App() {
         <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
         <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
       </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
