@@ -93,12 +93,13 @@ export function EventsMap({
   const initialZoom = userCoords ? 9 : DEFAULT_ZOOM;
 
   return (
-    <div className="events-map-panel">
-      <div className="events-map-frame">
+    <div className="events-map-panel relative isolate z-0">
+      <div className="events-map-frame relative h-[50vh] min-h-[280px] w-full overflow-hidden rounded-2xl md:h-[60vh] md:min-h-[360px]">
         <MapContainer
           center={initialCenter}
           zoom={initialZoom}
           scrollWheelZoom
+          className="h-full w-full rounded-2xl"
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
@@ -185,7 +186,7 @@ export function EventsMap({
       {onRecenter ? (
         <button
           type="button"
-          className="events-map-recenter"
+          className="events-map-recenter z-[1000]"
           onClick={onRecenter}
           aria-label="Center on my location"
           title="Center on my location"

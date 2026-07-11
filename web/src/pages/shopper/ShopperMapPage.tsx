@@ -214,7 +214,7 @@ export function ShopperMapPage() {
         <div className="app-empty">No mapped events match your search.</div>
       ) : (
         <div className="shopper-map-layout">
-          <div>
+          <div className="relative z-0 min-w-0">
             <Suspense
               fallback={
                 <div className="events-map-panel">
@@ -245,7 +245,7 @@ export function ShopperMapPage() {
           </div>
 
           <div className="shopper-map-list shopper-map-carousel">
-            <div className="app-hscroll" style={{ marginBottom: '1rem' }}>
+            <div className="app-hscroll pb-1">
               {sidebarEvents.map((event) => {
                 const phase = eventRuntimePhase(event, now);
                 return (
