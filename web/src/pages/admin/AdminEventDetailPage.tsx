@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { EventForm } from '@/components/admin/EventForm';
 import { useNow } from '@/hooks/use-now';
 import { formatEventDisplayFullDate, formatEventDisplayTimeRange } from '@/lib/format';
+import { marketPath } from '@/lib/market-routes';
 import { supabase } from '@/lib/supabase';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -86,7 +87,7 @@ export function AdminEventDetailPage() {
         {event.description ? <p style={{ marginTop: '0.75rem' }}>{event.description}</p> : null}
       </div>
 
-      <Link to={`/shopper/events/${event.id}`} className="app-btn app-btn--secondary" style={{ marginRight: '0.5rem' }}>
+      <Link to={marketPath(event.id)} className="app-btn app-btn--secondary" style={{ marginRight: '0.5rem' }}>
         View as shopper
       </Link>
       <button type="button" className="app-btn app-btn--primary" onClick={() => setEditing(true)}>

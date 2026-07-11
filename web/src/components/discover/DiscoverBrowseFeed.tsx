@@ -6,6 +6,7 @@ import { categoryVisual } from '@/lib/category-visuals';
 import { formatEventDisplayDate, formatPrice, formatRelativeTime } from '@/lib/format';
 
 import { formatDistanceKm } from '@/lib/geo-search';
+import { marketPath, vendorPath } from '@/lib/market-routes';
 
 import type { DiscoverFeedData } from '@/lib/discover-feed';
 
@@ -93,7 +94,7 @@ function DiscoverPostCard({ post }: { post: FeedPost }) {
 
       {post.vendor ? (
 
-        <Link to={`/shopper/vendors/${post.vendor_id}`} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+        <Link to={vendorPath(post.vendor_id)} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
 
           {post.vendor.business_name ?? 'Vendor'}
 
@@ -115,7 +116,7 @@ function DiscoverPostCard({ post }: { post: FeedPost }) {
 
       {post.event ? (
 
-        <Link to={`/shopper/events/${post.event.id}`} className="app-row-meta">
+        <Link to={marketPath(post.event.id)} className="app-row-meta">
 
           → {post.event.name}
 
@@ -366,7 +367,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
                 {markets.slice(0, 10).map((event) => (
 
-                  <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
+                  <Link key={event.id} to={marketPath(event.id)} className="app-hscroll-card">
 
                     <div className="app-hscroll-card__visual" aria-hidden="true">
 
@@ -416,7 +417,7 @@ export function DiscoverBrowseFeed({ data, loading }: DiscoverBrowseFeedProps) {
 
                 {vendors.slice(0, 8).map((vendor) => (
 
-                  <Link key={vendor.id} to={`/shopper/vendors/${vendor.id}`} className="app-hscroll-card">
+                  <Link key={vendor.id} to={vendorPath(vendor.id)} className="app-hscroll-card">
 
                     <div className="app-hscroll-card__visual" aria-hidden="true">
 

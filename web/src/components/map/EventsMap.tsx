@@ -7,6 +7,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { useNow } from '@/hooks/use-now';
 import { centroidOfEvents } from '@/lib/event-map-search';
+import { marketPath } from '@/lib/market-routes';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
 import { formatEventDisplayDate } from '@/lib/format';
@@ -256,7 +257,7 @@ export function EventsMap({
                       ) : null}
                     </div>
                     <Link
-                      to={`/shopper/events/${event.id}`}
+                      to={marketPath(event.id)}
                       className="app-btn app-btn--primary app-btn--small"
                     >
                       View market page

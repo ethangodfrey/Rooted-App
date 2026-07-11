@@ -10,6 +10,7 @@ import { formatEventDisplayDate, formatPrice } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
 import { fetchCuratedLeftovers, formatExpiresIn, type CuratedLeftover } from '@/lib/leftovers';
 import { getMarketContext } from '@/lib/market-context';
+import { marketPath } from '@/lib/market-routes';
 import { fetchSuggestedProducts, type SuggestedProduct } from '@/lib/suggested-products';
 import type { Event } from '@/types/database';
 
@@ -216,7 +217,7 @@ export function ShopperHomePage() {
         ) : (
           <div className="app-hscroll">
             {openNow.map((event) => (
-              <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
+              <Link key={event.id} to={marketPath(event.id)} className="app-hscroll-card">
                 <div className="app-hscroll-card__visual" aria-hidden="true">
                   🧺
                 </div>
@@ -248,7 +249,7 @@ export function ShopperHomePage() {
         ) : newThisWeek.length > 0 ? (
           <div className="app-hscroll">
             {newThisWeek.slice(0, 8).map((event) => (
-              <Link key={event.id} to={`/shopper/events/${event.id}`} className="app-hscroll-card">
+              <Link key={event.id} to={marketPath(event.id)} className="app-hscroll-card">
                 <div className="app-hscroll-card__visual" aria-hidden="true">
                   🌿
                 </div>

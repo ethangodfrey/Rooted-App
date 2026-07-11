@@ -121,6 +121,8 @@ export default function App() {
           <Route path="profile" element={<ShopperProfilePage />} />
         </Route>
 
+        <Route path="/markets/:id" element={<ShopperEventDetailPage />} />
+        <Route path="/vendors/:id" element={<ShopperVendorPage />} />
         <Route path="/shopper/events/:id" element={<ShopperEventDetailPage />} />
         <Route path="/shopper/vendors/:id" element={<ShopperVendorPage />} />
         <Route path="/shopper/chefs" element={<ShopperChefsPage />} />

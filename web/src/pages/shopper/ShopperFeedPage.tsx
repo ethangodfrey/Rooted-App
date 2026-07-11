@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 
 import { formatRelativeTime } from '@/lib/format';
-
+import { marketPath, vendorPath } from '@/lib/market-routes';
 import { POST_TYPE_ICON, POST_TYPE_LABEL } from '@/lib/post-type';
 
 import {
@@ -194,7 +194,7 @@ export function ShopperFeedPage() {
 
               {post.vendor ? (
 
-                <Link to={`/shopper/vendors/${post.vendor_id}`} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                <Link to={vendorPath(post.vendor_id)} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
 
                   {post.vendor.business_name ?? 'Vendor'}
 
@@ -216,7 +216,7 @@ export function ShopperFeedPage() {
 
               {post.event ? (
 
-                <Link to={`/shopper/events/${post.event.id}`} className="app-row-meta">
+                <Link to={marketPath(post.event.id)} className="app-row-meta">
 
                   → {post.event.name}
 

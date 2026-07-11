@@ -6,6 +6,7 @@ import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { updateShopperEmail, updateShopperProfile } from '@/lib/shopper-profile';
+import { vendorPath } from '@/lib/market-routes';
 import { supabase } from '@/lib/supabase';
 import { uploadProfilePhoto } from '@/lib/upload';
 import '@/components/ui/ui.css';
@@ -216,7 +217,7 @@ export function ShopperProfileEditPage() {
         <div className="app-list">
           {vendors.map((vendor) => (
             <div key={vendor.id} className="app-card app-row saved-vendor-row">
-              <Link to={`/shopper/vendors/${vendor.id}`} className="app-row-body" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link to={vendorPath(vendor.id)} className="app-row-body" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <p className="app-row-title">{vendor.business_name ?? 'Vendor'}</p>
                 {vendor.category ? <p className="app-row-meta">{vendor.category}</p> : null}
               </Link>

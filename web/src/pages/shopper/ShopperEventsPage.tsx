@@ -19,6 +19,7 @@ import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
+import { marketPath } from '@/lib/market-routes';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
@@ -166,7 +167,7 @@ export function ShopperEventsPage() {
               return (
                 <Link
                   key={event.id}
-                  to={`/shopper/events/${event.id}`}
+                  to={marketPath(event.id)}
                   className={`app-card app-card--pressable app-row${phase === 'closed' ? ' app-card--closed' : ''}${phase === 'live' ? ' app-card--live' : ''}`}
                 >
                   <EventThumb event={event} />

@@ -135,6 +135,8 @@ export interface Vendor {
   stripe_account_id?: string | null;
   stripe_charges_enabled?: boolean;
   stripe_payouts_enabled?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -268,6 +270,7 @@ export interface Event {
   description: string | null;
   organizer_name: string | null;
   banner_url: string | null;
+  image_url?: string | null;
   start_datetime: string;
   end_datetime: string;
   address: string | null;

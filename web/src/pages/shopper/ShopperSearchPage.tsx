@@ -16,6 +16,7 @@ import {
 } from '@/lib/unified-search';
 
 import { formatEventDisplayDate, formatPrice } from '@/lib/format';
+import { marketPath, vendorPath } from '@/lib/market-routes';
 import { pushRecentSearch, readRecentSearches } from '@/lib/recent-searches';
 
 import '@/components/ui/ui.css';
@@ -202,7 +203,7 @@ export function ShopperSearchPage() {
               {results.events.map((event) => (
                 <Link
                   key={event.id}
-                  to={`/shopper/events/${event.id}`}
+                  to={marketPath(event.id)}
                   className="app-card app-card--pressable app-row"
                 >
                   <div className="app-row-icon">📅</div>
@@ -225,7 +226,7 @@ export function ShopperSearchPage() {
               {results.vendors.map((vendor) => (
                 <Link
                   key={vendor.id}
-                  to={`/shopper/vendors/${vendor.id}`}
+                  to={vendorPath(vendor.id)}
                   className="app-card app-card--pressable app-row"
                 >
                   <div className="app-row-icon">🏪</div>

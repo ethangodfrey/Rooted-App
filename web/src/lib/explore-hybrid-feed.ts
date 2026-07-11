@@ -1,3 +1,4 @@
+import { vendorPath } from '@/lib/market-routes';
 import { supabase } from '@/lib/supabase';
 import type { ExploreContentType } from '@/types/database';
 
@@ -159,7 +160,7 @@ async function fetchExploreHybridFeedFallback(limit: number): Promise<ExploreHyb
 /** Customer destination for a hybrid feed card. */
 export function resolveExploreHybridHref(item: ExploreHybridFeedItem): string | null {
   if (item.creator_type === 'vendor' && item.vendor_id) {
-    return `/shopper/vendors/${item.vendor_id}`;
+    return vendorPath(item.vendor_id);
   }
   if (item.creator_type === 'chef' && item.chef_id) {
     return `/shopper/chefs/${item.chef_id}`;

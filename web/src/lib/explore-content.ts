@@ -1,3 +1,4 @@
+import { vendorPath } from '@/lib/market-routes';
 import { supabase } from '@/lib/supabase';
 import type { ExploreContent, ExploreContentType } from '@/types/database';
 
@@ -104,7 +105,7 @@ export function resolveExploreContentHref(item: ExploreContent): string | null {
     return `/shopper/products/${item.linked_product_id}`;
   }
   if (item.creator_type === 'vendor' && item.vendor_id) {
-    return `/shopper/vendors/${item.vendor_id}`;
+    return vendorPath(item.vendor_id);
   }
   if (item.creator_type === 'chef' && item.chef_id) {
     return `/shopper/chefs/${item.chef_id}`;
