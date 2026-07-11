@@ -28,6 +28,7 @@ docs/supabase/phase36_production_mvp_core_schema.sql
 docs/supabase/phase37_vendor_media_feed_storage.sql
 docs/supabase/phase38_ranked_vendor_feed.sql
 docs/supabase/phase39_payments_kyc_ledger.sql
+docs/supabase/phase42_regional_markets.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):
@@ -41,6 +42,7 @@ adding the production MVP transaction and vendor-profile schema.
 Phase37 provisions the public signed-upload media bucket for vendor feeds.
 Phase38 adds the cached hyper-local ranked vendor feed RPC.
 Phase39 adds settlement holds and 1099-K compliance rollups.
+Phase42 adds regional marketplace isolation (`regions`, `markets`, vendor registrations, `orders.market_id` + RLS).
 
 ## Key RPCs
 

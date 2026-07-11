@@ -12,6 +12,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "schema:sync": "prisma generate",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest",
     "markets:links": "ts-node scripts/run-market-links.ts",
