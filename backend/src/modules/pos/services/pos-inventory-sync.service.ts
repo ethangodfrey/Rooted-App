@@ -7,6 +7,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import {
   POS_INVENTORY_COALESCE_MS,
   type PosInventoryFlushJobData,
+  type PosInventoryOnlineSaleJobData,
   type PosInventoryWebhookJobData,
 } from '../jobs/pos-inventory-queue.constants';
 
@@ -251,6 +252,64 @@ export class PosInventorySyncService implements OnModuleDestroy {
 
     this.logger.log(
       `Applied coalesced inventory for product ${productId} @ event ${eventId}`,
+    );
+  }
+
+  /**
+   * Applies an online storefront sale deduction across presale + in-person channels.
+   * Keeps POS-linked stock aligned so Square/Toast registers cannot oversell.
+   */
+  async applyOnlineSaleDeduction(data: PosInventoryOnlineSaleJobData): Promise<void> {
+    const qty = Math.trunc(data.quantity);
+    if (qty <= 0) return;
+
+    const providerLabel = data.provider?.toLowerCase() ?? 'online';
+    const catalogSuffix = data.providerCatalogObjectId ? `:${data.providerCatalogObjectId}` : '';
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`
+          UPDATE public.product_event_availability
+          SET
+            available_quantity_presale = GREATEST(0, available_quantity_presale - ${qty}),
+            available_quantity_inperson = GREATEST(0, available_quantity_inperson - ${qty})
+          WHERE product_id = ${data.productId}::uuid
+            AND event_id = ${data.eventId}::uuid
+        `;
+
+        await tx.inventoryTransaction.create({
+          data: {
+            vendorId: data.vendorId,
+            productId: data.productId,
+            eventId: data.eventId,
+            transactionType: 'sale_digital',
+            quantityChange: -qty,
+            source: `checkout:${providerLabel}${catalogSuffix}`,
+            notes: `Online order ${data.orderId} — dual-channel deduct`,
+          },
+        });
+
+        await tx.inventoryTransaction.create({
+          data: {
+            vendorId: data.vendorId,
+            productId: data.productId,
+            eventId: data.eventId,
+            transactionType: 'pos_inventory_sync',
+            quantityChange: -qty,
+            source: `checkout-sync:${providerLabel}${catalogSuffix}`,
+            notes: `POS channel sync after order ${data.orderId}`,
+          },
+        });
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        maxWait: 5_000,
+        timeout: 10_000,
+      },
+    );
+
+    this.logger.log(
+      `Online sale deduct applied for order ${data.orderId} product ${data.productId} qty ${qty}`,
     );
   }
 }
