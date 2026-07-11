@@ -240,7 +240,7 @@ export function ShopperHomePage() {
 
   return (
 
-    <div className="app-screen">
+    <div className="app-screen w-full min-w-0">
 
       <header className="app-greeting">
 
@@ -430,9 +430,9 @@ export function ShopperHomePage() {
 
         </div>
 
-        <Link to="/shopper/feed" className="app-hscroll-card" style={{ display: 'block', maxWidth: '100%' }}>
+        <Link to="/shopper/feed" className="app-hscroll-card app-hscroll-card--full w-full max-w-full">
 
-          <p className="app-hscroll-card__title">From your saved vendors</p>
+          <p className="app-hscroll-card__title w-full">From your saved vendors</p>
 
           <p className="app-hscroll-card__meta">
 
@@ -496,7 +496,7 @@ export function ShopperHomePage() {
 
 
 
-      <Link to="/shopper/search" className="app-search-link app-search--glass" style={{ marginTop: '0.5rem' }}>
+      <Link to="/shopper/search" className="app-search-link app-search--glass mb-4 w-full max-w-full">
 
         Search markets, vendors, chefs…
 

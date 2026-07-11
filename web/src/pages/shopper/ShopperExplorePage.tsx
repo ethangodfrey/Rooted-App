@@ -64,7 +64,7 @@ export function ShopperExplorePage() {
   }, [loadPage]);
 
   return (
-    <div className="app-screen">
+    <div className="app-screen w-full min-w-0">
       <p className="app-eyebrow">Explore</p>
       <h1 className="app-title">Near you</h1>
       <p className="app-subtitle">
