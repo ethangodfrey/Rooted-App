@@ -1,25 +1,21 @@
-function getWebAppOrigin(): string {
-  const configured = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim();
-  return configured ? configured.replace(/\/$/, '') : '';
+function trimEnv(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.replace(/\/$/, '') : null;
+}
+
+/** Public web app origin for legal pages and support links. */
+export function getWebAppOrigin(): string {
+  return trimEnv(process.env.EXPO_PUBLIC_WEB_APP_URL) ?? 'https://rooted.app';
 }
 
 export function getPrivacyPolicyUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_PRIVACY_URL?.trim();
-  if (configured) return configured;
-  const origin = getWebAppOrigin();
-  return origin ? `${origin}/privacy` : 'https://rooted.app/privacy';
+  return `${getWebAppOrigin()}/privacy`;
 }
 
 export function getTermsOfServiceUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_TERMS_URL?.trim();
-  if (configured) return configured;
-  const origin = getWebAppOrigin();
-  return origin ? `${origin}/terms` : 'https://rooted.app/terms';
+  return `${getWebAppOrigin()}/terms`;
 }
 
 export function getSupportUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_SUPPORT_URL?.trim();
-  if (configured) return configured;
-  const origin = getWebAppOrigin();
-  return origin ? `${origin}/support` : 'https://rooted.app/support';
+  return `${getWebAppOrigin()}/support`;
 }

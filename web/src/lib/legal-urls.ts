@@ -1,27 +1,18 @@
-function getAppOrigin(): string {
+export function getAppOrigin(): string {
   const configured = import.meta.env.VITE_APP_URL?.trim();
   if (configured) return configured.replace(/\/$/, '');
   if (typeof window !== 'undefined') return window.location.origin;
-  return '';
+  return 'https://rooted.app';
 }
 
 export function getPrivacyPolicyUrl(): string {
-  const configured = import.meta.env.VITE_PRIVACY_URL?.trim();
-  if (configured) return configured;
-  const origin = getAppOrigin();
-  return origin ? `${origin}/privacy` : '/privacy';
+  return `${getAppOrigin()}/privacy`;
 }
 
 export function getTermsOfServiceUrl(): string {
-  const configured = import.meta.env.VITE_TERMS_URL?.trim();
-  if (configured) return configured;
-  const origin = getAppOrigin();
-  return origin ? `${origin}/terms` : '/terms';
+  return `${getAppOrigin()}/terms`;
 }
 
 export function getSupportUrl(): string {
-  const configured = import.meta.env.VITE_SUPPORT_URL?.trim();
-  if (configured) return configured;
-  const origin = getAppOrigin();
-  return origin ? `${origin}/support` : '/support';
+  return `${getAppOrigin()}/support`;
 }

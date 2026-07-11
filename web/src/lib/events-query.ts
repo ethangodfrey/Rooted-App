@@ -1,6 +1,7 @@
 import { dedupeEvents } from '@/lib/dedupe-events';
+import { filterShopperEvents } from '@/lib/market-type-labels';
 import type { EventsScope } from '@/lib/events-list';
-import type { Coords } from '@/lib/geo';
+import { isValidCoords, type Coords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 import type { Event } from '@/types/database';
 
@@ -10,8 +11,8 @@ export const EVENT_LIST_SELECT =
 
 const LOCAL_RADIUS_MILES = 120;
 const MAP_RADIUS_MILES = 200;
-const LOCAL_LIST_LIMIT = 200;
-const NATIONWIDE_LIST_LIMIT = 200;
+const LOCAL_LIST_LIMIT = 500;
+const NATIONWIDE_LIST_LIMIT = 1000;
 const MAP_FALLBACK_LIMIT = 350;
 
 function bboxForRadius(center: Coords, radiusMiles: number) {
@@ -37,7 +38,7 @@ export async function fetchPublicEvents(
 ): Promise<{ data: Event[]; error: string | null; truncated: boolean }> {
   const scope = options.scope ?? 'nationwide';
   const forMap = options.forMap ?? false;
-  const near = options.near ?? null;
+  const near = isValidCoords(options.near) ? options.near : null;
 
   let query = supabase
     .from('events')
@@ -70,9 +71,39 @@ export async function fetchPublicEvents(
     .order('start_datetime', { ascending: true })
     .order('name', { ascending: true });
 
+  const deduped = filterShopperEvents(dedupeEvents((data ?? []) as Event[]));
+
   return {
-    data: dedupeEvents((data ?? []) as Event[]),
+    data: forMap ? deduped.filter((event) => isValidCoords(event)) : deduped,
     error: error?.message ?? null,
     truncated,
   };
+}
+
+export interface FetchFeaturedMarketsOptions {
+  userState?: string | null;
+}
+
+/** Upcoming public markets for browse/discover when geo RPCs or GPS are unavailable. */
+export async function fetchFeaturedPublicMarkets(
+  limit = 10,
+  options: FetchFeaturedMarketsOptions = {},
+): Promise<Event[]> {
+  let query = supabase
+    .from('events')
+    .select(EVENT_LIST_SELECT)
+    .eq('visibility_status', 'public')
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null)
+    .order('start_datetime', { ascending: true })
+    .order('name', { ascending: true })
+    .limit(Math.max(limit * 4, limit));
+
+  if (options.userState?.trim()) {
+    query = query.eq('state', options.userState.trim().toUpperCase().slice(0, 2));
+  }
+
+  const { data, error } = await query;
+  if (error) return [];
+  return filterShopperEvents(dedupeEvents((data ?? []) as Event[])).slice(0, limit);
 }

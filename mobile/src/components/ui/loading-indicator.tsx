@@ -31,7 +31,7 @@ export function LoadingIndicator({ size = 'large' }: LoadingIndicatorProps) {
           width: dimension,
           height: dimension,
           borderRadius: dimension / 2,
-          backgroundColor: colors.accent,
+          backgroundColor: colors.harvest,
         },
         animatedStyle,
       ]}

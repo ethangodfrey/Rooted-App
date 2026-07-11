@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
-import '@/components/ui/ui.css';
+import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/lib/legal-urls';
+import '@/App.css';
 
 export function SupportPage() {
   return (
     <div className="app-shell">
-      <div className="app-screen app-screen--narrow legal-page">
+      <div className="app-screen app-screen--narrow" style={{ paddingTop: '2rem' }}>
         <Link to="/" className="auth-home-link">
           ← Back to home
         </Link>
@@ -14,23 +15,20 @@ export function SupportPage() {
         <h1 className="app-title" style={{ marginTop: '1rem' }}>
           Support
         </h1>
-        <p className="app-subtitle">We&apos;re here to help with Rooted.</p>
-
-        <div className="legal-prose">
+        <p className="app-subtitle">
+          Need help with your account, a reservation, or a vendor listing? We&apos;re here to help.
+        </p>
+        <div className="app-card" style={{ marginTop: '1.5rem' }}>
+          <p className="app-row-title">Email</p>
           <p>
-            Email us at{' '}
-            <a href="mailto:support@rooted.app">support@rooted.app</a> for account issues, vendor
-            applications, or bug reports.
-          </p>
-          <p>
-            For password resets, use <Link to="/forgot-password">Forgot password</Link> on the sign-in
-            page.
-          </p>
-          <p>
-            To delete your account, sign in and use <strong>Delete account</strong> on your Profile
-            screen.
+            <a href="mailto:support@rooted.app">support@rooted.app</a>
           </p>
         </div>
+        <p style={{ marginTop: '1.5rem' }}>
+          <a href={getPrivacyPolicyUrl()}>Privacy Policy</a>
+          {' · '}
+          <a href={getTermsOfServiceUrl()}>Terms of Service</a>
+        </p>
       </div>
     </div>
   );

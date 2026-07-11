@@ -17,6 +17,7 @@ export function ShopperLeftoversPage() {
   useEffect(() => {
     fetchCuratedLeftovers({ userCity: user?.city, userState: user?.state })
       .then(setListings)
+      .catch(() => setListings([]))
       .finally(() => setLoading(false));
   }, [user?.city, user?.state]);
 

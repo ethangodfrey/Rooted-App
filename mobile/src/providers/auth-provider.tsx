@@ -20,18 +20,20 @@ import {
   writeAuthRouteCache,
   type AuthRouteCache,
 } from '@/src/lib/auth-route-cache';
-import { supabase } from '@/src/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
+import { isChefProfileComplete } from '@/src/lib/chef-profile';
 import { isVendorApplicationComplete } from '@/src/lib/vendor-application';
-import type { Shopper, User, Vendor } from '@/src/types/database';
+import type { Chef, Shopper, User, Vendor } from '@/src/types/database';
 
-const AUTH_BOOTSTRAP_TIMEOUT_MS = 5_000;
-const PROFILE_FETCH_TIMEOUT_MS = 12_000;
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 800;
+const PROFILE_FETCH_TIMEOUT_MS = 4_000;
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   shopper: Shopper | null;
   vendor: Vendor | null;
+  chef: Chef | null;
   isLoading: boolean;
   isProfileLoading: boolean;
   isPasswordRecovery: boolean;
@@ -48,14 +50,15 @@ async function fetchUserProfileWithTimeout(userId: string): Promise<{
   user: User | null;
   shopper: Shopper | null;
   vendor: Vendor | null;
+  chef: Chef | null;
 }> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       fetchUserProfile(userId),
-      new Promise<{ user: null; shopper: null; vendor: null }>((resolve) => {
+      new Promise<{ user: null; shopper: null; vendor: null; chef: null }>((resolve) => {
         timer = setTimeout(
-          () => resolve({ user: null, shopper: null, vendor: null }),
+          () => resolve({ user: null, shopper: null, vendor: null, chef: null }),
           PROFILE_FETCH_TIMEOUT_MS,
         );
       }),
@@ -70,14 +73,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [shopper, setShopper] = useState<Shopper | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [chef, setChef] = useState<Chef | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [routeCache, setRouteCache] = useState<AuthRouteCache | null | undefined>(undefined);
   const profileRequestRef = useRef(0);
+  const profileUserIdRef = useRef<string | null>(null);
   const bootstrappedRef = useRef(false);
+  const cacheLoadedRef = useRef(false);
+  const appliedSessionUserIdRef = useRef<string | null | undefined>(undefined);
 
-  const loadProfile = useCallback(async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string, force = false) => {
+    if (!force && profileUserIdRef.current === userId) {
+      return;
+    }
+
     const requestId = ++profileRequestRef.current;
     setIsProfileLoading(true);
 
@@ -85,9 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await fetchUserProfileWithTimeout(userId);
       if (requestId !== profileRequestRef.current) return;
 
+      profileUserIdRef.current = userId;
       setUser(profile.user);
       setShopper(profile.shopper);
       setVendor(profile.vendor);
+      setChef(profile.chef);
 
       if (profile.user?.role) {
         const cache: AuthRouteCache = {
@@ -95,9 +108,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: profile.user.role,
           hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
           vendorComplete: isVendorApplicationComplete(profile.vendor),
+          chefComplete: isChefProfileComplete(profile.chef),
         };
         setRouteCache(cache);
-        await writeAuthRouteCache(cache);
+        cacheLoadedRef.current = true;
+        void writeAuthRouteCache(cache);
       }
     } finally {
       if (requestId === profileRequestRef.current) {
@@ -113,50 +128,110 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!currentSession?.user) {
       profileRequestRef.current += 1;
+      profileUserIdRef.current = null;
       setUser(null);
       setShopper(null);
       setVendor(null);
+      setChef(null);
       setIsProfileLoading(false);
       setRouteCache(null);
       await clearAuthRouteCache();
       return;
     }
 
-    await loadProfile(currentSession.user.id);
+    await loadProfile(currentSession.user.id, true);
   }, [loadProfile]);
 
   useEffect(() => {
     let mounted = true;
 
-    readAuthRouteCacheWithTimeout().then((cache) => {
-      if (mounted) setRouteCache(cache);
-    });
-
-    const bootstrap = (nextSession: Session | null) => {
+    const finishBootstrap = () => {
       if (!mounted || bootstrappedRef.current) return;
       bootstrappedRef.current = true;
-      setSession(nextSession);
       setIsLoading(false);
+    };
+
+    const applySession = (nextSession: Session | null) => {
+      if (!mounted) return;
+      const userId = nextSession?.user?.id ?? null;
+      if (bootstrappedRef.current && appliedSessionUserIdRef.current === userId) {
+        setSession((prev) => {
+          if (
+            prev?.user?.id === nextSession?.user?.id &&
+            prev?.access_token === nextSession?.access_token
+          ) {
+            return prev;
+          }
+          return nextSession;
+        });
+        return;
+      }
+      appliedSessionUserIdRef.current = userId;
+      setSession(nextSession);
+      finishBootstrap();
       if (nextSession?.user) {
         void loadProfile(nextSession.user.id);
+      } else {
+        profileRequestRef.current += 1;
+        profileUserIdRef.current = null;
+        setUser(null);
+        setShopper(null);
+        setVendor(null);
+        setChef(null);
+        setIsProfileLoading(false);
+        if (!cacheLoadedRef.current) {
+          cacheLoadedRef.current = true;
+          setRouteCache(null);
+        }
       }
     };
 
+    const setRouteCacheOnce = (cache: AuthRouteCache | null) => {
+      if (cacheLoadedRef.current) return;
+      cacheLoadedRef.current = true;
+      setRouteCache(cache);
+    };
+
+    if (!isSupabaseConfigured) {
+      applySession(null);
+      return () => {
+        mounted = false;
+      };
+    }
+
     const fallbackTimer = setTimeout(() => {
-      void supabase.auth
-        .getSession()
-        .then(({ data: { session: fallbackSession } }) => bootstrap(fallbackSession))
-        .catch(() => bootstrap(null));
+      if (!bootstrappedRef.current) {
+        applySession(null);
+      } else if (!cacheLoadedRef.current) {
+        setRouteCacheOnce(null);
+      }
     }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session: initialSession } }) => {
+        if (!mounted) return;
+        clearTimeout(fallbackTimer);
+        applySession(initialSession);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        clearTimeout(fallbackTimer);
+        applySession(null);
+      });
+
+    void readAuthRouteCacheWithTimeout().then((cache) => {
+      if (!mounted) return;
+      setRouteCacheOnce(cache);
+    });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      setSession(nextSession);
-
       if (event === 'INITIAL_SESSION') {
+        if (!mounted) return;
         clearTimeout(fallbackTimer);
-        bootstrap(nextSession);
+        applySession(nextSession);
         return;
       }
 
@@ -166,18 +241,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (nextSession?.user) {
-        void loadProfile(nextSession.user.id);
-      } else {
+        setSession((prev) => {
+          if (
+            prev?.user?.id === nextSession.user.id &&
+            prev?.access_token === nextSession.access_token
+          ) {
+            return prev;
+          }
+          return nextSession;
+        });
+        finishBootstrap();
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          void loadProfile(nextSession.user.id, true);
+        }
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
         profileRequestRef.current += 1;
+        profileUserIdRef.current = null;
+        appliedSessionUserIdRef.current = null;
+        setSession(null);
         setUser(null);
         setShopper(null);
         setVendor(null);
+        setChef(null);
         setIsProfileLoading(false);
+        cacheLoadedRef.current = true;
         setRouteCache(null);
+        finishBootstrap();
         void clearAuthRouteCache();
       }
-
-      setIsLoading(false);
     });
 
     return () => {
@@ -224,12 +318,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     profileRequestRef.current += 1;
+    profileUserIdRef.current = null;
+    appliedSessionUserIdRef.current = null;
     setSession(null);
     setUser(null);
     setShopper(null);
     setVendor(null);
+    setChef(null);
     setIsProfileLoading(false);
     setIsPasswordRecovery(false);
+    cacheLoadedRef.current = true;
     setRouteCache(null);
     await clearAuthRouteCache();
     router.replace('/intro');
@@ -248,6 +346,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       shopper,
       vendor,
+      chef,
       isLoading,
       isProfileLoading,
       isPasswordRecovery,
@@ -262,6 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       shopper,
       vendor,
+      chef,
       isLoading,
       isProfileLoading,
       isPasswordRecovery,
