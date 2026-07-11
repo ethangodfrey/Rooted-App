@@ -122,16 +122,21 @@ export function centroidOfEvents(events: Event[]): Coords | null {
   };
 }
 
-export async function geocodeUsZip(zip: string): Promise<Coords | null> {
+const NOMINATIM_USER_AGENT = 'RootedApp/1.0 (farmers market map search)';
+
+async function nominatimCoords(
+  params: Record<string, string>,
+): Promise<Coords | null> {
   try {
     const url = new URL('https://nominatim.openstreetmap.org/search');
-    url.searchParams.set('postalcode', zip);
-    url.searchParams.set('country', 'US');
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
     url.searchParams.set('format', 'json');
     url.searchParams.set('limit', '1');
 
     const res = await fetch(url.toString(), {
-      headers: { 'User-Agent': 'RootedApp/1.0 (farmers market map search)' },
+      headers: { 'User-Agent': NOMINATIM_USER_AGENT },
     });
     if (!res.ok) return null;
 
@@ -147,4 +152,21 @@ export async function geocodeUsZip(zip: string): Promise<Coords | null> {
   } catch {
     return null;
   }
+}
+
+export async function geocodeUsZip(zip: string): Promise<Coords | null> {
+  return nominatimCoords({ postalcode: zip, country: 'US' });
+}
+
+/** Geocode a city or place name (e.g. "Newark", "Portland OR") for map refetch/centering. */
+export async function geocodePlaceQuery(place: string): Promise<Coords | null> {
+  const trimmed = place.trim();
+  if (!trimmed) return null;
+
+  const withCountry = trimmed.toLowerCase().includes('usa')
+    || trimmed.toLowerCase().includes('united states')
+    ? trimmed
+    : `${trimmed}, USA`;
+
+  return nominatimCoords({ q: withCountry });
 }

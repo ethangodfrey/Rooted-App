@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { DiscoverBrowseFeed } from '@/components/discover/DiscoverBrowseFeed';
+import { useNow } from '@/hooks/use-now';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -14,7 +15,7 @@ import {
   type UnifiedSearchResults,
 } from '@/lib/unified-search';
 
-import { formatEventDate, formatPrice } from '@/lib/format';
+import { formatEventDisplayDate, formatPrice } from '@/lib/format';
 import { pushRecentSearch, readRecentSearches } from '@/lib/recent-searches';
 
 import '@/components/ui/ui.css';
@@ -38,6 +39,7 @@ const EMPTY_RESULTS: UnifiedSearchResults = {
 
 export function ShopperSearchPage() {
   const { user, shopper } = useAuth();
+  const now = useNow(60_000);
   const { saved } = useSavedVendors();
   const { coords } = useUserCoords();
   const [query, setQuery] = useState('');
@@ -173,7 +175,7 @@ export function ShopperSearchPage() {
       ) : loading ? (
         <div className="app-list">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="app-skeleton app-skeleton--card" />
+            <div key={i} className="app-skeleton app-skeleton--card animate-pulse" />
           ))}
         </div>
       ) : total === 0 ? (
@@ -207,7 +209,7 @@ export function ShopperSearchPage() {
                   <div className="app-row-body">
                     <p className="app-row-title">{event.name}</p>
                     <p className="app-row-meta">
-                      {formatEventDate(event.start_datetime)}
+                      {formatEventDisplayDate(event, now)}
                       {event.city ? ` · ${event.city}` : ''}
                       {formatDistanceKm(event.distance_km) ? ` · ${formatDistanceKm(event.distance_km)}` : ''}
                     </p>

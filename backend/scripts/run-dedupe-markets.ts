@@ -30,12 +30,6 @@ type PublicEvent = {
   syncMetadata: unknown;
 };
 
-function zipFromMetadata(syncMetadata: unknown): string {
-  if (!syncMetadata || typeof syncMetadata !== 'object') return '';
-  const zip = (syncMetadata as { zipcode?: string }).zipcode;
-  return typeof zip === 'string' ? zip.slice(0, 5) : '';
-}
-
 function eventScore(event: PublicEvent): number {
   let score = marketTypePriority(event.marketType);
   if (event.hoursSummary?.trim()) score += 3;
@@ -75,7 +69,7 @@ async function main(): Promise<void> {
       event.name,
       event.city ?? '',
       event.state ?? '',
-      zipFromMetadata(event.syncMetadata),
+      // Match AGENTS.md: dedupe by normalized name + city + state (not zip).
     );
     const bucket = groups.get(key) ?? [];
     bucket.push(event);

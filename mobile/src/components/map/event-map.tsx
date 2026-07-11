@@ -8,18 +8,21 @@ import {
   eventRuntimePhase,
   type EventRuntimeFields,
 } from '@/src/lib/event-runtime';
-import { formatEventDate } from '@/src/lib/format';
+import { formatEventDisplayDate } from '@/src/lib/format';
 
 import { EventMarker } from './event-marker';
 import type { EventMapProps } from './types';
 
-function markerLabel(event: EventRuntimeFields & { name: string }, now: Date): string {
+function markerLabel(
+  event: EventRuntimeFields & { name: string; start_datetime: string },
+  now: Date,
+): string {
   const phase = eventRuntimePhase(event, now);
   const symbol = EVENT_RUNTIME_SYMBOL[phase];
   const short = event.name.length > 10 ? `${event.name.slice(0, 9)}…` : event.name;
   if (phase === 'live') return `${symbol} Now`;
   if (phase === 'closed') return `${symbol} Ended`;
-  return short || formatEventDate(event.start_datetime);
+  return short || formatEventDisplayDate(event, now);
 }
 
 export function EventMap({
@@ -53,7 +56,7 @@ export function EventMap({
             onPress={() => onPreviewEvent(event.id)}
             tracksViewChanges={false}
             title={event.name}
-            description={formatEventDate(event.start_datetime)}>
+            description={formatEventDisplayDate(event, now)}>
             <EventMarker
               label={markerLabel(event, now)}
               selected={selectedEventId === event.id}
