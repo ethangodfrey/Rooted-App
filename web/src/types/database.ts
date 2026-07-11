@@ -74,6 +74,58 @@ export type PaymentStatus = 'unpaid' | 'paid_at_pickup' | 'stripe_pending' | 'pa
 export type TransactionStatus = 'authorized' | 'captured' | 'refunded';
 export type VendorCertificationStatus = 'pending' | 'approved' | 'expired';
 export type VendorSettlementStatus = 'pending' | 'available' | 'released' | 'held';
+export type RegionStatus = 'ACTIVE' | 'INACTIVE';
+export type MarketStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+export type MarketRegistrationStatus = 'requested' | 'approved' | 'denied' | 'suspended';
+export type RegionalPosProvider = 'SQUARE' | 'TOAST' | 'CLOVER';
+
+export interface GeographicBounds {
+  type?: 'bbox' | 'polygon';
+  north?: number;
+  south?: number;
+  east?: number;
+  west?: number;
+  coordinates?: number[][][] | number[][];
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  geographic_bounds: GeographicBounds;
+  status: RegionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Market {
+  id: string;
+  region_id: string;
+  name: string;
+  slug: string;
+  location_address: string | null;
+  city: string | null;
+  state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  pos_provider: RegionalPosProvider | null;
+  event_id: string | null;
+  status: MarketStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorMarketRegistration {
+  id: string;
+  vendor_id: string;
+  market_id: string;
+  registration_status: MarketRegistrationStatus;
+  booth_label: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface User {
   id: string;
@@ -351,6 +403,7 @@ export interface Order {
   shopper_id: string;
   vendor_id: string;
   event_id: string | null;
+  market_id?: string | null;
   leftover_listing_id?: string | null;
   order_type: OrderType;
   order_status: OrderStatus;

@@ -63,6 +63,8 @@ docs/supabase/phase36_production_mvp_core_schema.sql # production MVP transactio
 docs/supabase/phase37_vendor_media_feed_storage.sql # vendor feed media bucket + signed uploads
 docs/supabase/phase38_ranked_vendor_feed.sql # cached hyper-local ranked vendor feed RPC
 docs/supabase/phase39_payments_kyc_ledger.sql # settlement holds + 1099-K compliance ledger
+docs/supabase/phase42_regional_markets.sql # regional markets + vendor registrations + orders.market_id RLS
+docs/supabase/phase42b_backfill_orders_market_id.sql # post-phase42: backfill orders.market_id from event_id
 ```
 
 Optional (any time after `phase1_auth.sql`):
