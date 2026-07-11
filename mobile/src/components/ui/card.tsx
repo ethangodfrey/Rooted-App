@@ -35,7 +35,7 @@ export function PressableCard({ className, subtle = false, style, ...props }: Pr
 
   return (
     <Pressable
-      className={`rounded-card p-4 ${subtle ? 'bg-honeydew' : 'bg-white'} active:opacity-90 ${
+      className={`rounded-card p-4 ${subtle ? 'bg-honeydew' : 'bg-white'} active:scale-[0.98] ${
         className ?? ''
       }`}
       style={resolvedStyle}

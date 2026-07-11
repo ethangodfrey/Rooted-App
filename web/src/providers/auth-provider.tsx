@@ -16,15 +16,17 @@ import {
   clearAuthRouteCache,
   writeAuthRouteCache,
 } from '@/lib/auth-route-cache';
-import { supabase } from '@/lib/supabase';
+import { isChefProfileComplete } from '@/lib/chef-profile';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
-import type { Shopper, User, Vendor } from '@/types/database';
+import type { Chef, Shopper, User, Vendor } from '@/types/database';
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   shopper: Shopper | null;
   vendor: Vendor | null;
+  chef: Chef | null;
   isLoading: boolean;
   isProfileLoading: boolean;
   isPasswordRecovery: boolean;
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [shopper, setShopper] = useState<Shopper | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [chef, setChef] = useState<Chef | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
@@ -57,17 +60,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(profile.user);
       setShopper(profile.shopper);
       setVendor(profile.vendor);
+      setChef(profile.chef);
 
-      if (profile.user?.role) {
+      const cacheRole = profile.user?.role;
+      if (
+        cacheRole === 'shopper' ||
+        cacheRole === 'vendor' ||
+        cacheRole === 'chef' ||
+        cacheRole === 'admin'
+      ) {
         await writeAuthRouteCache({
           userId,
-          role: profile.user.role,
+          role: cacheRole,
           hasInterests: (profile.shopper?.interests?.length ?? 0) > 0,
           vendorComplete: isVendorApplicationComplete(profile.vendor),
+          chefComplete: isChefProfileComplete(profile.chef),
         });
-      } else {
-        await clearAuthRouteCache();
       }
+    } catch {
+      // Network/unexpected failure: keep any cached profile state so routing can
+      // fall back to the auth-route cache instead of hanging on a spinner.
     } finally {
       if (requestId === profileRequestRef.current) {
         setIsProfileLoading(false);
@@ -76,6 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+
     const {
       data: { session: currentSession },
     } = await supabase.auth.getSession();
@@ -85,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setShopper(null);
       setVendor(null);
+      setChef(null);
       setIsProfileLoading(false);
       await clearAuthRouteCache();
       return;
@@ -94,6 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     async function init() {
@@ -135,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setShopper(null);
         setVendor(null);
+        setChef(null);
         setIsProfileLoading(false);
         void clearAuthRouteCache();
       }
@@ -153,12 +174,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
     profileRequestRef.current += 1;
     setSession(null);
     setUser(null);
     setShopper(null);
     setVendor(null);
+    setChef(null);
     setIsProfileLoading(false);
     setIsPasswordRecovery(false);
     await clearAuthRouteCache();
@@ -171,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       shopper,
       vendor,
+      chef,
       isLoading,
       isProfileLoading,
       isPasswordRecovery,
@@ -183,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       shopper,
       vendor,
+      chef,
       isLoading,
       isProfileLoading,
       isPasswordRecovery,

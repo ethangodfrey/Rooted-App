@@ -1,7 +1,10 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { ActionRow } from '@/src/components/ui/action-row';
 import { Button } from '@/src/components/ui/button';
+import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
@@ -91,6 +94,15 @@ export default function AdminMoreScreen() {
         </Card>
       ) : null}
 
+      <View className="mb-4">
+        <ActionRow
+          icon="shield"
+          title="Credential review"
+          subtitle="Verify vendor & chef documents and award trust badges."
+          onPress={() => router.push('/(admin)/credentials')}
+        />
+      </View>
+
       <Card className="mb-4">
         <Text variant="heading" className="mb-1">
           Pilot admin tools
@@ -101,8 +113,9 @@ export default function AdminMoreScreen() {
         </Text>
       </Card>
 
-      <View className="mt-2">
+      <View className="mt-2 gap-3">
         <Button label="Sign out" variant="secondary" onPress={signOut} />
+        <DeleteAccountButton />
       </View>
     </Screen>
   );

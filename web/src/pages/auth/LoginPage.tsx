@@ -1,18 +1,27 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { AuthLink, AuthScreen } from '@/components/auth/AuthScreen';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
+import { SupabaseConfigNotice } from '@/components/auth/SupabaseConfigNotice';
+import { getOAuthErrorFromUrl } from '@/lib/auth-callback';
+import { getAuthRedirectUrlForDisplay } from '@/lib/auth-redirect';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/app';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const oauthError = getOAuthErrorFromUrl(window.location.href);
+    if (oauthError) {
+      setError(oauthError);
+      window.history.replaceState({}, '', '/login');
+    }
+  }, []);
 
   async function handleLogin() {
     if (!isSupabaseConfigured) {
@@ -35,25 +44,17 @@ export function LoginPage() {
       return;
     }
 
-    navigate(redirectTo, { replace: true });
+    navigate('/app');
   }
 
   if (!isSupabaseConfigured) {
-    return (
-      <div className="app-screen app-screen--narrow">
-        <Link to="/" className="auth-home-link">← Back to home</Link>
-        <h1 className="app-title">Supabase not configured</h1>
-        <p className="app-subtitle">
-          Copy web/.env.example to web/.env and add your Supabase project URL and anon key.
-        </p>
-      </div>
-    );
+    return <SupabaseConfigNotice />;
   }
 
   return (
     <AuthScreen
       title="Welcome back"
-      subtitle="Sign in to discover local markets and vendors."
+      subtitle="Sign in to explore farmers markets, private chefs, and local food businesses."
       email={email}
       password={password}
       onEmailChange={setEmail}
@@ -62,6 +63,12 @@ export function LoginPage() {
       submitLabel="Sign in"
       loading={loading}
       error={error}
+      message={
+        import.meta.env.DEV
+          ? `OAuth redirect: ${getAuthRedirectUrlForDisplay()}`
+          : null
+      }
+      socialAuth={<OAuthButtons disabled={loading} />}
       footer={
         <>
           <AuthLink to="/forgot-password">Forgot password?</AuthLink>

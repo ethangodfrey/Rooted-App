@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local data caches (regenerate with npm run markets:usda:seed)
 market-seed-data.json
+
+.vercel
+/generated/prisma

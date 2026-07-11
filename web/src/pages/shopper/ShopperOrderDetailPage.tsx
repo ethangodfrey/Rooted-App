@@ -24,7 +24,7 @@ export function ShopperOrderDetailPage() {
       pickup_notes: string | null;
       expires_at: string;
     } | null;
-    order_items: { quantity: number; item_price: number; item_title: string | null; product: { name: string } | null }[];
+    order_items: { id: string; quantity: number; item_price: number; item_title: string | null; product: { name: string } | null }[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +32,7 @@ export function ShopperOrderDetailPage() {
     async function load() {
       const { data } = await supabase
         .from('orders')
-        .select('id, order_status, fulfillment_type, total, created_at, notes, vendor:vendors(business_name), event:events(name, start_datetime), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes, expires_at), order_items(quantity, item_price, item_title, product:products(name))')
+        .select('id, order_status, fulfillment_type, total, created_at, notes, vendor:vendors(business_name), event:events(name, start_datetime), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes, expires_at), order_items(id, quantity, item_price, item_title, product:products(name))')
         .eq('id', id)
         .maybeSingle();
       setOrder(data as unknown as typeof order);
@@ -84,8 +84,8 @@ export function ShopperOrderDetailPage() {
 
       <h2 style={{ fontSize: '1.125rem', margin: '1.5rem 0 0.75rem' }}>Items</h2>
       <div className="app-list">
-        {(order.order_items ?? []).map((item, i) => (
-          <div key={i} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
+        {order.order_items.map((item) => (
+          <div key={item.id} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
             <span>{item.product?.name ?? item.item_title ?? 'Item'} × {item.quantity}</span>
             <span>{formatPrice(item.item_price * item.quantity)}</span>
           </div>

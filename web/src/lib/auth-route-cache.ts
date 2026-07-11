@@ -2,9 +2,10 @@ import type { User } from '@/types/database';
 
 export interface AuthRouteCache {
   userId: string;
-  role: 'shopper' | 'vendor' | 'admin';
+  role: 'shopper' | 'vendor' | 'chef' | 'admin';
   hasInterests: boolean;
   vendorComplete: boolean;
+  chefComplete: boolean;
 }
 
 const CACHE_KEY = 'rooted-auth-route-cache';

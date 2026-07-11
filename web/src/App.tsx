@@ -1,11 +1,11 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 
 import { GuestOnly } from '@/components/layout/GuestOnly';
 import { RequireAuth } from '@/components/layout/RequireAuth';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
-import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
+import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
@@ -15,16 +15,36 @@ import { AdminPostDetailPage } from '@/pages/admin/AdminPostDetailPage';
 import { AdminPostsPage } from '@/pages/admin/AdminPostsPage';
 import { AdminVendorDetailPage } from '@/pages/admin/AdminVendorDetailPage';
 import { AdminVendorsPage } from '@/pages/admin/AdminVendorsPage';
+import { ChefBookingDetailPage } from '@/pages/chef/ChefBookingDetailPage';
+import { ChefBookingsPage } from '@/pages/chef/ChefBookingsPage';
+import { ChefCredentialsPage } from '@/pages/chef/ChefCredentialsPage';
+import { ChefDashboardPage } from '@/pages/chef/ChefDashboardPage';
+import { ChefLayout } from '@/pages/chef/ChefLayout';
+import { ChefPortfolioPage } from '@/pages/chef/ChefPortfolioPage';
+import { ChefProfilePage } from '@/pages/chef/ChefProfilePage';
+import { ChefServiceFormPage } from '@/pages/chef/ChefServiceFormPage';
+import { ChefServicesPage } from '@/pages/chef/ChefServicesPage';
+import { ChefSetupPage } from '@/pages/chef/ChefSetupPage';
 import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
+import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from '@/pages/legal/TermsOfServicePage';
 import { LandingPage } from '@/pages/marketing/LandingPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
+import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
+import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
+import { ShopperChefBookingPage } from '@/pages/shopper/ShopperChefBookingPage';
+import { ShopperChefPage } from '@/pages/shopper/ShopperChefPage';
+import { ShopperChefsPage } from '@/pages/shopper/ShopperChefsPage';
+import { CheckoutSuccessPage } from '@/pages/shopper/CheckoutSuccessPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
 import { ShopperEventsPage } from '@/pages/shopper/ShopperEventsPage';
+import { ShopperExplorePage } from '@/pages/shopper/ShopperExplorePage';
 import { ShopperFeedPage } from '@/pages/shopper/ShopperFeedPage';
 import { ShopperHomePage } from '@/pages/shopper/ShopperHomePage';
 import { ShopperLeftoverDetailPage } from '@/pages/shopper/ShopperLeftoverDetailPage';
@@ -37,16 +57,22 @@ import { ShopperProductPage } from '@/pages/shopper/ShopperProductPage';
 import { ShopperProfileEditPage } from '@/pages/shopper/ShopperProfileEditPage';
 import { ShopperProfilePage } from '@/pages/shopper/ShopperProfilePage';
 import { ShopperReservePage } from '@/pages/shopper/ShopperReservePage';
+import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
+import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
+import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
+import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
 import { VendorDashboardPage } from '@/pages/vendor/VendorDashboardPage';
 import { VendorEventsPage } from '@/pages/vendor/VendorEventsPage';
+import { VendorExplorePage } from '@/pages/vendor/VendorExplorePage';
 import { VendorLeftoverFormPage } from '@/pages/vendor/VendorLeftoverFormPage';
 import { VendorLeftoversPage } from '@/pages/vendor/VendorLeftoversPage';
 import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
+import { VendorPosActivityPage } from '@/pages/vendor/VendorPosActivityPage';
 import { VendorPosConnectedPage } from '@/pages/vendor/VendorPosConnectedPage';
 import { VendorPosConnectionPage } from '@/pages/vendor/VendorPosConnectionPage';
 import { VendorPosMappingsPage } from '@/pages/vendor/VendorPosMappingsPage';
@@ -67,6 +93,9 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
 
+      <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/legal/terms" element={<TermsOfServicePage />} />
+
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
@@ -84,23 +113,32 @@ export default function App() {
         <Route path="/shopper" element={<ShopperLayout />}>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<ShopperHomePage />} />
+          <Route path="search" element={<ShopperSearchPage />} />
+          <Route path="explore" element={<ShopperExplorePage />} />
           <Route path="events" element={<ShopperEventsPage />} />
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="feed" element={<ShopperFeedPage />} />
           <Route path="profile" element={<ShopperProfilePage />} />
-          <Route path="events/:id" element={<ShopperEventDetailPage />} />
-          <Route path="vendors/:id" element={<ShopperVendorPage />} />
-          <Route path="products/:id" element={<ShopperProductPage />} />
-          <Route path="checkout/:productId" element={<ShopperReservePage />} />
-          <Route path="profile/edit" element={<ShopperProfileEditPage />} />
-          <Route path="orders" element={<ShopperOrdersPage />} />
-          <Route path="orders/:id" element={<ShopperOrderDetailPage />} />
-          <Route path="leftovers" element={<ShopperLeftoversPage />} />
-          <Route path="leftovers/:id" element={<ShopperLeftoverDetailPage />} />
         </Route>
 
+        <Route path="/shopper/events/:id" element={<ShopperEventDetailPage />} />
+        <Route path="/shopper/vendors/:id" element={<ShopperVendorPage />} />
+        <Route path="/shopper/chefs" element={<ShopperChefsPage />} />
+        <Route path="/shopper/chefs/:id" element={<ShopperChefPage />} />
+        <Route path="/shopper/chefs/book/:serviceId" element={<ShopperChefBookingPage />} />
+        <Route path="/shopper/bookings" element={<ShopperBookingsPage />} />
+        <Route path="/shopper/bookings/:id" element={<ShopperBookingDetailPage />} />
+        <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
+        <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+        <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
+        <Route path="/shopper/saved" element={<ShopperSavedPage />} />
+        <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
+        <Route path="/shopper/orders/:id" element={<ShopperOrderDetailPage />} />
+        <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
+        <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
+
         <Route path="/vendor" element={<VendorLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="dashboard" element={<VendorDashboardPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
@@ -108,37 +146,56 @@ export default function App() {
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
-          <Route path="orders/:id" element={<VendorOrderDetailPage />} />
-          <Route path="products/new" element={<VendorProductFormPage />} />
-          <Route path="products/:id/edit" element={<VendorProductFormPage />} />
-          <Route path="products/:id/availability" element={<VendorProductAvailabilityPage />} />
-          <Route path="posts/new" element={<VendorPostFormPage />} />
-          <Route path="posts/new-video" element={<VendorVideoPostFormPage />} />
-          <Route path="leftovers" element={<VendorLeftoversPage />} />
-          <Route path="leftovers/new" element={<VendorLeftoverFormPage />} />
-          <Route path="events" element={<VendorEventsPage />} />
-          <Route path="sales/manual" element={<VendorManualSalePage />} />
-          <Route path="pos" element={<VendorPosPage />} />
-          <Route path="pos/connected" element={<VendorPosConnectedPage />} />
-          <Route path="pos/mappings" element={<VendorPosMappingsPage />} />
-          <Route path="pos/:id" element={<VendorPosConnectionPage />} />
-          <Route path="storefront" element={<VendorStorefrontPage />} />
-          <Route path="preview" element={<VendorPreviewPage />} />
         </Route>
 
+        <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
+        <Route path="/vendor/products/new" element={<VendorProductFormPage />} />
+        <Route path="/vendor/products/:id/edit" element={<VendorProductFormPage />} />
+        <Route path="/vendor/products/:id/availability" element={<VendorProductAvailabilityPage />} />
+        <Route path="/vendor/posts/new" element={<VendorPostFormPage />} />
+        <Route path="/vendor/posts/new-video" element={<VendorVideoPostFormPage />} />
+        <Route path="/vendor/leftovers" element={<VendorLeftoversPage />} />
+        <Route path="/vendor/leftovers/new" element={<VendorLeftoverFormPage />} />
+        <Route path="/vendor/events" element={<VendorEventsPage />} />
+        <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
+        <Route path="/vendor/pos" element={<VendorPosPage />} />
+        <Route path="/vendor/pos/activity" element={<VendorPosActivityPage />} />
+        <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />
+        <Route path="/vendor/pos/mappings" element={<VendorPosMappingsPage />} />
+        <Route path="/vendor/pos/:id" element={<VendorPosConnectionPage />} />
+        <Route path="/vendor/storefront" element={<VendorStorefrontPage />} />
+        <Route path="/vendor/preview" element={<VendorPreviewPage />} />
+        <Route path="/vendor/explore" element={<VendorExplorePage />} />
+        <Route path="/vendor/compliance" element={<VendorCompliancePage />} />
+        <Route path="/vendor/credentials" element={<VendorCredentialsPage />} />
+
+        <Route path="/chef" element={<ChefLayout />}>
+          <Route path="setup" element={<ChefSetupPage />} />
+          <Route path="dashboard" element={<ChefDashboardPage />} />
+          <Route path="services" element={<ChefServicesPage />} />
+          <Route path="bookings" element={<ChefBookingsPage />} />
+          <Route path="portfolio" element={<ChefPortfolioPage />} />
+          <Route path="profile" element={<ChefProfilePage />} />
+        </Route>
+
+        <Route path="/chef/services/new" element={<ChefServiceFormPage />} />
+        <Route path="/chef/bookings/:id" element={<ChefBookingDetailPage />} />
+        <Route path="/chef/credentials" element={<ChefCredentialsPage />} />
+
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="vendors" replace />} />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="posts" element={<AdminPostsPage />} />
+          <Route path="credentials" element={<AdminCredentialsPage />} />
           <Route path="more" element={<AdminMorePage />} />
-          <Route path="vendors/:id" element={<AdminVendorDetailPage />} />
-          <Route path="events/new" element={<AdminEventFormPage />} />
-          <Route path="events/:id" element={<AdminEventDetailPage />} />
-          <Route path="orders/:id" element={<AdminOrderDetailPage />} />
-          <Route path="posts/:id" element={<AdminPostDetailPage />} />
         </Route>
+
+        <Route path="/admin/vendors/:id" element={<AdminVendorDetailPage />} />
+        <Route path="/admin/events/new" element={<AdminEventFormPage />} />
+        <Route path="/admin/events/:id" element={<AdminEventDetailPage />} />
+        <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
+        <Route path="/admin/posts/:id" element={<AdminPostDetailPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

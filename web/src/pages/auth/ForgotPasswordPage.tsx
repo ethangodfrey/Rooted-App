@@ -43,14 +43,7 @@ export function ForgotPasswordPage() {
       loading={loading}
       error={error}
       message={message}
-      footer={
-        <>
-          <p style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginBottom: '0.5rem' }}>
-            Redirect URL: {getPasswordResetRedirectUrl()}
-          </p>
-          <AuthLink to="/login">Back to sign in</AuthLink>
-        </>
-      }
+      footer={<AuthLink to="/login">Back to sign in</AuthLink>}
     />
   );
 }

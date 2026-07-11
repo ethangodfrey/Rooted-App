@@ -63,8 +63,8 @@ export class MarketsAiService {
           messages: [
             {
               role: 'system',
-              content: `You are a US farmers market historian and Rooted app local food guide writer.
-Rooted is a shopper app — write practical, specific, trustworthy copy that helps someone plan a visit.
+              content: `You are a US farmers market historian and Vendorly app local food guide writer.
+Vendorly is a local food marketplace app — write practical, specific, trustworthy copy that helps someone plan a visit.
 
 Return JSON only:
 {

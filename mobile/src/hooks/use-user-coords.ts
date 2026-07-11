@@ -1,12 +1,12 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
+import { InteractionManager } from 'react-native';
 
 import { useAuth } from '@/src/hooks/use-auth';
-import {
-  hasAskedLocationPermission,
-  markLocationPermissionAsked,
-} from '@/src/lib/location-preferences';
 import type { Coords } from '@/src/lib/geo';
+import { coordsFrom, isValidCoords } from '@/src/lib/geo';
+import { readCachedCoords, writeCachedCoords } from '@/src/lib/location-cache';
+import { markLocationPermissionAsked } from '@/src/lib/location-preferences';
 
 export type CoordsSource = 'gps' | 'submitted' | null;
 
@@ -14,7 +14,10 @@ async function geocodeSubmittedLocation(query: string): Promise<Coords | null> {
   try {
     const results = await Location.geocodeAsync(query);
     if (results.length > 0) {
-      return { latitude: results[0].latitude, longitude: results[0].longitude };
+      return coordsFrom({
+        latitude: results[0].latitude,
+        longitude: results[0].longitude,
+      });
     }
   } catch {
     // geocoding unavailable
@@ -27,22 +30,37 @@ async function resolveGpsCoords(): Promise<Coords | null> {
     const pos = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
-    return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+    return coordsFrom({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+    });
   } catch {
     return null;
   }
 }
 
+function applyCoords(
+  coords: Coords,
+  source: CoordsSource,
+  setCoords: (c: Coords) => void,
+  setSource: (s: CoordsSource) => void,
+) {
+  if (!isValidCoords(coords)) return;
+  setCoords(coords);
+  setSource(source);
+  void writeCachedCoords(coords);
+}
+
 /**
- * Resolves shopper coordinates without re-prompting for location every visit.
- * GPS is used when already granted; the system dialog is shown at most once.
- * Otherwise falls back to the city/ZIP from onboarding (geocoded).
+ * Resolves shopper coordinates without blocking first paint.
+ * Uses persisted coords instantly, then city/state geocode. GPS runs only when
+ * permission is already granted — the system dialog is never shown automatically.
  */
 export function useUserCoords() {
   const { user, shopper } = useAuth();
   const [coords, setCoords] = useState<Coords | null>(null);
   const [source, setSource] = useState<CoordsSource>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const submittedQuery =
     [user?.city, user?.state].filter(Boolean).join(', ') ||
@@ -50,59 +68,55 @@ export function useUserCoords() {
     shopper?.default_location ||
     null;
 
-  const resolveCoords = useCallback(async () => {
+  const resolveCoords = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true);
-
     try {
-      if (submittedQuery) {
-        const submitted = await geocodeSubmittedLocation(submittedQuery);
-        if (submitted) {
-          setCoords(submitted);
-          setSource('submitted');
-          setLoading(false);
-        }
+      const persisted = await readCachedCoords();
+      if (!isActive()) return;
+      if (persisted) {
+        applyCoords(persisted, 'submitted', setCoords, setSource);
       }
 
-      let permission = await Location.getForegroundPermissionsAsync();
+      const geocodePromise = submittedQuery
+        ? geocodeSubmittedLocation(submittedQuery)
+        : Promise.resolve(null);
 
-      if (permission.status === 'granted') {
-        const gps = await resolveGpsCoords();
-        if (gps) {
-          setCoords(gps);
-          setSource('gps');
-          setLoading(false);
-          return;
-        }
+      const permission = await Location.getForegroundPermissionsAsync();
+      const gpsPromise =
+        permission.status === 'granted' ? resolveGpsCoords() : Promise.resolve(null);
+
+      const [geocoded, gps] = await Promise.all([geocodePromise, gpsPromise]);
+      if (!isActive()) return;
+
+      if (gps) {
+        applyCoords(gps, 'gps', setCoords, setSource);
+        return;
       }
-
-      if (permission.status === 'undetermined') {
-        const askedBefore = await hasAskedLocationPermission();
-        if (!askedBefore) {
-          await markLocationPermissionAsked();
-          permission = await Location.requestForegroundPermissionsAsync();
-          if (permission.status === 'granted') {
-            const gps = await resolveGpsCoords();
-            if (gps) {
-              setCoords(gps);
-              setSource('gps');
-              setLoading(false);
-              return;
-            }
-          }
-        }
-      }
-
-      if (!submittedQuery) {
-        setCoords(null);
-        setSource(null);
+      if (geocoded) {
+        applyCoords(geocoded, 'submitted', setCoords, setSource);
       }
     } finally {
-      setLoading(false);
+      if (isActive()) setLoading(false);
     }
   }, [submittedQuery]);
 
   useEffect(() => {
-    resolveCoords();
+    let active = true;
+
+    void readCachedCoords().then((persisted) => {
+      if (!active || !persisted || !isValidCoords(persisted)) return;
+      setCoords(persisted);
+      setSource('submitted');
+    });
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (active) void resolveCoords(() => active);
+    });
+
+    return () => {
+      active = false;
+      task.cancel();
+    };
   }, [resolveCoords]);
 
   return { coords, source, loading, refresh: resolveCoords };
@@ -117,7 +131,9 @@ export async function requestGpsCoordsForUserAction(): Promise<Coords | null> {
       permission = await Location.requestForegroundPermissionsAsync();
     }
     if (permission.status !== 'granted') return null;
-    return resolveGpsCoords();
+    const gps = await resolveGpsCoords();
+    if (gps) void writeCachedCoords(gps);
+    return gps;
   } catch {
     return null;
   }

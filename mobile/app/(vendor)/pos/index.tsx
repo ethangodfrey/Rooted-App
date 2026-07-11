@@ -51,10 +51,10 @@ export default function PosConnectionsScreen() {
       return;
     }
     try {
-      await triggerStalePosSync();
       const data = await posApi.listConnections();
       setConnections(data);
       setError(null);
+      void triggerStalePosSync();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -156,7 +156,8 @@ export default function PosConnectionsScreen() {
             POS sync isn&apos;t available yet.
           </Text>
           <Text variant="caption" className="mt-2 text-center">
-            Set EXPO_PUBLIC_API_URL to the Rooted backend to connect Square.
+            POS sync, admin AI agents, and proxied market photos need a deployed backend.
+            Everything else runs on Supabase.
           </Text>
         </Screen>
       ) : (
@@ -243,7 +244,7 @@ export default function PosConnectionsScreen() {
                 onPress={connectSquare}
               />
               <Text variant="caption" className="mt-3">
-                After you tap Allow in Safari, close Safari and switch back to Rooted manually. iOS
+                After you tap Allow in Safari, close Safari and switch back to Vendorly manually. iOS
                 cannot deep-link back into Expo Go from the browser.
               </Text>
             </Card>

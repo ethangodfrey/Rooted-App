@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { updateShopperEmail, updateShopperProfile } from '@/lib/shopper-profile';
@@ -24,6 +26,7 @@ export function ShopperProfileEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'email', string>>>({});
 
   useEffect(() => {
     setName(user?.name ?? '');
@@ -66,6 +69,20 @@ export function ShopperProfileEditPage() {
     setSaving(true);
     setError(null);
     setMessage(null);
+
+    const nextFieldErrors: Partial<Record<'email', string>> = {};
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      nextFieldErrors.email = 'Enter a valid email address.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setSaving(false);
+      return;
+    }
+
+    setFieldErrors({});
 
     const profileResult = await updateShopperProfile(user.id, {
       name,
@@ -119,7 +136,13 @@ export function ShopperProfileEditPage() {
 
       <div className="profile-avatar-block">
         {photoUrl ? (
-          <img src={photoUrl} alt="" className="profile-avatar" />
+          <FallbackImage
+            src={photoUrl}
+            alt=""
+            variant="avatar"
+            label={name || email}
+            className="profile-avatar"
+          />
         ) : (
           <div className="profile-avatar profile-avatar--placeholder">{initials}</div>
         )}
@@ -153,11 +176,20 @@ export function ShopperProfileEditPage() {
         <label htmlFor="email">Email</label>
         <input
           id="email"
-          className="app-input"
+          className={`app-input${fieldErrors.email ? ' app-input--invalid' : ''}`}
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setFieldErrors((prev) => {
+              if (!prev.email) return prev;
+              const next = { ...prev };
+              delete next.email;
+              return next;
+            });
+          }}
         />
+        <FieldError message={fieldErrors.email} />
         <p className="app-row-meta" style={{ marginTop: '0.375rem' }}>
           Changing your email may require confirmation via inbox.
         </p>

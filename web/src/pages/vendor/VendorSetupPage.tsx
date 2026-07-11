@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
+import { geocodeAddress } from '@/lib/geocode';
 import { resetRoleSelection } from '@/lib/reset-role-selection';
 import { supabase } from '@/lib/supabase';
 import {
   normalizeUrl,
   SELLING_CHANNEL_OPTIONS,
-  validateVendorApplication,
+  validateVendorApplicationFields,
   VENDOR_CATEGORY_OPTIONS,
   type SellingChannel,
+  type VendorApplicationInput,
 } from '@/lib/vendor-application';
 import '@/components/ui/ui.css';
 
@@ -20,8 +23,10 @@ export function VendorSetupPage() {
   const [productSummary, setProductSummary] = useState(vendor?.product_summary ?? '');
   const [description, setDescription] = useState(vendor?.business_description ?? '');
   const [category, setCategory] = useState(vendor?.category ?? '');
+  const [streetAddress, setStreetAddress] = useState(vendor?.street_address ?? '');
   const [sellCity, setSellCity] = useState(vendor?.sell_city ?? '');
   const [sellState, setSellState] = useState(vendor?.sell_state ?? '');
+  const [postalCode, setPostalCode] = useState(vendor?.postal_code ?? '');
   const [channels, setChannels] = useState<SellingChannel[]>(
     (vendor?.selling_channels as SellingChannel[]) ?? [],
   );
@@ -32,6 +37,18 @@ export function VendorSetupPage() {
   const [loading, setLoading] = useState(false);
   const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof VendorApplicationInput | 'social' | 'attested', string>>
+  >({});
+
+  function clearFieldError(field: keyof typeof fieldErrors) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function toggleChannel(option: SellingChannel) {
     setChannels((prev) =>
@@ -55,14 +72,33 @@ export function VendorSetupPage() {
       website_url: normalizeUrl(website),
     };
 
-    const validationError = validateVendorApplication(application, attested);
-    if (validationError) {
-      setError(validationError);
+    const validationErrors = validateVendorApplicationFields(application, attested);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError(null);
       return;
     }
 
+    setFieldErrors({});
+    setError(null);
     setLoading(true);
     const now = new Date().toISOString();
+
+    const cleanCity = application.sell_city.trim();
+    const cleanState = application.sell_state.trim().toUpperCase();
+    const cleanStreet = streetAddress.trim();
+    const cleanPostal = postalCode.trim();
+
+    // Best-effort geocode so the vendor lands on the nearby map. Falls back to a
+    // city/state centroid and never blocks the save on failure.
+    const coords = await geocodeAddress({
+      streetAddress: cleanStreet,
+      city: cleanCity,
+      state: cleanState,
+      postalCode: cleanPostal,
+      country: 'USA',
+    });
+
     const { error: vendorError } = await supabase
       .from('vendors')
       .update({
@@ -70,8 +106,12 @@ export function VendorSetupPage() {
         product_summary: application.product_summary.trim(),
         business_description: application.business_description,
         category: application.category,
-        sell_city: application.sell_city.trim(),
-        sell_state: application.sell_state.trim().toUpperCase(),
+        street_address: cleanStreet || null,
+        sell_city: cleanCity,
+        sell_state: cleanState,
+        postal_code: cleanPostal || null,
+        country: 'USA',
+        ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         selling_channels: application.selling_channels,
         primary_market: application.primary_market,
         instagram_url: application.instagram_url,
@@ -115,11 +155,27 @@ export function VendorSetupPage() {
 
       <div className="app-input-group">
         <label>Business name</label>
-        <input className="app-input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.business_name ? ' app-input--invalid' : ''}`}
+          value={businessName}
+          onChange={(e) => {
+            setBusinessName(e.target.value);
+            clearFieldError('business_name');
+          }}
+        />
+        <FieldError message={fieldErrors.business_name} />
       </div>
       <div className="app-input-group">
         <label>What do you sell?</label>
-        <textarea className="app-textarea" value={productSummary} onChange={(e) => setProductSummary(e.target.value)} />
+        <textarea
+          className={`app-textarea${fieldErrors.product_summary ? ' app-textarea--invalid' : ''}`}
+          value={productSummary}
+          onChange={(e) => {
+            setProductSummary(e.target.value);
+            clearFieldError('product_summary');
+          }}
+        />
+        <FieldError message={fieldErrors.product_summary} />
       </div>
       <div className="app-input-group">
         <label>About (optional)</label>
@@ -129,29 +185,87 @@ export function VendorSetupPage() {
       <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Category</p>
       <div className="app-chip-row">
         {VENDOR_CATEGORY_OPTIONS.map((opt) => (
-          <button key={opt} type="button" className={`app-chip${category === opt ? ' app-chip--selected' : ''}`} onClick={() => setCategory(opt)}>
+          <button
+            key={opt}
+            type="button"
+            className={`app-chip${category === opt ? ' app-chip--selected' : ''}`}
+            onClick={() => {
+              setCategory(opt);
+              clearFieldError('category');
+            }}
+          >
             {opt}
           </button>
         ))}
       </div>
+      <FieldError message={fieldErrors.category} />
 
       <div className="app-input-group">
-        <label>City</label>
-        <input className="app-input" value={sellCity} onChange={(e) => setSellCity(e.target.value)} />
+        <label>Street address</label>
+        <input
+          className="app-input"
+          value={streetAddress}
+          onChange={(e) => setStreetAddress(e.target.value)}
+          placeholder="123 Main St"
+          autoComplete="street-address"
+        />
+      </div>
+      <div className="app-form-grid">
+        <div className="app-input-group">
+          <label>City</label>
+          <input
+            className={`app-input${fieldErrors.sell_city ? ' app-input--invalid' : ''}`}
+            value={sellCity}
+            onChange={(e) => {
+              setSellCity(e.target.value);
+              clearFieldError('sell_city');
+            }}
+          />
+          <FieldError message={fieldErrors.sell_city} />
+        </div>
+        <div className="app-input-group">
+          <label>State</label>
+          <input
+            className={`app-input${fieldErrors.sell_state ? ' app-input--invalid' : ''}`}
+            value={sellState}
+            onChange={(e) => {
+              setSellState(e.target.value);
+              clearFieldError('sell_state');
+            }}
+            maxLength={2}
+          />
+          <FieldError message={fieldErrors.sell_state} />
+        </div>
       </div>
       <div className="app-input-group">
-        <label>State</label>
-        <input className="app-input" value={sellState} onChange={(e) => setSellState(e.target.value)} maxLength={2} />
+        <label>ZIP code</label>
+        <input
+          className="app-input"
+          value={postalCode}
+          onChange={(e) => setPostalCode(e.target.value)}
+          placeholder="78701"
+          inputMode="numeric"
+          autoComplete="postal-code"
+        />
       </div>
 
       <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Where do you sell?</p>
       <div className="app-chip-row">
         {SELLING_CHANNEL_OPTIONS.map((opt) => (
-          <button key={opt} type="button" className={`app-chip${channels.includes(opt) ? ' app-chip--selected' : ''}`} onClick={() => toggleChannel(opt)}>
+          <button
+            key={opt}
+            type="button"
+            className={`app-chip${channels.includes(opt) ? ' app-chip--selected' : ''}`}
+            onClick={() => {
+              toggleChannel(opt);
+              clearFieldError('selling_channels');
+            }}
+          >
             {opt}
           </button>
         ))}
       </div>
+      <FieldError message={fieldErrors.selling_channels} />
 
       <div className="app-input-group">
         <label>Primary market (optional)</label>
@@ -159,17 +273,40 @@ export function VendorSetupPage() {
       </div>
       <div className="app-input-group">
         <label>Instagram URL</label>
-        <input className="app-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
+          value={instagram}
+          onChange={(e) => {
+            setInstagram(e.target.value);
+            clearFieldError('social');
+          }}
+        />
       </div>
       <div className="app-input-group">
         <label>Website URL</label>
-        <input className="app-input" value={website} onChange={(e) => setWebsite(e.target.value)} />
+        <input
+          className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
+          value={website}
+          onChange={(e) => {
+            setWebsite(e.target.value);
+            clearFieldError('social');
+          }}
+        />
+        <FieldError message={fieldErrors.social} />
       </div>
 
       <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <input type="checkbox" checked={attested} onChange={(e) => setAttested(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={attested}
+          onChange={(e) => {
+            setAttested(e.target.checked);
+            clearFieldError('attested');
+          }}
+        />
         <span className="app-row-meta">I confirm this information is accurate and represents my business.</span>
       </label>
+      <FieldError message={fieldErrors.attested} />
 
       {error ? <p className="app-error">{error}</p> : null}
 

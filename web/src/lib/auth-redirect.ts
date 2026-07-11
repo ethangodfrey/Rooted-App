@@ -1,6 +1,7 @@
-import { getTrustedAuthCache, type AuthRouteCache } from '@/lib/auth-route-cache';
+import type { AuthRouteCache } from '@/lib/auth-route-cache';
+import { isChefProfileComplete } from '@/lib/chef-profile';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
-import type { Shopper, User, Vendor } from '@/types/database';
+import type { Chef, Shopper, User, Vendor } from '@/types/database';
 
 export type AuthRedirectPath =
   | '/login'
@@ -9,11 +10,21 @@ export type AuthRedirectPath =
   | '/shopper/home'
   | '/vendor/setup'
   | '/vendor/dashboard'
+  | '/chef/setup'
+  | '/chef/dashboard'
   | '/admin/vendors';
 
 export function getAppOrigin(): string {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    // In dev, always match the browser origin so OAuth redirect URLs stay valid.
+    if (import.meta.env.DEV) {
+      return window.location.origin;
+    }
+  }
+
   const configured = import.meta.env.VITE_APP_URL?.trim();
   if (configured) return configured.replace(/\/$/, '');
+
   if (typeof window !== 'undefined') return window.location.origin;
   return '';
 }
@@ -22,26 +33,24 @@ export function getAuthRedirectUrl(): string {
   return `${getAppOrigin()}/auth/callback`;
 }
 
-export function getPasswordResetRedirectUrl(): string {
-  return `${getAppOrigin()}/auth/reset-password`;
-}
-
 export function getAuthRedirectUrlForDisplay(): string {
   return getAuthRedirectUrl();
+}
+
+export function getPasswordResetRedirectUrl(): string {
+  return `${getAppOrigin()}/auth/reset-password`;
 }
 
 export function resolveAuthRedirect(
   user: User | null,
   shopper: Shopper | null,
   vendor: Vendor | null,
+  chef: Chef | null,
   cache: AuthRouteCache | null,
   sessionUserId: string | null,
-  isProfileLoading = false,
 ): AuthRedirectPath | null {
   const trustedCache =
-    cache && sessionUserId
-      ? getTrustedAuthCache(cache, sessionUserId, { user, isProfileLoading })
-      : null;
+    cache && sessionUserId && cache.userId === sessionUserId ? cache : null;
 
   const role = user?.role ?? trustedCache?.role ?? null;
 
@@ -50,7 +59,7 @@ export function resolveAuthRedirect(
     return null;
   }
 
-  if (role === 'shopper') {
+  if (role === 'shopper' || role === 'customer') {
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);
@@ -62,6 +71,13 @@ export function resolveAuthRedirect(
       ? isVendorApplicationComplete(vendor)
       : (trustedCache?.vendorComplete ?? false);
     return complete ? '/vendor/dashboard' : '/vendor/setup';
+  }
+
+  if (role === 'chef') {
+    const complete = user
+      ? isChefProfileComplete(chef)
+      : (trustedCache?.chefComplete ?? false);
+    return complete ? '/chef/dashboard' : '/chef/setup';
   }
 
   if (role === 'admin') {

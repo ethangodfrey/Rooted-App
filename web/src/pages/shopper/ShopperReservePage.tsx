@@ -1,15 +1,31 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { formatEventFullDate, formatPrice } from '@/lib/format';
+import { createCheckout } from '@/lib/checkout-api';
+import { useNow } from '@/hooks/use-now';
+import { formatEventDisplayFullDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
 export function ShopperReservePage() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<{ id: string; name: string; price: number; reserve_enabled: boolean } | null>(null);
-  const [options, setOptions] = useState<{ available_quantity_presale: number; event: { id: string; name: string; start_datetime: string; city: string | null } | null }[]>([]);
+  const now = useNow(60_000);
+  const [product, setProduct] = useState<{ id: string; name: string; price: number } | null>(null);
+  const [options, setOptions] = useState<{
+    available_quantity_presale: number;
+    event: {
+      id: string;
+      name: string;
+      start_datetime: string;
+      end_datetime?: string | null;
+      timezone?: string | null;
+      hours_summary?: string | null;
+      sync_metadata?: Record<string, unknown>;
+      city: string | null;
+      state?: string | null;
+    } | null;
+  }[]>([]);
   const [eventId, setEventId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
@@ -21,10 +37,9 @@ export function ShopperReservePage() {
     async function load() {
       const [productRes, availRes] = await Promise.all([
         supabase.from('products').select('id, name, price, reserve_enabled').eq('id', productId).maybeSingle(),
-        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime, city, state)').eq('product_id', productId).gt('available_quantity_presale', 0),
+        supabase.from('product_event_availability').select('available_quantity_presale, event:events(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, city, state)').eq('product_id', productId).gt('available_quantity_presale', 0),
       ]);
-      const productRow = productRes.data as typeof product | null;
-      setProduct(productRow?.reserve_enabled ? productRow : null);
+      setProduct(productRes.data);
       const opts = (availRes.data as unknown as typeof options) ?? [];
       setOptions(opts);
       if (opts.length === 1 && opts[0].event) setEventId(opts[0].event.id);
@@ -40,22 +55,25 @@ export function ShopperReservePage() {
     }
     setSubmitting(true);
     setError(null);
-    const { data, error: rpcError } = await supabase.rpc('create_reservation', {
-      p_product_id: productId,
-      p_event_id: eventId,
-      p_quantity: quantity,
-      p_notes: notes.trim() || null,
-    });
-    setSubmitting(false);
-    if (rpcError) {
-      setError(rpcError.message);
-      return;
+    try {
+      const result = await createCheckout([
+        {
+          productId: productId!,
+          eventId,
+          quantity,
+          notes: notes.trim() || undefined,
+        },
+      ]);
+      navigate(`/checkout/success?transactionId=${result.transactionId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Checkout failed.');
+    } finally {
+      setSubmitting(false);
     }
-    navigate(`/shopper/orders/${data as string}`);
   }
 
   if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
-  if (!product) return <div className="app-empty">Product not found or reservations are not enabled.</div>;
+  if (!product) return <div className="app-empty">Product not found.</div>;
 
   const total = product.price * quantity;
 
@@ -71,7 +89,7 @@ export function ShopperReservePage() {
           <option value="">Select event</option>
           {options.map((opt) => (
             <option key={opt.event?.id} value={opt.event?.id}>
-              {opt.event?.name} — {opt.event ? formatEventFullDate(opt.event.start_datetime) : ''}
+              {opt.event?.name} — {opt.event ? formatEventDisplayFullDate(opt.event, now) : ''}
             </option>
           ))}
         </select>
