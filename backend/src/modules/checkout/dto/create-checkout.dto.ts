@@ -1,10 +1,12 @@
 import {
   ArrayMinSize,
   IsArray,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
+  IsUrl,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -24,6 +26,10 @@ export class CheckoutLineItemDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  holdId?: string;
 }
 
 export class CreateCheckoutDto {
@@ -34,6 +40,18 @@ export class CreateCheckoutDto {
   items!: CheckoutLineItemDto[];
 
   @IsOptional()
+  @IsIn(['pickup', 'stripe'])
+  paymentMethod?: 'pickup' | 'stripe';
+
+  @IsOptional()
   @IsString()
   stripePaymentIntentId?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  successUrl?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  cancelUrl?: string;
 }

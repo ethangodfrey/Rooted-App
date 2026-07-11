@@ -1,4 +1,4 @@
-import { createCheckout, type CheckoutLineInput } from '@/lib/checkout-api';
+import { createCheckout, type CheckoutLineInput, type CheckoutPaymentMethod } from '@/lib/checkout-api';
 import { validateCartInventory } from '@/lib/cart-inventory';
 import type { PresaleCart } from '@/lib/presale-cart';
 import { supabase } from '@/lib/supabase';
@@ -107,7 +107,11 @@ export function buildCheckoutPayload(cart: PresaleCart, notes?: string): Checkou
 }
 
 /** Submit staged multi-vendor presale cart through the NestJS checkout API. */
-export async function submitStagedCheckout(cart: PresaleCart, notes?: string) {
+export async function submitStagedCheckout(
+  cart: PresaleCart,
+  notes?: string,
+  paymentMethod: CheckoutPaymentMethod = 'pickup',
+) {
   const preview = await stageCheckoutPreview(cart);
   if (!preview.inventoryValid) {
     const first = preview.inventoryIssues[0];
@@ -117,5 +121,14 @@ export async function submitStagedCheckout(cart: PresaleCart, notes?: string) {
     throw new Error('No approved vendors in this market session.');
   }
 
-  return createCheckout(buildCheckoutPayload(cart, notes));
+  const successUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/checkout/success`
+      : undefined;
+
+  return createCheckout(buildCheckoutPayload(cart, notes), {
+    paymentMethod,
+    successUrl,
+    cancelUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+  });
 }

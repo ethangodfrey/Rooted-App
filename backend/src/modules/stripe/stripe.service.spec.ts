@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config';
 import type Stripe from 'stripe';
 
+import type { CheckoutInventoryService } from '../checkout/checkout-inventory.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StripeService } from './stripe.service';
 
@@ -31,15 +32,40 @@ function fakeConfig(overrides: Record<string, string> = {}): ConfigService {
   } as unknown as ConfigService;
 }
 
+function fakeInventory(): CheckoutInventoryService {
+  return {
+    finalizePaidOrder: jest.fn(async () => undefined),
+    compensateStripeCheckout: jest.fn(async () => undefined),
+    reserveForStripeCheckout: jest.fn(async () => undefined),
+    decrementPresale: jest.fn(async () => undefined),
+  } as unknown as CheckoutInventoryService;
+}
+
 function fakePrisma() {
   const executeRawCalls: unknown[][] = [];
   const vendorUpdateManyCalls: unknown[] = [];
+
+  const tx = {
+    $executeRaw: jest.fn(async (...args: unknown[]) => {
+      executeRawCalls.push(args);
+    }),
+    $queryRaw: jest.fn(async () => [
+      {
+        id: 'order-abc',
+        transaction_id: 'txn-1',
+        vendor_id: 'vendor-xyz',
+        total: 1000,
+        platform_fee: 50,
+      },
+    ]),
+  };
 
   const prisma = {
     $executeRaw: jest.fn(async (...args: unknown[]) => {
       executeRawCalls.push(args);
     }),
-    $queryRaw: jest.fn(),
+    $queryRaw: jest.fn(async () => []),
+    $transaction: jest.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
     vendor: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -50,7 +76,7 @@ function fakePrisma() {
     },
   } as unknown as PrismaService;
 
-  return { prisma, executeRawCalls, vendorUpdateManyCalls };
+  return { prisma, executeRawCalls, vendorUpdateManyCalls, tx };
 }
 
 describe('StripeService payment webhook handling', () => {
@@ -60,12 +86,18 @@ describe('StripeService payment webhook handling', () => {
 
   it('marks an order paid_online when checkout.session.completed succeeds', async () => {
     const { prisma, executeRawCalls } = fakePrisma();
-    const service = new StripeService(fakeConfig(), prisma);
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
 
     const session = {
       id: 'cs_test_123',
       payment_intent: 'pi_test_456',
-      metadata: { order_id: 'order-abc', vendor_id: 'vendor-xyz' },
+      metadata: {
+        order_id: 'order-abc',
+        vendor_id: 'vendor-xyz',
+        customer_user_id: 'user-1',
+        transaction_id: 'txn-1',
+      },
     } as unknown as Stripe.Checkout.Session;
 
     await service.handleWebhookEvent({
@@ -74,15 +106,14 @@ describe('StripeService payment webhook handling', () => {
       data: { object: session },
     } as unknown as Stripe.Event);
 
-    expect(executeRawCalls).toHaveLength(1);
-    expect(executeRawCalls[0]).toEqual(
-      expect.arrayContaining(['order-abc', 'pi_test_456', 'cs_test_123']),
-    );
+    expect(inventory.finalizePaidOrder).toHaveBeenCalledWith(expect.anything(), 'order-abc', 'user-1');
+    expect(executeRawCalls.length).toBeGreaterThan(0);
   });
 
   it('ignores checkout.session.completed when order_id metadata is missing', async () => {
     const { prisma, executeRawCalls } = fakePrisma();
-    const service = new StripeService(fakeConfig(), prisma);
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
 
     await service.handleWebhookEvent({
       id: 'evt_2',
@@ -96,12 +127,12 @@ describe('StripeService payment webhook handling', () => {
       },
     } as unknown as Stripe.Event);
 
-    expect(executeRawCalls).toHaveLength(0);
+    expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
   });
 
   it('updates vendor Connect flags on account.updated', async () => {
     const { prisma, vendorUpdateManyCalls } = fakePrisma();
-    const service = new StripeService(fakeConfig(), prisma);
+    const service = new StripeService(fakeConfig(), prisma, fakeInventory());
 
     await service.handleWebhookEvent({
       id: 'evt_3',
@@ -123,6 +154,7 @@ describe('StripeService payment webhook handling', () => {
         data: {
           stripeChargesEnabled: true,
           stripePayoutsEnabled: false,
+          payoutsEnabled: false,
         },
       },
     ]);
@@ -130,7 +162,8 @@ describe('StripeService payment webhook handling', () => {
 
   it('no-ops unknown webhook event types', async () => {
     const { prisma, executeRawCalls, vendorUpdateManyCalls } = fakePrisma();
-    const service = new StripeService(fakeConfig(), prisma);
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
 
     await service.handleWebhookEvent({
       id: 'evt_4',
@@ -138,14 +171,14 @@ describe('StripeService payment webhook handling', () => {
       data: { object: {} },
     } as unknown as Stripe.Event);
 
-    expect(executeRawCalls).toHaveLength(0);
+    expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
     expect(vendorUpdateManyCalls).toHaveLength(0);
   });
 
   describe('verifyWebhook', () => {
     it('delegates signature verification to Stripe SDK', () => {
       const { prisma } = fakePrisma();
-      const service = new StripeService(fakeConfig(), prisma);
+      const service = new StripeService(fakeConfig(), prisma, fakeInventory());
       const event = { id: 'evt_verified', type: 'ping' };
       constructEvent.mockReturnValue(event);
 
@@ -158,7 +191,7 @@ describe('StripeService payment webhook handling', () => {
 
     it('throws when signature header is missing', () => {
       const { prisma } = fakePrisma();
-      const service = new StripeService(fakeConfig(), prisma);
+      const service = new StripeService(fakeConfig(), prisma, fakeInventory());
 
       expect(() => service.verifyWebhook('{}', undefined)).toThrow(/Missing Stripe-Signature/);
     });

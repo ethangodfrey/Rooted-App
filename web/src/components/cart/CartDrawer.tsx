@@ -118,25 +118,39 @@ export function CartDrawer() {
     };
   }, [cart, drawerOpen, drawerStage]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!cart) return;
-    if (!isApiConfigured) {
-      setCheckoutError('Checkout API is not configured. Set VITE_API_URL to place presale orders.');
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (paymentMethod: 'pickup' | 'stripe') => {
+      if (!cart) return;
+      if (!isApiConfigured) {
+        setCheckoutError('Checkout API is not configured. Set VITE_API_URL to place presale orders.');
+        return;
+      }
 
-    setSubmitting(true);
-    setCheckoutError(null);
-    try {
-      const result = await submitStagedCheckout(cart, notes);
-      closeDrawer();
-      navigate(`/checkout/success?transactionId=${result.transactionId}`);
-    } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : 'Checkout failed.');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [cart, closeDrawer, navigate, notes]);
+      setSubmitting(true);
+      setCheckoutError(null);
+      try {
+        const result = await submitStagedCheckout(cart, notes, paymentMethod);
+
+        if (paymentMethod === 'stripe' && result.stripeSessions?.length) {
+          const nextUrl = result.stripeSessions.find((session) => session.url)?.url;
+          if (!nextUrl) {
+            throw new Error('Stripe checkout could not be started for this order.');
+          }
+          closeDrawer();
+          window.location.href = nextUrl;
+          return;
+        }
+
+        closeDrawer();
+        navigate(`/checkout/success?transactionId=${result.transactionId}`);
+      } catch (err) {
+        setCheckoutError(err instanceof Error ? err.message : 'Checkout failed.');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [cart, closeDrawer, navigate, notes],
+  );
 
   const pickupLabel = cart ? pickupSummaryFromCart(cart, now) : null;
 
@@ -314,15 +328,18 @@ export function CartDrawer() {
                   <button
                     type="button"
                     className="app-btn app-btn--primary"
-                    disabled={
-                      submitting ||
-                      stagingLoading ||
-                      !staging?.inventoryValid ||
-                      !isApiConfigured
-                    }
-                    onClick={() => void handleSubmit()}
+                    disabled={submitting || stagingLoading || !staging?.inventoryValid || !isApiConfigured}
+                    onClick={() => void handleSubmit('pickup')}
                   >
-                    {submitting ? 'Placing presale order…' : 'Place presale order'}
+                    {submitting ? 'Placing presale order…' : 'Reserve & pay at pickup'}
+                  </button>
+                  <button
+                    type="button"
+                    className="app-btn app-btn--primary"
+                    disabled={submitting || stagingLoading || !staging?.inventoryValid || !isApiConfigured}
+                    onClick={() => void handleSubmit('stripe')}
+                  >
+                    Pay online (Stripe)
                   </button>
                 </div>
               )}

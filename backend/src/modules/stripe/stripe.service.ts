@@ -5,14 +5,24 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import Stripe from 'stripe';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { CheckoutInventoryService } from '../checkout/checkout-inventory.service';
 import {
   STRIPE_CHECKOUT_CANCEL_PATH,
   STRIPE_CHECKOUT_SUCCESS_PATH,
   STRIPE_PLATFORM_FEE_BPS,
 } from './stripe.constants';
+
+export interface CheckoutStripeSessionResult {
+  orderId: string;
+  vendorId: string;
+  vendorName: string | null;
+  sessionId: string;
+  url: string | null;
+}
 
 @Injectable()
 export class StripeService {
@@ -23,6 +33,7 @@ export class StripeService {
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly inventory: CheckoutInventoryService,
   ) {
     const secretKey = this.config.get<string>('STRIPE_SECRET_KEY', '').trim();
     this.client = secretKey ? new Stripe(secretKey) : null;
@@ -136,6 +147,63 @@ export class StripeService {
     };
   }
 
+  /** Creates Stripe Checkout Sessions for every vendor sub-order in a transaction. */
+  async createTransactionCheckoutSessions(params: {
+    transactionId: string;
+    customerUserId: string;
+    successUrl?: string;
+    cancelUrl?: string;
+  }): Promise<CheckoutStripeSessionResult[]> {
+    const orders = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        total: number;
+        platform_fee: number;
+        payment_status: string;
+        vendor_id: string;
+        business_name: string | null;
+        stripe_account_id: string | null;
+        stripe_charges_enabled: boolean;
+      }>
+    >`
+      select
+        o.id,
+        o.total,
+        o.platform_fee,
+        o.payment_status,
+        o.vendor_id,
+        v.business_name,
+        v.stripe_account_id,
+        v.stripe_charges_enabled
+      from public.orders o
+      join public.vendors v on v.id = o.vendor_id
+      join public.transactions t on t.id = o.transaction_id
+      where o.transaction_id = ${params.transactionId}::uuid
+        and t.customer_id = ${params.customerUserId}::uuid
+        and o.payment_status = 'stripe_pending'
+      order by o.created_at asc
+    `;
+
+    if (orders.length === 0) {
+      throw new BadRequestException('No pending Stripe orders found for this transaction.');
+    }
+
+    const sessions: CheckoutStripeSessionResult[] = [];
+    for (const row of orders) {
+      const session = await this.createVendorCheckoutSession({
+        orderId: row.id,
+        transactionId: params.transactionId,
+        customerUserId: params.customerUserId,
+        successUrl: params.successUrl,
+        cancelUrl: params.cancelUrl,
+        row,
+      });
+      sessions.push(session);
+    }
+
+    return sessions;
+  }
+
   /** Creates a Stripe Checkout Session for an existing order (vendor prepay). */
   async createOrderCheckoutSession(params: {
     orderId: string;
@@ -143,13 +211,25 @@ export class StripeService {
     successUrl?: string;
     cancelUrl?: string;
   }) {
-    const stripe = this.requireClient();
-    const webBase = this.config.get<string>('WEB_APP_URL', 'http://localhost:5173').replace(/\/$/, '');
+    const order = await this.loadOrderCheckoutRow(params.orderId, params.customerUserId);
+    const session = await this.createVendorCheckoutSession({
+      orderId: order.id,
+      transactionId: order.transaction_id,
+      customerUserId: params.customerUserId,
+      successUrl: params.successUrl,
+      cancelUrl: params.cancelUrl,
+      row: order,
+    });
+    return { sessionId: session.sessionId, url: session.url };
+  }
 
+  private async loadOrderCheckoutRow(orderId: string, customerUserId: string) {
     const order = await this.prisma.$queryRaw<
       Array<{
         id: string;
+        transaction_id: string | null;
         total: number;
+        platform_fee: number;
         payment_status: string;
         stripe_checkout_session_id: string | null;
         vendor_id: string;
@@ -160,7 +240,9 @@ export class StripeService {
     >`
       select
         o.id,
+        o.transaction_id,
         o.total,
+        o.platform_fee,
         o.payment_status,
         o.stripe_checkout_session_id,
         o.vendor_id,
@@ -170,8 +252,8 @@ export class StripeService {
       from public.orders o
       join public.vendors v on v.id = o.vendor_id
       join public.shoppers s on s.id = o.shopper_id
-      where o.id = ${params.orderId}::uuid
-        and s.user_id = ${params.customerUserId}::uuid
+      where o.id = ${orderId}::uuid
+        and s.user_id = ${customerUserId}::uuid
       limit 1
     `;
 
@@ -179,6 +261,30 @@ export class StripeService {
     if (!row) {
       throw new BadRequestException('Order not found for this customer.');
     }
+    return row;
+  }
+
+  private async createVendorCheckoutSession(params: {
+    orderId: string;
+    transactionId: string | null;
+    customerUserId: string;
+    successUrl?: string;
+    cancelUrl?: string;
+    row: {
+      id: string;
+      total: number;
+      platform_fee: number;
+      payment_status: string;
+      vendor_id: string;
+      business_name: string | null;
+      stripe_account_id: string | null;
+      stripe_charges_enabled: boolean;
+    };
+  }): Promise<CheckoutStripeSessionResult> {
+    const stripe = this.requireClient();
+    const webBase = this.config.get<string>('WEB_APP_URL', 'http://localhost:5173').replace(/\/$/, '');
+    const { row } = params;
+
     if (row.payment_status === 'paid_online' || row.payment_status === 'paid_at_pickup') {
       throw new BadRequestException('Order is already paid.');
     }
@@ -186,10 +292,16 @@ export class StripeService {
       throw new BadRequestException('Vendor has not completed Stripe onboarding.');
     }
 
-    const applicationFee = Math.round((row.total * STRIPE_PLATFORM_FEE_BPS) / 10_000);
+    const applicationFee = Math.max(
+      0,
+      row.platform_fee > 0
+        ? row.platform_fee
+        : Math.round((row.total * STRIPE_PLATFORM_FEE_BPS) / 10_000),
+    );
+
     const successUrl =
       params.successUrl ??
-      `${webBase}${STRIPE_CHECKOUT_SUCCESS_PATH}/${row.id}?checkout=success`;
+      `${webBase}/checkout/success?transactionId=${params.transactionId ?? row.id}`;
     const cancelUrl =
       params.cancelUrl ??
       `${webBase}${STRIPE_CHECKOUT_CANCEL_PATH}/${row.id}?checkout=cancelled`;
@@ -206,8 +318,8 @@ export class StripeService {
             unit_amount: row.total,
             product_data: {
               name: row.business_name
-                ? `Order from ${row.business_name}`
-                : 'Vendorly order',
+                ? `Presale order — ${row.business_name}`
+                : 'Vendorly presale order',
             },
           },
         },
@@ -215,9 +327,19 @@ export class StripeService {
       payment_intent_data: {
         application_fee_amount: applicationFee,
         transfer_data: { destination: row.stripe_account_id },
-        metadata: { order_id: row.id, vendor_id: row.vendor_id },
+        metadata: {
+          order_id: row.id,
+          vendor_id: row.vendor_id,
+          transaction_id: params.transactionId ?? '',
+          customer_user_id: params.customerUserId,
+        },
       },
-      metadata: { order_id: row.id, vendor_id: row.vendor_id },
+      metadata: {
+        order_id: row.id,
+        vendor_id: row.vendor_id,
+        transaction_id: params.transactionId ?? '',
+        customer_user_id: params.customerUserId,
+      },
     });
 
     await this.prisma.$executeRaw`
@@ -230,6 +352,9 @@ export class StripeService {
     `;
 
     return {
+      orderId: row.id,
+      vendorId: row.vendor_id,
+      vendorName: row.business_name,
       sessionId: session.id,
       url: session.url,
     };
@@ -253,49 +378,164 @@ export class StripeService {
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
     this.logger.log(`Stripe webhook received: ${event.type} (${event.id})`);
 
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await this.onCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
-        break;
-      case 'account.updated':
-        await this.onAccountUpdated(event.data.object as Stripe.Account);
-        break;
-      default:
-        break;
+    let alreadyProcessed: Array<{ id: string }> = [];
+    try {
+      alreadyProcessed = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        select id from public.stripe_webhook_events where stripe_event_id = ${event.id} limit 1
+      `;
+    } catch {
+      alreadyProcessed = [];
+    }
+
+    if (alreadyProcessed.length > 0) {
+      this.logger.log(`Stripe webhook ${event.id} already processed — skipping`);
+      return;
+    }
+
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+          await this.onCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+          break;
+        case 'checkout.session.expired':
+          await this.onCheckoutSessionExpired(event.data.object as Stripe.Checkout.Session);
+          break;
+        case 'account.updated':
+          await this.onAccountUpdated(event.data.object as Stripe.Account);
+          break;
+        default:
+          break;
+      }
+
+      await this.recordWebhookEvent(event.id, event.type, 'processed');
+    } catch (err) {
+      await this.recordWebhookEvent(
+        event.id,
+        event.type,
+        'failed',
+        err instanceof Error ? err.message : 'unknown_error',
+      );
+      throw err;
+    }
+  }
+
+  private async recordWebhookEvent(
+    eventId: string,
+    eventType: string,
+    status: 'processed' | 'failed',
+    errorMessage?: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.$executeRaw`
+        insert into public.stripe_webhook_events (
+          stripe_event_id, event_type, status, error_message
+        ) values (
+          ${eventId},
+          ${eventType},
+          ${status},
+          ${errorMessage ?? null}
+        )
+        on conflict (stripe_event_id) do nothing
+      `;
+    } catch {
+      // Table may not exist until migration applied — webhook still works without idempotency store.
     }
   }
 
   private async onCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
     const orderId = session.metadata?.order_id;
-    if (!orderId) return;
+    const customerUserId = session.metadata?.customer_user_id;
+    if (!orderId || !customerUserId) return;
 
     const paymentIntentId =
       typeof session.payment_intent === 'string'
         ? session.payment_intent
         : session.payment_intent?.id;
 
-    const updatedOrders = await this.prisma.$queryRaw<
-      Array<{
-        id: string;
-        transaction_id: string | null;
-        vendor_id: string;
-        total: number;
-        platform_fee: number;
-      }>
+    await this.prisma.$transaction(async (tx) => {
+      const updatedOrders = await tx.$queryRaw<
+        Array<{
+          id: string;
+          transaction_id: string | null;
+          vendor_id: string;
+          total: number;
+          platform_fee: number;
+        }>
+      >`
+        update public.orders
+        set
+          payment_status = 'paid_online',
+          stripe_payment_intent_id = ${paymentIntentId ?? null},
+          updated_at = now()
+        where id = ${orderId}::uuid
+          and stripe_checkout_session_id = ${session.id}
+          and payment_status = 'stripe_pending'
+        returning id, transaction_id, vendor_id, total, platform_fee
+      `;
+
+      if (updatedOrders.length === 0) {
+        return;
+      }
+
+      await this.inventory.finalizePaidOrder(tx, orderId, customerUserId);
+
+      for (const order of updatedOrders) {
+        await this.recordSettlementAndTax(tx, order, paymentIntentId ?? null);
+      }
+
+      const transactionId =
+        session.metadata?.transaction_id || updatedOrders[0]?.transaction_id;
+      if (transactionId) {
+        await this.refreshTransactionCaptureStatus(tx, transactionId, paymentIntentId ?? null);
+      }
+    });
+  }
+
+  private async onCheckoutSessionExpired(session: Stripe.Checkout.Session) {
+    const orderId = session.metadata?.order_id;
+    const customerUserId = session.metadata?.customer_user_id;
+    if (!orderId || !customerUserId) return;
+
+    await this.prisma.$transaction(async (tx) => {
+      const pending = await tx.$queryRaw<Array<{ id: string }>>`
+        select id from public.orders
+        where id = ${orderId}::uuid
+          and stripe_checkout_session_id = ${session.id}
+          and payment_status = 'stripe_pending'
+        limit 1
+      `;
+
+      if (pending.length === 0) return;
+
+      await this.inventory.compensateStripeCheckout(tx, orderId, customerUserId);
+    });
+  }
+
+  private async refreshTransactionCaptureStatus(
+    tx: Prisma.TransactionClient,
+    transactionId: string,
+    paymentIntentId: string | null,
+  ): Promise<void> {
+    const counts = await tx.$queryRaw<
+      Array<{ pending_count: number; paid_count: number }>
     >`
-      update public.orders
-      set
-        payment_status = 'paid_online',
-        stripe_payment_intent_id = ${paymentIntentId ?? null},
-        updated_at = now()
-      where id = ${orderId}::uuid
-        and stripe_checkout_session_id = ${session.id}
-      returning id, transaction_id, vendor_id, total, platform_fee
+      select
+        count(*) filter (where payment_status = 'stripe_pending')::integer as pending_count,
+        count(*) filter (where payment_status = 'paid_online')::integer as paid_count
+      from public.orders
+      where transaction_id = ${transactionId}::uuid
     `;
 
-    for (const order of updatedOrders) {
-      await this.recordSettlementAndTax(order, paymentIntentId ?? null);
-    }
+    const pending = counts[0]?.pending_count ?? 0;
+    const status = pending === 0 ? 'captured' : 'pending_payment';
+
+    await tx.$executeRaw`
+      update public.transactions
+      set
+        status = ${status},
+        stripe_payment_intent_id = coalesce(stripe_payment_intent_id, ${paymentIntentId})
+      where id = ${transactionId}::uuid
+    `;
   }
 
   private async onAccountUpdated(account: Stripe.Account) {
@@ -312,6 +552,7 @@ export class StripeService {
   }
 
   private async recordSettlementAndTax(
+    tx: Prisma.TransactionClient,
     order: {
       id: string;
       transaction_id: string | null;
@@ -323,7 +564,7 @@ export class StripeService {
   ): Promise<void> {
     const netAmount = Math.max(0, order.total - order.platform_fee);
 
-    await this.prisma.$executeRaw`
+    await tx.$executeRaw`
       insert into public.vendor_settlements (
         order_id,
         transaction_id,
@@ -352,21 +593,15 @@ export class StripeService {
         net_amount = excluded.net_amount
     `;
 
-    if (order.transaction_id) {
-      await this.prisma.$executeRaw`
-        update public.transactions
-        set status = 'captured',
-            stripe_payment_intent_id = coalesce(stripe_payment_intent_id, ${paymentIntentId})
-        where id = ${order.transaction_id}::uuid
-      `;
-    }
-
-    await this.refreshVendorTaxCompliance(order.vendor_id);
+    await this.refreshVendorTaxCompliance(tx, order.vendor_id);
   }
 
-  private async refreshVendorTaxCompliance(vendorId: string): Promise<void> {
+  private async refreshVendorTaxCompliance(
+    tx: Prisma.TransactionClient,
+    vendorId: string,
+  ): Promise<void> {
     const year = new Date().getUTCFullYear();
-    await this.prisma.$executeRaw`
+    await tx.$executeRaw`
       insert into public.vendor_tax_compliance (
         vendor_id,
         tax_year,

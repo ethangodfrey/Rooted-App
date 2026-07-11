@@ -3,7 +3,9 @@ import { Prisma, type Event, type Product } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { StripeService } from '../stripe/stripe.service';
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
+import { CheckoutInventoryService } from './checkout-inventory.service';
 import type { CreateCheckoutDto } from './dto/create-checkout.dto';
 
 const PICKUP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -35,7 +37,15 @@ interface CheckoutReceiptItem {
   lineTotal: number;
 }
 
-interface CheckoutReceipt {
+export interface CheckoutStripeSession {
+  orderId: string;
+  vendorId: string;
+  vendorName: string | null;
+  sessionId: string;
+  url: string | null;
+}
+
+export interface CheckoutReceipt {
   id: string;
   vendorId: string;
   vendorName: string | null;
@@ -55,7 +65,9 @@ export interface CheckoutResult {
   transactionId: string;
   totalAmount: number;
   status: string;
+  paymentMethod: 'pickup' | 'stripe';
   orders: CheckoutReceipt[];
+  stripeSessions?: CheckoutStripeSession[];
 }
 
 type CheckoutTx = Prisma.TransactionClient;
@@ -74,14 +86,25 @@ function groupKey(vendorId: string, eventId: string): string {
 
 @Injectable()
 export class CheckoutService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inventory: CheckoutInventoryService,
+    private readonly stripe: StripeService,
+  ) {}
 
   async createCheckout(user: AuthenticatedUser, dto: CreateCheckoutDto): Promise<CheckoutResult> {
     if (user.role !== 'shopper') {
       throw new BadRequestException('Only customers can check out.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const paymentMethod = dto.paymentMethod ?? 'pickup';
+    if (paymentMethod === 'stripe' && !this.stripe.isConfigured()) {
+      throw new BadRequestException(
+        'Online payment is not configured. Set STRIPE_SECRET_KEY on the backend.',
+      );
+    }
+
+    const checkoutResult = await this.prisma.$transaction(async (tx) => {
       const shopper = await tx.shopper.findFirst({
         where: { userId: user.id },
         select: { id: true },
@@ -92,8 +115,30 @@ export class CheckoutService {
       const groups = this.groupLines(lines);
       const totalAmount = lines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
 
-      for (const line of lines) {
-        await this.decrementInventory(tx, line);
+      if (paymentMethod === 'stripe') {
+        await this.assertVendorsStripeReady(tx, groups.map((group) => group.vendorId));
+        await this.inventory.reserveForStripeCheckout(
+          tx,
+          lines.map((line) => ({
+            productId: line.productId,
+            eventId: line.eventId,
+            quantity: line.quantity,
+            customerId: user.id,
+          })),
+        );
+      } else {
+        for (const line of lines) {
+          await this.inventory.decrementPresale(
+            tx,
+            {
+              productId: line.productId,
+              eventId: line.eventId,
+              quantity: line.quantity,
+              customerId: user.id,
+            },
+            line.product.name,
+          );
+        }
       }
 
       const transaction = await tx.transaction.create({
@@ -101,7 +146,12 @@ export class CheckoutService {
           customerId: user.id,
           stripePaymentIntentId: dto.stripePaymentIntentId ?? null,
           totalAmount,
-          status: dto.stripePaymentIntentId ? 'authorized' : 'captured',
+          status:
+            paymentMethod === 'stripe'
+              ? 'pending_payment'
+              : dto.stripePaymentIntentId
+                ? 'authorized'
+                : 'captured',
         },
       });
 
@@ -126,6 +176,8 @@ export class CheckoutService {
       );
 
       const orders: CheckoutReceipt[] = [];
+      const orderIds: string[] = [];
+
       for (const group of groups) {
         const platformFee = Math.round((group.subtotal * PLATFORM_FEE_BPS) / 10_000);
         const code = await this.uniquePickupCode(tx);
@@ -137,7 +189,7 @@ export class CheckoutService {
             eventId: group.eventId,
             orderType: 'event_pickup',
             orderStatus: 'pending',
-            paymentStatus: dto.stripePaymentIntentId ? 'stripe_pending' : 'paid_at_pickup',
+            paymentStatus: paymentMethod === 'stripe' ? 'stripe_pending' : 'paid_at_pickup',
             fulfillmentType: 'pickup',
             subtotal: group.subtotal,
             tax: 0,
@@ -160,6 +212,7 @@ export class CheckoutService {
           select: { id: true },
         });
 
+        orderIds.push(order.id);
         orders.push({
           id: order.id,
           vendorId: group.vendorId,
@@ -187,9 +240,28 @@ export class CheckoutService {
         transactionId: transaction.id,
         totalAmount,
         status: transaction.status,
+        paymentMethod,
         orders,
+        orderIds,
+        customerUserId: user.id,
       };
     });
+
+    let stripeSessions: CheckoutStripeSession[] | undefined;
+    if (paymentMethod === 'stripe') {
+      stripeSessions = await this.stripe.createTransactionCheckoutSessions({
+        transactionId: checkoutResult.transactionId,
+        customerUserId: checkoutResult.customerUserId,
+        successUrl: dto.successUrl,
+        cancelUrl: dto.cancelUrl,
+      });
+    }
+
+    const { orderIds: _omit, customerUserId: _omitUser, ...result } = checkoutResult;
+    return {
+      ...result,
+      stripeSessions,
+    };
   }
 
   async getCheckout(user: AuthenticatedUser, transactionId: string): Promise<CheckoutResult> {
@@ -232,10 +304,17 @@ export class CheckoutService {
       vendorEvents.map((row) => [groupKey(row.vendorId, row.eventId), row.boothDetails]),
     );
 
+    const paymentMethod =
+      transaction.orders.some((order) => order.paymentStatus === 'stripe_pending') ||
+      transaction.status === 'pending_payment'
+        ? 'stripe'
+        : 'pickup';
+
     return {
       transactionId: transaction.id,
       totalAmount: transaction.totalAmount,
       status: transaction.status,
+      paymentMethod,
       orders: transaction.orders.map((order) => ({
         id: order.id,
         vendorId: order.vendorId,
@@ -268,8 +347,41 @@ export class CheckoutService {
     };
   }
 
+  private async assertVendorsStripeReady(
+    tx: CheckoutTx,
+    vendorIds: string[],
+  ): Promise<void> {
+    const vendors = await tx.vendor.findMany({
+      where: { id: { in: vendorIds } },
+      select: {
+        id: true,
+        businessName: true,
+        stripeAccountId: true,
+        stripeChargesEnabled: true,
+      },
+    });
+
+    const missing = vendorIds.filter((vendorId) => {
+      const vendor = vendors.find((row) => row.id === vendorId);
+      return !vendor?.stripeAccountId || !vendor.stripeChargesEnabled;
+    });
+
+    if (missing.length > 0) {
+      const names = vendors
+        .filter((vendor) => missing.includes(vendor.id))
+        .map((vendor) => vendor.businessName ?? vendor.id)
+        .join(', ');
+      throw new BadRequestException(
+        `These vendors are not ready for online payment: ${names}. Choose pay-at-pickup or try again later.`,
+      );
+    }
+  }
+
   private async loadBasketLines(tx: CheckoutTx, dto: CreateCheckoutDto): Promise<BasketLine[]> {
-    const compacted = new Map<string, { productId: string; eventId: string; quantity: number; notes: string | null }>();
+    const compacted = new Map<
+      string,
+      { productId: string; eventId: string; quantity: number; notes: string | null }
+    >();
     for (const item of dto.items) {
       const key = `${item.productId}:${item.eventId}`;
       const current = compacted.get(key);
@@ -349,21 +461,6 @@ export class CheckoutService {
       }
     }
     return [...groups.values()];
-  }
-
-  private async decrementInventory(tx: CheckoutTx, line: BasketLine): Promise<void> {
-    const rows = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
-      update public.product_event_availability
-      set available_quantity_presale = available_quantity_presale - ${line.quantity}
-      where product_id = ${line.productId}::uuid
-        and event_id = ${line.eventId}::uuid
-        and (available_quantity_presale - reserved_quantity) >= ${line.quantity}
-      returning id
-    `);
-
-    if (rows.length !== 1) {
-      throw new BadRequestException(`${line.product.name} is no longer available in that quantity.`);
-    }
   }
 
   private async uniquePickupCode(tx: CheckoutTx): Promise<string> {
