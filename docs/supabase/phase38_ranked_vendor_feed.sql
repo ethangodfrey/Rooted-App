@@ -1,5 +1,5 @@
--- Vendorly Phase 35 — hyper-local velocity recommendation feed
--- Run in Supabase SQL Editor after phase34_vendor_media_feed_storage.sql.
+-- Vendorly Phase 38 — hyper-local velocity recommendation feed
+-- Run in Supabase SQL Editor after phase37_vendor_media_feed_storage.sql.
 --
 -- Caches post/vendor engagement features every 15 minutes, then applies
 -- per-request PostGIS distance scoring through get_ranked_vendor_feed().

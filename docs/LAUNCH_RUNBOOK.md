@@ -41,7 +41,7 @@ Apply SQL in this exact order in the Supabase SQL Editor (or via migration tooli
 | 26 | `docs/supabase/phase19_post_moderation.sql` | post moderation |
 | 27 | `docs/supabase/phase20_leftovers.sql` | leftovers |
 | 28 | `docs/supabase/phase21_market_guide.sql` | market guide |
-| 29 | `docs/supabase/phase22_account_deletion.sql` | self-service account deletion |
+| 29 | `docs/supabase/phase22b_account_deletion.sql` | self-service account deletion |
 
 **Optional seeds (dev/staging only):**
 
@@ -83,7 +83,7 @@ Password reset and email confirmation **fail on physical devices** without a hos
 | Terms of service | Publish at `https://rooted.app/terms` |
 | Support URL | Publish at `https://rooted.app/support` — required in App Store Connect |
 | Signup consent | Mobile + web signup screens link to terms/privacy (implemented) |
-| Account deletion | Run `phase22_account_deletion.sql`; profile screens expose delete (implemented) |
+| Account deletion | Run `phase22b_account_deletion.sql`; profile screens expose delete (implemented) |
 
 ---
 

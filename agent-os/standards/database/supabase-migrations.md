@@ -4,7 +4,7 @@
 
 Run in Supabase SQL Editor **after** all prior phases. Scripts are idempotent where noted (`DROP IF EXISTS`).
 
-Minimum Vendorly stack through phase36:
+Minimum Vendorly stack through phase39:
 
 ```
 docs/supabase/phase22_vendorly_marketplace.sql
@@ -24,17 +24,23 @@ docs/supabase/phase32_multi_tenant.sql
 docs/supabase/phase33_explore_hybrid_feed.sql
 docs/supabase/phase34_storefront_checkout.sql
 docs/supabase/phase35_search_event_schedule.sql
-docs/supabase/phase33_production_mvp_core_schema.sql
-docs/supabase/phase34_vendor_media_feed_storage.sql
-docs/supabase/phase35_ranked_vendor_feed.sql
-docs/supabase/phase36_payments_kyc_ledger.sql
+docs/supabase/phase36_production_mvp_core_schema.sql
+docs/supabase/phase37_vendor_media_feed_storage.sql
+docs/supabase/phase38_ranked_vendor_feed.sql
+docs/supabase/phase39_payments_kyc_ledger.sql
 ```
 
-Phase33 is additive and preserves legacy reservation/order/feed fields while
+Optional (any time after `phase1_auth.sql`):
+
+```
+docs/supabase/phase22b_account_deletion.sql
+```
+
+Phase36 is additive and preserves legacy reservation/order/feed fields while
 adding the production MVP transaction and vendor-profile schema.
-Phase34 provisions the public signed-upload media bucket for vendor feeds.
-Phase35 adds the cached hyper-local ranked vendor feed RPC.
-Phase36 adds settlement holds and 1099-K compliance rollups.
+Phase37 provisions the public signed-upload media bucket for vendor feeds.
+Phase38 adds the cached hyper-local ranked vendor feed RPC.
+Phase39 adds settlement holds and 1099-K compliance rollups.
 
 ## Key RPCs
 
