@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { AuthLink, AuthScreen } from '@/src/components/auth/auth-screen';
 import { AuthLegalNotice } from '@/src/components/auth/auth-legal-notice';
+import { OAuthButtons } from '@/src/components/auth/oauth-buttons';
 import { getAuthRedirectUrl } from '@/src/lib/auth-redirect';
 import { supabase } from '@/src/lib/supabase';
 
@@ -43,7 +44,7 @@ export default function SignupScreen() {
 
   return (
     <AuthScreen
-      title="Join Rooted"
+      title="Join Vendorly"
       subtitle="Discover local events and reserve pickup from nearby vendors."
       email={email}
       password={password}
@@ -54,6 +55,12 @@ export default function SignupScreen() {
       loading={loading}
       error={error}
       message={message}
+      socialAuth={
+        <OAuthButtons
+          disabled={loading}
+          onSuccess={() => router.replace('/')}
+        />
+      }
       footer={
         <>
           <AuthLegalNotice />

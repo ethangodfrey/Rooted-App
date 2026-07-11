@@ -16,6 +16,7 @@ interface OrderDetail {
   vendor: { business_name: string | null } | null;
   event: { name: string } | null;
   order_items: {
+    id: string;
     quantity: number;
     item_price: number;
     product: { name: string } | null;
@@ -34,7 +35,7 @@ export function AdminOrderDetailPage() {
     const { data, error: fetchError } = await supabase
       .from('orders')
       .select(
-        'id, order_status, payment_status, total, notes, created_at, vendor:vendors(business_name), event:events(name), order_items(quantity, item_price, product:products(name))',
+        'id, order_status, payment_status, total, notes, created_at, vendor:vendors(business_name), event:events(name), order_items(id, quantity, item_price, product:products(name))',
       )
       .eq('id', id)
       .maybeSingle();
@@ -80,8 +81,8 @@ export function AdminOrderDetailPage() {
 
       <h2 style={{ fontSize: '1.125rem' }}>Items</h2>
       <div className="app-list">
-        {order.order_items.map((item, idx) => (
-          <div key={idx} className="app-card app-row">
+        {order.order_items.map((item) => (
+          <div key={item.id} className="app-card app-row">
             <div className="app-row-body">
               <p className="app-row-title">{item.product?.name ?? 'Item'}</p>
               <p className="app-row-meta">Qty {item.quantity}</p>

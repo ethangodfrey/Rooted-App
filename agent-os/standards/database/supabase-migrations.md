@@ -1,0 +1,53 @@
+# Supabase migrations
+
+## Apply order
+
+Run in Supabase SQL Editor **after** all prior phases. Scripts are idempotent where noted (`DROP IF EXISTS`).
+
+Minimum Vendorly stack through phase36:
+
+```
+docs/supabase/phase22_vendorly_marketplace.sql
+docs/supabase/phase23_vendorly_enhanced.sql
+docs/supabase/phase23b_inventory_holds_checkout.sql
+docs/supabase/phase23c_verification_docs.sql
+docs/supabase/phase24_geo_search.sql
+docs/supabase/phase25_saved_items_backfill.sql
+docs/supabase/phase26_service_reviews.sql
+docs/supabase/phase27_address_fields.sql
+docs/supabase/phase28_search_index.sql
+docs/supabase/phase29_search_refresh_cron.sql
+docs/supabase/phase30_chef_geo.sql
+docs/supabase/phase31_leftovers_search.sql
+docs/supabase/phase32_stripe_messaging.sql
+docs/supabase/phase32_multi_tenant.sql
+docs/supabase/phase33_explore_hybrid_feed.sql
+docs/supabase/phase34_storefront_checkout.sql
+docs/supabase/phase35_search_event_schedule.sql
+docs/supabase/phase33_production_mvp_core_schema.sql
+docs/supabase/phase34_vendor_media_feed_storage.sql
+docs/supabase/phase35_ranked_vendor_feed.sql
+docs/supabase/phase36_payments_kyc_ledger.sql
+```
+
+Phase33 is additive and preserves legacy reservation/order/feed fields while
+adding the production MVP transaction and vendor-profile schema.
+Phase34 provisions the public signed-upload media bucket for vendor feeds.
+Phase35 adds the cached hyper-local ranked vendor feed RPC.
+Phase36 adds settlement holds and 1099-K compliance rollups.
+
+## Key RPCs
+
+- `search_all()` — unified ranked search (vendors, chefs, events, products, leftovers)
+- `explore_hybrid_feed()` — geo + engagement ranked vendor posts + showcase feed (phase33)
+- `find_nearby_events/vendors/chefs/leftovers()` — PostGIS geo ranking
+- `refresh_search_index()` — matview refresh (pg_cron every 10 min via phase29)
+
+## Status tracker
+
+See `docs/VENDORLY_MIGRATION.md` for phase completion table.
+
+## Rules
+
+- Never commit real keys or `.env`
+- Re-run failed script from start of that file — do not skip phases

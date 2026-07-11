@@ -8,7 +8,8 @@ import { Card, PressableCard } from '@/src/components/ui/card';
 import { Chip } from '@/src/components/ui/chip';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
-import { formatEventDate, formatEventTimeRange } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/src/lib/format';
 import { supabase } from '@/src/lib/supabase';
 import type { Event, VisibilityStatus } from '@/src/types/database';
 
@@ -21,6 +22,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 export default function AdminEventsScreen() {
+  const now = useNow(60_000);
   const [filter, setFilter] = useState<Filter>('all');
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,8 +132,7 @@ export default function AdminEventsScreen() {
                 {event.name}
               </Text>
               <Text variant="caption" className="mb-1">
-                {formatEventDate(event.start_datetime)} ·{' '}
-                {formatEventTimeRange(event.start_datetime, event.end_datetime)}
+                {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
               </Text>
               {event.city ? (
                 <Text variant="caption">

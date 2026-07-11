@@ -9,7 +9,8 @@ import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { StatusPill } from '@/src/components/ui/status-pill';
 import { Text } from '@/src/components/ui/text';
-import { formatEventFullDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayFullDate, formatPrice } from '@/src/lib/format';
 import { nextVendorStatus } from '@/src/lib/order-status';
 import { supabase } from '@/src/lib/supabase';
 import type { Order, OrderStatus } from '@/src/types/database';
@@ -41,6 +42,7 @@ const ADVANCE_LABEL: Partial<Record<OrderStatus, string>> = {
 };
 
 export default function VendorOrderDetailScreen() {
+  const now = useNow(60_000);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function VendorOrderDetailScreen() {
     const { data, error: queryError } = await supabase
       .from('orders')
       .select(
-        '*, event:events(name, start_datetime, address), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes), order_items(id, quantity, item_price, item_title, product:products(name))',
+        '*, event:events(name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state, address), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes), order_items(id, quantity, item_price, item_title, product:products(name))',
       )
       .eq('id', id)
       .maybeSingle();
@@ -124,7 +126,7 @@ export default function VendorOrderDetailScreen() {
                 Pickup
               </Text>
               <Text variant="body">
-                {formatEventFullDate(order.event.start_datetime)}
+                {formatEventDisplayFullDate(order.event, now)}
                 {order.event.address ? `\n${order.event.address}` : ''}
               </Text>
             </Card>

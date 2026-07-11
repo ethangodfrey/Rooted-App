@@ -5,11 +5,13 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, View } from 'react-native';
 
+import { ReviewsSection } from '@/src/components/reviews/reviews-section';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
-import { formatEventDate, formatPrice } from '@/src/lib/format';
+import { useNow } from '@/src/hooks/use-now';
+import { formatEventDisplayDate, formatPrice } from '@/src/lib/format';
 import { supabase } from '@/src/lib/supabase';
 
 interface AvailabilityRow {
@@ -18,6 +20,11 @@ interface AvailabilityRow {
     id: string;
     name: string;
     start_datetime: string;
+    end_datetime?: string | null;
+    timezone?: string | null;
+    hours_summary?: string | null;
+    sync_metadata?: Record<string, unknown>;
+    state?: string | null;
     city: string | null;
   } | null;
 }
@@ -37,6 +44,7 @@ interface ProductDetail {
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const now = useNow(60_000);
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +63,7 @@ export default function ProductDetailScreen() {
           .maybeSingle(),
         supabase
           .from('product_event_availability')
-          .select('available_quantity_presale, event:events(id, name, start_datetime, city)')
+          .select('available_quantity_presale, event:events(id, name, start_datetime, end_datetime, timezone, hours_summary, sync_metadata, state, city)')
           .eq('product_id', id)
           .gt('available_quantity_presale', 0),
       ]);
@@ -121,9 +129,9 @@ export default function ProductDetailScreen() {
                   showsHorizontalScrollIndicator={false}
                   className="mt-3"
                   contentContainerClassName="gap-3">
-                  {product.media_urls.slice(1).map((url) => (
+                  {product.media_urls.slice(1).map((url, index) => (
                     <Image
-                      key={url}
+                      key={`${url}-${index}`}
                       source={{ uri: url }}
                       className="h-20 w-20 rounded-xl bg-line"
                     />
@@ -180,7 +188,7 @@ export default function ProductDetailScreen() {
                         {row.event.name}
                       </Text>
                       <Text variant="caption" className="mt-0.5">
-                        {formatEventDate(row.event.start_datetime)}
+                        {formatEventDisplayDate(row.event, now)}
                         {row.event.city ? ` · ${row.event.city}` : ''}
                       </Text>
                     </View>
@@ -204,6 +212,8 @@ export default function ProductDetailScreen() {
               Reserve holds your item to pay at pickup. Buy now (online payment) is coming soon.
             </Text>
           </View>
+
+          <ReviewsSection targetType="product" targetId={product.id} />
         </Screen>
       )}
     </>

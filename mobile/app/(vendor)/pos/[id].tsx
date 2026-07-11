@@ -176,7 +176,7 @@ export default function PosConnectionDetailScreen() {
                 <Text variant="heading" className="mb-1">
                   Item mappings
                 </Text>
-                <Text variant="caption">Match register items to your Rooted products.</Text>
+                <Text variant="caption">Match register items to your Vendorly products.</Text>
               </View>
               <FontAwesome name="chevron-right" size={16} color="#9CAF88" />
             </PressableCard>

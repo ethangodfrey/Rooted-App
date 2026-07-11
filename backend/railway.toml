@@ -1,0 +1,13 @@
+# Railway quick-start for Vendorly backend.
+# Create project from GitHub → set Root Directory to `backend` → add env vars from .env.example.
+# Docs: docs/DEPLOY.md
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health/live"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
