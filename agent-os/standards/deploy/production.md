@@ -5,12 +5,16 @@
 | Component | Host | URL |
 |-----------|------|-----|
 | Web SPA | Vercel **`Vendorly_Marketplace1`** | `vendorly-marketplace1.vercel.app` → `vendorly.app` |
+| Tenant edge gateway | Vercel **`tenant-web`** project | Separate deploy; root `tenant-web/` |
 | Backend API | Railway | `api.vendorly.app` (or `*.up.railway.app`) |
 | Database + Auth | Supabase | `ajedyjbdpjahnhzrxwdj.supabase.co` |
 
-## Web (Vercel)
+See `docs/VERCEL_MULTI_PROJECT.md` for split-project build targets.
+
+## Web (Vercel — Vendorly_Marketplace1 only)
 
 - Root `vercel.json` — `npm run build --prefix web`, output `web/dist`
+- **`tenant-web/` is isolated** — deploy via separate Vercel project (`npm run build --prefix tenant-web`)
 - Set all `VITE_*` env vars → **redeploy** (baked at build time)
 - Blank white page = missing `VITE_SUPABASE_*` at build (see `web/src/lib/supabase.ts`)
 
@@ -30,3 +34,5 @@ Supabase auth/data works anywhere. POS and proxied API features need public HTTP
 - Deep route refresh (no 404)
 - Vendor POS page (confirms `VITE_API_URL` + CORS)
 - `/health/live` on backend
+- `npm run smoke:ui-baseline` — source + production lazy-chunk markers
+- `npm run smoke:settlement` — settlement dashboard; `VITE_API_URL` passes when `api.vendorly.app` is in **any** crawled chunk (entry or lazy)

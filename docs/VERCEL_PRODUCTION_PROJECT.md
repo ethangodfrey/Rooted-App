@@ -1,6 +1,8 @@
 # Vercel production project — Vendorly_Marketplace1
 
-**This is the only Vercel project used for Vendorly web production.** All agents, deploy runbooks, and smoke scripts target this project.
+**This is the primary Vercel project for the Vendorly customer/vendor web SPA.** Smoke scripts and deploy runbooks target this URL unless noted otherwise.
+
+> **Multi-project layout:** OAuth, nearby markets API, and edge webhooks deploy from **`tenant-web/`** as a **separate** Vercel project — not from this build. See [`VERCEL_MULTI_PROJECT.md`](VERCEL_MULTI_PROJECT.md).
 
 ## Canonical production target
 
@@ -10,6 +12,7 @@
 | **Git branch** | `main` |
 | **Repo** | `ethangodfrey/Rooted-App` |
 | **Build** | Repo root + root `vercel.json` (`npm run build --prefix web` → `web/dist`) |
+| **Does NOT include** | `tenant-web/` Next.js API routes (separate Vercel project) |
 
 > **Do not** use `vendorly-marketplace`, `vendorly_marketplace`, or `rooted-app` for new production deploys unless you intentionally maintain a staging clone.
 
@@ -88,6 +91,10 @@ Prevents future confusion when `main` pushes.
 
 # API CORS + webhooks
 API_BASE=https://api.vendorly.app npm run smoke:boundaries
+
+# Lazy-chunk-aware UI + settlement baseline
+npm run smoke:ui-baseline
+npm run smoke:settlement
 ```
 
 ## CLI link (local)

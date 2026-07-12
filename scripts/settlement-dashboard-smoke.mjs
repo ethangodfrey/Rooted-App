@@ -10,6 +10,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
+import {
+  auditProductionEnv,
+  crawlProductionChunks,
+  findMarkers,
+} from './lib/bundle-chunk-audit.mjs';
 
 const PROD_URL = 'https://vendorly-marketplace1.vercel.app';
 const SETTLEMENT_MARKERS = [
@@ -20,6 +25,9 @@ const SETTLEMENT_MARKERS = [
   'Loading settlement totals',
   'No completed orders yet',
 ];
+
+/** Minimum markers required in crawled production chunks (lazy vendor-pages included). */
+const SETTLEMENT_MARKER_MIN = 3;
 
 const baseArg = process.argv.find((a) => a.startsWith('--base='));
 const explicitBase = baseArg?.slice('--base='.length);
@@ -40,51 +48,16 @@ function scanLocalDistMarkers() {
 }
 
 async function fetchRemoteBundleMarkers(url) {
-  const html = await fetch(`${url}/`).then((r) => r.text());
-  const assets = [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1]);
-  const importRefs = new Set(assets);
-  const found = new Set();
-
-  for (const asset of assets) {
-    const js = await fetch(`${url}${asset}`).then((r) => r.text());
-    for (const marker of SETTLEMENT_MARKERS) {
-      if (js.includes(marker)) found.add(marker);
-    }
-    for (const match of js.matchAll(/assets\/[A-Za-z0-9_.-]+\.js/g)) {
-      importRefs.add(`/${match[0]}`);
-    }
-  }
-
-  for (const asset of importRefs) {
-    if (assets.includes(asset)) continue;
-    try {
-      const js = await fetch(`${url}${asset}`).then((r) => r.text());
-      for (const marker of SETTLEMENT_MARKERS) {
-        if (js.includes(marker)) found.add(marker);
-      }
-    } catch {
-      /* skip missing chunks */
-    }
-  }
-
-  return { assets: [...importRefs], markers: [...found] };
+  const crawl = await crawlProductionChunks(url);
+  return {
+    assets: crawl.chunkPaths,
+    markers: findMarkers(crawl.combinedJs, SETTLEMENT_MARKERS),
+    includesLazyVendorChunk: crawl.includesLazyVendorChunk,
+  };
 }
 
 async function verifyProdEnv(url) {
-  const html = await fetch(`${url}/`).then((r) => r.text());
-  const assets = [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1]);
-  let js = '';
-  for (const asset of assets) {
-    js += await fetch(`${url}${asset}`).then((r) => r.text());
-  }
-  return {
-    httpStatus: await fetch(url).then((r) => r.status),
-    supabaseUrl: js.includes('ajedyjbdpjahnhzrxwdj.supabase.co'),
-    apiUrl: js.includes('api.vendorly.app'),
-    anonKeyPresent: /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(js),
-    assetCount: assets.length,
-    monolithicBundle: assets.length === 1,
-  };
+  return auditProductionEnv(url);
 }
 
 async function startPreview() {
@@ -211,13 +184,28 @@ async function main() {
 
   if (previewChild) previewChild.kill();
 
-  const prodHasSettlement = prodMarkers.markers.length >= 3;
-  const localHasSettlement = localMarkers.markers.length >= 3;
+  const prodHasSettlement = prodMarkers.markers.length >= SETTLEMENT_MARKER_MIN;
+  const localHasSettlement = localMarkers.markers.length >= SETTLEMENT_MARKER_MIN;
+
+  const apiUrlPass = envCheck.apiUrlPresent === true;
+  const apiUrlLazyOnly =
+    apiUrlPass && !envCheck.apiUrlInEntryChunks && envCheck.apiUrlInLazyChunks;
 
   const checklist = {
     env_VITE_SUPABASE_URL: envCheck.supabaseUrl ? 'PASS' : 'FAIL',
     env_VITE_SUPABASE_ANON_KEY: envCheck.anonKeyPresent ? 'PASS' : 'FAIL',
-    env_VITE_API_URL: envCheck.apiUrl ? 'PASS' : 'FAIL',
+    env_VITE_API_URL: apiUrlPass
+      ? apiUrlLazyOnly
+        ? 'PASS_LAZY_CHUNK'
+        : 'PASS'
+      : 'FAIL',
+    env_VITE_API_URL_note: apiUrlLazyOnly
+      ? 'api.vendorly.app in vendor-pages/admin-pages lazy chunks (expected for code-split build)'
+      : apiUrlPass
+        ? 'api.vendorly.app present in crawled bundles'
+        : 'api.vendorly.app not found in any crawled chunk',
+    crawled_chunk_count: envCheck.crawledChunkCount,
+    includes_lazy_vendor_chunk: envCheck.includesLazyVendorChunk ? 'YES' : 'NO',
     gross_volume_trend:
       browser.hasGrossTrend && browser.hasTrendBars
         ? 'VERIFIED'
@@ -249,13 +237,20 @@ async function main() {
           ? 'CHECK_MANUAL'
           : 'BLOCKED_AUTH',
     chart_parse_errors: browser.hasChartParseError ? 'FLAG_REVIEW' : 'NONE',
-    production_deploy_includes_settlement: prodHasSettlement ? 'YES' : 'NO — redeploy required',
+    production_deploy_includes_settlement: prodHasSettlement
+      ? `YES (${prodMarkers.markers.length} markers in ${prodMarkers.assets.length} chunks)`
+      : 'NO — redeploy required',
   };
 
   console.log('\n=== Checklist summary ===');
   console.log(JSON.stringify(checklist, null, 2));
 
-  if (!prodHasSettlement) {
+  if (!apiUrlPass) {
+    console.error(
+      '\nFLAG: api.vendorly.app missing from all crawled production chunks. Set VITE_API_URL on Vendorly_Marketplace1 and redeploy.',
+    );
+    process.exitCode = 2;
+  } else if (!prodHasSettlement) {
     console.error(
       '\nFLAG: Production bundle on Vendorly_Marketplace1 predates settlement charts. Redeploy main (7df3e60+) then re-run this script against production.',
     );
