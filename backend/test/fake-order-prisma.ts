@@ -56,6 +56,21 @@ function createTxClient(orders: FakeOrderRow[]) {
         ];
       }
 
+      if (
+        sql.includes('stripe_checkout_session_id') &&
+        sql.includes("payment_status = 'stripe_pending'") &&
+        sql.includes('limit 1')
+      ) {
+        const [orderId, sessionId] = values as [string, string];
+        const row = orders.find(
+          (o) =>
+            o.id === orderId &&
+            o.stripe_checkout_session_id === sessionId &&
+            o.payment_status === 'stripe_pending',
+        );
+        return row ? [{ id: row.id }] : [];
+      }
+
       const [orderId, customerUserId] = values as [string, string];
       const row = findOrder(orderId, customerUserId);
       if (!row) return [];

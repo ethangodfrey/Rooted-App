@@ -7,6 +7,7 @@ import { PosAnalyticsService } from '../src/modules/pos/services/pos-analytics.s
 import type { NormalizedTransaction } from '../src/modules/pos/types/normalized-transaction';
 import type { ConfigService } from '@nestjs/config';
 import { StripeService } from '../src/modules/stripe/stripe.service';
+import { createFakeOrderPrisma } from './fake-order-prisma';
 import { createFakePrisma } from './fake-prisma';
 
 const constructEvent = jest.fn();
@@ -142,6 +143,58 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
 
       expect(finalizePaidOrder).not.toHaveBeenCalled();
     });
+
+    it('compensates stripe_pending orders when checkout sessions expire', async () => {
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-expired',
+          total: 1200,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_expired_dual',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'Farm',
+          stripe_account_id: 'acct_1',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-expired',
+        },
+      ]);
+      const compensateStripeCheckout = jest.fn();
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout,
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired_dual',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_expired_dual',
+            metadata: {
+              order_id: 'order-expired',
+              customer_user_id: 'user-expired',
+            },
+          },
+        },
+      } as never);
+
+      expect(compensateStripeCheckout).toHaveBeenCalledWith(
+        expect.anything(),
+        'order-expired',
+        'user-expired',
+      );
+    });
   });
 
   describe('Square POS payloads drive imported transaction state', () => {
@@ -238,6 +291,40 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         state: 'VOIDED',
         grossAmount: 0,
       });
+    });
+
+    it('marks partially refunded Square sales as PARTIALLY_REFUNDED', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const completed = normalizeSquareOrder(adapter, {
+        id: 'sq-partial-1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 1000, currency: 'USD' },
+        refunded_money: { amount: 0 },
+        line_items: [{ uid: 'li-1', name: 'Bread', quantity: '1', gross_sales_money: { amount: 1000 } }],
+      });
+
+      await importer.importTransactions(connection(), SYNC_RUN_ID, [completed]);
+
+      const partial = normalizeSquareOrder(adapter, {
+        id: 'sq-partial-1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 1000, currency: 'USD' },
+        refunded_money: { amount: 400 },
+        line_items: [{ uid: 'li-1', name: 'Bread', quantity: '1', gross_sales_money: { amount: 1000 } }],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [partial]);
+
+      expect(result).toMatchObject({ imported: 0, skipped: 0, updated: 1 });
+      expect(fake.store.transactions[0].state).toBe('PARTIALLY_REFUNDED');
     });
   });
 });

@@ -196,4 +196,58 @@ describe('StripeService payment webhook handling', () => {
       expect(() => service.verifyWebhook('{}', undefined)).toThrow(/Missing Stripe-Signature/);
     });
   });
+
+  it('compensates inventory when checkout.session.expired fires for a pending order', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    const pendingQuery = jest.fn(async () => [{ id: 'order-expired' }]);
+    const tx = {
+      $queryRaw: pendingQuery,
+      $executeRaw: jest.fn(),
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
+    );
+
+    await service.handleWebhookEvent({
+      id: 'evt_expired',
+      type: 'checkout.session.expired',
+      data: {
+        object: {
+          id: 'cs_expired',
+          metadata: {
+            order_id: 'order-expired',
+            customer_user_id: 'user-expired',
+          },
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(inventory.compensateStripeCheckout).toHaveBeenCalledWith(
+      tx,
+      'order-expired',
+      'user-expired',
+    );
+  });
+
+  it('skips compensation when checkout.session.expired lacks metadata', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    await service.handleWebhookEvent({
+      id: 'evt_expired_orphan',
+      type: 'checkout.session.expired',
+      data: {
+        object: {
+          id: 'cs_expired_orphan',
+          metadata: {},
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(inventory.compensateStripeCheckout).not.toHaveBeenCalled();
+  });
 });

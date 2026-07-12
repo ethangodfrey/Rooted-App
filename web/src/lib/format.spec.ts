@@ -25,6 +25,11 @@ describe('formatPrice', () => {
   it('handles large totals', () => {
     expect(formatPrice(1_234_567)).toBe('$12345.67');
   });
+
+  it('formats single-digit cent amounts', () => {
+    expect(formatPrice(1)).toBe('$0.01');
+    expect(formatPrice(5)).toBe('$0.05');
+  });
 });
 
 describe('formatEventDate', () => {

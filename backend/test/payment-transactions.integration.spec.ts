@@ -160,6 +160,40 @@ describe('dual payment transaction processing', () => {
         stripe_payment_intent_id: 'pi_success',
       });
     });
+
+    it('compensates inventory when Stripe checkout sessions expire', async () => {
+      const fake = createFakeOrderPrisma([
+        {
+          ...stripeOrder(),
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_test_dual',
+        },
+      ]);
+      const compensateStripeCheckout = jest.fn();
+      const stripe = new StripeService(stripeConfig(), fake.prisma, {
+        finalizePaidOrder: jest.fn(),
+        compensateStripeCheckout,
+        reserveForStripeCheckout: jest.fn(),
+        decrementPresale: jest.fn(),
+      } as never);
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_test_dual',
+            metadata: { order_id: ORDER_ID, customer_user_id: CUSTOMER_ID },
+          },
+        },
+      } as never);
+
+      expect(compensateStripeCheckout).toHaveBeenCalledWith(
+        expect.anything(),
+        ORDER_ID,
+        CUSTOMER_ID,
+      );
+    });
   });
 
   describe('Square POS import success vs failure payloads', () => {
