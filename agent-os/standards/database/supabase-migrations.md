@@ -31,6 +31,7 @@ docs/supabase/phase39_payments_kyc_ledger.sql
 docs/supabase/phase42_regional_markets.sql
 docs/supabase/phase42a_seed_markets_from_events.sql
 docs/supabase/phase42b_backfill_orders_market_id.sql
+docs/supabase/phase43_pos_national_markets_foundation.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):
@@ -47,6 +48,7 @@ Phase39 adds settlement holds and 1099-K compliance rollups.
 Phase42 adds regional marketplace isolation (`regions`, `markets`, vendor registrations, `orders.market_id` + RLS).
 Phase42b backfills `orders.market_id` from `markets.event_id` after phase42 is applied.
 Phase42a seeds `markets` rows from legacy `public.events` (run before phase42b).
+Phase43 adds POS OAuth foundation tables (`vendor_pos_connections`, `pos_transactions`) and the PostGIS-backed `national_farmers_markets` registry.
 
 ## Key RPCs
 
