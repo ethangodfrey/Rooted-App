@@ -35,6 +35,7 @@ export function VendorDashboardPage() {
     liveFeed,
     hasActiveConnection,
     loading: posLoading,
+    error: posError,
   } = usePosLedger({ vendorId: vendor?.id, range: 30 });
   const [pendingPickup, setPendingPickup] = useState(0);
   const [fulfilledToday, setFulfilledToday] = useState(0);
@@ -93,13 +94,19 @@ export function VendorDashboardPage() {
       </VendorKpiGrid>
 
       <VendorSection title="POS sales">
+        {posLoading ? (
+          <div className="app-loading py-6">
+            <div className="app-spinner" />
+          </div>
+        ) : null}
+        {posError ? <p className="app-error mb-3">{posError}</p> : null}
         {!posLoading && !hasActiveConnection ? (
           <VendorEmpty message="Connect Square, Toast, or Clover to stream card sales and fee splits in real time." />
         ) : null}
-        {!posLoading && hasActiveConnection && posSummary && posSummary.transactionCount === 0 ? (
+        {!posLoading && hasActiveConnection && posSummary.transactionCount === 0 ? (
           <VendorEmpty message="POS connected — waiting for your first card sale to sync." />
         ) : null}
-        {posSummary && posSummary.transactionCount > 0 ? (
+        {!posLoading && posSummary.transactionCount > 0 ? (
           <>
             <VendorKpiGrid cols={3}>
               <VendorKpiStat

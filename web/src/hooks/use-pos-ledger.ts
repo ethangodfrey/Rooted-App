@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchPosTransactions,
   fetchVendorPosConnections,
+  posLedgerRangeStart,
   subscribePosTransactions,
   summarizePosTransactions,
 } from '@/lib/pos-transactions';
@@ -24,10 +25,11 @@ export interface UsePosLedgerResult {
   connections: VendorPosConnectionPublic[];
   hasActiveConnection: boolean;
   transactions: PosTransactionRow[];
-  summary: PosLedgerSummary | null;
+  summary: PosLedgerSummary;
   liveFeed: PosTransactionRow[];
   loading: boolean;
   error: string | null;
+  realtimeStatus: string | null;
   refresh: () => Promise<void>;
 }
 
@@ -43,6 +45,7 @@ export function usePosLedger({
   const [liveFeed, setLiveFeed] = useState<PosTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<string | null>(null);
   const seenIdsRef = useRef(new Set<string>());
 
   const refresh = useCallback(async () => {
@@ -53,9 +56,7 @@ export function usePosLedger({
 
     setLoading(true);
     try {
-      const start = new Date();
-      start.setDate(start.getDate() - range);
-      start.setHours(0, 0, 0, 0);
+      const start = posLedgerRangeStart(range);
 
       const [connRows, txnRows] = await Promise.all([
         fetchVendorPosConnections(vendorId),
@@ -81,16 +82,19 @@ export function usePosLedger({
   useEffect(() => {
     if (!vendorId || !enabled || !isSupabaseConfigured) return;
 
-    return subscribePosTransactions(vendorId, (row) => {
-      if (seenIdsRef.current.has(row.id)) return;
-      seenIdsRef.current.add(row.id);
-      setTransactions((prev) => [row, ...prev]);
-      setLiveFeed((prev) => [row, ...prev].slice(0, LIVE_FEED_MAX));
-    });
+    return subscribePosTransactions(
+      vendorId,
+      (row) => {
+        if (seenIdsRef.current.has(row.id)) return;
+        seenIdsRef.current.add(row.id);
+        setTransactions((prev) => [row, ...prev]);
+        setLiveFeed((prev) => [row, ...prev].slice(0, LIVE_FEED_MAX));
+      },
+      (status) => setRealtimeStatus(status),
+    );
   }, [vendorId, enabled]);
 
-  const summary =
-    transactions.length > 0 || !loading ? summarizePosTransactions(transactions, range) : null;
+  const summary = summarizePosTransactions(transactions, range);
 
   const hasActiveConnection = connections.some((c) => c.status === 'active');
 
@@ -102,6 +106,7 @@ export function usePosLedger({
     liveFeed,
     loading,
     error,
+    realtimeStatus,
     refresh,
   };
 }

@@ -1,11 +1,15 @@
 import type { NearbyNationalMarket } from '@/types/pos-transactions';
 
-function marketsApiBase(): string | null {
-  const base =
-    import.meta.env.VITE_TENANT_WEB_URL?.trim() ||
-    import.meta.env.VITE_MARKETS_API_URL?.trim() ||
-    null;
+function tenantWebApiBase(): string | null {
+  const base = import.meta.env.VITE_TENANT_WEB_URL?.trim();
   return base ? base.replace(/\/$/, '') : null;
+}
+
+function marketsApiBase(): string | null {
+  const tenant = tenantWebApiBase();
+  if (tenant) return tenant;
+  const alias = import.meta.env.VITE_MARKETS_API_URL?.trim();
+  return alias ? alias.replace(/\/$/, '') : null;
 }
 
 function mapRpcRow(row: {
@@ -80,8 +84,12 @@ export async function fetchNearbyMarkets(
   longitude: number,
   radiusMiles = 25,
 ): Promise<NearbyNationalMarket[]> {
-  const viaApi = await fetchNearbyNationalMarkets(latitude, longitude, radiusMiles);
-  if (viaApi) return viaApi;
+  const base = marketsApiBase();
+  if (base) {
+    const viaApi = await fetchNearbyNationalMarkets(latitude, longitude, radiusMiles);
+    if (viaApi != null) return viaApi;
+  }
+
   const viaRpc = await fetchNearbyNationalMarketsRpc(latitude, longitude, radiusMiles);
   return viaRpc ?? [];
 }

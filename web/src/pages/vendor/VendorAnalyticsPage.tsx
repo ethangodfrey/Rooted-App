@@ -107,7 +107,7 @@ function downloadCsv(metrics: VendorAnalyticsData) {
 export function VendorAnalyticsPage() {
   const { vendor } = useAuth();
   const [range, setRange] = useState<AnalyticsRange>(30);
-  const { hasActiveConnection, liveFeed, loading: posLedgerLoading } = usePosLedger({
+  const { hasActiveConnection, liveFeed, loading: posLedgerLoading, error: posLedgerError } = usePosLedger({
     vendorId: vendor?.id,
     range,
   });
@@ -194,6 +194,12 @@ export function VendorAnalyticsPage() {
         </VendorFormPanel>
       ) : null}
 
+      {posLedgerError ? (
+        <VendorFormPanel className="mb-4">
+          <p className="m-0 text-xs text-amber-800">{posLedgerError}</p>
+        </VendorFormPanel>
+      ) : null}
+
       <div className="analytics-range">
         {RANGES.map((r) => (
           <button
@@ -228,7 +234,13 @@ export function VendorAnalyticsPage() {
       {data.posLedgerLoaded ? (
         <ChartCard title="POS fee split" subtitle="Gross, platform fees, and net from pos_transactions">
           {data.posGrossTotal === 0 && data.posNetTotal === 0 ? (
-            <VendorEmpty message="No POS transactions in this period yet." />
+            <VendorEmpty
+              message={
+                hasActiveConnection
+                  ? 'POS connected — waiting for your first card sale to sync.'
+                  : 'No POS transactions in this period yet.'
+              }
+            />
           ) : (
             <VendorKpiGrid cols={3}>
               <VendorKpiStat value={formatPrice(data.posGrossTotal)} label="Gross" />
