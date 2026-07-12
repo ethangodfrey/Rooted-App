@@ -94,6 +94,24 @@ export function useVendorStorefront(vendorId: string | undefined): UseVendorStor
         return;
       }
 
+      if (productsRes.error) {
+        setError(productsRes.error.message);
+        setVendor(vendorRes.data as Vendor);
+        setProducts([]);
+        setUpcomingMarkets([]);
+        setLoading(false);
+        return;
+      }
+
+      if (marketsRes.error) {
+        setError(marketsRes.error.message);
+        setVendor(vendorRes.data as Vendor);
+        setProducts((productsRes.data as MenuProduct[] | null) ?? []);
+        setUpcomingMarkets([]);
+        setLoading(false);
+        return;
+      }
+
       setVendor(vendorRes.data as Vendor);
       setProducts((productsRes.data as MenuProduct[] | null) ?? []);
 

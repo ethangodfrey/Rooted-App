@@ -56,19 +56,25 @@ export function useShopperOrders(shopperId: string | undefined) {
     setLoading(true);
     setError(null);
 
-    const { data, error: queryError } = await supabase
-      .from('orders')
-      .select(ORDER_LIST_SELECT)
-      .eq('shopper_id', shopperId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error: queryError } = await supabase
+        .from('orders')
+        .select(ORDER_LIST_SELECT)
+        .eq('shopper_id', shopperId)
+        .order('created_at', { ascending: false });
 
-    if (queryError) {
-      setError(queryError.message);
+      if (queryError) {
+        setError(queryError.message);
+        setOrders([]);
+      } else {
+        setOrders((data as unknown as ShopperOrderRow[]) ?? []);
+      }
+    } catch (err) {
+      setError((err as Error).message);
       setOrders([]);
-    } else {
-      setOrders((data as unknown as ShopperOrderRow[]) ?? []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [shopperId]);
 
   useEffect(() => {
