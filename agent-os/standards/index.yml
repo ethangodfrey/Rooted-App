@@ -35,6 +35,9 @@ database:
 deploy:
   production:
     description: Vercel + Railway + Supabase architecture and smoke tests
+  vercel-multi-project:
+    description: Split Vendorly_Marketplace1 vs tenant-web Vercel projects, lazy-chunk smoke audit
+    path: ../../../docs/VERCEL_MULTI_PROJECT.md
   runbook:
     description: Ordered deploy phase gates with checklists for agents to execute
   troubleshooting:

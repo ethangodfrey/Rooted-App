@@ -110,6 +110,8 @@ npx vercel link
 
 **Production Vercel project:** **`Vendorly_Marketplace1`** — see [`VERCEL_PRODUCTION_PROJECT.md`](VERCEL_PRODUCTION_PROJECT.md) if you deployed to the wrong project.
 
+**Multi-project layout:** Edge OAuth, nearby markets API, and POS webhooks deploy from **`tenant-web/`** as a **separate** Vercel project. See [`VERCEL_MULTI_PROJECT.md`](VERCEL_MULTI_PROJECT.md).
+
 This repo is a monorepo: the Vite app lives in **`web/`**, not at the repo root. Pick **one** deploy approach below.
 
 ### Where is “Root Directory” in Vercel?

@@ -40,6 +40,9 @@
     "config:audit": "node scripts/audit-production-config.mjs",
     "smoke:boundaries": "node scripts/smoke-production-boundaries.mjs",
     "smoke:settlement": "node scripts/settlement-dashboard-smoke.mjs",
+    "smoke:ui-baseline": "node scripts/verify-ui-production-baseline.mjs",
+    "build:web": "npm run build --prefix web",
+    "build:tenant-web": "npm run build --prefix tenant-web",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
   },
   "dependencies": {
