@@ -67,6 +67,7 @@ docs/supabase/phase42_regional_markets.sql # regional markets + vendor registrat
 docs/supabase/phase42a_seed_markets_from_events.sql # seed markets.event_id from legacy events (pre-backfill)
 docs/supabase/phase42b_backfill_orders_market_id.sql # post-phase42: backfill orders.market_id from event_id
 docs/supabase/phase43_pos_national_markets_foundation.sql # POS OAuth tables + national_farmers_markets registry
+docs/supabase/phase43c_pos_data_rls.sql # POS RLS + realtime + nearby national markets RPC
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

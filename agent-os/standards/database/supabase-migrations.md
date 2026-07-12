@@ -32,6 +32,7 @@ docs/supabase/phase42_regional_markets.sql
 docs/supabase/phase42a_seed_markets_from_events.sql
 docs/supabase/phase42b_backfill_orders_market_id.sql
 docs/supabase/phase43_pos_national_markets_foundation.sql
+docs/supabase/phase43c_pos_data_rls.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):

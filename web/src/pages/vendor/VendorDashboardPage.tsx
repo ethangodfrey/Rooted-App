@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
+import { usePosLedger } from '@/hooks/use-pos-ledger';
 import { PENDING_PICKUP_STATUSES } from '@/lib/order-fulfillment';
+import { formatDateTime, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import {
   VendorActionGrid,
   VendorActionTile,
+  VendorEmpty,
   VendorHero,
   VendorKpiGrid,
   VendorKpiStat,
@@ -13,7 +16,10 @@ import {
   VendorListRow,
   VendorScreen,
   VendorSection,
+  VendorSecondaryButton,
 } from '@/components/vendor/vendor-ui';
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import { POS_PROVIDER_LABELS } from '@/types/pos-transactions';
 import '@/components/ui/ui.css';
 
 const statusCopy: Record<string, string> = {
@@ -24,6 +30,13 @@ const statusCopy: Record<string, string> = {
 
 export function VendorDashboardPage() {
   const { user, vendor } = useAuth();
+  const {
+    summary: posSummary,
+    liveFeed,
+    hasActiveConnection,
+    loading: posLoading,
+    error: posError,
+  } = usePosLedger({ vendorId: vendor?.id, range: 30 });
   const [pendingPickup, setPendingPickup] = useState(0);
   const [fulfilledToday, setFulfilledToday] = useState(0);
   const [activeProducts, setActiveProducts] = useState(0);
@@ -79,6 +92,67 @@ export function VendorDashboardPage() {
         <VendorKpiStat to="/vendor/fulfillment" value={fulfilledToday} label="Fulfilled today" />
         <VendorKpiStat to="/vendor/products" value={activeProducts} label="Active products" />
       </VendorKpiGrid>
+
+      <VendorSection title="POS sales">
+        {posLoading ? (
+          <div className="app-loading py-6">
+            <div className="app-spinner" />
+          </div>
+        ) : null}
+        {posError ? <p className="app-error mb-3">{posError}</p> : null}
+        {!posLoading && !hasActiveConnection ? (
+          <VendorEmpty message="Connect Square, Toast, or Clover to stream card sales and fee splits in real time." />
+        ) : null}
+        {!posLoading && hasActiveConnection && posSummary.transactionCount === 0 ? (
+          <VendorEmpty message="POS connected — waiting for your first card sale to sync." />
+        ) : null}
+        {!posLoading && posSummary.transactionCount > 0 ? (
+          <>
+            <VendorKpiGrid cols={3}>
+              <VendorKpiStat
+                to="/vendor/analytics"
+                value={formatPrice(posSummary.grossTotal)}
+                label="Gross (30d)"
+              />
+              <VendorKpiStat
+                to="/vendor/analytics"
+                value={formatPrice(posSummary.platformFeeTotal)}
+                label="Platform fees"
+              />
+              <VendorKpiStat
+                to="/vendor/analytics"
+                value={formatPrice(posSummary.netTotal)}
+                label="Net (30d)"
+              />
+            </VendorKpiGrid>
+            {liveFeed.length > 0 ? (
+              <VendorListPanel>
+                {liveFeed.map((txn) => (
+                  <div key={txn.id} className="flex items-center gap-3 p-3.5">
+                    <IconBadge name="credit-card" tone="amber" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-stone-800">
+                        {formatPrice(txn.net_amount)}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-stone-500">
+                        {formatDateTime(txn.sold_at)} · {POS_PROVIDER_LABELS[txn.provider]}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+                      Live
+                    </span>
+                  </div>
+                ))}
+              </VendorListPanel>
+            ) : null}
+          </>
+        ) : null}
+        {!posLoading && !hasActiveConnection ? (
+          <div className="mt-3">
+            <VendorSecondaryButton to="/vendor/pos">Connect POS</VendorSecondaryButton>
+          </div>
+        ) : null}
+      </VendorSection>
 
       <VendorSection title="Operations">
         <VendorActionGrid>

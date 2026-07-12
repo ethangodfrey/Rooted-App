@@ -1,4 +1,5 @@
 import { isApiConfigured } from '@/lib/api';
+import { fetchPosTransactions, summarizePosTransactions } from '@/lib/pos-transactions';
 import { posApi } from '@/lib/pos-api';
 import { supabase } from '@/lib/supabase';
 import type { OrderStatus } from '@/types/database';
@@ -40,6 +41,11 @@ export interface VendorAnalyticsData {
   inPersonRevenue: number;
   cardSalesRevenue: number;
   cardSalesCount: number;
+  /** Phase43 pos_transactions ledger (cents). */
+  posGrossTotal: number;
+  posPlatformFees: number;
+  posNetTotal: number;
+  posLedgerLoaded: boolean;
   unitsSold: number;
   totalRevenue: number;
   ordersByStatus: { status: OrderStatus; count: number }[];
@@ -256,11 +262,18 @@ async function fetchVendorAnalyticsUncached(
       ]).catch(() => null)
     : Promise.resolve(null);
 
-  const [ordersRes, txRes, posPayload] = await Promise.all([
+  const posLedgerPromise = fetchPosTransactions(vendorId, { since: startIso, limit: 500 })
+    .then((rows) => ({ rows, ok: true as const }))
+    .catch(() => ({ rows: [] as Awaited<ReturnType<typeof fetchPosTransactions>>, ok: false as const }));
+
+  const [ordersRes, txRes, posPayload, posLedgerResult] = await Promise.all([
     ordersQuery,
     txQuery,
     posPromise,
+    posLedgerPromise,
   ]);
+
+  const posLedgerRows = posLedgerResult.rows;
 
   const orders =
     (ordersRes.data as {
@@ -333,29 +346,51 @@ async function fetchVendorAnalyticsUncached(
   let cardSalesCount = 0;
   let recentPosSales: PosImportedTransaction[] = [];
   let unmappedPosLineItems = 0;
+  let posGrossTotal = 0;
+  let posPlatformFees = 0;
+  let posNetTotal = 0;
+  let posLedgerLoaded = false;
+
+  const chartRangeKey: AnalyticsRange = range === 'all' ? 365 : range;
+  if (posLedgerResult.ok) {
+    posLedgerLoaded = true;
+    const ledgerSummary = summarizePosTransactions(posLedgerRows, chartRangeKey);
+    posGrossTotal = ledgerSummary.grossTotal;
+    posPlatformFees = ledgerSummary.platformFeeTotal;
+    posNetTotal = ledgerSummary.netTotal;
+    cardSalesRevenue = ledgerSummary.netTotal;
+    cardSalesCount = ledgerSummary.transactionCount;
+    for (const day of ledgerSummary.dailyNet) {
+      const point = ensureDayBucket(revenueByDate, day.date);
+      point.cardSales += day.net;
+      point.total += day.net;
+    }
+  }
 
   if (posPayload) {
     posLoaded = true;
-    const inRangeTxns = posPayload.items.filter(
-      (txn) => allTime || inRange(txn.soldAt, start, end),
-    );
-    cardSalesCount = inRangeTxns.length;
-    for (const txn of inRangeTxns) {
-      cardSalesRevenue += txn.netAmount ?? 0;
-      addRevenue(revenueByDate, txn.soldAt, 'cardSales', txn.netAmount ?? 0);
+    if (!posLedgerLoaded) {
+      const inRangeTxns = posPayload.items.filter(
+        (txn) => allTime || inRange(txn.soldAt, start, end),
+      );
+      cardSalesCount = inRangeTxns.length;
+      for (const txn of inRangeTxns) {
+        cardSalesRevenue += txn.netAmount ?? 0;
+        addRevenue(revenueByDate, txn.soldAt, 'cardSales', txn.netAmount ?? 0);
 
-      const dateKey = toDateKey(new Date(txn.soldAt));
-      ensureDayBucket(revenueByDate, dateKey);
-      unitsByDate.set(dateKey, unitsByDate.get(dateKey) ?? 0);
-      for (const li of txn.lineItems ?? []) {
-        unitsSold += li.quantity;
-        unitsByDate.set(dateKey, (unitsByDate.get(dateKey) ?? 0) + li.quantity);
-        if (!li.productId) unmappedPosLineItems += 1;
-        const name = li.product?.name ?? li.name;
-        bumpProduct(name, li.quantity, li.grossAmount);
+        const dateKey = toDateKey(new Date(txn.soldAt));
+        ensureDayBucket(revenueByDate, dateKey);
+        unitsByDate.set(dateKey, unitsByDate.get(dateKey) ?? 0);
+        for (const li of txn.lineItems ?? []) {
+          unitsSold += li.quantity;
+          unitsByDate.set(dateKey, (unitsByDate.get(dateKey) ?? 0) + li.quantity);
+          if (!li.productId) unmappedPosLineItems += 1;
+          const name = li.product?.name ?? li.name;
+          bumpProduct(name, li.quantity, li.grossAmount);
+        }
       }
+      recentPosSales = inRangeTxns.slice(0, 10);
     }
-    recentPosSales = inRangeTxns.slice(0, 10);
   }
 
   if (!posLoaded) {
@@ -376,7 +411,7 @@ async function fetchVendorAnalyticsUncached(
   const revenueBySource: ChartSlice[] = [
     { label: 'Reservations', value: reservationRevenue, color: ANALYTICS_COLORS.reservations },
     { label: 'In-person', value: inPersonRevenue, color: ANALYTICS_COLORS.inPerson },
-    { label: 'Card (Square)', value: cardSalesRevenue, color: ANALYTICS_COLORS.cardSales },
+    { label: 'Card (POS)', value: cardSalesRevenue, color: ANALYTICS_COLORS.cardSales },
   ].filter((s) => s.value > 0);
 
   const chartDays = sortedDayKeys().map((date) => revenueByDate.get(date)!);
@@ -401,6 +436,10 @@ async function fetchVendorAnalyticsUncached(
     inPersonRevenue,
     cardSalesRevenue,
     cardSalesCount,
+    posGrossTotal,
+    posPlatformFees,
+    posNetTotal,
+    posLedgerLoaded,
     unitsSold,
     totalRevenue,
     ordersByStatus: [...statusCounts.entries()]
