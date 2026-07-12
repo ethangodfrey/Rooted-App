@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { VendorHero, VendorScreen, VendorSecondaryButton } from '@/components/vendor/vendor-ui';
 import '@/components/ui/ui.css';
 
 export function VendorPosConnectedPage() {
@@ -18,15 +19,18 @@ export function VendorPosConnectedPage() {
   }, [ok, navigate]);
 
   return (
-    <div className="app-screen app-screen--narrow" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-      <div className="app-spinner" style={{ margin: '0 auto 1.5rem' }} />
-      <h1 className="app-title">{ok ? 'Square connected' : 'Connection failed'}</h1>
-      <p className="app-subtitle">
-        {ok ? 'Starting your first sync…' : (detail ?? 'Something went wrong during authorization.')}
-      </p>
-      <Link to="/vendor/pos" className="app-btn app-btn--secondary" style={{ marginTop: '1.5rem', display: 'inline-block' }}>
-        Back to POS
-      </Link>
-    </div>
+    <VendorScreen>
+      <div className="flex flex-col items-center pt-16 text-center">
+        <div className="app-spinner mb-6" />
+        <VendorHero
+          eyebrow="POS"
+          title={ok ? 'Square connected' : 'Connection failed'}
+          subtitle={ok ? 'Starting your first sync…' : (detail ?? 'Authorization failed.')}
+        />
+        <VendorSecondaryButton to="/vendor/pos" className="mt-4">
+          Back to POS
+        </VendorSecondaryButton>
+      </div>
+    </VendorScreen>
   );
 }

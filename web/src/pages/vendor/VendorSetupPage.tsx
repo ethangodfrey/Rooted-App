@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { FieldError } from '@/components/ui/FieldError';
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorPrimaryButton,
+  VendorScreen,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { geocodeAddress } from '@/lib/geocode';
 import { resetRoleSelection } from '@/lib/reset-role-selection';
@@ -146,173 +153,181 @@ export function VendorSetupPage() {
   }
 
   return (
-    <div className="app-screen app-screen--narrow">
-      <button type="button" className="app-back-link" onClick={handleBack} disabled={loading || backing}>
+    <VendorScreen>
+      <button
+        type="button"
+        className={`app-back-link ${VENDOR_PRESSABLE}`}
+        onClick={handleBack}
+        disabled={loading || backing}
+      >
         ← Change role
       </button>
-      <p className="app-eyebrow">Vendor onboarding</p>
-      <h1 className="app-title">Tell us about your business</h1>
+      <VendorHero eyebrow="Onboarding" title="Tell us about your business" />
 
-      <div className="app-input-group">
-        <label>Business name</label>
-        <input
-          className={`app-input${fieldErrors.business_name ? ' app-input--invalid' : ''}`}
-          value={businessName}
-          onChange={(e) => {
-            setBusinessName(e.target.value);
-            clearFieldError('business_name');
-          }}
-        />
-        <FieldError message={fieldErrors.business_name} />
-      </div>
-      <div className="app-input-group">
-        <label>What do you sell?</label>
-        <textarea
-          className={`app-textarea${fieldErrors.product_summary ? ' app-textarea--invalid' : ''}`}
-          value={productSummary}
-          onChange={(e) => {
-            setProductSummary(e.target.value);
-            clearFieldError('product_summary');
-          }}
-        />
-        <FieldError message={fieldErrors.product_summary} />
-      </div>
-      <div className="app-input-group">
-        <label>About (optional)</label>
-        <textarea className="app-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
-      </div>
-
-      <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Category</p>
-      <div className="app-chip-row">
-        {VENDOR_CATEGORY_OPTIONS.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            className={`app-chip${category === opt ? ' app-chip--selected' : ''}`}
-            onClick={() => {
-              setCategory(opt);
-              clearFieldError('category');
-            }}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-      <FieldError message={fieldErrors.category} />
-
-      <div className="app-input-group">
-        <label>Street address</label>
-        <input
-          className="app-input"
-          value={streetAddress}
-          onChange={(e) => setStreetAddress(e.target.value)}
-          placeholder="123 Main St"
-          autoComplete="street-address"
-        />
-      </div>
-      <div className="app-form-grid">
+      <VendorFormPanel>
         <div className="app-input-group">
-          <label>City</label>
+          <label>Business name</label>
           <input
-            className={`app-input${fieldErrors.sell_city ? ' app-input--invalid' : ''}`}
-            value={sellCity}
+            className={`app-input${fieldErrors.business_name ? ' app-input--invalid' : ''}`}
+            value={businessName}
             onChange={(e) => {
-              setSellCity(e.target.value);
-              clearFieldError('sell_city');
+              setBusinessName(e.target.value);
+              clearFieldError('business_name');
             }}
           />
-          <FieldError message={fieldErrors.sell_city} />
+          <FieldError message={fieldErrors.business_name} />
         </div>
         <div className="app-input-group">
-          <label>State</label>
-          <input
-            className={`app-input${fieldErrors.sell_state ? ' app-input--invalid' : ''}`}
-            value={sellState}
+          <label>What do you sell?</label>
+          <textarea
+            className={`app-textarea${fieldErrors.product_summary ? ' app-textarea--invalid' : ''}`}
+            value={productSummary}
             onChange={(e) => {
-              setSellState(e.target.value);
-              clearFieldError('sell_state');
+              setProductSummary(e.target.value);
+              clearFieldError('product_summary');
             }}
-            maxLength={2}
           />
-          <FieldError message={fieldErrors.sell_state} />
+          <FieldError message={fieldErrors.product_summary} />
         </div>
-      </div>
-      <div className="app-input-group">
-        <label>ZIP code</label>
-        <input
-          className="app-input"
-          value={postalCode}
-          onChange={(e) => setPostalCode(e.target.value)}
-          placeholder="78701"
-          inputMode="numeric"
-          autoComplete="postal-code"
-        />
-      </div>
+        <div className="app-input-group">
+          <label>About (optional)</label>
+          <textarea className="app-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
 
-      <p className="app-row-meta" style={{ marginBottom: '0.5rem' }}>Where do you sell?</p>
-      <div className="app-chip-row">
-        {SELLING_CHANNEL_OPTIONS.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            className={`app-chip${channels.includes(opt) ? ' app-chip--selected' : ''}`}
-            onClick={() => {
-              toggleChannel(opt);
-              clearFieldError('selling_channels');
+        <p className="m-0 mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">Category</p>
+        <div className="app-chip-row">
+          {VENDOR_CATEGORY_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              className={`app-chip ${VENDOR_PRESSABLE}${category === opt ? ' app-chip--selected' : ''}`}
+              onClick={() => {
+                setCategory(opt);
+                clearFieldError('category');
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        <FieldError message={fieldErrors.category} />
+
+        <div className="app-input-group">
+          <label>Street address</label>
+          <input
+            className="app-input"
+            value={streetAddress}
+            onChange={(e) => setStreetAddress(e.target.value)}
+            placeholder="123 Main St"
+            autoComplete="street-address"
+          />
+        </div>
+        <div className="app-form-grid">
+          <div className="app-input-group">
+            <label>City</label>
+            <input
+              className={`app-input${fieldErrors.sell_city ? ' app-input--invalid' : ''}`}
+              value={sellCity}
+              onChange={(e) => {
+                setSellCity(e.target.value);
+                clearFieldError('sell_city');
+              }}
+            />
+            <FieldError message={fieldErrors.sell_city} />
+          </div>
+          <div className="app-input-group">
+            <label>State</label>
+            <input
+              className={`app-input${fieldErrors.sell_state ? ' app-input--invalid' : ''}`}
+              value={sellState}
+              onChange={(e) => {
+                setSellState(e.target.value);
+                clearFieldError('sell_state');
+              }}
+              maxLength={2}
+            />
+            <FieldError message={fieldErrors.sell_state} />
+          </div>
+        </div>
+        <div className="app-input-group">
+          <label>ZIP code</label>
+          <input
+            className="app-input"
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            placeholder="78701"
+            inputMode="numeric"
+            autoComplete="postal-code"
+          />
+        </div>
+
+        <p className="m-0 mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">Where do you sell?</p>
+        <div className="app-chip-row">
+          {SELLING_CHANNEL_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              className={`app-chip ${VENDOR_PRESSABLE}${channels.includes(opt) ? ' app-chip--selected' : ''}`}
+              onClick={() => {
+                toggleChannel(opt);
+                clearFieldError('selling_channels');
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        <FieldError message={fieldErrors.selling_channels} />
+
+        <div className="app-input-group">
+          <label>Primary market (optional)</label>
+          <input className="app-input" value={primaryMarket} onChange={(e) => setPrimaryMarket(e.target.value)} />
+        </div>
+        <div className="app-input-group">
+          <label>Instagram URL</label>
+          <input
+            className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
+            value={instagram}
+            onChange={(e) => {
+              setInstagram(e.target.value);
+              clearFieldError('social');
             }}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-      <FieldError message={fieldErrors.selling_channels} />
+          />
+        </div>
+        <div className="app-input-group">
+          <label>Website URL</label>
+          <input
+            className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
+            value={website}
+            onChange={(e) => {
+              setWebsite(e.target.value);
+              clearFieldError('social');
+            }}
+          />
+          <FieldError message={fieldErrors.social} />
+        </div>
 
-      <div className="app-input-group">
-        <label>Primary market (optional)</label>
-        <input className="app-input" value={primaryMarket} onChange={(e) => setPrimaryMarket(e.target.value)} />
-      </div>
-      <div className="app-input-group">
-        <label>Instagram URL</label>
-        <input
-          className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
-          value={instagram}
-          onChange={(e) => {
-            setInstagram(e.target.value);
-            clearFieldError('social');
-          }}
-        />
-      </div>
-      <div className="app-input-group">
-        <label>Website URL</label>
-        <input
-          className={`app-input${fieldErrors.social ? ' app-input--invalid' : ''}`}
-          value={website}
-          onChange={(e) => {
-            setWebsite(e.target.value);
-            clearFieldError('social');
-          }}
-        />
-        <FieldError message={fieldErrors.social} />
-      </div>
+        <label className="mb-4 flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={attested}
+            onChange={(e) => {
+              setAttested(e.target.checked);
+              clearFieldError('attested');
+            }}
+          />
+          <span className="text-xs text-stone-500">
+            I confirm this information is accurate and represents my business.
+          </span>
+        </label>
+        <FieldError message={fieldErrors.attested} />
 
-      <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <input
-          type="checkbox"
-          checked={attested}
-          onChange={(e) => {
-            setAttested(e.target.checked);
-            clearFieldError('attested');
-          }}
-        />
-        <span className="app-row-meta">I confirm this information is accurate and represents my business.</span>
-      </label>
-      <FieldError message={fieldErrors.attested} />
+        {error ? <p className="app-error">{error}</p> : null}
 
-      {error ? <p className="app-error">{error}</p> : null}
-
-      <button type="button" className="app-btn app-btn--primary" disabled={loading} onClick={handleSave}>
-        {loading ? 'Submitting…' : 'Submit application'}
-      </button>
-    </div>
+        <VendorPrimaryButton className="w-full" disabled={loading} onClick={handleSave}>
+          {loading ? 'Submitting…' : 'Submit application'}
+        </VendorPrimaryButton>
+      </VendorFormPanel>
+    </VendorScreen>
   );
 }

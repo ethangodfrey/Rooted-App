@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorPrimaryButton,
+  VendorScreen,
+  VendorSection,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDateTime, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -66,44 +75,56 @@ export function VendorOrderDetailPage() {
   if (!order) return <div className="app-loading"><div className="app-spinner" /></div>;
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/orders" className="app-back-link">← Orders</Link>
-      <h1 className="app-title">Order detail</h1>
-      <span className="app-status">{order.order_status.replace(/_/g, ' ')}</span>
+      <VendorHero
+        eyebrow="Order"
+        title="Order detail"
+        pill={order.order_status.replace(/_/g, ' ')}
+      />
 
-      <div className="app-card" style={{ marginTop: '1rem' }}>
-        <p className="app-row-meta">Placed {formatDateTime(order.created_at)}</p>
+      <VendorFormPanel className="mb-5">
+        <p className="m-0 text-xs text-stone-500">Placed {formatDateTime(order.created_at)}</p>
         {order.event ? (
-          <p style={{ marginTop: '0.5rem' }}>Pickup event: {order.event.name}</p>
+          <p className="m-0 mt-2 text-sm text-stone-700">Pickup event: {order.event.name}</p>
         ) : order.leftover_listing ? (
-          <p style={{ marginTop: '0.5rem' }}>
+          <p className="m-0 mt-2 text-sm text-stone-700">
             Leftover pickup: {order.leftover_listing.pickup_address ??
               (order.leftover_listing.pickup_city && order.leftover_listing.pickup_state
                 ? `${order.leftover_listing.pickup_city}, ${order.leftover_listing.pickup_state}`
                 : order.leftover_listing.title)}
           </p>
         ) : null}
-        {order.notes ? <p style={{ marginTop: '0.5rem' }}>Notes: {order.notes}</p> : null}
-      </div>
+        {order.notes ? <p className="m-0 mt-2 text-sm text-stone-700">Notes: {order.notes}</p> : null}
+      </VendorFormPanel>
 
-      <div className="app-list" style={{ marginTop: '1rem' }}>
-        {order.order_items.map((item) => (
-          <div key={item.id} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
-            <span>{item.product?.name ?? item.item_title ?? 'Item'} × {item.quantity}</span>
-            <span>{formatPrice(item.item_price * item.quantity)}</span>
-          </div>
-        ))}
-      </div>
+      <VendorSection title="Items">
+        <VendorListPanel>
+          {order.order_items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between gap-3 p-3.5">
+              <span className="flex min-w-0 items-center gap-3">
+                <IconBadge name="package" tone="emerald" />
+                <span className="truncate text-sm font-semibold text-stone-800">
+                  {item.product?.name ?? item.item_title ?? 'Item'} × {item.quantity}
+                </span>
+              </span>
+              <span className="shrink-0 text-sm font-semibold text-stone-600">
+                {formatPrice(item.item_price * item.quantity)}
+              </span>
+            </div>
+          ))}
+        </VendorListPanel>
+      </VendorSection>
 
-      <div className="app-card app-card--honeydew" style={{ marginTop: '1rem' }}>
-        <p className="app-row-title">Total: {formatPrice(order.total)}</p>
-      </div>
+      <VendorFormPanel className="mb-5">
+        <p className="m-0 text-sm font-semibold text-stone-800">Total: {formatPrice(order.total)}</p>
+      </VendorFormPanel>
 
       {NEXT_STATUS[order.order_status] ? (
-        <button type="button" className="app-btn app-btn--primary" style={{ marginTop: '1rem' }} disabled={updating} onClick={advanceStatus}>
+        <VendorPrimaryButton disabled={updating} onClick={advanceStatus}>
           {updating ? 'Updating…' : `Mark as ${NEXT_STATUS[order.order_status].replace(/_/g, ' ')}`}
-        </button>
+        </VendorPrimaryButton>
       ) : null}
-    </div>
+    </VendorScreen>
   );
 }

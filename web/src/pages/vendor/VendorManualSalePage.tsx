@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorPrimaryButton,
+  VendorScreen,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -92,63 +98,63 @@ export function VendorManualSalePage() {
   }
 
   return (
-    <div className="app-screen app-screen--narrow">
+    <VendorScreen>
       <Link to="/vendor/dashboard" className="app-back-link">← Dashboard</Link>
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">Log in-person sale</h1>
-      <p className="app-subtitle">Record cash or card sales at your booth for analytics.</p>
+      <VendorHero eyebrow="Vendor" title="Log in-person sale" />
 
-      <div className="app-input-group">
-        <label>Product</label>
-        <select className="app-input" value={productId} onChange={(e) => setProductId(e.target.value)}>
-          <option value="">Select product…</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} ({formatPrice(p.price)})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="app-input-group">
-        <label>Event (optional)</label>
-        <select className="app-input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
-          <option value="">No specific event</option>
-          {events.map((e) => (
-            <option key={e.id} value={e.id}>{e.name}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="app-input-group">
-        <label>Quantity</label>
-        <input
-          className="app-input"
-          type="number"
-          min={1}
-          value={quantity}
-          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-        />
-      </div>
-
-      <div className="app-input-group">
-        <label>Notes (optional)</label>
-        <textarea className="app-textarea" value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
-
-      {selectedProduct ? (
-        <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-          <p className="app-row-meta">Sale total</p>
-          <p className="app-row-title">{formatPrice(total)}</p>
+      <VendorFormPanel>
+        <div className="app-input-group">
+          <label>Product</label>
+          <select className="app-input" value={productId} onChange={(e) => setProductId(e.target.value)}>
+            <option value="">Select product…</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({formatPrice(p.price)})
+              </option>
+            ))}
+          </select>
         </div>
-      ) : null}
 
-      {error ? <p className="app-error">{error}</p> : null}
-      {success ? <p className="app-row-meta" style={{ color: 'var(--color-forest)' }}>Sale logged.</p> : null}
+        <div className="app-input-group">
+          <label>Event (optional)</label>
+          <select className="app-input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
+            <option value="">No specific event</option>
+            {events.map((e) => (
+              <option key={e.id} value={e.id}>{e.name}</option>
+            ))}
+          </select>
+        </div>
 
-      <button type="button" className="app-btn app-btn--primary" disabled={saving} onClick={() => void handleLog()}>
-        {saving ? 'Saving…' : 'Log sale'}
-      </button>
-    </div>
+        <div className="app-input-group">
+          <label>Quantity</label>
+          <input
+            className="app-input"
+            type="number"
+            min={1}
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+          />
+        </div>
+
+        <div className="app-input-group">
+          <label>Notes (optional)</label>
+          <textarea className="app-textarea" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
+
+        {selectedProduct ? (
+          <div className="mt-4 rounded-lg border border-stone-200/40 bg-stone-50/80 p-3">
+            <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">Sale total</p>
+            <p className="m-0 mt-1 text-lg font-bold text-stone-800">{formatPrice(total)}</p>
+          </div>
+        ) : null}
+
+        {error ? <p className="app-error">{error}</p> : null}
+        {success ? <p className="m-0 text-sm text-emerald-700">Sale logged.</p> : null}
+
+        <VendorPrimaryButton className="mt-4 w-full" disabled={saving} onClick={() => void handleLog()}>
+          {saving ? 'Saving…' : 'Log sale'}
+        </VendorPrimaryButton>
+      </VendorFormPanel>
+    </VendorScreen>
   );
 }

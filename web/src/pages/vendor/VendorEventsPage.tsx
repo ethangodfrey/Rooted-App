@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorEmpty,
+  VendorHero,
+  VendorListPanel,
+  VendorScreen,
+  VendorSection,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { useNow } from '@/hooks/use-now';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
@@ -89,49 +97,63 @@ export function VendorEventsPage() {
   const sortedEvents = useMemo(() => sortEventsByRuntime(events, now), [events, now]);
 
   return (
-    <div className="app-screen">
-      <Link to="/vendor/dashboard" className="app-back-link">← Dashboard</Link>
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">My events</h1>
-      <p className="app-subtitle">Join markets to list products and accept reservations.</p>
+    <VendorScreen>
+      <VendorHero
+        eyebrow="Vendor"
+        title="My events"
+        pill={loading ? undefined : `${joined.size} joined`}
+      />
 
       {error ? <p className="app-error">{error}</p> : null}
 
       {loading ? (
-        <div className="app-loading"><div className="app-spinner" /></div>
-      ) : sortedEvents.length === 0 ? (
-        <div className="app-empty">No public events available yet.</div>
-      ) : (
-        <div className="app-list">
-          {sortedEvents.map((event) => {
-            const isJoined = joined.has(event.id);
-            const phase = eventRuntimePhase(event, now);
-            return (
-              <div
-                key={event.id}
-                className={`app-card${phase === 'closed' ? ' app-card--closed' : ''}${phase === 'live' ? ' app-card--live' : ''}`}
-              >
-                <div style={{ marginBottom: '0.35rem' }}>
-                  <EventStatusBadge event={event} />
-                </div>
-                <p className="app-row-title">{event.name}</p>
-                <p className="app-row-meta">
-                  {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
-                </p>
-                {event.city ? <p className="app-row-meta">{event.city}, {event.state}</p> : null}
-                <button
-                  type="button"
-                  className={`app-btn app-btn--small${isJoined ? ' app-btn--secondary' : ' app-btn--primary'}`}
-                  style={{ marginTop: '0.75rem' }}
-                  disabled={busyId === event.id}
-                  onClick={() => void toggle(event.id)}>
-                  {busyId === event.id ? 'Saving…' : isJoined ? 'Leave event' : 'Join event'}
-                </button>
-              </div>
-            );
-          })}
+        <div className="app-loading">
+          <div className="app-spinner" />
         </div>
+      ) : sortedEvents.length === 0 ? (
+        <VendorEmpty message="No public events available yet." />
+      ) : (
+        <VendorSection title="Markets">
+          <VendorListPanel>
+            {sortedEvents.map((event) => {
+              const isJoined = joined.has(event.id);
+              const phase = eventRuntimePhase(event, now);
+              return (
+                <div
+                  key={event.id}
+                  className={`p-3.5${phase === 'closed' ? ' opacity-60' : ''}${phase === 'live' ? ' bg-emerald-50/30' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <IconBadge name="map-pin" tone="sky" />
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1">
+                        <EventStatusBadge event={event} />
+                      </div>
+                      <p className="m-0 truncate text-sm font-semibold text-stone-800">{event.name}</p>
+                      <p className="m-0 mt-0.5 text-xs text-stone-500">
+                        {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
+                      </p>
+                      {event.city ? (
+                        <p className="m-0 mt-0.5 text-xs text-stone-400">
+                          {event.city}, {event.state}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`app-btn app-btn--small mt-3 ${VENDOR_PRESSABLE}${isJoined ? ' app-btn--secondary' : ' app-btn--primary'}`}
+                    disabled={busyId === event.id}
+                    onClick={() => void toggle(event.id)}
+                  >
+                    {busyId === event.id ? 'Saving…' : isJoined ? 'Leave event' : 'Join event'}
+                  </button>
+                </div>
+              );
+            })}
+          </VendorListPanel>
+        </VendorSection>
       )}
-    </div>
+    </VendorScreen>
   );
 }

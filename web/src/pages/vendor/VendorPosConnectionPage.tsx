@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorActionGrid,
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorPrimaryButton,
+  VendorScreen,
+  VendorSecondaryButton,
+  VendorSection,
+  VendorStatusPill,
+} from '@/components/vendor/vendor-ui';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
 import { posApi } from '@/lib/pos-api';
 import type { PosConnection, PosSyncRun } from '@/types/pos';
@@ -88,57 +100,71 @@ export function VendorPosConnectionPage() {
   const webhookEnabled = Boolean(connection.metadata?.webhookSubscriptionId);
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/pos" className="app-back-link">← POS</Link>
-      <p className="app-eyebrow">{PROVIDER_LABEL[connection.provider] ?? connection.provider}</p>
-      <h1 className="app-title">Connection</h1>
+      <VendorHero
+        eyebrow={PROVIDER_LABEL[connection.provider] ?? connection.provider}
+        title="Connection"
+        pill={connection.status}
+      />
 
-      <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-        <p className="app-row-meta">Status</p>
-        <p className="app-row-title">{connection.status}</p>
-        <p className="app-row-meta">
+      <VendorFormPanel className="mb-5">
+        <p className="m-0 text-xs text-stone-500">
           Last synced: {connection.lastSyncedAt ? formatRelativeTime(connection.lastSyncedAt) : 'never'}
         </p>
-        <p className="app-row-meta">Auto-sync every {connection.syncFrequencyMinutes} min</p>
-      </div>
+        <p className="m-0 mt-1 text-xs text-stone-500">
+          Auto-sync every {connection.syncFrequencyMinutes} min
+        </p>
+        {webhookEnabled ? (
+          <p className="m-0 mt-2 text-xs font-semibold text-emerald-700">Real-time webhooks enabled</p>
+        ) : null}
+      </VendorFormPanel>
 
-      <div className="app-list" style={{ marginBottom: '1rem' }}>
-        <button type="button" className="app-btn app-btn--primary" disabled={syncing} onClick={() => void syncNow()}>
+      <VendorActionGrid>
+        <VendorPrimaryButton className="w-full" disabled={syncing} onClick={() => void syncNow()}>
           {syncing ? 'Syncing…' : 'Sync now'}
-        </button>
+        </VendorPrimaryButton>
         {!webhookEnabled ? (
-          <button type="button" className="app-btn app-btn--secondary" disabled={enablingWebhook} onClick={() => void enableWebhook()}>
+          <VendorSecondaryButton
+            className="w-full"
+            disabled={enablingWebhook}
+            onClick={() => void enableWebhook()}
+          >
             {enablingWebhook ? 'Enabling…' : 'Enable real-time updates'}
-          </button>
-        ) : (
-          <p className="app-row-meta" style={{ color: 'var(--color-forest)' }}>Real-time webhooks enabled</p>
-        )}
-        <Link to="/vendor/pos/mappings" className="app-card app-card--pressable" style={{ display: 'block' }}>
+          </VendorSecondaryButton>
+        ) : null}
+        <VendorSecondaryButton className="w-full" to="/vendor/pos/mappings">
           Item mappings
-        </Link>
-        <button type="button" className="app-btn app-btn--secondary" onClick={() => void disconnect()}>
+        </VendorSecondaryButton>
+        <VendorSecondaryButton className="w-full" onClick={() => void disconnect()}>
           Disconnect
-        </button>
-      </div>
+        </VendorSecondaryButton>
+      </VendorActionGrid>
 
       {connection.errorMessage ? <p className="app-error">{connection.errorMessage}</p> : null}
       {error ? <p className="app-error">{error}</p> : null}
 
       {runs.length > 0 ? (
-        <>
-          <h2 style={{ fontSize: '1.125rem' }}>Recent syncs</h2>
-          <div className="app-list">
+        <VendorSection title="Recent syncs">
+          <VendorListPanel>
             {runs.slice(0, 8).map((run) => (
-              <div key={run.id} className="app-card">
-                <p className="app-row-title">{run.status}</p>
-                <p className="app-row-meta">
-                  {run.finishedAt ? formatDateTime(run.finishedAt) : 'In progress'} · imported {run.transactionsImported}
-                </p>
+              <div key={run.id} className="flex items-center justify-between gap-3 p-3.5">
+                <span className="flex min-w-0 items-center gap-3">
+                  <IconBadge name="credit-card" tone="amber" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-stone-800">{run.status}</span>
+                    <span className="mt-0.5 block truncate text-xs text-stone-500">
+                      {run.finishedAt ? formatDateTime(run.finishedAt) : 'In progress'} · imported{' '}
+                      {run.transactionsImported}
+                    </span>
+                  </span>
+                </span>
+                <VendorStatusPill label={run.status} />
               </div>
             ))}
-          </div>
-        </>
+          </VendorListPanel>
+        </VendorSection>
       ) : null}
-    </div>
+    </VendorScreen>
   );
 }

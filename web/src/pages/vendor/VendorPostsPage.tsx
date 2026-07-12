@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorActionGrid,
+  VendorActionTile,
+  VendorEmpty,
+  VendorHero,
+  VendorListPanel,
+  VendorScreen,
+  VendorSection,
+  VendorStatusPill,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { formatRelativeTime } from '@/lib/format';
 import { POST_TYPE_LABEL } from '@/lib/post-type';
@@ -44,71 +55,65 @@ export function VendorPostsPage() {
   );
 
   return (
-    <div className="app-screen">
-      <div className="app-page-header">
-        <div>
-          <p className="app-eyebrow">Manage</p>
-          <h1 className="app-title">Posts</h1>
-        </div>
-        <div className="app-row" style={{ gap: '0.5rem' }}>
-          <Link to="/vendor/posts/new-video" className="app-btn app-btn--secondary app-btn--small">
-            + Video
-          </Link>
-          <Link to="/vendor/posts/new" className="app-btn app-btn--primary app-btn--small">
-            + Post
-          </Link>
-        </div>
-      </div>
+    <VendorScreen>
+      <VendorHero eyebrow="Manage" title="Messages" pill={loading ? undefined : `${posts.length} posts`} />
 
-      <div className="app-chip-row" style={{ marginBottom: '1rem' }}>
-        <button
-          type="button"
-          className={`app-chip${section === 'posts' ? ' app-chip--selected' : ''}`}
-          onClick={() => setSection('posts')}>
-          Posts
-        </button>
-        <button
-          type="button"
-          className={`app-chip${section === 'videos' ? ' app-chip--selected' : ''}`}
-          onClick={() => setSection('videos')}>
-          Videos
-        </button>
-      </div>
+      <VendorActionGrid>
+        <VendorActionTile to="/vendor/posts/new" title="New post" icon="message" tone="stone" />
+        <VendorActionTile to="/vendor/posts/new-video" title="New video" icon="video" tone="sky" />
+      </VendorActionGrid>
+
+      <VendorSection title="Filter">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className={`app-chip ${VENDOR_PRESSABLE}${section === 'posts' ? ' app-chip--selected' : ''}`}
+            onClick={() => setSection('posts')}
+          >
+            Posts
+          </button>
+          <button
+            type="button"
+            className={`app-chip ${VENDOR_PRESSABLE}${section === 'videos' ? ' app-chip--selected' : ''}`}
+            onClick={() => setSection('videos')}
+          >
+            Videos
+          </button>
+        </div>
+      </VendorSection>
 
       {loading ? (
-        <div className="app-loading"><div className="app-spinner" /></div>
+        <div className="app-loading">
+          <div className="app-spinner" />
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="app-empty">
-          {section === 'videos' ? 'No videos yet.' : 'No posts yet.'}
-        </div>
+        <VendorEmpty message={section === 'videos' ? 'No videos yet.' : 'No posts yet.'} />
       ) : (
-        <div className="app-list">
-          {filtered.map((post) => (
-            <article key={post.id} className="app-card">
-              <span className="app-status">
-                {post.media_type === 'video' ? '🎬 ' : ''}
-                {POST_TYPE_LABEL[post.post_type]}
-              </span>
-              <p style={{ margin: '0.5rem 0' }}>{post.caption}</p>
-              {post.media_url && post.media_type === 'video' ? (
-                <video
-                  src={post.media_url}
-                  controls
-                  playsInline
-                  style={{ width: '100%', borderRadius: '12px', marginBottom: '0.5rem', maxHeight: 240 }}
-                />
-              ) : post.media_url ? (
-                <img
-                  src={post.media_url}
-                  alt=""
-                  style={{ width: '100%', borderRadius: '12px', marginBottom: '0.5rem' }}
-                />
-              ) : null}
-              <p className="app-row-meta">{formatRelativeTime(post.publish_at)}</p>
-            </article>
-          ))}
-        </div>
+        <VendorSection title="Feed">
+          <VendorListPanel>
+            {filtered.map((post) => (
+              <article key={post.id} className="p-3.5">
+                <div className="mb-2 flex items-center gap-2">
+                  <IconBadge name={post.media_type === 'video' ? 'video' : 'image'} tone="sky" />
+                  <VendorStatusPill label={POST_TYPE_LABEL[post.post_type]} />
+                </div>
+                <p className="m-0 text-sm text-stone-800">{post.caption}</p>
+                {post.media_url && post.media_type === 'video' ? (
+                  <video
+                    src={post.media_url}
+                    controls
+                    playsInline
+                    className="mt-2 max-h-60 w-full rounded-xl"
+                  />
+                ) : post.media_url ? (
+                  <img src={post.media_url} alt="" className="mt-2 w-full rounded-xl" />
+                ) : null}
+                <p className="m-0 mt-2 text-xs text-stone-500">{formatRelativeTime(post.publish_at)}</p>
+              </article>
+            ))}
+          </VendorListPanel>
+        </VendorSection>
       )}
-    </div>
+    </VendorScreen>
   );
 }

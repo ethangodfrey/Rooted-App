@@ -1,6 +1,19 @@
-import { Link } from 'react-router-dom';
-
 import { OrdersListSkeleton } from '@/components/orders/OrdersListSkeleton';
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorEmpty,
+  VendorFormPanel,
+  VendorHero,
+  VendorKpiGrid,
+  VendorKpiStat,
+  VendorListPanel,
+  VendorPrimaryButton,
+  VendorScreen,
+  VendorSection,
+  VendorSecondaryButton,
+  VendorStatusPill,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { useFulfillmentOrders } from '@/hooks/use-fulfillment-orders';
 import { formatDateTime, formatPrice } from '@/lib/format';
@@ -34,46 +47,43 @@ function FulfillmentOrderRowCard({
     `Order ${order.pickup_code ?? order.id.slice(0, 8)}`;
 
   return (
-    <article className="app-card" style={{ minHeight: 108 }}>
-      <div className="app-row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p className="app-row-title">{shopperLabel}</p>
-          <p className="app-row-meta">{itemSummary(order.order_items)}</p>
-          <p className="app-row-meta" style={{ marginTop: '0.25rem' }}>
-            {formatPrice(order.total)} · {formatDateTime(order.created_at)}
-          </p>
-          {order.event ? (
-            <p className="app-row-meta" style={{ marginTop: '0.25rem' }}>
-              {order.event.name}
+    <div className="p-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <IconBadge name="package" tone="emerald" />
+          <div className="min-w-0">
+            <p className="m-0 truncate text-sm font-semibold text-stone-800">{shopperLabel}</p>
+            <p className="m-0 mt-0.5 truncate text-xs text-stone-500">{itemSummary(order.order_items)}</p>
+            <p className="m-0 mt-0.5 text-xs text-stone-400">
+              {formatPrice(order.total)} · {formatDateTime(order.created_at)}
             </p>
-          ) : null}
+            {order.event ? (
+              <p className="m-0 mt-0.5 truncate text-xs text-stone-400">{order.event.name}</p>
+            ) : null}
+          </div>
         </div>
-        <span className="app-status">
-          {ORDER_STATUS_LABEL[order.order_status] ?? order.order_status.replace(/_/g, ' ')}
-        </span>
+        <VendorStatusPill
+          label={ORDER_STATUS_LABEL[order.order_status] ?? order.order_status.replace(/_/g, ' ')}
+        />
       </div>
 
       {mode === 'pending' && onFulfill ? (
-        <div className="app-row" style={{ marginTop: '0.75rem', gap: '0.5rem' }}>
-          <button
-            type="button"
-            className="app-btn app-btn--primary"
-            style={{ flex: 1 }}
+        <div className="mt-3 flex gap-2">
+          <VendorPrimaryButton
+            className="flex-1"
             disabled={fulfilling}
             onClick={() => onFulfill(order.id)}
           >
             {fulfilling ? 'Marking fulfilled…' : 'Mark fulfilled'}
-          </button>
-          <Link to={`/vendor/orders/${order.id}`} className="app-btn app-btn--secondary">
+          </VendorPrimaryButton>
+          <VendorSecondaryButton to={`/vendor/orders/${order.id}`} className="shrink-0">
             Details
-          </Link>
+          </VendorSecondaryButton>
         </div>
       ) : (
-        <p className="app-row-meta" style={{ marginTop: '0.75rem' }}>
-          Collected {formatDateTime(order.updated_at)}
-        </p>
+        <p className="m-0 mt-2 text-xs text-stone-500">Collected {formatDateTime(order.updated_at)}</p>
       )}
-    </article>
+    </div>
   );
 }
 
@@ -93,84 +103,75 @@ export function VendorFulfillmentPage() {
   } = useFulfillmentOrders(vendor?.id);
 
   return (
-    <div className="app-screen">
-      <p className="app-eyebrow">Live operations</p>
-      <h1 className="app-title">Fulfillment</h1>
-      <p className="app-subtitle">Day-of pickup ledger for your market booths.</p>
+    <VendorScreen>
+      <VendorHero eyebrow="Live operations" title="Fulfillment" pill={`${counts.pending} awaiting`} />
 
-      <div className="app-dashboard-grid" style={{ marginBottom: '1rem' }}>
-        <div className="app-card" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.75rem', margin: 0 }}>
-            {counts.pending}
-          </p>
-          <p className="app-row-meta">Pending pickup</p>
-        </div>
-        <div className="app-card app-card--honeydew" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.75rem', margin: 0 }}>
-            {counts.fulfilled}
-          </p>
-          <p className="app-row-meta">Fulfilled today</p>
-        </div>
-      </div>
+      <VendorKpiGrid>
+        <VendorKpiStat value={counts.pending} label="Pending pickup" />
+        <VendorKpiStat value={counts.fulfilled} label="Fulfilled today" />
+      </VendorKpiGrid>
 
-      <label className="app-card" style={{ display: 'block', marginBottom: '1rem' }}>
-        <span className="app-row-meta">Market session</span>
-        <select
-          className="app-input"
-          style={{ marginTop: '0.35rem', width: '100%' }}
-          value={selectedMarketId}
-          onChange={(event) =>
-            setSelectedMarketId(event.target.value === 'all' ? 'all' : event.target.value)
-          }
-        >
-          <option value="all">All active markets</option>
-          {markets.map((market) => (
-            <option key={market.id} value={market.id}>
-              {market.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <VendorSection title="Market session">
+        <VendorFormPanel>
+          <label className="block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              Filter by market
+            </span>
+            <select
+              className={`app-input mt-2 w-full ${VENDOR_PRESSABLE}`}
+              value={selectedMarketId}
+              onChange={(event) =>
+                setSelectedMarketId(event.target.value === 'all' ? 'all' : event.target.value)
+              }
+            >
+              <option value="all">All active markets</option>
+              {markets.map((market) => (
+                <option key={market.id} value={market.id}>
+                  {market.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </VendorFormPanel>
+      </VendorSection>
 
-      {error ? <div className="app-empty" style={{ marginBottom: '1rem' }}>{error}</div> : null}
+      {error ? <VendorEmpty message={error} /> : null}
 
       {loading ? (
         <OrdersListSkeleton count={4} />
       ) : (
         <>
-          <h2 style={{ fontSize: '1.125rem', margin: '0 0 0.75rem' }}>Pending pickup</h2>
-          {pendingOrders.length === 0 ? (
-            <div className="app-card app-card--honeydew" style={{ minHeight: 72, marginBottom: '1.5rem' }}>
-              <p className="app-row-meta">No shoppers waiting — counters stay at zero until new orders arrive.</p>
-            </div>
-          ) : (
-            <div className="app-list" style={{ marginBottom: '1.5rem' }}>
-              {pendingOrders.map((order) => (
-                <FulfillmentOrderRowCard
-                  key={order.id}
-                  order={order}
-                  mode="pending"
-                  fulfilling={fulfillingIds.has(order.id)}
-                  onFulfill={fulfillOrder}
-                />
-              ))}
-            </div>
-          )}
+          <VendorSection title="Pending pickup">
+            {pendingOrders.length === 0 ? (
+              <VendorEmpty message="No shoppers waiting right now." />
+            ) : (
+              <VendorListPanel>
+                {pendingOrders.map((order) => (
+                  <FulfillmentOrderRowCard
+                    key={order.id}
+                    order={order}
+                    mode="pending"
+                    fulfilling={fulfillingIds.has(order.id)}
+                    onFulfill={fulfillOrder}
+                  />
+                ))}
+              </VendorListPanel>
+            )}
+          </VendorSection>
 
-          <h2 style={{ fontSize: '1.125rem', margin: '0 0 0.75rem' }}>Fulfilled</h2>
-          {fulfilledOrders.length === 0 ? (
-            <div className="app-card" style={{ minHeight: 72 }}>
-              <p className="app-row-meta">Fulfilled orders will archive here after you mark pickup complete.</p>
-            </div>
-          ) : (
-            <div className="app-list">
-              {fulfilledOrders.map((order) => (
-                <FulfillmentOrderRowCard key={order.id} order={order} mode="fulfilled" />
-              ))}
-            </div>
-          )}
+          <VendorSection title="Fulfilled">
+            {fulfilledOrders.length === 0 ? (
+              <VendorEmpty message="Fulfilled orders archive here after pickup." />
+            ) : (
+              <VendorListPanel>
+                {fulfilledOrders.map((order) => (
+                  <FulfillmentOrderRowCard key={order.id} order={order} mode="fulfilled" />
+                ))}
+              </VendorListPanel>
+            )}
+          </VendorSection>
         </>
       )}
-    </div>
+    </VendorScreen>
   );
 }

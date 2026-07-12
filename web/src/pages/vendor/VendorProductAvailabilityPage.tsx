@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorEmpty,
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorPrimaryButton,
+  VendorScreen,
+  VendorSecondaryButton,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { useNow } from '@/hooks/use-now';
 import { formatEventDisplayDate } from '@/lib/format';
@@ -138,28 +148,30 @@ export function VendorProductAvailabilityPage() {
   }
 
   return (
-    <div className="app-screen app-screen--narrow">
+    <VendorScreen>
       <Link to={`/vendor/products/${productId}/edit`} className="app-back-link">← Product</Link>
-      <h1 className="app-title">Event availability</h1>
-      <p className="app-subtitle">
-        Set presale (online) vs in-person booth quantities for each event you attend.
-      </p>
+      <VendorHero eyebrow="Manage" title="Event availability" subtitle="Presale vs in-person quantities" />
 
       {events.length === 0 ? (
-        <div className="app-card app-card--honeydew">
-          <p className="app-row-meta">Join an event first to set availability.</p>
-          <Link to="/vendor/events" className="app-btn app-btn--primary" style={{ marginTop: '0.75rem', display: 'inline-block' }}>
+        <VendorFormPanel>
+          <VendorEmpty message="Join an event first to set availability." />
+          <VendorSecondaryButton className="mt-4" to="/vendor/events">
             Browse events
-          </Link>
-        </div>
+          </VendorSecondaryButton>
+        </VendorFormPanel>
       ) : (
-        <div className="app-list">
+        <VendorListPanel>
           {events.map((ev) => (
-            <div key={ev.id} className="app-card">
-              <p className="app-row-title">{ev.name}</p>
-              <p className="app-row-meta">{formatEventDisplayDate(ev, now)}</p>
-              <div className="app-form-grid" style={{ marginTop: '0.75rem' }}>
-                <div className="app-input-group" style={{ margin: 0 }}>
+            <div key={ev.id} className="p-3.5">
+              <div className="flex items-start gap-3">
+                <IconBadge name="calendar" tone="sky" />
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-sm font-semibold text-stone-800">{ev.name}</p>
+                  <p className="m-0 mt-0.5 text-xs text-stone-500">{formatEventDisplayDate(ev, now)}</p>
+                </div>
+              </div>
+              <div className="app-form-grid mt-3">
+                <div className="app-input-group m-0">
                   <label>Presale qty</label>
                   <input
                     className="app-input"
@@ -167,7 +179,7 @@ export function VendorProductAvailabilityPage() {
                     onChange={(e) => setQty(ev.id, 'presale', e.target.value)}
                   />
                 </div>
-                <div className="app-input-group" style={{ margin: 0 }}>
+                <div className="app-input-group m-0">
                   <label>In-person qty</label>
                   <input
                     className="app-input"
@@ -178,16 +190,16 @@ export function VendorProductAvailabilityPage() {
               </div>
             </div>
           ))}
-        </div>
+        </VendorListPanel>
       )}
 
       {error ? <p className="app-error">{error}</p> : null}
 
       {events.length > 0 ? (
-        <button type="button" className="app-btn app-btn--primary" disabled={saving} onClick={() => void handleSave()}>
+        <VendorPrimaryButton className="mt-4 w-full" disabled={saving} onClick={() => void handleSave()}>
           {saving ? 'Saving…' : 'Save availability'}
-        </button>
+        </VendorPrimaryButton>
       ) : null}
-    </div>
+    </VendorScreen>
   );
 }
