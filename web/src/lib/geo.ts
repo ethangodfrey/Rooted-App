@@ -27,6 +27,14 @@ export function coordsFrom(
   return isValidCoords(value) ? { latitude: value.latitude, longitude: value.longitude } : null;
 }
 
+/** Parse raw latitude/longitude fields (e.g. from DB rows) into validated coords. */
+export function parseCoords(
+  latitude: number | null | undefined,
+  longitude: number | null | undefined,
+): Coords | null {
+  return coordsFrom({ latitude, longitude });
+}
+
 export function distanceMiles(a: Coords, b: Coords): number {
   if (!isValidCoords(a) || !isValidCoords(b)) return Number.POSITIVE_INFINITY;
   const R = 3958.8;

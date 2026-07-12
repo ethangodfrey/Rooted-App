@@ -11,7 +11,7 @@ import { marketPath } from '@/lib/market-routes';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
 import { formatEventDisplayDate } from '@/lib/format';
-import { isValidCoords, type Coords } from '@/lib/geo';
+import { isValidCoords, coordsFrom, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 import './events-map.css';
@@ -63,8 +63,12 @@ function FlyToTarget({
   const map = useMap();
 
   useEffect(() => {
-    if (!target) return;
-    map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
+    if (!target || !isValidCoords(target)) return;
+    try {
+      map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
+    } catch {
+      // Skip invalid fly-to targets rather than crashing the map.
+    }
   }, [target, zoom, map]);
 
   return null;
@@ -84,26 +88,37 @@ function InitialMapView({
     if (resolvedRef.current) return;
 
     function centerOnCoords(center: Coords, zoom: number) {
-      map.setView([center.latitude, center.longitude], zoom);
-      resolvedRef.current = true;
+      if (!isValidCoords(center)) return;
+      try {
+        map.setView([center.latitude, center.longitude], zoom);
+        resolvedRef.current = true;
+      } catch {
+        // Skip invalid map centers rather than crashing the map.
+      }
     }
 
     function fallbackToEvents() {
       if (resolvedRef.current || events.length === 0) return;
 
       if (events.length === 1) {
+        const only = events[0];
+        if (!isValidCoords(only)) return;
         centerOnCoords(
-          { latitude: events[0].latitude, longitude: events[0].longitude },
+          { latitude: only.latitude, longitude: only.longitude },
           FOCUS_ZOOM,
         );
         return;
       }
 
-      const bounds = L.latLngBounds(
-        events.map((event) => [event.latitude, event.longitude] as [number, number]),
-      );
-      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
-      resolvedRef.current = true;
+      try {
+        const bounds = L.latLngBounds(
+          events.map((event) => [event.latitude, event.longitude] as [number, number]),
+        );
+        map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+        resolvedRef.current = true;
+      } catch {
+        // Skip corrupt or degenerate coordinate sets rather than crashing the map.
+      }
     }
 
     if (userCoords) {
@@ -119,13 +134,15 @@ function InitialMapView({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (resolvedRef.current) return;
-        centerOnCoords(
-          {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
-          9,
-        );
+        const gps = coordsFrom({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        if (!gps) {
+          fallbackToEvents();
+          return;
+        }
+        centerOnCoords(gps, 9);
       },
       () => {
         console.log('Location access denied, falling back to database bounds.');
