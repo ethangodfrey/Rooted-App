@@ -14,7 +14,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useNow } from '@/hooks/use-now';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
+import { fetchNearbyMarkets } from '@/lib/national-markets-api';
 import { supabase } from '@/lib/supabase';
+import type { NearbyNationalMarket } from '@/types/pos-transactions';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
@@ -26,6 +28,9 @@ export function VendorEventsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nearbyMarkets, setNearbyMarkets] = useState<NearbyNationalMarket[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyReady, setNearbyReady] = useState(false);
 
   const load = useCallback(async () => {
     if (!vendor) return;
@@ -53,6 +58,55 @@ export function VendorEventsPage() {
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNearby() {
+      if (!vendor) return;
+      setNearbyLoading(true);
+
+      const resolveCoords = (): Promise<{ lat: number; lng: number } | null> =>
+        new Promise((resolve) => {
+          if (vendor.latitude != null && vendor.longitude != null) {
+            resolve({ lat: Number(vendor.latitude), lng: Number(vendor.longitude) });
+            return;
+          }
+          if (!navigator.geolocation) {
+            resolve(null);
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(
+            (pos) =>
+              resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve(null),
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+          );
+        });
+
+      const coords = await resolveCoords();
+      if (cancelled) return;
+
+      if (!coords) {
+        setNearbyMarkets([]);
+        setNearbyReady(true);
+        setNearbyLoading(false);
+        return;
+      }
+
+      const markets = await fetchNearbyMarkets(coords.lat, coords.lng, 50);
+      if (!cancelled) {
+        setNearbyMarkets(markets);
+        setNearbyReady(true);
+        setNearbyLoading(false);
+      }
+    }
+
+    void loadNearby();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendor?.id, vendor?.latitude, vendor?.longitude]);
 
   async function toggle(eventId: string) {
     if (!vendor) return;
@@ -105,6 +159,36 @@ export function VendorEventsPage() {
       />
 
       {error ? <p className="app-error">{error}</p> : null}
+
+      <VendorSection title="National markets nearby">
+        {nearbyLoading ? (
+          <div className="app-loading">
+            <div className="app-spinner" />
+          </div>
+        ) : nearbyReady && nearbyMarkets.length === 0 ? (
+          <VendorEmpty message="No national farmers markets found nearby. Update your vendor address or try again later." />
+        ) : nearbyMarkets.length > 0 ? (
+          <VendorListPanel>
+            {nearbyMarkets.slice(0, 12).map((market) => (
+              <div key={market.id} className="flex items-start gap-3 p-3.5">
+                <IconBadge name="map-pin" tone="emerald" />
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-sm font-semibold text-stone-800">{market.marketName}</p>
+                  <p className="m-0 mt-0.5 text-xs text-stone-500">
+                    {market.city}, {market.state}
+                    {market.distanceMiles > 0
+                      ? ` · ${market.distanceMiles.toFixed(1)} mi`
+                      : ''}
+                  </p>
+                  {market.streetAddress ? (
+                    <p className="m-0 mt-0.5 text-xs text-stone-400">{market.streetAddress}</p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </VendorListPanel>
+        ) : null}
+      </VendorSection>
 
       {loading ? (
         <div className="app-loading">

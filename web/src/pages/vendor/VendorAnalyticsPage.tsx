@@ -12,6 +12,7 @@ import {
 } from '@/components/analytics/SimpleCharts';
 import { SettlementDashboard } from '@/components/vendor/SettlementDashboard';
 import {
+  VendorEmpty,
   VendorFormPanel,
   VendorHero,
   VendorKpiGrid,
@@ -24,6 +25,7 @@ import {
 import { IconBadge } from '@/components/vendor/dashboard-icons';
 import '@/components/analytics/analytics.css';
 import { useAuth } from '@/hooks/use-auth';
+import { usePosLedger } from '@/hooks/use-pos-ledger';
 import { useVendorSettlementOrders } from '@/hooks/use-vendor-settlement-orders';
 import { isApiConfigured } from '@/lib/api';
 import { formatDateTime, formatPrice } from '@/lib/format';
@@ -38,6 +40,7 @@ import {
 } from '@/lib/vendor-analytics';
 import type { OrderStatus } from '@/types/database';
 import type { PosImportedTransaction } from '@/types/pos';
+import { POS_PROVIDER_LABELS } from '@/types/pos-transactions';
 import '@/components/ui/ui.css';
 
 const RANGES: AnalyticsRange[] = [7, 30, 90, 365];
@@ -103,12 +106,16 @@ function downloadCsv(metrics: VendorAnalyticsData) {
 
 export function VendorAnalyticsPage() {
   const { vendor } = useAuth();
+  const [range, setRange] = useState<AnalyticsRange>(30);
+  const { hasActiveConnection, liveFeed, loading: posLedgerLoading } = usePosLedger({
+    vendorId: vendor?.id,
+    range,
+  });
   const {
     orders: settlementOrders,
     loading: settlementLoading,
     error: settlementError,
   } = useVendorSettlementOrders(vendor?.id);
-  const [range, setRange] = useState<AnalyticsRange>(30);
   const [data, setData] = useState<VendorAnalyticsData | null>(null);
 
   const load = useCallback(async () => {
@@ -168,11 +175,22 @@ export function VendorAnalyticsPage() {
         <VendorSecondaryButton onClick={() => void load()}>Refresh</VendorSecondaryButton>
       </div>
 
-      {isApiConfigured && !data.posDataLoaded ? (
+      {isApiConfigured && !data.posDataLoaded && !data.posLedgerLoaded ? (
         <VendorFormPanel className="mb-4">
           <p className="m-0 text-xs text-amber-800">
-            Square sales could not be loaded. Check backend and refresh.
+            POS sales could not be loaded. Check your connection and refresh.
           </p>
+        </VendorFormPanel>
+      ) : null}
+
+      {!posLedgerLoading && !hasActiveConnection ? (
+        <VendorFormPanel className="mb-4">
+          <p className="m-0 text-sm text-stone-600">
+            Connect a POS provider to unlock live card sales, platform fee splits, and realtime streaming.
+          </p>
+          <div className="mt-3">
+            <VendorSecondaryButton to="/vendor/pos">Connect POS</VendorSecondaryButton>
+          </div>
         </VendorFormPanel>
       ) : null}
 
@@ -206,6 +224,20 @@ export function VendorAnalyticsPage() {
           label={`Card (${data.cardSalesCount})`}
         />
       </VendorKpiGrid>
+
+      {data.posLedgerLoaded ? (
+        <ChartCard title="POS fee split" subtitle="Gross, platform fees, and net from pos_transactions">
+          {data.posGrossTotal === 0 && data.posNetTotal === 0 ? (
+            <VendorEmpty message="No POS transactions in this period yet." />
+          ) : (
+            <VendorKpiGrid cols={3}>
+              <VendorKpiStat value={formatPrice(data.posGrossTotal)} label="Gross" />
+              <VendorKpiStat value={formatPrice(data.posPlatformFees)} label="Platform fees" />
+              <VendorKpiStat value={formatPrice(data.posNetTotal)} label="Net to vendor" />
+            </VendorKpiGrid>
+          )}
+        </ChartCard>
+      ) : null}
 
       <ChartCard title="Revenue over time" subtitle="Daily total by channel">
         {!hasRevenue ? (
@@ -296,6 +328,33 @@ export function VendorAnalyticsPage() {
               </div>
             ))}
           </VendorListPanel>
+        </ChartCard>
+      ) : null}
+
+      {liveFeed.length > 0 ? (
+        <ChartCard title="Live POS stream" subtitle="Realtime sales from webhooks">
+          <VendorListPanel>
+            {liveFeed.map((txn) => (
+              <div key={txn.id} className="flex items-center gap-3 p-3.5">
+                <IconBadge name="credit-card" tone="amber" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-stone-800">
+                    {formatPrice(txn.net_amount)}
+                    <span className="ml-2 text-xs font-normal text-stone-500">
+                      gross {formatPrice(txn.gross_amount)} · fee {formatPrice(txn.platform_fee)}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block text-xs text-stone-500">
+                    {formatDateTime(txn.sold_at)} · {POS_PROVIDER_LABELS[txn.provider]}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </VendorListPanel>
+        </ChartCard>
+      ) : hasActiveConnection && !posLedgerLoading ? (
+        <ChartCard title="Live POS stream">
+          <VendorEmpty message="Connected — sales will appear here as webhooks arrive." />
         </ChartCard>
       ) : null}
 
