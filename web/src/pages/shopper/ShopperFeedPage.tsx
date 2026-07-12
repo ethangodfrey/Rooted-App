@@ -28,6 +28,7 @@ import {
 
 import type { FeedPost } from '@/types/database';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import '@/components/ui/ui.css';
 
 
@@ -242,7 +243,11 @@ export function ShopperFeedPage() {
 
                 ) : (
 
-                  <img src={post.media_url} alt="" style={{ width: '100%', borderRadius: 'var(--radius-lg)', marginTop: '0.75rem' }} />
+                  <FallbackImage
+                    src={post.media_url}
+                    variant="product"
+                    style={{ width: '100%', borderRadius: 'var(--radius-lg)', marginTop: '0.75rem' }}
+                  />
 
                 )
 

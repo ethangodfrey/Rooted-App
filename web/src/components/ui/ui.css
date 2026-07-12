@@ -577,6 +577,25 @@
   font-size: 2.5rem;
 }
 
+.app-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--color-warm-sage) 0%, rgba(212, 168, 83, 0.28) 100%);
+  color: var(--color-primary);
+}
+
+.app-thumb-fallback--vendor {
+  background: var(--color-honeydew);
+  font-weight: 700;
+}
+
+.app-thumb-fallback__icon {
+  line-height: 1;
+}
+
 .app-market-detail-header {
   display: flex;
   flex-direction: column;

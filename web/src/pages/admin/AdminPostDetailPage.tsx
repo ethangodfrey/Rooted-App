@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import {
   isPostModerationConfigured,
   MODERATION_RECOMMENDATION_LABEL,
@@ -130,7 +131,11 @@ export function AdminPostDetailPage() {
         post.media_type === 'video' ? (
           <video src={post.media_url} controls playsInline style={{ width: '100%', borderRadius: 12, marginBottom: '1rem', maxHeight: 360 }} />
         ) : (
-          <img src={post.media_url} alt="" style={{ width: '100%', borderRadius: 12, marginBottom: '1rem' }} />
+          <FallbackImage
+            src={post.media_url}
+            variant="product"
+            style={{ width: '100%', borderRadius: 12, marginBottom: '1rem' }}
+          />
         )
       ) : null}
 

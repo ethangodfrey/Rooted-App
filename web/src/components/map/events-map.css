@@ -167,14 +167,37 @@
 }
 
 .shopper-map-carousel-card {
-  flex: 0 0 min(85vw, 280px);
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
   text-align: left;
   border: none;
   cursor: pointer;
   font: inherit;
+  box-sizing: border-box;
+}
+
+@media (max-width: 899px) {
+  .events-map-frame {
+    height: min(52vh, 340px);
+    min-height: 240px;
+  }
+
+  .shopper-map-layout {
+    gap: 0.75rem;
+  }
+
+  .shopper-map-list {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 @media (min-width: 900px) {
+  .shopper-map-carousel-card {
+    flex: 0 0 auto;
+    width: 100%;
+  }
   .events-map-frame {
     height: min(68vh, 520px);
     min-height: 360px;

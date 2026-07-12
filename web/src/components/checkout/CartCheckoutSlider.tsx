@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { formatPrice } from '@/lib/format';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { initiateStorefrontCheckout, reserveCartLine } from '@/lib/storefront-checkout';
 import {
   cartLineCount,
@@ -189,13 +190,12 @@ export function CartCheckoutSlider({ cart, open, onClose, onCartChange }: CartCh
           <ul className="mb-4 divide-y divide-slate-100 rounded-2xl ring-1 ring-slate-100">
             {cart.lines.map((line) => (
               <li key={line.productId} className="flex items-center gap-3 px-4 py-3">
-                {line.mediaUrl ? (
-                  <img src={line.mediaUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-sm font-semibold text-emerald-800">
-                    {line.name.charAt(0)}
-                  </div>
-                )}
+                <FallbackImage
+                  src={line.mediaUrl}
+                  variant="product"
+                  label={line.name}
+                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-slate-900">{line.name}</p>
                   <p className="text-sm text-slate-500">
