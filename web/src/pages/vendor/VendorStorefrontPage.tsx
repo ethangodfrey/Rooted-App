@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorPrimaryButton,
+  VendorScreen,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
@@ -45,32 +51,34 @@ export function VendorStorefrontPage() {
   }
 
   return (
-    <div className="app-screen app-screen--narrow">
+    <VendorScreen>
       <Link to="/vendor/profile" className="app-back-link">← Profile</Link>
-      <h1 className="app-title">Edit storefront</h1>
+      <VendorHero eyebrow="Storefront" title="Edit storefront" />
 
-      <div className="app-input-group">
-        <label>About your business</label>
-        <textarea className="app-textarea" value={businessDescription} onChange={(e) => setBusinessDescription(e.target.value)} />
-      </div>
-      <div className="app-input-group">
-        <label>Product summary</label>
-        <textarea className="app-textarea" value={productSummary} onChange={(e) => setProductSummary(e.target.value)} />
-      </div>
-      <div className="app-input-group">
-        <label>Website</label>
-        <input className="app-input" value={website} onChange={(e) => setWebsite(e.target.value)} />
-      </div>
-      <div className="app-input-group">
-        <label>Instagram</label>
-        <input className="app-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
-      </div>
+      <VendorFormPanel>
+        <div className="app-input-group">
+          <label>About your business</label>
+          <textarea className="app-textarea" value={businessDescription} onChange={(e) => setBusinessDescription(e.target.value)} />
+        </div>
+        <div className="app-input-group">
+          <label>Product summary</label>
+          <textarea className="app-textarea" value={productSummary} onChange={(e) => setProductSummary(e.target.value)} />
+        </div>
+        <div className="app-input-group">
+          <label>Website</label>
+          <input className="app-input" value={website} onChange={(e) => setWebsite(e.target.value)} />
+        </div>
+        <div className="app-input-group">
+          <label>Instagram</label>
+          <input className="app-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+        </div>
 
-      {message ? <p className="app-message">{message}</p> : null}
+        {message ? <p className="app-message">{message}</p> : null}
 
-      <button type="button" className="app-btn app-btn--primary" disabled={saving} onClick={handleSave}>
-        {saving ? 'Saving…' : 'Save storefront'}
-      </button>
-    </div>
+        <VendorPrimaryButton className="w-full" disabled={saving} onClick={handleSave}>
+          {saving ? 'Saving…' : 'Save storefront'}
+        </VendorPrimaryButton>
+      </VendorFormPanel>
+    </VendorScreen>
   );
 }

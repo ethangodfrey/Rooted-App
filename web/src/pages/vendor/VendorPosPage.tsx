@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import {
+  VendorActionGrid,
+  VendorEmpty,
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorListRow,
+  VendorPrimaryButton,
+  VendorScreen,
+  VendorSecondaryButton,
+  VendorSection,
+  VendorStatusPill,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
 import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
@@ -97,85 +111,101 @@ export function VendorPosPage() {
 
   if (!isApiConfigured) {
     return (
-      <div className="app-screen">
+      <VendorScreen>
         <Link to="/vendor/dashboard" className="app-back-link">← Dashboard</Link>
-        <h1 className="app-title">Point of Sale</h1>
-        <div className="app-card app-card--honeydew">
-          <p className="app-row-title">Square POS sync isn&apos;t available yet</p>
-          <p className="app-row-meta">{BACKEND_UNAVAILABLE_COPY}</p>
-        </div>
-      </div>
+        <VendorHero eyebrow="Vendor" title="Point of Sale" />
+        <VendorFormPanel>
+          <p className="m-0 text-sm font-semibold text-stone-800">Square POS sync unavailable</p>
+          <p className="m-0 mt-1 text-xs text-stone-500">{BACKEND_UNAVAILABLE_COPY}</p>
+        </VendorFormPanel>
+      </VendorScreen>
     );
   }
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/dashboard" className="app-back-link">← Dashboard</Link>
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">Point of Sale</h1>
-      <p className="app-subtitle">Import card sales from Square into analytics.</p>
+      <VendorHero eyebrow="Vendor" title="Point of Sale" subtitle="Import Square sales into analytics" />
 
       {loading ? (
         <div className="app-loading"><div className="app-spinner" /></div>
       ) : (
         <>
           {connections.length === 0 ? (
-            <div className="app-card" style={{ marginBottom: '1rem' }}>
-              <p className="app-row-meta">No POS connected yet.</p>
-            </div>
+            <VendorEmpty message="No POS connected yet." />
           ) : (
-            <div className="app-list" style={{ marginBottom: '1rem' }}>
-              {connections.map((c) => (
-                <Link key={c.id} to={`/vendor/pos/${c.id}`} className="app-card app-card--pressable app-row">
-                  <div className="app-row-body">
-                    <p className="app-row-title">{PROVIDER_LABEL[c.provider] ?? c.provider}</p>
-                    <p className="app-row-meta">
-                      Auto-sync every {c.syncFrequencyMinutes} min
-                      {c.lastSyncedAt ? ` · last synced ${formatDateTime(c.lastSyncedAt)}` : ' · not synced yet'}
-                    </p>
-                  </div>
-                  <span className="app-status">{STATUS_LABEL[c.status] ?? c.status}</span>
-                </Link>
-              ))}
-            </div>
+            <VendorSection title="Connections">
+              <VendorListPanel>
+                {connections.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/vendor/pos/${c.id}`}
+                    className={`flex items-center justify-between gap-3 p-3.5 no-underline active:bg-stone-100/80 ${VENDOR_PRESSABLE}`}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-stone-800">
+                        {PROVIDER_LABEL[c.provider] ?? c.provider}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-stone-500">
+                        Auto-sync every {c.syncFrequencyMinutes} min
+                        {c.lastSyncedAt
+                          ? ` · last synced ${formatDateTime(c.lastSyncedAt)}`
+                          : ' · not synced yet'}
+                      </span>
+                    </span>
+                    <VendorStatusPill label={STATUS_LABEL[c.status] ?? c.status} />
+                  </Link>
+                ))}
+              </VendorListPanel>
+            </VendorSection>
           )}
 
           {oauthRedirectUri ? (
-            <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-              <p className="app-row-title">Square OAuth redirect URL</p>
-              <p className="app-row-meta" style={{ wordBreak: 'break-all' }}>{oauthRedirectUri}</p>
-            </div>
+            <VendorFormPanel className="mb-5">
+              <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">OAuth redirect URL</p>
+              <p className="m-0 mt-1 break-all text-xs text-stone-600">{oauthRedirectUri}</p>
+            </VendorFormPanel>
           ) : null}
 
           {!squareActive ? (
-            <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-              <p className="app-row-title">Connect Square</p>
-              <p className="app-row-meta" style={{ marginBottom: '0.75rem' }}>
-                For sandbox, open your Square Developer test account in another tab first, then connect.
+            <VendorFormPanel className="mb-5">
+              <p className="m-0 text-sm font-semibold text-stone-800">Connect Square</p>
+              <p className="m-0 mt-1 text-xs text-stone-500">
+                For sandbox, open your Square Developer test account first.
               </p>
-              <button type="button" className="app-btn app-btn--secondary" style={{ marginBottom: '0.5rem' }} onClick={openSquareSandboxSetup}>
-                Open Square Developer
-              </button>
-              <button type="button" className="app-btn app-btn--primary" disabled={connecting} onClick={() => void connectSquare()}>
-                {connecting ? 'Connecting…' : 'Connect Square'}
-              </button>
-            </div>
+              <VendorActionGrid>
+                <VendorSecondaryButton className="w-full" onClick={openSquareSandboxSetup}>
+                  Open Square Developer
+                </VendorSecondaryButton>
+                <VendorPrimaryButton className="w-full" disabled={connecting} onClick={() => void connectSquare()}>
+                  {connecting ? 'Connecting…' : 'Connect Square'}
+                </VendorPrimaryButton>
+              </VendorActionGrid>
+            </VendorFormPanel>
           ) : (
-            <>
-              <Link to="/vendor/pos/activity" className="app-card app-card--pressable" style={{ display: 'block', marginBottom: '0.75rem' }}>
-                <p className="app-row-title">Live activity dashboard</p>
-                <p className="app-row-meta">Inventory syncs, low-stock alerts, and queue health</p>
-              </Link>
-              <Link to="/vendor/pos/mappings" className="app-card app-card--pressable" style={{ display: 'block' }}>
-                <p className="app-row-title">Item mappings</p>
-                <p className="app-row-meta">Map register items to Vendorly products</p>
-              </Link>
-            </>
+            <VendorSection title="Tools">
+              <VendorListPanel>
+                <VendorListRow
+                  to="/vendor/pos/activity"
+                  title="Live activity"
+                  subtitle="Syncs, alerts, queue health"
+                  icon="trending-up"
+                  tone="amber"
+                />
+                <VendorListRow
+                  to="/vendor/pos/mappings"
+                  title="Item mappings"
+                  subtitle="Map register items to products"
+                  icon="link"
+                  tone="stone"
+                />
+              </VendorListPanel>
+            </VendorSection>
           )}
 
           {error ? <p className="app-error">{error}</p> : null}
         </>
       )}
-    </div>
+    </VendorScreen>
   );
 }

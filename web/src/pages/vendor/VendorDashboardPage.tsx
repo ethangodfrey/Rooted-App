@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
 import { PENDING_PICKUP_STATUSES } from '@/lib/order-fulfillment';
 import { supabase } from '@/lib/supabase';
+import {
+  VendorActionGrid,
+  VendorActionTile,
+  VendorHero,
+  VendorKpiGrid,
+  VendorKpiStat,
+  VendorListPanel,
+  VendorListRow,
+  VendorScreen,
+  VendorSection,
+} from '@/components/vendor/vendor-ui';
 import '@/components/ui/ui.css';
 
 const statusCopy: Record<string, string> = {
@@ -54,65 +64,72 @@ export function VendorDashboardPage() {
   const status = vendor?.approval_status ?? 'pending';
 
   return (
-    <div className="app-screen">
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">Dashboard</h1>
-      <p className="app-subtitle">{user?.email ? `Signed in as ${user.email}` : ''}</p>
+    <VendorScreen>
+      <VendorHero
+        eyebrow="Vendor"
+        title="Dashboard"
+        subtitle={user?.email ? `Signed in as ${user.email}` : undefined}
+        pill={status}
+      >
+        <p className="m-0 mt-2 text-xs leading-snug text-white/90">{statusCopy[status]}</p>
+      </VendorHero>
 
-      <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-        <p className="app-row-meta">Approval status</p>
-        <p className="app-row-title" style={{ textTransform: 'capitalize' }}>{status}</p>
-        <p className="app-row-meta">{statusCopy[status]}</p>
-      </div>
+      <VendorKpiGrid cols={3}>
+        <VendorKpiStat to="/vendor/fulfillment" value={pendingPickup} label="Awaiting pickup" />
+        <VendorKpiStat to="/vendor/fulfillment" value={fulfilledToday} label="Fulfilled today" />
+        <VendorKpiStat to="/vendor/products" value={activeProducts} label="Active products" />
+      </VendorKpiGrid>
 
-      <div className="app-dashboard-grid" style={{ marginBottom: '1.5rem' }}>
-        <Link to="/vendor/fulfillment" className="app-card app-card--pressable" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{pendingPickup}</p>
-          <p className="app-row-meta">Pending pickup</p>
-        </Link>
-        <Link to="/vendor/fulfillment" className="app-card app-card--pressable app-card--honeydew" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{fulfilledToday}</p>
-          <p className="app-row-meta">Fulfilled today</p>
-        </Link>
-        <Link to="/vendor/products" className="app-card app-card--pressable" style={{ minHeight: 88 }}>
-          <p className="app-title" style={{ fontSize: '1.5rem', margin: 0 }}>{activeProducts}</p>
-          <p className="app-row-meta">Active products</p>
-        </Link>
-      </div>
+      <VendorSection title="Operations">
+        <VendorActionGrid>
+          <VendorActionTile
+            to="/vendor/fulfillment"
+            title="Fulfillment ledger"
+            subtitle="Track live pickups"
+            icon="check-square"
+            tone="emerald"
+          />
+          <VendorActionTile
+            to="/vendor/products/new"
+            title="Add a product"
+            subtitle="Create new listing"
+            icon="plus"
+            tone="orange"
+          />
+          <VendorActionTile to="/vendor/events" title="My events" icon="calendar" tone="sky" />
+          <VendorActionTile to="/vendor/sales/manual" title="Log in-person sale" icon="receipt" tone="stone" />
+          <VendorActionTile
+            to="/vendor/leftovers"
+            title="List leftovers"
+            subtitle="Post unsold items"
+            icon="recycle"
+            tone="rose"
+          />
+        </VendorActionGrid>
+      </VendorSection>
 
-      <Link to="/vendor/analytics" className="app-card app-card--pressable app-card--honeydew" style={{ marginBottom: '1.5rem', display: 'block' }}>
-        <p className="app-row-title">Analytics</p>
-        <p className="app-row-meta">Revenue, units sold, and order trends</p>
-      </Link>
+      <VendorSection title="Storefront & Growth">
+        <VendorListPanel>
+          <VendorListRow
+            to="/vendor/analytics"
+            title="Analytics"
+            subtitle="Revenue & order trends"
+            icon="trending-up"
+            tone="amber"
+          />
+          <VendorListRow to="/vendor/storefront" title="Edit storefront" icon="store" tone="stone" />
+          <VendorListRow to="/vendor/explore" title="Explore showcase" icon="grid" tone="sky" />
+          <VendorListRow to="/vendor/posts/new" title="Create a post" icon="message" tone="stone" />
+        </VendorListPanel>
+      </VendorSection>
 
-      <div className="app-list">
-        <Link to="/vendor/fulfillment" className="app-card app-card--pressable app-card--honeydew">
-          <p className="app-row-title">Fulfillment ledger</p>
-          <p className="app-row-meta">Mark pickups complete and track live counters</p>
-        </Link>
-        <Link to="/vendor/products/new" className="app-card app-card--pressable">+ Add a product</Link>
-        <Link to="/vendor/events" className="app-card app-card--pressable">My events</Link>
-        <Link to="/vendor/posts/new" className="app-card app-card--pressable">+ Create a post</Link>
-        <Link to="/vendor/leftovers" className="app-card app-card--pressable app-card--honeydew">
-          <p className="app-row-title">List leftovers</p>
-          <p className="app-row-meta">Post unsold items after market days</p>
-        </Link>
-        <Link to="/vendor/sales/manual" className="app-card app-card--pressable">Log in-person sale</Link>
-        <Link to="/vendor/pos" className="app-card app-card--pressable">Connect Square POS</Link>
-        <Link to="/vendor/storefront" className="app-card app-card--pressable">Edit storefront</Link>
-        <Link to="/vendor/explore" className="app-card app-card--pressable">
-          <p className="app-row-title">Explore showcase</p>
-          <p className="app-row-meta">Publish portfolio posts to the customer Explore feed</p>
-        </Link>
-        <Link to="/vendor/compliance" className="app-card app-card--pressable">
-          <p className="app-row-title">Food safety checklist</p>
-          <p className="app-row-meta">State cottage food requirements and compliance status</p>
-        </Link>
-        <Link to="/vendor/credentials" className="app-card app-card--pressable">
-          <p className="app-row-title">Verification credentials</p>
-          <p className="app-row-meta">Upload documents to earn trust badges</p>
-        </Link>
-      </div>
-    </div>
+      <VendorSection title="Compliance & Settings">
+        <VendorListPanel>
+          <VendorListRow to="/vendor/pos" title="Connect Square POS" icon="credit-card" tone="stone" />
+          <VendorListRow to="/vendor/compliance" title="Food safety checklist" icon="shield-check" tone="teal" />
+          <VendorListRow to="/vendor/credentials" title="Verification credentials" icon="badge" tone="stone" />
+        </VendorListPanel>
+      </VendorSection>
+    </VendorScreen>
   );
 }

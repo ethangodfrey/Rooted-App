@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
+import { isTabActive, type AppTab } from '@/components/navigation/app-tabs';
 import { TabIcon } from '@/components/navigation/TabIcon';
-import type { AppTab } from '@/components/navigation/shopper-tabs';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 import { useNearbyOpenMarkets } from '@/hooks/use-nearby-open-markets';
 
 import '@/components/ui/ui.css';
-
-
 
 const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
   shopper: '/shopper/home',
@@ -28,35 +26,75 @@ const SHOPPER_SCREEN_TITLES: Record<string, string> = {
   '/shopper/map': 'Map',
 };
 
+function vendorAvatarLabel(businessName?: string | null, email?: string | null): string {
+  const source = businessName?.trim() || email?.trim() || 'V';
+  const words = source.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return `${words[0]![0] ?? ''}${words[1]![0] ?? ''}`.toUpperCase();
+  }
+  return source.slice(0, 2).toUpperCase();
+}
 
+function TabBarLink({ tab, pathname }: { tab: AppTab; pathname: string }) {
+  const active = isTabActive(tab, pathname);
+
+  const content = (
+    <>
+      <span className="app-tabbar__icon" aria-hidden="true">
+        <TabIcon
+          name={tab.icon}
+          size={20}
+          color={active ? 'var(--color-primary)' : 'var(--color-muted)'}
+        />
+      </span>
+      {active ? <span className="app-tabbar__label">{tab.label}</span> : null}
+    </>
+  );
+
+  if (tab.external) {
+    return (
+      <a
+        href={tab.to}
+        className={`app-tabbar__link${active ? ' active' : ''}`}
+        aria-label={tab.label}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <NavLink
+      to={tab.to}
+      end={!tab.matchPaths?.length}
+      className={`app-tabbar__link${active ? ' active' : ''}`}
+      aria-label={tab.label}
+    >
+      {content}
+    </NavLink>
+  );
+}
 
 export function AppShell({
-
   role,
-
   tabs,
-
+  mobileTabs,
   mapFabHref,
-
 }: {
-
   role: 'shopper' | 'vendor' | 'chef' | 'admin';
-
   tabs: AppTab[];
-
-  /** When set, shows a floating Map FAB (mobile) + sidebar link (desktop). */
-
+  /** When set, mobile tab bar uses this subset (e.g. vendor 4-tab bar). */
+  mobileTabs?: AppTab[];
   mapFabHref?: string;
-
 }) {
-
-  const { user, signOut } = useAuth();
+  const { user, vendor, signOut } = useAuth();
   const { itemCount, openDrawer } = useCart();
   const location = useLocation();
   const homeTo = ROLE_HOME[role];
   const nearbyMarketsOpen = useNearbyOpenMarkets();
   const [fabCompact, setFabCompact] = useState(false);
 
+  const tabbarTabs = mobileTabs ?? tabs;
   const isShopperHome = role === 'shopper' && location.pathname === '/shopper/home';
   const shopperScreenTitle =
     role === 'shopper' ? SHOPPER_SCREEN_TITLES[location.pathname] : undefined;
@@ -101,106 +139,59 @@ export function AppShell({
             </button>
           ) : null}
 
-          <span className="app-topbar__email">{user?.email}</span>
+          {role === 'vendor' ? (
+            <Link
+              to="/vendor/profile"
+              className="app-topbar__avatar"
+              aria-label="Vendor profile"
+              title={vendor?.business_name ?? user?.email ?? 'Profile'}
+            >
+              {vendorAvatarLabel(vendor?.business_name, user?.email)}
+            </Link>
+          ) : (
+            <span className="app-topbar__email">{user?.email}</span>
+          )}
 
           <button type="button" className="app-btn app-btn--ghost app-btn--small" onClick={signOut}>
-
             Sign out
-
           </button>
-
         </div>
-
       </header>
-
-
 
       {import.meta.env.DEV ? <ServerStatusBar /> : null}
 
-
-
       <div className="app-layout min-w-0">
-
-        <nav
-          className="app-sidebar hidden md:flex md:flex-col"
-          aria-label={`${role} navigation`}
-        >
-
+        <nav className="app-sidebar hidden md:flex md:flex-col" aria-label={`${role} navigation`}>
           {tabs.map((tab) => (
-
-            <NavLink key={tab.to} to={tab.to} end className="app-sidebar__link">
-
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              end={!tab.matchPaths?.length}
+              className={isTabActive(tab, location.pathname) ? 'app-sidebar__link active' : 'app-sidebar__link'}
+            >
               <TabIcon name={tab.icon} size={18} />
-
               <span>{tab.label}</span>
-
             </NavLink>
-
           ))}
 
           {mapFabHref ? (
-
             <NavLink to={mapFabHref} className="app-sidebar__link app-sidebar__link--map">
-
               <TabIcon name="map" size={18} />
-
               <span>Map</span>
-
             </NavLink>
-
           ) : null}
-
         </nav>
 
-
-
         <main className="app-main min-w-0 w-full pb-32 md:pb-0">
-
           <Outlet />
-
         </main>
-
       </div>
 
-
-
       <nav className="app-tabbar" aria-label={`${role} tabs`}>
-
-        {tabs.map((tab) => (
-
-          <NavLink key={tab.to} to={tab.to} end className="app-tabbar__link">
-
-            {({ isActive }) => (
-
-              <>
-
-                <span className="app-tabbar__icon" aria-hidden="true">
-
-                  <TabIcon
-
-                    name={tab.icon}
-
-                    size={20}
-
-                    color={isActive ? 'var(--color-primary)' : 'var(--color-muted)'}
-
-                  />
-
-                </span>
-
-                {isActive ? <span className="app-tabbar__label">{tab.label}</span> : null}
-
-              </>
-
-            )}
-
-          </NavLink>
-
+        {tabbarTabs.map((tab) => (
+          <TabBarLink key={tab.to} tab={tab} pathname={location.pathname} />
         ))}
-
       </nav>
-
-
 
       {mapFabHref ? (
         <NavLink
@@ -211,10 +202,6 @@ export function AppShell({
           <TabIcon name="map" size={22} color="var(--color-surface)" />
         </NavLink>
       ) : null}
-
     </div>
-
   );
-
 }
-

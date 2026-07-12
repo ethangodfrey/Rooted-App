@@ -1,7 +1,14 @@
-import { Link } from 'react-router-dom';
-
 import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
 import { LegalLinks } from '@/components/account/LegalLinks';
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorListRow,
+  VendorPrimaryButton,
+  VendorScreen,
+  VendorSection,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
 
@@ -9,41 +16,39 @@ export function VendorProfilePage() {
   const { user, vendor, signOut } = useAuth();
 
   return (
-    <div className="app-screen">
-      <p className="app-eyebrow">Account</p>
-      <h1 className="app-title">Profile</h1>
+    <VendorScreen>
+      <VendorHero
+        eyebrow="Account"
+        title="Profile"
+        pill={vendor?.approval_status}
+        subtitle={vendor?.business_name ?? undefined}
+      />
 
-      <div className="app-card" style={{ marginBottom: '1.5rem' }}>
-        <p className="app-row-meta">Email</p>
-        <p className="app-row-title">{user?.email}</p>
-        <p className="app-row-meta" style={{ marginTop: '1rem' }}>Business</p>
-        <p className="app-row-title">{vendor?.business_name ?? '—'}</p>
-        <p className="app-row-meta" style={{ marginTop: '1rem' }}>Status</p>
-        <p className="app-row-title" style={{ textTransform: 'capitalize' }}>{vendor?.approval_status}</p>
-      </div>
+      <VendorSection title="Account">
+        <VendorFormPanel>
+          <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">Email</p>
+          <p className="m-0 mt-1 text-sm font-semibold text-stone-800">{user?.email}</p>
+        </VendorFormPanel>
+      </VendorSection>
 
-      <div className="app-list">
-        <Link to="/vendor/storefront" className="app-card app-card--pressable">Edit storefront</Link>
-        <Link to="/vendor/preview" className="app-card app-card--pressable">Preview shop</Link>
-        <Link to="/vendor/setup" className="app-card app-card--pressable">Application details</Link>
-        <Link to="/vendor/events" className="app-card app-card--pressable">My events</Link>
-        <Link to="/vendor/pos" className="app-card app-card--pressable">Point of Sale</Link>
-        <Link to="/vendor/compliance" className="app-card app-card--pressable">
-          <p className="app-row-title">Food safety checklist</p>
-          <p className="app-row-meta">State cottage food requirements and compliance status</p>
-        </Link>
-        <Link to="/vendor/credentials" className="app-card app-card--pressable">
-          <p className="app-row-title">Verification credentials</p>
-          <p className="app-row-meta">Upload documents to earn trust badges</p>
-        </Link>
-      </div>
+      <VendorSection title="Settings">
+        <VendorListPanel>
+          <VendorListRow to="/vendor/storefront" title="Edit storefront" icon="store" tone="orange" />
+          <VendorListRow to="/vendor/preview" title="Preview shop" icon="grid" tone="stone" />
+          <VendorListRow to="/vendor/setup" title="Application details" icon="clipboard" tone="stone" />
+          <VendorListRow to="/vendor/events" title="My events" icon="calendar" tone="sky" />
+          <VendorListRow to="/vendor/pos" title="Point of Sale" icon="credit-card" tone="amber" />
+          <VendorListRow to="/vendor/compliance" title="Food safety checklist" icon="shield-check" tone="teal" />
+          <VendorListRow to="/vendor/credentials" title="Verification credentials" icon="badge" tone="emerald" />
+        </VendorListPanel>
+      </VendorSection>
 
-      <button type="button" className="app-btn app-btn--secondary" style={{ marginTop: '2rem' }} onClick={signOut}>
+      <VendorPrimaryButton className="mt-6 w-full" onClick={() => void signOut()}>
         Sign out
-      </button>
+      </VendorPrimaryButton>
 
       <LegalLinks />
       <DeleteAccountSection />
-    </div>
+    </VendorScreen>
   );
 }

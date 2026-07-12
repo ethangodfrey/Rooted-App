@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorEmpty,
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorScreen,
+  VendorSecondaryButton,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
 import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
@@ -72,36 +82,41 @@ export function VendorPosMappingsPage() {
   }
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/pos" className="app-back-link">← POS</Link>
-      <h1 className="app-title">Item mappings</h1>
-      <p className="app-subtitle">Link Square catalog items to your Vendorly products.</p>
+      <VendorHero eyebrow="POS" title="Item mappings" subtitle="Link Square items to Vendorly products" />
 
       {!isApiConfigured ? (
-        <div className="app-card app-card--honeydew">
-          <p className="app-row-title">Item mappings require the backend API</p>
-          <p className="app-row-meta">{BACKEND_UNAVAILABLE_COPY}</p>
-        </div>
+        <VendorFormPanel>
+          <p className="m-0 text-sm font-semibold text-stone-800">Backend API required</p>
+          <p className="m-0 mt-1 text-xs text-stone-500">{BACKEND_UNAVAILABLE_COPY}</p>
+        </VendorFormPanel>
       ) : loading ? (
         <div className="app-loading"><div className="app-spinner" /></div>
       ) : mappings.length === 0 ? (
-        <div className="app-empty">No register items to map yet. Run a sync first.</div>
+        <VendorEmpty message="No register items to map yet. Run a sync first." />
       ) : (
-        <div className="app-list">
+        <VendorListPanel>
           {mappings.map((mapping) => (
-            <div key={mapping.id} className="app-card">
-              <p className="app-row-title">{mapping.providerItemName ?? mapping.providerCatalogObjectId}</p>
-              {mapping.ignored ? (
-                <p className="app-row-meta">Ignored</p>
-              ) : mapping.productId ? (
-                <p className="app-row-meta">→ {productName(mapping.productId)}</p>
-              ) : (
-                <p className="app-row-meta">Unmapped</p>
-              )}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <div key={mapping.id} className="p-3.5">
+              <div className="flex items-start gap-3">
+                <IconBadge name="link" tone="stone" />
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-sm font-semibold text-stone-800">
+                    {mapping.providerItemName ?? mapping.providerCatalogObjectId}
+                  </p>
+                  {mapping.ignored ? (
+                    <p className="m-0 mt-0.5 text-xs text-stone-500">Ignored</p>
+                  ) : mapping.productId ? (
+                    <p className="m-0 mt-0.5 text-xs text-stone-500">→ {productName(mapping.productId)}</p>
+                  ) : (
+                    <p className="m-0 mt-0.5 text-xs text-stone-500">Unmapped</p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
                 <select
-                  className="app-input"
-                  style={{ flex: 1, minWidth: 160 }}
+                  className={`app-input min-w-[160px] flex-1 ${VENDOR_PRESSABLE}`}
                   value={mapping.productId ?? ''}
                   disabled={saving || mapping.ignored}
                   onChange={(e) =>
@@ -112,20 +127,19 @@ export function VendorPosMappingsPage() {
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  className="app-btn app-btn--secondary app-btn--small"
+                <VendorSecondaryButton
                   disabled={saving}
-                  onClick={() => void assign(mapping, { ignored: !mapping.ignored })}>
+                  onClick={() => void assign(mapping, { ignored: !mapping.ignored })}
+                >
                   {mapping.ignored ? 'Unignore' : 'Ignore'}
-                </button>
+                </VendorSecondaryButton>
               </div>
             </div>
           ))}
-        </div>
+        </VendorListPanel>
       )}
 
       {error ? <p className="app-error">{error}</p> : null}
-    </div>
+    </VendorScreen>
   );
 }

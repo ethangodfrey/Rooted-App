@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { PosActivityDashboard } from '@/components/vendor/PosActivityDashboard';
+import { VendorFormPanel, VendorHero, VendorScreen } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
 import { BACKEND_UNAVAILABLE_COPY } from '@/lib/api-url';
@@ -11,41 +12,39 @@ export function VendorPosActivityPage() {
 
   if (!isApiConfigured) {
     return (
-      <div className="app-screen">
+      <VendorScreen>
         <Link to="/vendor/pos" className="app-back-link">
           ← POS
         </Link>
-        <h1 className="app-title">POS activity</h1>
-        <div className="app-card app-card--honeydew">
-          <p className="app-row-title">Dashboard unavailable</p>
-          <p className="app-row-meta">{BACKEND_UNAVAILABLE_COPY}</p>
-        </div>
-      </div>
+        <VendorHero eyebrow="Vendor" title="POS activity" />
+        <VendorFormPanel>
+          <p className="m-0 text-sm font-semibold text-stone-800">Dashboard unavailable</p>
+          <p className="m-0 mt-1 text-xs text-stone-500">{BACKEND_UNAVAILABLE_COPY}</p>
+        </VendorFormPanel>
+      </VendorScreen>
     );
   }
 
   if (!vendor) {
     return (
-      <div className="app-screen">
+      <VendorScreen>
         <div className="app-loading">
           <div className="app-spinner" />
         </div>
-      </div>
+      </VendorScreen>
     );
   }
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/pos" className="app-back-link">
         ← POS
       </Link>
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">POS activity</h1>
-      <p className="app-subtitle">Live inventory syncs, sales, and queue health.</p>
+      <VendorHero eyebrow="Vendor" title="POS activity" subtitle="Inventory syncs and queue health" />
 
-      <div className="mt-6 rounded-3xl bg-gradient-to-b from-slate-50 to-white p-4 sm:p-6 ring-1 ring-slate-200/80">
+      <VendorFormPanel className="mt-2">
         <PosActivityDashboard vendorId={vendor.id} />
-      </div>
-    </div>
+      </VendorFormPanel>
+    </VendorScreen>
   );
 }

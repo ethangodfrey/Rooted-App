@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import '@/components/trust/TrustBadges.css';
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorListPanel,
+  VendorListRow,
+  VendorScreen,
+  VendorSection,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { complianceChecklistForState } from '@/lib/compliance';
 import { supabase } from '@/lib/supabase';
@@ -62,29 +70,32 @@ export function VendorCompliancePage() {
 
   if (loading) {
     return (
-      <div className="app-screen">
+      <VendorScreen>
         <div className="app-loading">
           <div className="app-spinner" />
         </div>
-      </div>
+      </VendorScreen>
     );
   }
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/dashboard" className="app-back-link">
         ← Back
       </Link>
-      <p className="app-eyebrow">Trust & compliance</p>
-      <h1 className="app-title">Food safety checklist</h1>
-      <p className="app-subtitle">
-        {stateCode
-          ? `${regs?.state_name ?? stateCode} cottage food requirements`
-          : 'Set your state in application details.'}
-      </p>
+      <VendorHero
+        eyebrow="Trust"
+        title="Food safety checklist"
+        subtitle={
+          stateCode
+            ? `${regs?.state_name ?? stateCode} cottage food`
+            : 'Set your state in application details.'
+        }
+        pill={compliance?.compliance_status ?? 'pending_review'}
+      />
 
       {verifiedTypes.length > 0 ? (
-        <div className="trust-badges" style={{ marginBottom: '1rem' }}>
+        <div className="trust-badges mb-4">
           {verifiedTypes.map((type) => (
             <span key={type} className="trust-badge">
               <span aria-hidden="true" className="trust-badge__check">
@@ -96,37 +107,46 @@ export function VendorCompliancePage() {
         </div>
       ) : null}
 
-      <div className="app-card" style={{ marginBottom: '1rem' }}>
-        <p className="app-row-title">Status: {compliance?.compliance_status ?? 'pending_review'}</p>
-        {regs?.required_disclaimer ? <p className="app-row-meta">{regs.required_disclaimer}</p> : null}
-      </div>
-
-      <div className="app-card" style={{ marginBottom: '1.5rem' }}>
-        {checklist.map((item) => (
-          <p key={item.label} className="app-row-meta" style={{ marginBottom: '0.5rem' }}>
-            {item.required ? '• ' : '○ '}
-            {item.label}
-          </p>
-        ))}
-      </div>
-
-      {regs?.regulation_url ? (
-        <a
-          href={regs.regulation_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="app-card app-card--pressable"
-          style={{ display: 'block', marginBottom: '1rem' }}
-        >
-          <p className="app-row-title">Official state guidance</p>
-          <p className="app-row-meta">Open cottage food regulations</p>
-        </a>
+      {regs?.required_disclaimer ? (
+        <VendorFormPanel className="mb-5">
+          <p className="m-0 text-xs text-stone-500">{regs.required_disclaimer}</p>
+        </VendorFormPanel>
       ) : null}
 
-      <Link to="/vendor/credentials" className="app-card app-card--pressable" style={{ display: 'block' }}>
-        <p className="app-row-title">Upload credentials</p>
-        <p className="app-row-meta">Food handler cert, cottage food permit, business license</p>
-      </Link>
-    </div>
+      <VendorSection title="Checklist">
+        <VendorListPanel>
+          {checklist.map((item) => (
+            <div key={item.label} className="p-3.5">
+              <p className="m-0 text-sm text-stone-700">
+                {item.required ? '• ' : '○ '}
+                {item.label}
+              </p>
+            </div>
+          ))}
+        </VendorListPanel>
+      </VendorSection>
+
+      <VendorSection title="Actions">
+        <VendorListPanel>
+          {regs?.regulation_url ? (
+            <VendorListRow
+              to={regs.regulation_url}
+              external
+              title="Official state guidance"
+              subtitle="Cottage food regulations"
+              icon="file-text"
+              tone="sky"
+            />
+          ) : null}
+          <VendorListRow
+            to="/vendor/credentials"
+            title="Upload credentials"
+            subtitle="Food handler cert, permit, license"
+            icon="badge"
+            tone="emerald"
+          />
+        </VendorListPanel>
+      </VendorSection>
+    </VendorScreen>
   );
 }

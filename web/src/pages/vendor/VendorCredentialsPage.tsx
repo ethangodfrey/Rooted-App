@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { CredentialManager } from '@/components/trust/CredentialManager';
+import { VendorEmpty, VendorFormPanel, VendorHero, VendorScreen } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
 
@@ -8,22 +9,19 @@ export function VendorCredentialsPage() {
   const { user } = useAuth();
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/compliance" className="app-back-link">
         ← Back
       </Link>
-      <p className="app-eyebrow">Trust & compliance</p>
-      <h1 className="app-title">Verification credentials</h1>
-      <p className="app-subtitle">
-        Upload documents for admin review. Verified credentials appear as trust badges on your
-        storefront.
-      </p>
+      <VendorHero eyebrow="Trust" title="Verification credentials" />
 
       {user?.id ? (
-        <CredentialManager userId={user.id} />
+        <VendorFormPanel>
+          <CredentialManager userId={user.id} />
+        </VendorFormPanel>
       ) : (
-        <p className="app-row-meta">Sign in to manage your credentials.</p>
+        <VendorEmpty message="Sign in to manage your credentials." />
       )}
-    </div>
+    </VendorScreen>
   );
 }

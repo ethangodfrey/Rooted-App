@@ -11,6 +11,17 @@ import {
   VerticalBarChart,
 } from '@/components/analytics/SimpleCharts';
 import { SettlementDashboard } from '@/components/vendor/SettlementDashboard';
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorKpiGrid,
+  VendorKpiStat,
+  VendorListPanel,
+  VendorScreen,
+  VendorSecondaryButton,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
+import { IconBadge } from '@/components/vendor/dashboard-icons';
 import '@/components/analytics/analytics.css';
 import { useAuth } from '@/hooks/use-auth';
 import { useVendorSettlementOrders } from '@/hooks/use-vendor-settlement-orders';
@@ -145,30 +156,24 @@ export function VendorAnalyticsPage() {
   }));
 
   return (
-    <div className="app-screen">
-      <p className="app-eyebrow">Vendor</p>
-      <h1 className="app-title">Analytics</h1>
-      <p className="app-subtitle">
-        {data.rangeLabel}
-        {data.dailyRevenue.length < 14 ? ' · zoomed to days with sales' : ''}
-      </p>
+    <VendorScreen>
+      <VendorHero
+        eyebrow="Vendor"
+        title="Analytics"
+        subtitle={`${data.rangeLabel}${data.dailyRevenue.length < 14 ? ' · zoomed to active days' : ''}`}
+      />
 
-      <div className="analytics-actions">
-        <button type="button" className="app-btn app-btn--secondary" onClick={() => downloadCsv(data)}>
-          Export CSV
-        </button>
-        <button type="button" className="app-btn app-btn--secondary" onClick={() => void load()}>
-          Refresh
-        </button>
+      <div className="analytics-actions mb-4 flex gap-2">
+        <VendorSecondaryButton onClick={() => downloadCsv(data)}>Export CSV</VendorSecondaryButton>
+        <VendorSecondaryButton onClick={() => void load()}>Refresh</VendorSecondaryButton>
       </div>
 
       {isApiConfigured && !data.posDataLoaded ? (
-        <div className="app-card app-card--honeydew" style={{ marginBottom: '1rem' }}>
-          <p className="app-row-meta" style={{ color: '#92400e' }}>
-            Square sales could not be loaded. Check that the backend is running and you are logged in
-            as a vendor, then refresh.
+        <VendorFormPanel className="mb-4">
+          <p className="m-0 text-xs text-amber-800">
+            Square sales could not be loaded. Check backend and refresh.
           </p>
-        </div>
+        </VendorFormPanel>
       ) : null}
 
       <div className="analytics-range">
@@ -176,17 +181,14 @@ export function VendorAnalyticsPage() {
           <button
             key={r}
             type="button"
-            className={`analytics-chip${range === r ? ' analytics-chip--active' : ''}`}
+            className={`analytics-chip ${VENDOR_PRESSABLE}${range === r ? ' analytics-chip--active' : ''}`}
             onClick={() => setRange(r)}>
             {r === 365 ? '1Y' : `${r}D`}
           </button>
         ))}
       </div>
 
-      <ChartCard
-        title="Market settlement"
-        subtitle="Post-pickup totals from fulfilled presale orders (integer-cent math)"
-      >
+      <ChartCard title="Market settlement" subtitle="Fulfilled presale totals">
         <SettlementDashboard
           orders={settlementOrders}
           loading={settlementLoading}
@@ -194,44 +196,18 @@ export function VendorAnalyticsPage() {
         />
       </ChartCard>
 
-      <div className="analytics-grid">
-        <div className="app-card app-card--honeydew">
-          <p className="app-row-meta">Total revenue</p>
-          <p className="app-title" style={{ fontSize: '1.35rem', margin: 0 }}>
-            {formatPrice(data.totalRevenue)}
-          </p>
-        </div>
-        <div className="app-card">
-          <p className="app-row-meta">Units sold</p>
-          <p className="app-title" style={{ fontSize: '1.35rem', margin: 0 }}>
-            {data.unitsSold}
-          </p>
-        </div>
-        <div className="app-card">
-          <p className="app-row-meta">Reservations</p>
-          <p className="app-row-title">{formatPrice(data.reservationRevenue)}</p>
-        </div>
-        <div className="app-card">
-          <p className="app-row-meta">In-person</p>
-          <p className="app-row-title">{formatPrice(data.inPersonRevenue)}</p>
-        </div>
-        <div className="app-card">
-          <p className="app-row-meta">Card (Square)</p>
-          <p className="app-row-title">{formatPrice(data.cardSalesRevenue)}</p>
-          <p className="app-row-meta">{data.cardSalesCount} sales</p>
-        </div>
-      </div>
+      <VendorKpiGrid cols={3}>
+        <VendorKpiStat value={formatPrice(data.totalRevenue)} label="Total revenue" />
+        <VendorKpiStat value={data.unitsSold} label="Units sold" />
+        <VendorKpiStat value={formatPrice(data.reservationRevenue)} label="Reservations" />
+        <VendorKpiStat value={formatPrice(data.inPersonRevenue)} label="In-person" />
+        <VendorKpiStat
+          value={formatPrice(data.cardSalesRevenue)}
+          label={`Card (${data.cardSalesCount})`}
+        />
+      </VendorKpiGrid>
 
-      <ChartCard
-        title="Revenue over time"
-        subtitle="Daily total across all channels"
-        legend={
-          <>
-            <LegendRow color={ANALYTICS_COLORS.reservations} label="Reservations" />
-            <LegendRow color={ANALYTICS_COLORS.inPerson} label="In-person" />
-            <LegendRow color={ANALYTICS_COLORS.cardSales} label="Card (Square)" />
-          </>
-        }>
+      <ChartCard title="Revenue over time" subtitle="Daily total by channel">
         {!hasRevenue ? (
           <EmptyChart message="No revenue in this period yet." />
         ) : (
@@ -254,7 +230,7 @@ export function VendorAnalyticsPage() {
         )}
       </ChartCard>
 
-      <ChartCard title="Units sold per day" subtitle="All channels">
+      <ChartCard title="Units sold per day">
         {data.unitsSold === 0 ? (
           <EmptyChart message="No units sold in this period." />
         ) : (
@@ -266,7 +242,7 @@ export function VendorAnalyticsPage() {
         )}
       </ChartCard>
 
-      <ChartCard title="Top items by units" subtitle="Best sellers in this period">
+      <ChartCard title="Top items by units">
         {topByUnits.length === 0 ? (
           <EmptyChart message="No item sales yet." />
         ) : (
@@ -278,7 +254,7 @@ export function VendorAnalyticsPage() {
         )}
       </ChartCard>
 
-      <ChartCard title="Top items by revenue" subtitle="Highest earning products">
+      <ChartCard title="Top items by revenue">
         {topByRevenue.length === 0 ? (
           <EmptyChart message="No item revenue yet." />
         ) : (
@@ -290,7 +266,7 @@ export function VendorAnalyticsPage() {
         )}
       </ChartCard>
 
-      <ChartCard title="Orders by status" subtitle="Reservation pipeline in this period">
+      <ChartCard title="Orders by status" subtitle="Reservation pipeline">
         {statusSlices.length === 0 ? (
           <EmptyChart message="No orders in this period." />
         ) : (
@@ -305,37 +281,41 @@ export function VendorAnalyticsPage() {
       </ChartCard>
 
       {data.topProducts.length > 0 ? (
-        <ChartCard title="Item breakdown" subtitle="Units and revenue by product">
-          <div className="app-list">
+        <ChartCard title="Item breakdown">
+          <VendorListPanel>
             {data.topProducts.map((p, index) => (
-              <div key={`${p.name}-${index}`} className="app-row">
-                <div>
-                  <p className="app-row-title">{p.name}</p>
-                  <p className="app-row-meta">{p.units} units</p>
-                </div>
-                <p className="app-row-title">{formatPrice(p.revenue)}</p>
+              <div key={`${p.name}-${index}`} className="flex items-center justify-between gap-3 p-3.5">
+                <span className="flex min-w-0 items-center gap-3">
+                  <IconBadge name="package" tone="orange" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-stone-800">{p.name}</span>
+                    <span className="mt-0.5 block text-xs text-stone-500">{p.units} units</span>
+                  </span>
+                </span>
+                <span className="shrink-0 text-sm font-semibold text-stone-700">{formatPrice(p.revenue)}</span>
               </div>
             ))}
-          </div>
+          </VendorListPanel>
         </ChartCard>
       ) : null}
 
       {data.recentPosSales.length > 0 ? (
-        <ChartCard title="Recent card sales" subtitle="Latest Square transactions">
-          <div className="app-list">
+        <ChartCard title="Recent card sales">
+          <VendorListPanel>
             {data.recentPosSales.map((txn) => (
-              <div key={txn.id} className="app-row">
-                <div>
-                  <p className="app-row-title">{formatPrice(txn.netAmount)}</p>
-                  <p className="app-row-meta">
+              <div key={txn.id} className="flex items-center gap-3 p-3.5">
+                <IconBadge name="credit-card" tone="amber" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-stone-800">{formatPrice(txn.netAmount)}</span>
+                  <span className="mt-0.5 block text-xs text-stone-500">
                     {formatDateTime(txn.soldAt)} · {formatTender(txn)}
-                  </p>
-                </div>
+                  </span>
+                </span>
               </div>
             ))}
-          </div>
+          </VendorListPanel>
         </ChartCard>
       ) : null}
-    </div>
+    </VendorScreen>
   );
 }

@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { FieldError } from '@/components/ui/FieldError';
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorPrimaryButton,
+  VendorScreen,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { expiresAtFromHours, EXPIRY_PRESETS } from '@/lib/leftovers';
 import { supabase } from '@/lib/supabase';
@@ -158,167 +165,168 @@ export function VendorLeftoverFormPage() {
   }
 
   return (
-    <div className="app-screen app-screen--narrow">
+    <VendorScreen>
       <Link to="/vendor/leftovers" className="app-back-link">← Leftovers</Link>
-      <h1 className="app-title">List leftovers</h1>
-      <p className="app-row-meta" style={{ marginBottom: '1rem' }}>
-        Post unsold items after a market. Shoppers nearby see deals sorted by time left and pickup location.
-      </p>
+      <VendorHero eyebrow="Post-market" title="List leftovers" />
 
-      {products.length > 0 ? (
+      <VendorFormPanel>
+        {products.length > 0 ? (
+          <div className="app-input-group">
+            <label>From catalog (optional)</label>
+            <div className="app-chip-row">
+              <button
+                type="button"
+                className={`app-chip ${VENDOR_PRESSABLE}${productId === null ? ' app-chip--selected' : ''}`}
+                onClick={() => selectProduct(null)}
+              >
+                Custom
+              </button>
+              {products.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`app-chip ${VENDOR_PRESSABLE}${productId === p.id ? ' app-chip--selected' : ''}`}
+                  onClick={() => selectProduct(p.id)}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="app-input-group">
-          <label>From catalog (optional)</label>
+          <label>Title</label>
+          <input
+            className={`app-input${fieldErrors.title ? ' app-input--invalid' : ''}`}
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              clearFieldError('title');
+            }}
+          />
+          <FieldError message={fieldErrors.title} />
+        </div>
+
+        <div className="app-input-group">
+          <label>Description</label>
+          <textarea
+            className="app-textarea"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What's left, condition, pickup instructions..."
+            rows={3}
+          />
+        </div>
+
+        <div className="app-form-grid">
+          <div className="app-input-group">
+            <label>Price ($)</label>
+            <input
+              className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
+              value={priceDollars}
+              onChange={(e) => {
+                setPriceDollars(e.target.value);
+                clearFieldError('price');
+              }}
+              inputMode="decimal"
+            />
+            <FieldError message={fieldErrors.price} />
+          </div>
+          <div className="app-input-group">
+            <label>Quantity</label>
+            <input
+              className={`app-input${fieldErrors.quantity ? ' app-input--invalid' : ''}`}
+              value={quantity}
+              onChange={(e) => {
+                setQuantity(e.target.value);
+                clearFieldError('quantity');
+              }}
+              inputMode="numeric"
+            />
+            <FieldError message={fieldErrors.quantity} />
+          </div>
+        </div>
+
+        <div className="app-input-group">
+          <label>Available for</label>
           <div className="app-chip-row">
-            <button type="button" className={`app-chip${productId === null ? ' app-chip--selected' : ''}`} onClick={() => selectProduct(null)}>
-              Custom
-            </button>
-            {products.map((p) => (
+            {EXPIRY_PRESETS.map((preset) => (
               <button
-                key={p.id}
+                key={preset.hours}
                 type="button"
-                className={`app-chip${productId === p.id ? ' app-chip--selected' : ''}`}
-                onClick={() => selectProduct(p.id)}
+                className={`app-chip ${VENDOR_PRESSABLE}${expiryHours === preset.hours ? ' app-chip--selected' : ''}`}
+                onClick={() => setExpiryHours(preset.hours)}
               >
-                {p.name}
+                {preset.label}
               </button>
             ))}
           </div>
         </div>
-      ) : null}
 
-      <div className="app-input-group">
-        <label>Title</label>
-        <input
-          className={`app-input${fieldErrors.title ? ' app-input--invalid' : ''}`}
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            clearFieldError('title');
-          }}
-        />
-        <FieldError message={fieldErrors.title} />
-      </div>
-
-      <div className="app-input-group">
-        <label>Description</label>
-        <textarea
-          className="app-textarea"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="What's left, condition, pickup instructions..."
-          rows={3}
-        />
-      </div>
-
-      <div className="app-form-grid">
         <div className="app-input-group">
-          <label>Price ($)</label>
-          <input
-            className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
-            value={priceDollars}
-            onChange={(e) => {
-              setPriceDollars(e.target.value);
-              clearFieldError('price');
-            }}
-            inputMode="decimal"
-          />
-          <FieldError message={fieldErrors.price} />
-        </div>
-        <div className="app-input-group">
-          <label>Quantity</label>
-          <input
-            className={`app-input${fieldErrors.quantity ? ' app-input--invalid' : ''}`}
-            value={quantity}
-            onChange={(e) => {
-              setQuantity(e.target.value);
-              clearFieldError('quantity');
-            }}
-            inputMode="numeric"
-          />
-          <FieldError message={fieldErrors.quantity} />
-        </div>
-      </div>
-
-      <div className="app-input-group">
-        <label>Available for</label>
-        <div className="app-chip-row">
-          {EXPIRY_PRESETS.map((preset) => (
+          <label>Pickup location</label>
+          <div className="app-chip-row">
             <button
-              key={preset.hours}
               type="button"
-              className={`app-chip${expiryHours === preset.hours ? ' app-chip--selected' : ''}`}
-              onClick={() => setExpiryHours(preset.hours)}
+              className={`app-chip ${VENDOR_PRESSABLE}${pickupMode === 'vendor_area' ? ' app-chip--selected' : ''}`}
+              onClick={() => setPickupMode('vendor_area')}
             >
-              {preset.label}
+              My area
             </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="app-input-group">
-        <label>Pickup location</label>
-        <div className="app-chip-row">
-          <button
-            type="button"
-            className={`app-chip${pickupMode === 'vendor_area' ? ' app-chip--selected' : ''}`}
-            onClick={() => setPickupMode('vendor_area')}
-          >
-            My area
-          </button>
-          <button
-            type="button"
-            className={`app-chip${pickupMode === 'event' ? ' app-chip--selected' : ''}`}
-            onClick={() => setPickupMode('event')}
-            disabled={events.length === 0}
-          >
-            From market
-          </button>
-        </div>
-      </div>
-
-      {pickupMode === 'event' && events.length > 0 ? (
-        <>
-          <div className="app-chip-row" style={{ marginBottom: '0.25rem' }}>
-            {events.map((event) => (
-              <button
-                key={event.id}
-                type="button"
-                className={`app-chip${sourceEventId === event.id ? ' app-chip--selected' : ''}`}
-                onClick={() => {
-                  setSourceEventId(event.id);
-                  clearFieldError('sourceEventId');
-                }}
-              >
-                {event.name}
-              </button>
-            ))}
+            <button
+              type="button"
+              className={`app-chip ${VENDOR_PRESSABLE}${pickupMode === 'event' ? ' app-chip--selected' : ''}`}
+              onClick={() => setPickupMode('event')}
+              disabled={events.length === 0}
+            >
+              From market
+            </button>
           </div>
-          <FieldError message={fieldErrors.sourceEventId} />
-        </>
-      ) : (
-        <div className="app-card" style={{ marginBottom: '1rem' }}>
-          <p className="app-row-meta">
+        </div>
+
+        {pickupMode === 'event' && events.length > 0 ? (
+          <>
+            <div className="app-chip-row mb-1">
+              {events.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  className={`app-chip ${VENDOR_PRESSABLE}${sourceEventId === event.id ? ' app-chip--selected' : ''}`}
+                  onClick={() => {
+                    setSourceEventId(event.id);
+                    clearFieldError('sourceEventId');
+                  }}
+                >
+                  {event.name}
+                </button>
+              ))}
+            </div>
+            <FieldError message={fieldErrors.sourceEventId} />
+          </>
+        ) : pickupMode === 'vendor_area' ? (
+          <p className="m-0 mb-4 text-xs text-stone-500">
             Pickup near {vendor?.sell_city ?? 'your city'}, {vendor?.sell_state ?? 'your state'}
           </p>
+        ) : null}
+
+        <div className="app-input-group">
+          <label>Pickup notes (optional)</label>
+          <textarea
+            className="app-textarea"
+            value={pickupNotes}
+            onChange={(e) => setPickupNotes(e.target.value)}
+            placeholder="e.g. Text when you arrive, porch pickup..."
+            rows={2}
+          />
         </div>
-      )}
 
-      <div className="app-input-group">
-        <label>Pickup notes (optional)</label>
-        <textarea
-          className="app-textarea"
-          value={pickupNotes}
-          onChange={(e) => setPickupNotes(e.target.value)}
-          placeholder="e.g. Text when you arrive, porch pickup..."
-          rows={2}
-        />
-      </div>
+        {error ? <p className="app-error">{error}</p> : null}
 
-      {error ? <p className="app-error">{error}</p> : null}
-
-      <button type="button" className="app-btn app-btn--primary" disabled={saving} onClick={handlePublish}>
-        {saving ? 'Publishing…' : 'Publish leftover'}
-      </button>
-    </div>
+        <VendorPrimaryButton className="w-full" disabled={saving} onClick={handlePublish}>
+          {saving ? 'Publishing…' : 'Publish leftover'}
+        </VendorPrimaryButton>
+      </VendorFormPanel>
+    </VendorScreen>
   );
 }

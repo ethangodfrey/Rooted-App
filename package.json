@@ -37,6 +37,7 @@
     "health:audit": "npx tsx scripts/autonomous-health-check.ts",
     "config:audit": "node scripts/audit-production-config.mjs",
     "smoke:boundaries": "node scripts/smoke-production-boundaries.mjs",
+    "smoke:settlement": "node scripts/settlement-dashboard-smoke.mjs",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
   },
   "dependencies": {

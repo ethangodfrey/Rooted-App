@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { ProductForm } from '@/components/vendor/ProductForm';
+import {
+  VendorHero,
+  VendorListPanel,
+  VendorListRow,
+  VendorScreen,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
@@ -99,18 +105,22 @@ export function VendorProductFormPage() {
   if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
 
   return (
-    <div className="app-screen app-screen--narrow">
+    <VendorScreen>
       <Link to="/vendor/products" className="app-back-link">← Products</Link>
-      <h1 className="app-title">{isEdit ? 'Edit product' : 'New product'}</h1>
+      <VendorHero eyebrow="Manage" title={isEdit ? 'Edit product' : 'New product'} />
 
       {isEdit ? (
-        <Link
-          to={`/vendor/products/${id}/availability`}
-          className="app-card app-card--pressable app-card--honeydew"
-          style={{ display: 'block', marginBottom: '1rem' }}>
-          <p className="app-row-title">Event availability</p>
-          <p className="app-row-meta">Set presale and in-person quantities per market</p>
-        </Link>
+        <div className="mb-5">
+          <VendorListPanel>
+            <VendorListRow
+              to={`/vendor/products/${id}/availability`}
+              title="Event availability"
+              subtitle="Presale and in-person quantities"
+              icon="calendar"
+              tone="sky"
+            />
+          </VendorListPanel>
+        </div>
       ) : null}
 
       {error ? <p className="app-error">{error}</p> : null}
@@ -121,6 +131,6 @@ export function VendorProductFormPage() {
         loading={saving}
         onSubmit={handleSave}
       />
-    </div>
+    </VendorScreen>
   );
 }

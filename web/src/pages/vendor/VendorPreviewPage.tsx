@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { IconBadge } from '@/components/vendor/dashboard-icons';
+import {
+  VendorEmpty,
+  VendorHero,
+  VendorListPanel,
+  VendorScreen,
+  VendorSection,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -42,28 +50,40 @@ export function VendorPreviewPage() {
 
   if (!data) {
     return (
-      <div className="app-screen">
+      <VendorScreen>
         <Link to="/vendor/profile" className="app-back-link">← Profile</Link>
-        <div className="app-empty">Could not load storefront preview.</div>
-      </div>
+        <VendorEmpty message="Could not load storefront preview." />
+      </VendorScreen>
     );
   }
 
   return (
-    <div className="app-screen">
+    <VendorScreen>
       <Link to="/vendor/profile" className="app-back-link">← Profile</Link>
-      <p className="app-eyebrow">Preview</p>
-      <h1 className="app-title">{data.business_name}</h1>
-      {data.business_description ? <p className="app-subtitle">{data.business_description}</p> : null}
+      <VendorHero
+        eyebrow="Preview"
+        title={data.business_name ?? 'Storefront'}
+        subtitle={data.business_description ?? undefined}
+        pill={products.length > 0 ? `${products.length} active` : undefined}
+      />
 
-      <div className="app-list" style={{ marginTop: '1.5rem' }}>
-        {products.map((product) => (
-          <div key={product.id} className="app-card app-row" style={{ justifyContent: 'space-between' }}>
-            <span>{product.name}</span>
-            <span>{formatPrice(product.price)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+      {products.length === 0 ? (
+        <VendorEmpty message="No active products to show." />
+      ) : (
+        <VendorSection title="Catalog">
+          <VendorListPanel>
+            {products.map((product) => (
+              <div key={product.id} className="flex items-center justify-between gap-3 p-3.5">
+                <span className="flex min-w-0 items-center gap-3">
+                  <IconBadge name="package" tone="orange" />
+                  <span className="truncate text-sm font-semibold text-stone-800">{product.name}</span>
+                </span>
+                <span className="shrink-0 text-sm font-semibold text-stone-600">{formatPrice(product.price)}</span>
+              </div>
+            ))}
+          </VendorListPanel>
+        </VendorSection>
+      )}
+    </VendorScreen>
   );
 }

@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import {
+  VendorFormPanel,
+  VendorHero,
+  VendorPrimaryButton,
+  VendorScreen,
+  VENDOR_PRESSABLE,
+} from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 import type { PostType } from '@/types/database';
@@ -47,28 +54,35 @@ export function VendorPostFormPage() {
   }
 
   return (
-    <div className="app-screen app-screen--narrow">
+    <VendorScreen>
       <Link to="/vendor/posts" className="app-back-link">← Posts</Link>
-      <h1 className="app-title">New post</h1>
+      <VendorHero eyebrow="Manage" title="New post" />
 
-      <div className="app-chip-row">
-        {POST_TYPES.map((t) => (
-          <button key={t.value} type="button" className={`app-chip${postType === t.value ? ' app-chip--selected' : ''}`} onClick={() => setPostType(t.value)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <VendorFormPanel>
+        <div className="app-chip-row">
+          {POST_TYPES.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              className={`app-chip ${VENDOR_PRESSABLE}${postType === t.value ? ' app-chip--selected' : ''}`}
+              onClick={() => setPostType(t.value)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="app-input-group">
-        <label>Caption</label>
-        <textarea className="app-textarea" value={caption} onChange={(e) => setCaption(e.target.value)} rows={5} />
-      </div>
+        <div className="app-input-group">
+          <label>Caption</label>
+          <textarea className="app-textarea" value={caption} onChange={(e) => setCaption(e.target.value)} rows={5} />
+        </div>
 
-      {error ? <p className="app-error">{error}</p> : null}
+        {error ? <p className="app-error">{error}</p> : null}
 
-      <button type="button" className="app-btn app-btn--primary" disabled={saving} onClick={handleSave}>
-        {saving ? 'Publishing…' : 'Publish post'}
-      </button>
-    </div>
+        <VendorPrimaryButton className="w-full" disabled={saving} onClick={handleSave}>
+          {saving ? 'Publishing…' : 'Publish post'}
+        </VendorPrimaryButton>
+      </VendorFormPanel>
+    </VendorScreen>
   );
 }
