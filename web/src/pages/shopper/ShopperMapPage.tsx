@@ -15,7 +15,7 @@ import {
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
 import { formatEventDisplayDate } from '@/lib/format';
-import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
+import { distanceMiles, formatDistance, isValidCoords, type Coords } from '@/lib/geo';
 import { fetchPublicEvents } from '@/lib/events-query';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -112,20 +112,27 @@ export function ShopperMapPage() {
     async function load() {
       setLoading(true);
       setError(null);
-      const { data, error: queryError } = await fetchPublicEvents({
-        forMap: true,
-        near: eventFetchOrigin,
-      });
+      try {
+        const { data, error: queryError } = await fetchPublicEvents({
+          forMap: true,
+          near: eventFetchOrigin,
+        });
 
-      if (!active) return;
+        if (!active) return;
 
-      if (queryError) {
-        setError(queryError);
+        if (queryError) {
+          setError(queryError);
+          setEvents([]);
+        } else {
+          setEvents(data);
+        }
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : 'Failed to load events');
         setEvents([]);
-      } else {
-        setEvents(data);
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     }
 
     void load();
@@ -183,7 +190,7 @@ export function ShopperMapPage() {
       const event =
         mapEvents.find((item) => item.id === id) ??
         sortedEvents.find((item) => item.id === id);
-      if (!event) return;
+      if (!event || !isValidCoords(event)) return;
       setSelectedEventId(id);
       setFocusTarget({ latitude: event.latitude, longitude: event.longitude });
     },
