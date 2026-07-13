@@ -43,6 +43,10 @@
     "smoke:ui-baseline": "node scripts/verify-ui-production-baseline.mjs",
     "build:web": "npm run build --prefix web",
     "build:tenant-web": "NODE_ENV=production npm run build --prefix tenant-web",
+    "test:backend": "npm run test --prefix backend",
+    "test:web": "npm run test --prefix web",
+    "test:tenant-web": "npm run test --prefix tenant-web",
+    "test:critical": "npm run test:backend && npm run test:web && npm run test:tenant-web",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
   },
   "dependencies": {

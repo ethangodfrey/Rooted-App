@@ -6,7 +6,9 @@
     "dev": "next dev --port 3000",
     "build": "NODE_ENV=production next build",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@upstash/redis": "^1.34.3",
@@ -19,7 +21,8 @@
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=20"

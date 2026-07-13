@@ -130,6 +130,61 @@ describe('StripeService payment webhook handling', () => {
     expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
   });
 
+  it('compensates checkout inventory on checkout.session.expired', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    const pendingSelect = jest.fn(async () => [{ id: 'order-abc' }]);
+    const tx = {
+      $queryRaw: pendingSelect,
+      $executeRaw: jest.fn(),
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation(
+      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
+    );
+
+    await service.handleWebhookEvent({
+      id: 'evt_expired',
+      type: 'checkout.session.expired',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          metadata: {
+            order_id: 'order-abc',
+            customer_user_id: 'user-1',
+          },
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(inventory.compensateStripeCheckout).toHaveBeenCalledWith(
+      expect.anything(),
+      'order-abc',
+      'user-1',
+    );
+    expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
+  });
+
+  it('skips compensation when expired session metadata is incomplete', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    await service.handleWebhookEvent({
+      id: 'evt_expired_bad',
+      type: 'checkout.session.expired',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          metadata: { order_id: 'order-abc' },
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(inventory.compensateStripeCheckout).not.toHaveBeenCalled();
+  });
+
   it('updates vendor Connect flags on account.updated', async () => {
     const { prisma, vendorUpdateManyCalls } = fakePrisma();
     const service = new StripeService(fakeConfig(), prisma, fakeInventory());

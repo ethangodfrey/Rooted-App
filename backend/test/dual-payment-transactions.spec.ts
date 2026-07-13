@@ -239,5 +239,21 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         grossAmount: 0,
       });
     });
+
+    it('normalizes zero-amount completed Square orders with empty line items', () => {
+      const normalized = normalizeSquareOrder(adapter, {
+        id: 'sq-zero-1',
+        state: 'COMPLETED',
+        total_money: { amount: 0, currency: 'USD' },
+        line_items: [],
+      });
+
+      expect(normalized).toMatchObject({
+        providerTransactionId: 'sq-zero-1',
+        state: 'COMPLETED',
+        grossAmount: 0,
+        lineItems: [],
+      });
+    });
   });
 });

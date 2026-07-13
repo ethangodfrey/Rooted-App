@@ -25,6 +25,10 @@ describe('formatPrice', () => {
   it('handles large totals', () => {
     expect(formatPrice(1_234_567)).toBe('$12345.67');
   });
+
+  it('formats negative cents with a minus sign', () => {
+    expect(formatPrice(-250)).toBe('$-2.50');
+  });
 });
 
 describe('formatEventDate', () => {
