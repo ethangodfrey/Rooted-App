@@ -28,11 +28,31 @@ See `docs/VERCEL_MULTI_PROJECT.md` for split-project build targets.
 
 Supabase auth/data works anywhere. POS and proxied API features need public HTTPS — see `docs/OFF_LAN_ACCESS.md`.
 
-## Smoke test
+## Workspace validation baseline (`f4fd540+`)
+
+No manual shell `NODE_ENV` override required. Scripts pin production for tenant-web builds.
+
+### Builds (repo root)
+
+| Target | Command | Expected |
+|--------|---------|----------|
+| Web SPA | `npm run build:web` | exit 0 — 11 lazy chunks in `web/dist/` |
+| Tenant gateway | `npm run build:tenant-web` | exit 0 — API routes + static prerender |
+
+**Constraint:** `build:web` must stay `npm run build --prefix web` only — never bundle tenant-web into the Vite pipeline.
+
+### Smoke auditors
+
+| Script | Expected |
+|--------|----------|
+| `npm run smoke:ui-baseline` | exit 0 — 10/10 source, 9/9 production markers |
+| `npm run smoke:settlement` | `PASS_LAZY_CHUNK` — `api.vendorly.app` in lazy chunks; settlement matrices in production crawl |
+
+`BLOCKED_AUTH` on settlement UI segments without `SMOKE_VENDOR_EMAIL` / `SMOKE_VENDOR_PASSWORD` is expected.
+
+## Smoke test (manual / deploy)
 
 - `/` and `/login` on web
 - Deep route refresh (no 404)
 - Vendor POS page (confirms `VITE_API_URL` + CORS)
 - `/health/live` on backend
-- `npm run smoke:ui-baseline` — source + production lazy-chunk markers
-- `npm run smoke:settlement` — settlement dashboard; `VITE_API_URL` passes when `api.vendorly.app` is in **any** crawled chunk (entry or lazy)
