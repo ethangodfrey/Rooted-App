@@ -2,14 +2,17 @@
  * ingest-national-farmers-markets.ts
  *
  * Resilient batch ingestion worker for the national_farmers_markets registry.
- * Reads USDA market-seed-data.json (or a custom JSON array) and upserts in
- * chunks of 500 via the Supabase service-role client.
+ * Reads USDA market-seed-data.json when present; otherwise backfills from
+ * public.markets via DATABASE_URL. Always links markets.national_farmers_market_id.
  *
  * Usage:
+ *   DATABASE_URL=... npm run markets:national:ingest
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run markets:national:ingest
  *   npx tsx scripts/ingest-national-farmers-markets.ts market-seed-data.json --dry-run
  */
 
+import { existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
 import { ingestNationalFarmersMarkets } from './lib/national-market-ingest';
@@ -62,11 +65,37 @@ function usdaToNationalRecords(records: UsdaMarketRecord[]): NationalFarmersMark
   return output;
 }
 
+function runRegionalBackfillAndLink(): void {
+  console.log('No USDA JSON or service-role ingest — backfilling from public.markets…');
+  execSync('npx tsx scripts/national-market-backfill-link.ts', {
+    cwd: resolve(process.cwd(), 'backend'),
+    stdio: 'inherit',
+    env: process.env,
+  });
+}
+
+function hasServiceRoleIngest(): boolean {
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_KEY?.trim();
+  const url = process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
+  return Boolean(key && url);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const positional = args.filter((arg) => !arg.startsWith('--'));
   const inputPath = resolve(positional[0] ?? DEFAULT_INPUT);
+
+  if (!existsSync(inputPath) || !hasServiceRoleIngest()) {
+    if (dryRun) {
+      console.log(JSON.stringify({ dryRun: true, mode: 'regional_backfill', note: 'Would backfill from public.markets' }, null, 2));
+      return;
+    }
+    runRegionalBackfillAndLink();
+    return;
+  }
 
   console.log(`Reading national market records from ${inputPath}…`);
   const usdaRecords = readUsdaMarketsJson(inputPath);
@@ -89,6 +118,11 @@ async function main(): Promise<void> {
 
   if (result.errors.length > 0) {
     process.exitCode = 1;
+    return;
+  }
+
+  if (!dryRun) {
+    runRegionalBackfillAndLink();
   }
 }
 
