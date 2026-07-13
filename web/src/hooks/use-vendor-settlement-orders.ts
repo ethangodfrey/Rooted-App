@@ -52,22 +52,26 @@ export function useVendorSettlementOrders(
     setLoading(true);
     setError(null);
 
-    const { data, error: queryError } = await supabase
-      .from('orders')
-      .select(SETTLEMENT_ORDER_SELECT)
-      .eq('vendor_id', vendorId)
-      .in('order_status', FULFILLED_ARCHIVE_STATUSES)
-      .order('updated_at', { ascending: false });
+    try {
+      const { data, error: queryError } = await supabase
+        .from('orders')
+        .select(SETTLEMENT_ORDER_SELECT)
+        .eq('vendor_id', vendorId)
+        .in('order_status', FULFILLED_ARCHIVE_STATUSES)
+        .order('updated_at', { ascending: false });
 
-    if (queryError) {
-      setError(queryError.message);
+      if (queryError) {
+        setError(queryError.message);
+        setOrders([]);
+      } else {
+        setOrders((data ?? []).map((row) => toSettlementInput(row as SettlementOrderRow)));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load settlement orders');
       setOrders([]);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setOrders((data ?? []).map((row) => toSettlementInput(row as SettlementOrderRow)));
-    setLoading(false);
   }, [vendorId]);
 
   useEffect(() => {
