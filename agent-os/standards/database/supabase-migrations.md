@@ -33,6 +33,8 @@ docs/supabase/phase42a_seed_markets_from_events.sql
 docs/supabase/phase42b_backfill_orders_market_id.sql
 docs/supabase/phase43_pos_national_markets_foundation.sql
 docs/supabase/phase43c_pos_data_rls.sql
+docs/supabase/phase44_national_harvester_pos_analytics.sql
+docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):
@@ -50,6 +52,7 @@ Phase42 adds regional marketplace isolation (`regions`, `markets`, vendor regist
 Phase42b backfills `orders.market_id` from `markets.event_id` after phase42 is applied.
 Phase42a seeds `markets` rows from legacy `public.events` (run before phase42b).
 Phase43 adds POS OAuth foundation tables (`vendor_pos_connections`, `pos_transactions`) and the PostGIS-backed `national_farmers_markets` registry.
+Phase44 extends regional `markets` with geo/schedules, adds `market_sales_snapshots` daily POS rollups, and tenant-routing columns on POS connection tables. See `docs/supabase/PHASE44_SCHEMA_REVIEW.md`.
 
 ## Key RPCs
 
