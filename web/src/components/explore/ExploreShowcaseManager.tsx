@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { FieldError } from '@/components/ui/FieldError';
+
 import {
   EXPLORE_CONTENT_TYPE_LABEL,
   EXPLORE_CONTENT_TYPES,
@@ -27,6 +29,7 @@ export function ExploreShowcaseManager({
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captionError, setCaptionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const creatorType = creator.creatorType;
@@ -47,6 +50,13 @@ export function ExploreShowcaseManager({
   }, [load]);
 
   async function handleSubmit() {
+    if (!caption.trim()) {
+      setCaptionError('Caption is required.');
+      setError(null);
+      return;
+    }
+
+    setCaptionError(null);
     setSubmitting(true);
     setError(null);
     try {
@@ -118,11 +128,15 @@ export function ExploreShowcaseManager({
           <label htmlFor="explore-caption">Caption</label>
           <textarea
             id="explore-caption"
-            className="app-textarea"
+            className={`app-textarea${captionError ? ' app-input--invalid' : ''}`}
             value={caption}
-            onChange={(e) => setCaption(e.target.value)}
+            onChange={(e) => {
+              setCaption(e.target.value);
+              if (captionError) setCaptionError(null);
+            }}
             placeholder="Tell the story behind this post…"
           />
+          <FieldError message={captionError} />
         </div>
         <div className="app-input-group">
           <label htmlFor="explore-tags">Tags (comma-separated)</label>

@@ -12,7 +12,7 @@ export const VENDOR_LIST_PANEL =
   'overflow-hidden rounded-xl border border-stone-200/40 bg-stone-100/40 divide-y divide-stone-200/60';
 
 export const VENDOR_FORM_PANEL =
-  'rounded-xl border border-stone-200/40 bg-stone-100/60 p-4';
+  'min-w-0 overflow-hidden rounded-xl border border-stone-200/40 bg-stone-100/60 p-4';
 
 export function VendorScreen({ children }: { children: ReactNode }) {
   return <div className="app-screen min-w-0 px-4 pb-10">{children}</div>;
@@ -195,7 +195,8 @@ export function VendorListRow({
 }
 
 export function VendorKpiGrid({ children, cols = 2 }: { children: ReactNode; cols?: 2 | 3 }) {
-  const gridClass = cols === 3 ? 'grid-cols-3 gap-3' : 'grid-cols-2 gap-3';
+  const gridClass =
+    cols === 3 ? 'grid-cols-2 gap-3 sm:grid-cols-3' : 'grid-cols-2 gap-3';
   return <div className={`mb-5 grid ${gridClass}`}>{children}</div>;
 }
 

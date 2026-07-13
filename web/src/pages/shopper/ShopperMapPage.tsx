@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { useMapFetchOrigin } from '@/hooks/use-map-fetch-origin';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -226,8 +227,13 @@ export function ShopperMapPage() {
       />
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
+        <div className="shopper-map-layout flex flex-col gap-4">
+          <Skeleton className="h-[50vh] min-h-[240px] w-full rounded-2xl md:h-[60vh] md:min-h-[360px]" />
+          <div className="flex w-full flex-col gap-3 px-4 md:px-0">
+            <SkeletonCard height={88} />
+            <SkeletonCard height={88} />
+            <SkeletonCard height={88} />
+          </div>
         </div>
       ) : error ? (
         <div className="app-empty">Couldn&apos;t load events: {error}</div>
@@ -243,9 +249,7 @@ export function ShopperMapPage() {
             <Suspense
               fallback={
                 <div className="events-map-panel">
-                  <div className="events-map-frame app-loading">
-                    <div className="app-spinner" />
-                  </div>
+                  <Skeleton className="events-map-frame h-[50vh] min-h-[240px] w-full rounded-2xl md:h-[60vh] md:min-h-[360px]" />
                 </div>
               }
             >
@@ -270,14 +274,14 @@ export function ShopperMapPage() {
           </div>
 
           {listEvents.length > 0 ? (
-            <div className="shopper-map-list flex w-full flex-col space-y-4 px-4 pb-32 md:max-h-[min(68vh,520px)] md:overflow-y-auto md:px-0 md:pb-0">
+            <div className="shopper-map-list flex w-full min-w-0 flex-col gap-4 px-4 pb-32 md:max-h-[min(68vh,520px)] md:overflow-y-auto md:px-0 md:pb-0">
               {listEvents.map((event) => {
                 const phase = eventRuntimePhase(event, now);
                 return (
                   <button
                     key={event.id}
                     type="button"
-                    className={`app-hscroll-card shopper-map-carousel-card${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                    className={`app-hscroll-card shopper-map-carousel-card w-full md:w-auto${selectedEventId === event.id ? ' app-card--honeydew' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
                     onClick={() => previewEvent(event.id)}
                   >
                     <div className="app-hscroll-card__body">

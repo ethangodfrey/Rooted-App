@@ -566,7 +566,8 @@
   background: linear-gradient(135deg, var(--color-warm-sage) 0%, rgba(212, 168, 83, 0.28) 100%);
 }
 
-.app-image-fallback--vendor {
+.app-image-fallback--vendor,
+.app-image-fallback--vendor-logo {
   background: var(--color-honeydew);
   font-size: 1.5rem;
 }
@@ -1642,6 +1643,12 @@
   50% {
     opacity: 0.55;
   }
+}
+
+.app-skeleton--heading {
+  height: 1.25rem;
+  margin-bottom: 0.75rem;
+  border-radius: var(--radius-md);
 }
 
 .app-skeleton--card {

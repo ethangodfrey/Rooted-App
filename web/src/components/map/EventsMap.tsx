@@ -177,7 +177,7 @@ export function EventsMap({
 
   return (
     <div className="events-map-panel relative isolate z-0">
-      <div className="events-map-frame relative h-[50vh] min-h-[280px] w-full overflow-hidden rounded-2xl md:h-[60vh] md:min-h-[360px]">
+      <div className="events-map-frame relative h-[50vh] min-h-[240px] w-full overflow-hidden rounded-2xl md:h-[60vh] md:min-h-[360px]">
         <MapContainer
           center={initialCenter}
           zoom={initialZoom}

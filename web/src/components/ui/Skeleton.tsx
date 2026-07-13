@@ -5,11 +5,11 @@ interface SkeletonProps {
   style?: CSSProperties;
 }
 
-/** Animated placeholder block — pair with Tailwind `animate-pulse` from ui.css. */
+/** Animated placeholder block — shimmer + subtle opacity pulse via ui.css. */
 export function Skeleton({ className = '', style }: SkeletonProps) {
   return (
     <div
-      className={`app-skeleton animate-pulse rounded-xl bg-slate-200/80 ${className}`.trim()}
+      className={`app-skeleton animate-pulse rounded-xl ${className}`.trim()}
       style={style}
       aria-hidden
     />

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useNow } from '@/hooks/use-now';
-import { categoryVisual } from '@/lib/category-visuals';
 
 import { formatEventDisplayDate, formatPrice, formatRelativeTime } from '@/lib/format';
 
@@ -55,17 +55,16 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 function ProductVisual({ product }: { product: PopularProduct | SuggestedProduct }) {
-
-  const visual = categoryVisual(productCategory(product));
-
-  if (product.displayImageUrl) {
-
-    return <img src={product.displayImageUrl} alt="" />;
-
-  }
-
-  return <span aria-hidden="true">{visual.emoji}</span>;
-
+  const category = productCategory(product);
+  return (
+    <FallbackImage
+      src={product.displayImageUrl}
+      variant="product"
+      category={category}
+      alt=""
+      className="h-full w-full object-cover"
+    />
+  );
 }
 
 
