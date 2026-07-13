@@ -13,6 +13,7 @@ import {
   POS_SNAPSHOT_ROLLUP_JOB,
   POS_SNAPSHOT_ROLLUP_QUEUE,
   SNAPSHOT_ROLLUP_DEBOUNCE_MS,
+  salesIngestJobId,
   snapshotRollupJobId,
 } from './pos-sales-queue.constants';
 import type { PosSalesIngestJobData, PosSnapshotRollupJobData } from '../types/ledger-transaction';
@@ -45,7 +46,7 @@ export class PosSalesJobsService {
       return Promise.resolve({ id: `${data.provider}:${data.providerEventId}` } as Job<PosSalesIngestJobData>);
     }
 
-    const jobId = `${data.provider}:${data.providerEventId}`;
+    const jobId = salesIngestJobId(data.provider, data.providerEventId);
     return this.salesQueue.add(POS_SALES_INGEST_JOB, data, { jobId });
   }
 

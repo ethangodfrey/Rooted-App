@@ -10,6 +10,11 @@ import type { PosSalesIngestJobData } from './sales/types';
 export const POS_SALES_INGEST_QUEUE = 'pos-sales-ingest';
 export const POS_SALES_INGEST_JOB = 'ingest-sales-webhook';
 
+/** BullMQ-safe job id (Upstash rejects ':' in custom ids). */
+export function salesIngestJobId(provider: string, providerEventId: string): string {
+  return `ingest-${provider}-${providerEventId}`;
+}
+
 let queue: Queue | null | undefined;
 
 function resolveRedisConnection(): ConnectionOptions | null {
@@ -58,7 +63,7 @@ export async function enqueueSalesWebhook(
     throw new Error('REDIS_URL is not configured for POS sales ingest');
   }
 
-  const jobId = `${data.provider}:${data.providerEventId}`;
+  const jobId = salesIngestJobId(data.provider, data.providerEventId);
   try {
     const job = await ingestQueue.add(POS_SALES_INGEST_JOB, data, { jobId });
     return { queued: true, jobId: job.id };
