@@ -44,12 +44,13 @@ export function useMarketDetail(marketId: string | undefined): UseMarketDetailRe
       setLoading(true);
       setError(null);
 
-      const [eventRes, vendorEventsRes] = await Promise.all([
-        supabase.from('events').select('*').eq('id', marketId).maybeSingle(),
-        supabase
-          .from('vendor_events')
-          .select(
-            `vendor:vendors(
+      try {
+        const [eventRes, vendorEventsRes] = await Promise.all([
+          supabase.from('events').select('*').eq('id', marketId).maybeSingle(),
+          supabase
+            .from('vendor_events')
+            .select(
+              `vendor:vendors(
               id,
               business_name,
               category,
@@ -61,33 +62,44 @@ export function useMarketDetail(marketId: string | undefined): UseMarketDetailRe
               longitude,
               approval_status
             )`,
-          )
-          .eq('event_id', marketId)
-          .eq('participation_status', 'approved'),
-      ]);
+            )
+            .eq('event_id', marketId)
+            .eq('participation_status', 'approved'),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (eventRes.error) {
-        setError(eventRes.error.message);
+        if (eventRes.error) {
+          setError(eventRes.error.message);
+          setEvent(null);
+          setVendors([]);
+          return;
+        }
+
+        setEvent((eventRes.data as Event | null) ?? null);
+
+        if (vendorEventsRes.error) {
+          setVendors([]);
+          return;
+        }
+
+        const vendorList = ((vendorEventsRes.data ?? []) as unknown as {
+          vendor: (MarketAttendingVendor & { approval_status?: string }) | null;
+        }[])
+          .map((row) => row.vendor)
+          .filter((vendor): vendor is MarketAttendingVendor & { approval_status?: string } => Boolean(vendor))
+          .filter((vendor) => vendor.approval_status === 'approved')
+          .map(({ approval_status: _omit, ...vendor }) => vendor);
+
+        setVendors(vendorList);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'Failed to load market');
         setEvent(null);
         setVendors([]);
-        setLoading(false);
-        return;
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      setEvent((eventRes.data as Event | null) ?? null);
-
-      const vendorList = ((vendorEventsRes.data ?? []) as unknown as {
-        vendor: (MarketAttendingVendor & { approval_status?: string }) | null;
-      }[])
-        .map((row) => row.vendor)
-        .filter((vendor): vendor is MarketAttendingVendor & { approval_status?: string } => Boolean(vendor))
-        .filter((vendor) => vendor.approval_status === 'approved')
-        .map(({ approval_status: _omit, ...vendor }) => vendor);
-
-      setVendors(vendorList);
-      setLoading(false);
     }
 
     void load();
