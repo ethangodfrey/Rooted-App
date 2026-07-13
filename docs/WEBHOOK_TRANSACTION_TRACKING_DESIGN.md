@@ -1,8 +1,8 @@
 # Webhook Transaction Tracking — Implementation Blueprint
 
 **Epic:** Active POS webhook → `pos_transactions` → `market_sales_snapshots`  
-**Baseline:** `main` @ `124d5c7`, Phase 44 applied, 17,241/17,241 market links  
-**Status:** Design + scaffold (not yet wired to production traffic)
+**Baseline:** `main` @ PR #68+, Phase 44 applied  
+**Status:** **Phase B + C implemented** — Square sales webhooks write the ledger and roll up snapshots; Toast/Clover parsers exist but need provider verification before production traffic.
 
 ---
 
@@ -232,21 +232,19 @@ vendorId + marketId + snapshot_date
 
 ---
 
-## 6. Directory schema (proposed)
+## 6. Directory schema (implemented)
 
 ```
 tenant-web/src/
 ├── app/api/webhooks/
-│   ├── pos-sync/route.ts              # existing — inventory only
-│   └── pos-sales/route.ts             # NEW — sales ingest router
+│   ├── pos-sync/route.ts              # inventory only
+│   └── pos-sales/route.ts             # sales ingest router (Phase B)
 └── lib/pos/
-    ├── inventory-queue.ts             # existing
-    ├── inventory-webhook.ts           # existing
-    ├── sales-queue.ts                 # NEW — BullMQ producer
+    ├── inventory-queue.ts
+    ├── sales-queue.ts                 # BullMQ producer (Upstash-safe job ids)
     └── sales/
-        ├── types.ts                   # NormalizedSalesEvent, job data
-        ├── router.ts                  # resolveProvider + dispatch
-        ├── sales-events.ts            # isSalesWebhookEvent()
+        ├── types.ts
+        ├── router.ts
         └── providers/
             ├── square.ts
             ├── toast.ts
@@ -254,18 +252,23 @@ tenant-web/src/
 
 backend/src/modules/pos/
 ├── jobs/
-│   ├── pos-sales-queue.constants.ts   # NEW
-│   ├── pos-sales-ingest.processor.ts  # NEW
-│   └── pos-snapshot-rollup.processor.ts # NEW
+│   ├── pos-sales-queue.constants.ts
+│   ├── pos-sales-ingest.processor.ts
+│   └── pos-sales-jobs.service.ts
+├── processors/
+│   └── pos-snapshot-rollup.processor.ts   # Phase C consumer
 ├── services/
-│   ├── pos-ledger-writer.service.ts   # NEW — upsert pos_transactions
-│   ├── pos-snapshot-rollup.service.ts # NEW — RPC + tender merge
-│   └── pos-market-resolver.service.ts # NEW — location → market_id
+│   ├── pos-ledger-writer.service.ts
+│   ├── pos-snapshot-rollup.service.ts     # RPC + tender PATCH
+│   ├── pos-sales-ingest.service.ts
+│   └── pos-market-resolver.service.ts
+├── utils/
+│   └── tender-aggregation.ts
 └── types/
-    └── ledger-transaction.ts          # NEW — phase43 row mapping
+    └── ledger-transaction.ts
 
 scripts/
-└── test-pos-sales-webhook.ts          # NEW — load test sales route
+└── e2e-phase-c-pipeline.ts          # seed → webhook → workers → SQL validation
 ```
 
 ---
@@ -282,45 +285,64 @@ See scaffold files for full TypeScript definitions.
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
-| `REDIS_URL` | tenant-web + backend | BullMQ |
-| `SUPABASE_URL` | tenant-web + backend | DB + RPC |
-| `SUPABASE_SERVICE_ROLE_KEY` | backend worker | Ledger writes |
-| `SQUARE_WEBHOOK_SIGNATURE_KEY` | tenant-web | Square sales + inventory |
+| `REDIS_URL` | tenant-web + backend | BullMQ (same Upstash TCP URL on both) |
+| `POS_QUEUES_ENABLED` | backend | `true` in production — registers ingest + rollup workers |
+| `SUPABASE_URL` | tenant-web + backend | DB + PostgREST RPC |
+| `SUPABASE_SERVICE_ROLE_KEY` | backend worker | Ledger writes + `upsert_market_sales_snapshot` RPC |
+| `POS_SALES_WEBHOOK_URL` | tenant-web | Public URL registered with Square (must match signature base) |
+| `SQUARE_WEBHOOK_SIGNATURE_KEY` | tenant-web | Square sales + inventory HMAC |
 | `TOAST_WEBHOOK_SECRET` | tenant-web | Toast HMAC |
 | `CLOVER_WEBHOOK_SECRET` | tenant-web | Clover verification |
-| `POS_SALES_QUEUES_ENABLED` | backend | Feature gate (default true in prod) |
-| `VENDORLY_PLATFORM_FEE_BPS` | backend | Platform fee calculation (basis points) |
+| `POS_SALES_WEBHOOK_TEST_MODE` | tenant-web | Dev only — ACK webhooks when Redis is down |
+| `POS_WEBHOOK_TEST_MODE` | tenant-web | Alias for test-mode bypass above |
+
+**Job ID constraint:** BullMQ custom ids must not contain `:` (Upstash rejects them). Use `ingest-{provider}-{eventId}` and `rollup-{vendorId}-{marketId}-{date}` — see `sales-queue.ts` and `pos-sales-queue.constants.ts`.
 
 ---
 
 ## 9. Implementation phases
 
-| Phase | Scope | Exit criteria |
-|-------|-------|---------------|
-| **A** | Scaffold + types + empty routes | PR review of this doc |
-| **B** | Square sales webhook → `pos_transactions` | Dashboard realtime shows test sale |
-| **C** | Snapshot rollup worker + tender mix | `market_sales_snapshots` row updates |
-| **D** | Toast + Clover parsers | All three providers enqueue |
-| **E** | Nest mirror + legacy backfill | `pos_imported_transactions` → ledger bridge |
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **A** | Scaffold + types + routes | ✅ Merged (PR #68) |
+| **B** | Square sales webhook → `pos_transactions` | ✅ `PosSalesIngestProcessor` + `PosLedgerWriterService` |
+| **C** | Snapshot rollup worker + tender mix | ✅ `PosSnapshotRollupProcessor` + `upsert_market_sales_snapshot` RPC |
+| **D** | Toast + Clover parsers in production | 🟡 Parsers exist; verify provider signatures before live traffic |
+| **E** | Nest mirror + legacy backfill | 🔲 `pos_imported_transactions` → ledger bridge (optional) |
 
 ---
 
 ## 10. Verification checklist
 
 ```bash
-# Baseline (unchanged)
+# Baseline
 npm run build:web
 npm run build:tenant-web
 npm run smoke:ui-baseline
 
-# New (phase B+)
-npm run test:pos-sales-webhook        # burst Square payment.created
-npm run pos:sales-worker --prefix backend
+# Phase B/C E2E (local — seeds vendor, posts Square webhook, runs inline workers)
+# Requires DATABASE_URL + REDIS_URL in backend/.env or root .env
+npx tsx scripts/e2e-phase-c-pipeline.ts
 
-# SQL
+# Production workers (Railway backend with POS_QUEUES_ENABLED=true)
+# tenant-web enqueues; backend consumes pos-sales-ingest + pos-snapshot-rollup
+cd backend && npm run start:dev   # or deployed container
+
+# SQL validation
 select count(*) from pos_transactions;
-select * from market_sales_snapshots order by snapshot_date desc limit 5;
+select tender_breakdown, payment_method_distribution
+  from market_sales_snapshots order by snapshot_date desc limit 5;
 ```
+
+### Rollup lifecycle (Phase C)
+
+`PosSnapshotRollupService.rollupVendorMarketDay()` runs three PostgREST steps:
+
+1. **RPC** — `upsert_market_sales_snapshot(p_market_id, p_vendor_id, p_snapshot_date, …)` aggregates volume from `pos_transactions`.
+2. **Ledger scan** — fetch vendor `pos_transactions` for the UTC day; `aggregateTenderBreakdown()` counts card/cash/gift_card/other from `raw_payload`.
+3. **PATCH** — update `market_sales_snapshots.tender_breakdown` and `payment_method_distribution`.
+
+Rollup jobs debounce **5 seconds** per `(vendor_id, market_id, snapshot_date)`; duplicate jobs merge tender counts via `mergeTenderBreakdown()`.
 
 ---
 

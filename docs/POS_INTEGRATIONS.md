@@ -4,6 +4,14 @@ Backend-only integration that imports **card sale data** from third-party Point
 of Sale systems into Rooted's vendor analytics. Supports **Square**, **Toast**,
 and **Clover** behind a provider-agnostic adapter architecture.
 
+> **Dual pipeline note:** Vendorly also runs a **phase43/44 sales ledger** path
+> (`pos_transactions` → `market_sales_snapshots`) via tenant-web
+> `/api/webhooks/pos-sales` and backend BullMQ workers. That pipeline powers the
+> vendor dashboard realtime feed (`web/src/lib/pos-transactions.ts`). The Nest
+> path below (`pos_imported_transactions` → `analytics_snapshots`) remains for
+> legacy sync + mobile. See
+> [`WEBHOOK_TRANSACTION_TRACKING_DESIGN.md`](./WEBHOOK_TRANSACTION_TRACKING_DESIGN.md).
+
 > Status: Square is the primary integration path. See **[SQUARE_SETUP.md](./SQUARE_SETUP.md)**
 > for sandbox credentials, OAuth redirect URL, and local dev checklist.
 

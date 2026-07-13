@@ -304,6 +304,34 @@ Copy from `backend/.env.example`. **Never commit** real values.
 
 Without Redis, POS sync runs inline in dev only; production should use Upstash (see comment in `.env.example`).
 
+#### POS sales ledger pipeline (Phase B/C — tenant-web + backend)
+
+Sales webhooks use a **separate** edge route from legacy Nest sync. Register Square at the **tenant-web** URL, not `api.vendorly.app`.
+
+| Component | Variable | Production value |
+|-----------|----------|------------------|
+| **tenant-web** | `REDIS_URL` | Same Upstash TCP URL as backend (`rediss://…`) |
+| **tenant-web** | `POS_SALES_WEBHOOK_URL` | `https://<tenant-gateway>/api/webhooks/pos-sales` |
+| **tenant-web** | `SQUARE_WEBHOOK_SIGNATURE_KEY` | Square Developer Dashboard → Webhooks signing key |
+| **backend** | `POS_QUEUES_ENABLED` | `true` — enables `pos-sales-ingest` + `pos-snapshot-rollup` workers |
+| **backend** | `SUPABASE_SERVICE_ROLE_KEY` | Service role — ledger upserts + `upsert_market_sales_snapshot` RPC |
+
+Square Developer Dashboard → Webhooks → add subscription:
+
+```
+https://<your-tenant-gateway>.vercel.app/api/webhooks/pos-sales
+```
+
+Event types: `payment.*`, `refund.*`, `order.*` (same as legacy Nest path).
+
+**Local E2E validation:**
+
+```bash
+npx tsx scripts/e2e-phase-c-pipeline.ts
+```
+
+See [`WEBHOOK_TRANSACTION_TRACKING_DESIGN.md`](WEBHOOK_TRANSACTION_TRACKING_DESIGN.md) for architecture, job payloads, and rollup lifecycle.
+
 #### POS / OAuth (when using Square etc.)
 
 | Variable | Production value |

@@ -62,11 +62,15 @@ Set in Vercel → **tenant-web project** → Environment Variables:
 | Variable | Purpose |
 |----------|---------|
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | DB + OAuth upserts |
+| `REDIS_URL` | BullMQ ingest queues (`pos-sync`, `pos-sales-ingest`) — Upstash TCP |
+| `POS_SALES_WEBHOOK_URL` | Public sales webhook URL (Square registration) |
+| `POS_INVENTORY_WEBHOOK_URL` | Public inventory webhook URL |
+| `SQUARE_WEBHOOK_SIGNATURE_KEY` | Square HMAC verification (sales + inventory) |
 | `INTEGRATION_OAUTH_BASE_URL` | OAuth callback base |
 | `POS_OAUTH_STATE_SECRET` | Signed OAuth state |
 | Square / Clover credentials | Provider token exchange |
 
-See `tenant-web/.env.example`.
+See `tenant-web/.env.example` and [`WEBHOOK_TRANSACTION_TRACKING_DESIGN.md`](WEBHOOK_TRANSACTION_TRACKING_DESIGN.md) for the Phase B/C sales pipeline.
 
 ---
 

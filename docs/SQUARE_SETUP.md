@@ -163,6 +163,18 @@ Square receive events through that URL.
 If the tunnel URL changes, update Square's OAuth redirect URL, `POS_PROVIDER_BASE_URL`,
 restart the tunnel + backend, then tap **Enable real-time updates** again.
 
+### Sales ledger webhooks (Phase B — tenant-web)
+
+The vendor dashboard realtime feed (`pos_transactions`) uses a **separate** webhook URL on the **tenant-web** Vercel project, not the Nest backend:
+
+```
+https://<your-tenant-gateway>/api/webhooks/pos-sales
+```
+
+Set `POS_SALES_WEBHOOK_URL` in `tenant-web/.env` to match. Register this URL in Square Developer Dashboard → Webhooks (alongside or instead of the Nest URL for new deployments). Requires `REDIS_URL` on tenant-web and `POS_QUEUES_ENABLED=true` + `SUPABASE_SERVICE_ROLE_KEY` on the backend.
+
+See [`WEBHOOK_TRANSACTION_TRACKING_DESIGN.md`](./WEBHOOK_TRANSACTION_TRACKING_DESIGN.md).
+
 ## 7. Troubleshooting
 
 | Symptom | Fix |
@@ -177,3 +189,4 @@ restart the tunnel + backend, then tap **Enable real-time updates** again.
 | Sync does nothing | Check `/health` → `redis: up`; verify Upstash `REDIS_URL` |
 | No sales after sync | Map register items under **Item mappings**; check sync runs on connection detail |
 | Webhook registration unavailable | Add `SQUARE_ACCESS_TOKEN`, keep tunnel running, restart backend |
+| Dashboard realtime feed empty | Register tenant-web `/api/webhooks/pos-sales` (not Nest URL); set `REDIS_URL` + backend `POS_QUEUES_ENABLED=true` |
