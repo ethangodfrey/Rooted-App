@@ -1,9 +1,18 @@
 # Phase 44 — National Harvester + POS Analytics Schema Review
 
-**Status:** Draft — **do not apply** until approved  
-**Branch:** `cursor/phase44-harvester-pos-schema-428e`  
-**Apply order:** `phase44_national_harvester_pos_analytics.sql` → `phase44c_national_harvester_pos_analytics_rls.sql`  
+**Status:** ✅ **Approved** — ready for Supabase SQL Editor apply  
+**Approved:** 2026-07-13  
+**Branch:** `cursor/phase44-harvester-pos-schema-428e` (PR #66)  
 **Prerequisites:** All phases through `phase43c_pos_data_rls.sql`
+
+### Apply order (strict — paste in this sequence)
+
+| Step | File | Purpose |
+|------|------|---------|
+| **1st** | `docs/supabase/phase44_national_harvester_pos_analytics.sql` | DDL — extend `markets`, POS tenant routing, `market_sales_snapshots`, RPCs |
+| **2nd** | `docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql` | RLS policies |
+
+Copy each file's full contents into the Supabase SQL Editor and run **sequentially**. Do not combine into a single paste.
 
 ---
 
@@ -135,23 +144,30 @@ Legacy Nest POS sync
 
 ## 5. Review checklist
 
-- [ ] Approve **extend** vs **replace** strategy for `markets` and `pos_connections`
-- [ ] Confirm `market_sales_snapshots` unique key `(market_id, vendor_id, snapshot_date)` is sufficient
-- [ ] Confirm dual POS stack (`pos_connections` + `vendor_pos_connections`) is acceptable short-term
-- [ ] Confirm `find_nearby_markets` RPC naming (distinct from `find_nearby_national_farmers_markets`)
-- [ ] Approve RLS policies before SQL Editor apply
+- [x] Approve **extend** vs **replace** strategy for `markets` and `pos_connections` — **approved** (additive ALTER on phase42/phase12; no table replacement)
+- [x] Confirm `market_sales_snapshots` unique key `(market_id, vendor_id, snapshot_date)` is sufficient — **approved** (one rollup per vendor per market per day)
+- [x] Confirm dual POS stack (`pos_connections` + `vendor_pos_connections`) is acceptable short-term — **approved** (unified via `tenant_id` + `legacy_pos_connection_id` bridge)
+- [x] Confirm `find_nearby_markets` RPC naming (distinct from `find_nearby_national_farmers_markets`) — **approved** (regional vs national registry separation)
+- [x] Approve RLS policies before SQL Editor apply — **approved** (vendor-scoped reads, admin manage, service-role writes bypass RLS)
 
 ---
 
-## 6. Apply instructions (post-approval)
+## 6. Apply instructions
+
+**Supabase SQL Editor — run in order:**
+
+1. Paste and execute the full contents of `phase44_national_harvester_pos_analytics.sql`
+2. Paste and execute the full contents of `phase44c_national_harvester_pos_analytics_rls.sql`
+
+**Post-apply verification (SQL Editor):**
 
 ```sql
--- Supabase SQL Editor, in order:
-\i docs/supabase/phase44_national_harvester_pos_analytics.sql
-\i docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql
+select count(*) from public.market_sales_snapshots;
+select proname from pg_proc
+  where proname in ('find_nearby_markets', 'upsert_market_sales_snapshot');
 ```
 
-Verify:
+**Repo baseline (unchanged by DDL — docs-only PR):**
 
 ```bash
 npm run build:web
