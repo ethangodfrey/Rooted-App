@@ -34,25 +34,25 @@ You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food mar
 3. **TypeScript / lint** — `web`: `npm run build`, `tenant-web`: `npm run build --prefix tenant-web`, `mobile`: `npx tsc --noEmit`, `backend`: `npm run build`
 4. **Small improvements** — performance, copy, missing null checks
 
-## Workspace validation baseline (`main` @ `f4fd540+`)
+## Workspace validation baseline
 
-Run from repo root **without manual `NODE_ENV` overrides** (shell may be `NODE_ENV=development`).
+**Green footprint on `main` @ `f4fd540+`.** Run from repo root with **zero manual shell overrides** (active shell may be `NODE_ENV=development`).
 
 ### Isolated compilation targets
 
-| Command | Expected | Notes |
-|---------|----------|-------|
-| `npm run build:web` | PASS (exit 0) | 11 code-split lazy chunks → `web/dist/`; **decoupled** from tenant-web (`npm run build --prefix web` only) |
-| `npm run build:tenant-web` | PASS (exit 0) | Edge API routes + static prerender; `NODE_ENV=production` pinned in scripts (PR #64) |
+| Command | Pass criteria | Structural notes |
+|---------|---------------|------------------|
+| `npm run build:web` | PASS (exit 0) | Vite (`web/`) compiles 11 code-split lazy chunks → `web/dist/`. Maps strictly to `npm run build --prefix web` — **decoupled** from Next.js `tenant-web/`; no pinned `NODE_ENV` and no leaky tenant env dependencies. |
+| `npm run build:tenant-web` | PASS (exit 0) | Next.js edge gateway: API routes + static prerender. `NODE_ENV=production` pinned in root and `tenant-web/package.json` build scripts (PR #64). |
 
 ### Smoke suite (PR #63 auditors)
 
-| Command | Expected | Notes |
-|---------|----------|-------|
-| `npm run smoke:ui-baseline` | PASS (exit 0) | 10/10 source checks, 9/9 production markers |
-| `npm run smoke:settlement` | PASS_LAZY_CHUNK (exit 0*) | `api.vendorly.app` in lazy vendor/admin chunks; 6 settlement markers in production crawl |
+| Command | Pass criteria | Notes |
+|---------|---------------|-------|
+| `npm run smoke:ui-baseline` | PASS (exit 0) | 10/10 source nodes, 9/9 production bundle markers |
+| `npm run smoke:settlement` | PASS_LAZY_CHUNK (exit 0*) | Production chunk architecture + settlement matrices; `api.vendorly.app` verified in lazy vendor/admin chunks |
 
-\*UI segment checks report `BLOCKED_AUTH` when `SMOKE_VENDOR_EMAIL` / `SMOKE_VENDOR_PASSWORD` are unset — **expected**, not a regression.
+\*Settlement **UI segment** checks without `SMOKE_VENDOR_EMAIL` / `SMOKE_VENDOR_PASSWORD` safely route to **`BLOCKED_AUTH`** — expected behavior, not a smoke failure.
 
 See [`docs/VERCEL_MULTI_PROJECT.md`](docs/VERCEL_MULTI_PROJECT.md) for split-project topology.
 
