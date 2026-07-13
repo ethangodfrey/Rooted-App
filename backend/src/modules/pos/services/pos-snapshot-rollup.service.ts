@@ -1,5 +1,5 @@
 /**
- * Invokes upsert_market_sales_snapshot() and merges tender breakdown columns.
+ * Three-step PostgREST rollup lifecycle for market_sales_snapshots.
  * @see docs/supabase/phase44_national_harvester_pos_analytics.sql
  */
 
@@ -9,18 +9,18 @@ import { ConfigService } from '@nestjs/config';
 import {
   aggregateTenderBreakdown,
   computeTenderDistribution,
-  mergeTenderBreakdown,
+  resolveTenderBreakdown,
 } from '../utils/tender-aggregation';
-import type { PosSnapshotRollupJobData } from '../types/ledger-transaction';
+import type {
+  PaymentMethodDistribution,
+  PosSnapshotRollupJobData,
+  PosTransactionTenderRow,
+  TenderBreakdown,
+} from '../types/ledger-transaction';
 
 interface SupabaseAdminConfig {
   url: string;
   serviceKey: string;
-}
-
-interface PosTransactionDayRow {
-  id: string;
-  raw_payload: Record<string, unknown>;
 }
 
 @Injectable()
@@ -29,10 +29,14 @@ export class PosSnapshotRollupService {
 
   constructor(private readonly config: ConfigService) {}
 
-  private adminConfig(): SupabaseAdminConfig | null {
+  private adminConfig(): SupabaseAdminConfig {
     const url = this.config.get<string>('SUPABASE_URL', '').trim();
     const serviceKey = this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY', '').trim();
-    if (!url || !serviceKey) return null;
+    if (!url || !serviceKey) {
+      throw new Error(
+        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for market_sales_snapshots rollup',
+      );
+    }
     return { url: url.replace(/\/$/, ''), serviceKey };
   }
 
@@ -44,33 +48,36 @@ export class PosSnapshotRollupService {
     };
   }
 
+  private validateJob(job: PosSnapshotRollupJobData): void {
+    if (!job.vendorId?.trim()) {
+      throw new Error('rollupVendorMarketDay: vendorId is required');
+    }
+    if (!job.marketId?.trim()) {
+      throw new Error('rollupVendorMarketDay: marketId is required');
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(job.snapshotDate ?? '')) {
+      throw new Error(`rollupVendorMarketDay: invalid snapshotDate "${job.snapshotDate}"`);
+    }
+  }
+
   /**
-   * Rebuild vendor/market/day snapshot volumes via RPC, then patch tender mix columns.
-   * Idempotent on (market_id, vendor_id, snapshot_date) via RPC upsert + safe JSON merge.
+   * Step 1: RPC volume rollup
+   * Step 2: Ledger tender scan for UTC day
+   * Step 3: PATCH tender_breakdown + payment_method_distribution
    */
   async rollupVendorMarketDay(job: PosSnapshotRollupJobData): Promise<string | null> {
+    this.validateJob(job);
     const admin = this.adminConfig();
-    if (!admin) {
-      throw new Error(
-        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for market_sales_snapshots rollup',
-      );
-    }
+
+    this.logger.debug(
+      `rollup start vendor=${job.vendorId} market=${job.marketId} date=${job.snapshotDate}`,
+    );
 
     const snapshotId = await this.callUpsertMarketSalesSnapshot(admin, job);
-    if (!snapshotId) {
-      this.logger.warn(
-        `upsert_market_sales_snapshot returned no id for vendor=${job.vendorId} market=${job.marketId} date=${job.snapshotDate}`,
-      );
-      return null;
-    }
 
-    const dayRows = await this.fetchVendorTransactionsForDay(
-      admin,
-      job.vendorId,
-      job.snapshotDate,
-    );
+    const dayRows = await this.fetchVendorTransactionsForDay(admin, job.vendorId, job.snapshotDate);
     const fromLedger = aggregateTenderBreakdown(dayRows);
-    const tenderBreakdown = mergeTenderBreakdown(fromLedger, job.tenderBreakdown);
+    const tenderBreakdown = resolveTenderBreakdown(fromLedger, job.tenderBreakdown);
     const paymentMethodDistribution = computeTenderDistribution(tenderBreakdown);
 
     await this.patchSnapshotTenderMix(admin, {
@@ -82,12 +89,13 @@ export class PosSnapshotRollupService {
     });
 
     this.logger.log(
-      `market_sales_snapshots rollup vendor=${job.vendorId} market=${job.marketId} date=${job.snapshotDate} → ${snapshotId}`,
+      `rollup complete vendor=${job.vendorId} market=${job.marketId} date=${job.snapshotDate} snapshot=${snapshotId ?? 'unknown'} tenders=${JSON.stringify(tenderBreakdown)}`,
     );
 
     return snapshotId;
   }
 
+  /** Step 1 — POST /rest/v1/rpc/upsert_market_sales_snapshot */
   private async callUpsertMarketSalesSnapshot(
     admin: SupabaseAdminConfig,
     job: PosSnapshotRollupJobData,
@@ -113,26 +121,31 @@ export class PosSnapshotRollupService {
     if (!res.ok) {
       const detail = await res.text();
       this.logger.error(
-        `upsert_market_sales_snapshot failed (${job.vendorId}/${job.marketId}/${job.snapshotDate}): ${detail.slice(0, 400)}`,
+        `Step 1 RPC failed vendor=${job.vendorId} market=${job.marketId} date=${job.snapshotDate}: ${detail.slice(0, 400)}`,
       );
       throw new Error(`upsert_market_sales_snapshot failed: ${detail.slice(0, 300)}`);
     }
 
     const payload = (await res.json()) as string | string[] | null;
-    if (typeof payload === 'string' && payload.length > 0) {
-      return payload;
+    const snapshotId = this.parseRpcUuid(payload);
+
+    if (!snapshotId) {
+      this.logger.warn(
+        `Step 1 RPC returned no UUID vendor=${job.vendorId} market=${job.marketId} date=${job.snapshotDate}`,
+      );
+    } else {
+      this.logger.debug(`Step 1 RPC snapshotId=${snapshotId}`);
     }
-    if (Array.isArray(payload) && typeof payload[0] === 'string') {
-      return payload[0];
-    }
-    return null;
+
+    return snapshotId;
   }
 
+  /** Step 2 — GET /rest/v1/pos_transactions for vendor + UTC day bounds */
   private async fetchVendorTransactionsForDay(
     admin: SupabaseAdminConfig,
     vendorId: string,
     snapshotDate: string,
-  ): Promise<PosTransactionDayRow[]> {
+  ): Promise<PosTransactionTenderRow[]> {
     const dayStart = `${snapshotDate}T00:00:00.000Z`;
     const nextDay = new Date(`${snapshotDate}T00:00:00.000Z`);
     nextDay.setUTCDate(nextDay.getUTCDate() + 1);
@@ -152,23 +165,28 @@ export class PosSnapshotRollupService {
 
     if (!res.ok) {
       const detail = await res.text();
-      this.logger.warn(
-        `pos_transactions day fetch failed for vendor=${vendorId} date=${snapshotDate}: ${detail.slice(0, 200)}`,
+      this.logger.error(
+        `Step 2 ledger fetch failed vendor=${vendorId} date=${snapshotDate}: ${detail.slice(0, 400)}`,
       );
-      return [];
+      throw new Error(`pos_transactions day fetch failed: ${detail.slice(0, 300)}`);
     }
 
-    return (await res.json()) as PosTransactionDayRow[];
+    const rows = (await res.json()) as PosTransactionTenderRow[];
+    this.logger.debug(
+      `Step 2 fetched ${rows.length} pos_transactions vendor=${vendorId} date=${snapshotDate}`,
+    );
+    return rows;
   }
 
+  /** Step 3 — PATCH /rest/v1/market_sales_snapshots tender JSON columns */
   private async patchSnapshotTenderMix(
     admin: SupabaseAdminConfig,
     input: {
       marketId: string;
       vendorId: string;
       snapshotDate: string;
-      tenderBreakdown: Record<string, number>;
-      paymentMethodDistribution: Record<string, number>;
+      tenderBreakdown: TenderBreakdown;
+      paymentMethodDistribution: PaymentMethodDistribution;
     },
   ): Promise<void> {
     const params = new URLSearchParams({
@@ -192,7 +210,24 @@ export class PosSnapshotRollupService {
 
     if (!res.ok) {
       const detail = await res.text();
+      this.logger.error(
+        `Step 3 tender PATCH failed market=${input.marketId} vendor=${input.vendorId} date=${input.snapshotDate}: ${detail.slice(0, 400)}`,
+      );
       throw new Error(`market_sales_snapshots tender patch failed: ${detail.slice(0, 300)}`);
     }
+
+    this.logger.debug(
+      `Step 3 patched tender mix market=${input.marketId} vendor=${input.vendorId} date=${input.snapshotDate}`,
+    );
+  }
+
+  private parseRpcUuid(payload: string | string[] | null): string | null {
+    if (typeof payload === 'string' && payload.length > 0) {
+      return payload;
+    }
+    if (Array.isArray(payload) && typeof payload[0] === 'string') {
+      return payload[0];
+    }
+    return null;
   }
 }

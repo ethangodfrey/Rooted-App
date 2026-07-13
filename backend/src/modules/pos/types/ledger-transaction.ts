@@ -45,13 +45,38 @@ export interface PosSalesIngestJobData {
   rawPayload: Record<string, unknown>;
 }
 
+/** Absolute tender counts keyed by LedgerTenderType slug. */
+export type TenderBreakdown = Partial<Record<LedgerTenderType, number>> & Record<string, number>;
+
+/** Fractional payment mix keyed by tender slug (sums to ~1.0). */
+export type PaymentMethodDistribution = TenderBreakdown;
+
 export interface PosSnapshotRollupJobData {
   vendorId: string;
   marketId: string;
   tenantId?: string | null;
   posConnectionId?: string | null;
   snapshotDate: string;
-  tenderBreakdown?: Record<string, number>;
+  tenderBreakdown?: TenderBreakdown;
+}
+
+/** Input batch for buildSnapshotRollupJobs — one webhook ingest payload slice. */
+export interface SnapshotRollupBatchInput {
+  vendorId: string;
+  marketId: string;
+  tenantId?: string | null;
+  posConnectionId?: string | null;
+  transactions: Array<{
+    state: LedgerTransactionState;
+    soldAt: string;
+    tenderType?: LedgerTenderType;
+  }>;
+}
+
+/** pos_transactions row shape used for tender aggregation reads. */
+export interface PosTransactionTenderRow {
+  id?: string;
+  raw_payload: Record<string, unknown>;
 }
 
 export interface ResolvedPosConnection {

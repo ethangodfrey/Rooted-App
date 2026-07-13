@@ -25,7 +25,7 @@ import { POS_AGGREGATION_QUEUE, POS_SYNC_QUEUE } from './jobs/pos-queue.constant
 import { PosSalesIngestProcessor } from './jobs/pos-sales-ingest.processor';
 import { PosSalesJobsService } from './jobs/pos-sales-jobs.service';
 import { POS_SALES_INGEST_QUEUE, POS_SNAPSHOT_ROLLUP_QUEUE } from './jobs/pos-sales-queue.constants';
-import { PosSnapshotRollupProcessor } from './jobs/pos-snapshot-rollup.processor';
+import { PosSnapshotRollupProcessor } from './processors/pos-snapshot-rollup.processor';
 import { PosSchedulerService } from './jobs/pos-scheduler.service';
 import { PosSyncProcessor } from './jobs/pos-sync.processor';
 import { PosAnalyticsService } from './services/pos-analytics.service';
