@@ -1,5 +1,5 @@
 /**
- * Debounced consumer for upsert_market_sales_snapshot RPC.
+ * Debounced consumer for upsert_market_sales_snapshot RPC + tender mix patch.
  */
 
 import { Processor, WorkerHost } from '@nestjs/bullmq';
@@ -13,7 +13,7 @@ import {
 import { PosSnapshotRollupService } from '../services/pos-snapshot-rollup.service';
 import type { PosSnapshotRollupJobData } from '../types/ledger-transaction';
 
-@Processor(POS_SNAPSHOT_ROLLUP_QUEUE)
+@Processor(POS_SNAPSHOT_ROLLUP_QUEUE, { concurrency: 5 })
 export class PosSnapshotRollupProcessor extends WorkerHost {
   private readonly logger = new Logger(PosSnapshotRollupProcessor.name);
 
@@ -24,9 +24,9 @@ export class PosSnapshotRollupProcessor extends WorkerHost {
   async process(job: Job<PosSnapshotRollupJobData>): Promise<void> {
     if (job.name !== POS_SNAPSHOT_ROLLUP_JOB) return;
 
+    const snapshotId = await this.rollup.rollupVendorMarketDay(job.data);
     this.logger.log(
-      `pos-snapshot-rollup scaffold: vendor=${job.data.vendorId} market=${job.data.marketId}`,
+      `pos-snapshot-rollup vendor=${job.data.vendorId} market=${job.data.marketId} date=${job.data.snapshotDate} snapshot=${snapshotId ?? 'none'}`,
     );
-    await this.rollup.rollupVendorMarketDay(job.data);
   }
 }

@@ -4,9 +4,15 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { buildSnapshotRollupJobs } from '../utils/tender-aggregation';
 import { PosLedgerWriterService } from './pos-ledger-writer.service';
 import { PosMarketResolverService } from './pos-market-resolver.service';
-import type { PosSalesIngestJobData } from '../types/ledger-transaction';
+import type { PosSalesIngestJobData, PosSnapshotRollupJobData } from '../types/ledger-transaction';
+
+export interface PosSalesIngestResult {
+  written: number;
+  rollups: PosSnapshotRollupJobData[];
+}
 
 @Injectable()
 export class PosSalesIngestService {
@@ -17,7 +23,7 @@ export class PosSalesIngestService {
     private readonly marketResolver: PosMarketResolverService,
   ) {}
 
-  async ingest(data: PosSalesIngestJobData): Promise<number> {
+  async ingest(data: PosSalesIngestJobData): Promise<PosSalesIngestResult> {
     const connection = await this.marketResolver.resolveConnection(
       data.provider,
       data.providerMerchantId,
@@ -28,7 +34,7 @@ export class PosSalesIngestService {
       this.logger.warn(
         `No active vendor_pos_connections for ${data.provider} event ${data.providerEventId}`,
       );
-      return 0;
+      return { written: 0, rollups: [] };
     }
 
     let written = 0;
@@ -51,12 +57,26 @@ export class PosSalesIngestService {
       connection.vendorId,
       data.providerLocationId,
     );
-    if (market) {
+
+    if (!market) {
       this.logger.debug(
-        `Sales ingest linked vendor=${connection.vendorId} market=${market.marketId} (${written} txns)`,
+        `Sales ingest wrote ${written} txns for vendor=${connection.vendorId} (no approved market registration)`,
       );
+      return { written, rollups: [] };
     }
 
-    return written;
+    const rollups = buildSnapshotRollupJobs({
+      vendorId: connection.vendorId,
+      marketId: market.marketId,
+      tenantId: connection.tenantId,
+      posConnectionId: connection.id,
+      transactions: data.transactions,
+    });
+
+    this.logger.debug(
+      `Sales ingest vendor=${connection.vendorId} market=${market.marketId} wrote=${written} rollups=${rollups.length}`,
+    );
+
+    return { written, rollups };
   }
 }
