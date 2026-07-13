@@ -25,6 +25,7 @@ npm run build --prefix tenant-web
 | `/api/integration/callback` | OAuth token exchange → `vendor_pos_connections` |
 | `/api/markets/nearby` | PostGIS national farmers market search |
 | `/api/webhooks/pos-sync` | POS inventory webhook ingest |
+| `/api/webhooks/pos-sales` | POS sales ledger webhook ingest (Phase B) |
 | `/api/checkout/initiate` | Checkout edge pipeline |
 
 ## Web app integration
