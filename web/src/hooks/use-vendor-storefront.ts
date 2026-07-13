@@ -51,64 +51,71 @@ export function useVendorStorefront(vendorId: string | undefined): UseVendorStor
       setLoading(true);
       setError(null);
 
-      const [vendorRes, productsRes, marketsRes] = await Promise.all([
-        supabase.from('vendors').select('*').eq('id', vendorId).maybeSingle(),
-        supabase
-          .from('products')
-          .select(
-            `id, name, description, price, category, reserve_enabled, media_urls,
+      try {
+        const [vendorRes, productsRes, marketsRes] = await Promise.all([
+          supabase.from('vendors').select('*').eq('id', vendorId).maybeSingle(),
+          supabase
+            .from('products')
+            .select(
+              `id, name, description, price, category, reserve_enabled, media_urls,
              product_event_availability(available_quantity_presale)`,
-          )
-          .eq('vendor_id', vendorId)
-          .eq('status', 'active')
-          .order('name', { ascending: true }),
-        supabase
-          .from('vendor_events')
-          .select(
-            `event:events(
+            )
+            .eq('vendor_id', vendorId)
+            .eq('status', 'active')
+            .order('name', { ascending: true }),
+          supabase
+            .from('vendor_events')
+            .select(
+              `event:events(
               id, name, city, state, address, start_datetime, end_datetime,
               timezone, hours_summary, sync_metadata, latitude, longitude
             )`,
-          )
-          .eq('vendor_id', vendorId)
-          .eq('participation_status', 'approved'),
-      ]);
+            )
+            .eq('vendor_id', vendorId)
+            .eq('participation_status', 'approved'),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (vendorRes.error) {
-        setError(vendorRes.error.message);
+        if (vendorRes.error) {
+          setError(vendorRes.error.message);
+          setVendor(null);
+          setProducts([]);
+          setUpcomingMarkets([]);
+          return;
+        }
+
+        if (!vendorRes.data) {
+          setError('Vendor not found.');
+          setVendor(null);
+          setProducts([]);
+          setUpcomingMarkets([]);
+          return;
+        }
+
+        setVendor(vendorRes.data as Vendor);
+        setProducts((productsRes.data as MenuProduct[] | null) ?? []);
+
+        const markets = ((marketsRes.data ?? []) as unknown as {
+          event: Omit<VendorUpcomingMarket, 'distanceLabel'> | null;
+        }[])
+          .map((row) => row.event)
+          .filter((event): event is Omit<VendorUpcomingMarket, 'distanceLabel'> => Boolean(event))
+          .map((event) => ({
+            ...event,
+            distanceLabel: null as string | null,
+          }));
+
+        setUpcomingMarkets(markets);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'Failed to load vendor');
         setVendor(null);
         setProducts([]);
         setUpcomingMarkets([]);
-        setLoading(false);
-        return;
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      if (!vendorRes.data) {
-        setError('Vendor not found.');
-        setVendor(null);
-        setProducts([]);
-        setUpcomingMarkets([]);
-        setLoading(false);
-        return;
-      }
-
-      setVendor(vendorRes.data as Vendor);
-      setProducts((productsRes.data as MenuProduct[] | null) ?? []);
-
-      const markets = ((marketsRes.data ?? []) as unknown as {
-        event: Omit<VendorUpcomingMarket, 'distanceLabel'> | null;
-      }[])
-        .map((row) => row.event)
-        .filter((event): event is Omit<VendorUpcomingMarket, 'distanceLabel'> => Boolean(event))
-        .map((event) => ({
-          ...event,
-          distanceLabel: null as string | null,
-        }));
-
-      setUpcomingMarkets(markets);
-      setLoading(false);
     }
 
     void load();
