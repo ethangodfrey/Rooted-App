@@ -22,6 +22,10 @@ import {
 } from './jobs/pos-inventory-queue.constants';
 import { PosJobsService } from './jobs/pos-jobs.service';
 import { POS_AGGREGATION_QUEUE, POS_SYNC_QUEUE } from './jobs/pos-queue.constants';
+import { PosSalesIngestProcessor } from './jobs/pos-sales-ingest.processor';
+import { PosSalesJobsService } from './jobs/pos-sales-jobs.service';
+import { POS_SALES_INGEST_QUEUE, POS_SNAPSHOT_ROLLUP_QUEUE } from './jobs/pos-sales-queue.constants';
+import { PosSnapshotRollupProcessor } from './jobs/pos-snapshot-rollup.processor';
 import { PosSchedulerService } from './jobs/pos-scheduler.service';
 import { PosSyncProcessor } from './jobs/pos-sync.processor';
 import { PosAnalyticsService } from './services/pos-analytics.service';
@@ -29,7 +33,11 @@ import { PosActivityDashboardService } from './services/pos-activity-dashboard.s
 import { PosConnectionService } from './services/pos-connection.service';
 import { PosImportService } from './services/pos-import.service';
 import { PosInventorySyncService } from './services/pos-inventory-sync.service';
+import { PosLedgerWriterService } from './services/pos-ledger-writer.service';
 import { PosMappingService } from './services/pos-mapping.service';
+import { PosMarketResolverService } from './services/pos-market-resolver.service';
+import { PosSalesIngestService } from './services/pos-sales-ingest.service';
+import { PosSnapshotRollupService } from './services/pos-snapshot-rollup.service';
 import { PosSyncService } from './services/pos-sync.service';
 import { PosWebhookService } from './services/pos-webhook.service';
 import { ProviderRegistryService } from './services/provider-registry.service';
@@ -45,6 +53,8 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
             { name: POS_AGGREGATION_QUEUE },
             { name: POS_INVENTORY_INGEST_QUEUE },
             { name: POS_INVENTORY_FLUSH_QUEUE },
+            { name: POS_SALES_INGEST_QUEUE },
+            { name: POS_SNAPSHOT_ROLLUP_QUEUE },
           ),
         ]
       : []),
@@ -73,15 +83,22 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosWebhookService,
     PosAnalyticsService,
     PosActivityDashboardService,
+    PosLedgerWriterService,
+    PosMarketResolverService,
+    PosSalesIngestService,
+    PosSnapshotRollupService,
     // Jobs
     PosJobsService,
     PosInventoryJobsService,
+    PosSalesJobsService,
     ...(posQueuesEnabled
       ? [
           PosSyncProcessor,
           PosAggregationProcessor,
           PosInventoryIngestProcessor,
           PosInventoryFlushProcessor,
+          PosSalesIngestProcessor,
+          PosSnapshotRollupProcessor,
         ]
       : []),
     PosSchedulerService,
