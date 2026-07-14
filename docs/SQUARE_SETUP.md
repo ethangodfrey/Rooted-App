@@ -1,4 +1,20 @@
-# Square sandbox setup (Rooted POS)
+# Square setup (Vendorly POS)
+
+## Production OAuth (tenant-web)
+
+1. Square Developer Dashboard → OAuth → Redirect URL:
+   `https://<tenant-web-host>/api/auth/callback/square`
+2. Set tenant-web env: `SQUARE_ENVIRONMENT=production`, `SQUARE_APPLICATION_ID`,
+   `SQUARE_APPLICATION_SECRET`, `POS_CREDENTIAL_KEY`, `POS_OAUTH_STATE_SECRET`,
+   `INTEGRATION_OAUTH_BASE_URL`.
+3. Apply `docs/supabase/phase46_encrypted_credentials.sql`.
+4. Vendor dashboard → **Connect your Square Account** (calls `/api/auth/square`).
+
+See `docs/supabase/PHASE46_ENCRYPTED_CREDENTIALS_DESIGN.md`.
+
+---
+
+# Square sandbox setup (legacy Nest POS)
 
 Follow these steps once to connect the Rooted backend and mobile app to Square
 **Sandbox** for development.

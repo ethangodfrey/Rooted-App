@@ -24,6 +24,7 @@ export interface VendorPosConnectionPublic {
   provider: PosIntegrationProvider;
   provider_merchant_id: string | null;
   provider_location_id: string | null;
+  merchant_display_name?: string | null;
   status: string;
   token_expires_at: string | null;
   created_at: string;

@@ -21,8 +21,10 @@ npm run build --prefix tenant-web
 
 | Route | Purpose |
 |-------|---------|
-| `/api/integration/connect` | POS OAuth redirect (Square, Clover) |
-| `/api/integration/callback` | OAuth token exchange → `vendor_pos_connections` |
+| `/api/auth/square` | Production Square OAuth start (signed CSRF state) |
+| `/api/auth/callback/square` | Token exchange → AES-GCM `encrypted_credentials` vault |
+| `/api/integration/connect` | Multi-provider POS OAuth redirect (Square, Clover) |
+| `/api/integration/callback` | Multi-provider token exchange (encrypt-on-write) |
 | `/api/markets/nearby` | PostGIS national farmers market search |
 | `/api/webhooks/pos-sync` | POS inventory webhook ingest |
 | `/api/webhooks/pos-sales` | POS sales ledger webhook ingest (Phase B) |
