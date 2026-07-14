@@ -186,7 +186,11 @@ export function parseSquareSalesWebhook(
     return null;
   }
 
-  const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY?.trim() ?? '';
+  // Prefer sales-specific key — inventory subscriptions use a different Square signature key.
+  const signatureKey =
+    process.env.SQUARE_SALES_WEBHOOK_SIGNATURE_KEY?.trim() ||
+    process.env.SQUARE_WEBHOOK_SIGNATURE_KEY?.trim() ||
+    '';
   const notificationUrl = resolveNotificationUrl();
   const provided = headers['x-square-hmacsha256-signature'] ?? '';
   const signatureValid = verifySquareSignature(rawBody, provided, signatureKey, notificationUrl);
