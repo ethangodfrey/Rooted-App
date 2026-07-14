@@ -28,50 +28,78 @@ function createTxClient(orders: FakeOrderRow[]) {
         (customerUserId == null || o.customer_user_id === customerUserId),
     );
 
-  return {
-    $queryRaw: jest.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
-      const sql = strings.join(' ');
+  const handleQueryRaw = async (strings: TemplateStringsArray, ...values: unknown[]) => {
+    const sql = strings.join(' ');
 
-      if (sql.includes("payment_status = 'paid_online'") && sql.includes('update public.orders')) {
-        const paymentIntentId = values[0] as string | null;
-        const orderId = values[1] as string;
-        const sessionId = values[2] as string;
-        const row = orders.find(
-          (o) =>
-            o.id === orderId &&
-            o.stripe_checkout_session_id === sessionId &&
-            o.payment_status === 'stripe_pending',
-        );
-        if (!row) return [];
-        row.payment_status = 'paid_online';
-        row.stripe_payment_intent_id = paymentIntentId;
-        return [
-          {
-            id: row.id,
-            transaction_id: row.transaction_id ?? null,
-            vendor_id: row.vendor_id,
-            total: row.total,
-            platform_fee: row.platform_fee ?? 0,
-          },
-        ];
-      }
+    if (sql.includes('stripe_webhook_events')) {
+      return [];
+    }
 
-      const [orderId, customerUserId] = values as [string, string];
-      const row = findOrder(orderId, customerUserId);
+    if (sql.includes("payment_status = 'paid_online'") && sql.includes('update public.orders')) {
+      const paymentIntentId = values[0] as string | null;
+      const orderId = values[1] as string;
+      const sessionId = values[2] as string;
+      const row = orders.find(
+        (o) =>
+          o.id === orderId &&
+          o.stripe_checkout_session_id === sessionId &&
+          o.payment_status === 'stripe_pending',
+      );
       if (!row) return [];
+      row.payment_status = 'paid_online';
+      row.stripe_payment_intent_id = paymentIntentId;
       return [
         {
           id: row.id,
-          total: row.total,
-          payment_status: row.payment_status,
-          stripe_checkout_session_id: row.stripe_checkout_session_id,
+          transaction_id: row.transaction_id ?? null,
           vendor_id: row.vendor_id,
-          business_name: row.business_name,
-          stripe_account_id: row.stripe_account_id,
-          stripe_charges_enabled: row.stripe_charges_enabled,
+          total: row.total,
+          platform_fee: row.platform_fee ?? 0,
         },
       ];
-    }),
+    }
+
+    if (
+      sql.includes('select id from public.orders') &&
+      sql.includes("payment_status = 'stripe_pending'")
+    ) {
+      const [orderId, sessionId] = values as [string, string];
+      const row = orders.find(
+        (o) =>
+          o.id === orderId &&
+          o.stripe_checkout_session_id === sessionId &&
+          o.payment_status === 'stripe_pending',
+      );
+      return row ? [{ id: row.id }] : [];
+    }
+
+    if (sql.includes('pending_count') && sql.includes('paid_count')) {
+      const [transactionId] = values as [string];
+      const related = orders.filter((o) => o.transaction_id === transactionId);
+      const pendingCount = related.filter((o) => o.payment_status === 'stripe_pending').length;
+      const paidCount = related.filter((o) => o.payment_status === 'paid_online').length;
+      return [{ pending_count: pendingCount, paid_count: paidCount }];
+    }
+
+    const [orderId, customerUserId] = values as [string, string];
+    const row = findOrder(orderId, customerUserId);
+    if (!row) return [];
+    return [
+      {
+        id: row.id,
+        total: row.total,
+        payment_status: row.payment_status,
+        stripe_checkout_session_id: row.stripe_checkout_session_id,
+        vendor_id: row.vendor_id,
+        business_name: row.business_name,
+        stripe_account_id: row.stripe_account_id,
+        stripe_charges_enabled: row.stripe_charges_enabled,
+      },
+    ];
+  };
+
+  return {
+    $queryRaw: jest.fn(handleQueryRaw),
 
     $executeRaw: jest.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = strings.join(' ');

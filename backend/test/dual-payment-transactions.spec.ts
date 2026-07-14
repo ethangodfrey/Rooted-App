@@ -142,6 +142,63 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
 
       expect(finalizePaidOrder).not.toHaveBeenCalled();
     });
+
+    it('compensates checkout holds on checkout.session.expired failure payloads', async () => {
+      const compensateStripeCheckout = jest.fn();
+      const finalizePaidOrder = jest.fn();
+      const prisma = {
+        $executeRaw: jest.fn(),
+        $queryRaw: jest.fn(async (strings: TemplateStringsArray) => {
+          const sql = strings.join(' ');
+          if (sql.includes('stripe_webhook_events')) return [];
+          if (sql.includes("payment_status = 'stripe_pending'")) return [{ id: 'order-1' }];
+          return [];
+        }),
+        $transaction: jest.fn(async (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => unknown) =>
+          fn({
+            $queryRaw: jest.fn(async (strings: TemplateStringsArray) => {
+              const sql = strings.join(' ');
+              if (sql.includes("payment_status = 'stripe_pending'")) return [{ id: 'order-1' }];
+              return [];
+            }),
+            $executeRaw: jest.fn(),
+          }),
+        ),
+        vendor: {},
+      } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout,
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_live_expired',
+            metadata: {
+              order_id: 'order-1',
+              vendor_id: VENDOR_ID,
+              customer_user_id: 'user-1',
+            },
+          },
+        },
+      } as never);
+
+      expect(compensateStripeCheckout).toHaveBeenCalledWith(expect.anything(), 'order-1', 'user-1');
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+    });
   });
 
   describe('Square POS payloads drive imported transaction state', () => {

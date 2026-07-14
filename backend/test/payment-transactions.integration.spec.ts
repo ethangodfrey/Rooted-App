@@ -160,6 +160,90 @@ describe('dual payment transaction processing', () => {
         stripe_payment_intent_id: 'pi_success',
       });
     });
+
+    it('does not mark an order paid when the success payload targets a non-pending session', async () => {
+      const inventory = fakeInventory();
+      const fake = createFakeOrderPrisma([
+        {
+          ...stripeOrder(),
+          payment_status: 'unpaid',
+          stripe_checkout_session_id: 'cs_other_session',
+        },
+      ]);
+      const stripe = new StripeService(stripeConfig(), fake.prisma, inventory);
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_mismatch',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_dual',
+            metadata: { order_id: ORDER_ID, customer_user_id: CUSTOMER_ID },
+            payment_intent: 'pi_should_not_apply',
+          },
+        },
+      } as never);
+
+      expect(fake.orders[0].payment_status).toBe('unpaid');
+      expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Stripe checkout → webhook failure / expiry', () => {
+    it('compensates inventory when checkout.session.expired fires for a pending order', async () => {
+      const inventory = fakeInventory();
+      const fake = createFakeOrderPrisma([
+        {
+          ...stripeOrder(),
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_test_dual',
+        },
+      ]);
+      const stripe = new StripeService(stripeConfig(), fake.prisma, inventory);
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_test_dual',
+            metadata: { order_id: ORDER_ID, customer_user_id: CUSTOMER_ID },
+          },
+        },
+      } as never);
+
+      expect(inventory.compensateStripeCheckout).toHaveBeenCalledWith(
+        expect.anything(),
+        ORDER_ID,
+        CUSTOMER_ID,
+      );
+      expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
+    });
+
+    it('ignores expired checkout payloads missing order metadata', async () => {
+      const inventory = fakeInventory();
+      const fake = createFakeOrderPrisma([
+        {
+          ...stripeOrder(),
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_test_dual',
+        },
+      ]);
+      const stripe = new StripeService(stripeConfig(), fake.prisma, inventory);
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired_bad',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_test_dual',
+            metadata: {},
+          },
+        },
+      } as never);
+
+      expect(inventory.compensateStripeCheckout).not.toHaveBeenCalled();
+    });
   });
 
   describe('Square POS import success vs failure payloads', () => {

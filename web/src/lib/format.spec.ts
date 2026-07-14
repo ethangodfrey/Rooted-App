@@ -22,6 +22,10 @@ describe('formatPrice', () => {
     expect(formatPrice(0)).toBe('$0.00');
   });
 
+  it('handles negative cent values as formatted currency', () => {
+    expect(formatPrice(-150)).toBe('$-1.50');
+  });
+
   it('handles large totals', () => {
     expect(formatPrice(1_234_567)).toBe('$12345.67');
   });
@@ -61,6 +65,20 @@ describe('formatRelativeTime', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
     expect(formatRelativeTime('2026-06-01T12:00:00.000Z')).toMatch(/Jun/);
+    vi.useRealTimers();
+  });
+
+  it('returns hours ago for same-day timestamps', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
+    expect(formatRelativeTime('2026-07-10T09:00:00.000Z')).toBe('3h ago');
+    vi.useRealTimers();
+  });
+
+  it('returns days ago for timestamps within a week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
+    expect(formatRelativeTime('2026-07-08T12:00:00.000Z')).toBe('2d ago');
     vi.useRealTimers();
   });
 });
