@@ -62,7 +62,6 @@ export function EventMap({
               selected={selectedEventId === event.id}
               phase={phase}
             />
-            />
           </Marker>
         );
       })}
