@@ -63,12 +63,46 @@ export function verifyOAuthState(state: string): PosOAuthStatePayload | null {
   }
 }
 
+/** True when a URL looks like Square's OAuth host (not our callback origin). */
+function isSquareConnectHost(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return (
+      host === 'connect.squareup.com' ||
+      host === 'connect.squareupsandbox.com' ||
+      host.endsWith('.squareup.com') ||
+      host.endsWith('.squareupsandbox.com')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Public tenant-web origin used to build OAuth redirect_uri values.
+ * Must NOT be Square's connect host — that belongs in SQUARE_ENVIRONMENT + authorize URL.
+ */
 export function integrationBaseUrl(): string {
-  const explicit =
-    process.env.INTEGRATION_OAUTH_BASE_URL?.trim() ||
-    process.env.TENANT_WEB_URL?.trim() ||
-    process.env.PUBLIC_BASE_URL?.trim();
-  if (explicit) return explicit.replace(/\/$/, '');
+  const candidates = [
+    process.env.INTEGRATION_OAUTH_BASE_URL?.trim(),
+    process.env.TENANT_WEB_URL?.trim(),
+    process.env.PUBLIC_BASE_URL?.trim(),
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
+      : undefined,
+  ].filter((value): value is string => Boolean(value));
+
+  for (const candidate of candidates) {
+    const normalized = candidate.replace(/\/$/, '');
+    if (isSquareConnectHost(normalized)) {
+      console.warn(
+        '[pos-oauth] Ignoring Square connect host as INTEGRATION_OAUTH_BASE_URL; use your tenant-web origin instead.',
+      );
+      continue;
+    }
+    return normalized;
+  }
+
   return 'http://localhost:3000';
 }
 
