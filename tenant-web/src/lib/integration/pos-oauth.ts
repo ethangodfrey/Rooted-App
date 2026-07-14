@@ -76,6 +76,11 @@ export function oauthCallbackUrl(provider: PosIntegrationProvider): string {
   return `${integrationBaseUrl()}/api/integration/callback?provider=${provider}`;
 }
 
+/** Production Square OAuth redirect registered in the Square Developer Dashboard. */
+export function squareAuthCallbackUrl(): string {
+  return `${integrationBaseUrl()}/api/auth/callback/square`;
+}
+
 export function providerAuthorizeUrl(
   provider: PosIntegrationProvider,
   state: string,

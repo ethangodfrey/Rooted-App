@@ -18,6 +18,7 @@ import {
   VendorSecondaryButton,
 } from '@/components/vendor/vendor-ui';
 import { PosLiveTransactionFeed } from '@/components/vendor/pos-live-transaction-feed';
+import { SquarePosConnectionCard } from '@/components/vendor/square-pos-connection-card';
 import '@/components/ui/ui.css';
 
 const statusCopy: Record<string, string> = {
@@ -31,6 +32,7 @@ export function VendorDashboardPage() {
   const {
     summary: posSummary,
     liveFeed,
+    connections: posConnections,
     hasActiveConnection,
     loading: posLoading,
     error: posError,
@@ -93,6 +95,13 @@ export function VendorDashboardPage() {
       </VendorKpiGrid>
 
       <VendorSection title="POS sales">
+        <div className="mb-4">
+          <SquarePosConnectionCard
+            vendorId={vendor?.id}
+            connections={posConnections}
+            loading={posLoading}
+          />
+        </div>
         {posError ? <p className="app-error mb-3">{posError}</p> : null}
         {!posLoading && posSummary.transactionCount > 0 ? (
           <VendorKpiGrid cols={3}>
@@ -121,9 +130,9 @@ export function VendorDashboardPage() {
             hasActiveConnection={hasActiveConnection}
           />
         </div>
-        {!posLoading && !hasActiveConnection ? (
+        {!posLoading && hasActiveConnection ? (
           <div className="mt-3">
-            <VendorSecondaryButton to="/vendor/pos">Connect POS</VendorSecondaryButton>
+            <VendorSecondaryButton to="/vendor/pos">POS settings</VendorSecondaryButton>
           </div>
         ) : null}
       </VendorSection>

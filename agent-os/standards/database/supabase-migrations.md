@@ -36,6 +36,7 @@ docs/supabase/phase43c_pos_data_rls.sql
 docs/supabase/phase44_national_harvester_pos_analytics.sql
 docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql
 docs/supabase/phase45_pos_webhook_analytics.sql
+docs/supabase/phase46_encrypted_credentials.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):
@@ -55,6 +56,7 @@ Phase42a seeds `markets` rows from legacy `public.events` (run before phase42b).
 Phase43 adds POS OAuth foundation tables (`vendor_pos_connections`, `pos_transactions`) and the PostGIS-backed `national_farmers_markets` registry.
 Phase44 extends regional `markets` with geo/schedules, adds `market_sales_snapshots` daily POS rollups, and tenant-routing columns on POS connection tables. See `docs/supabase/PHASE44_SCHEMA_REVIEW.md`.
 Phase45 adds `pos_webhook_logs` (raw audit) and `analytics_sales` (normalized finance) with vendor/admin RLS.
+Phase46 adds `encrypted_credentials` (AES-256-GCM vault) and hardens token column grants on `vendor_pos_connections`. See `docs/supabase/PHASE46_ENCRYPTED_CREDENTIALS_DESIGN.md`.
 
 ## Key RPCs
 

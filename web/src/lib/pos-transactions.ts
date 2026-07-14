@@ -61,6 +61,9 @@ function chartLabel(dateKey: string): string {
 }
 
 const CONNECTION_PUBLIC_COLUMNS =
+  'id,vendor_id,user_id,provider,provider_merchant_id,provider_location_id,merchant_display_name,status,token_expires_at,created_at,updated_at';
+
+const CONNECTION_PUBLIC_COLUMNS_LEGACY =
   'id,vendor_id,user_id,provider,provider_merchant_id,provider_location_id,status,token_expires_at,created_at,updated_at';
 
 export async function fetchVendorPosConnections(
@@ -75,10 +78,20 @@ export async function fetchVendorPosConnections(
     return (viewRes.data as VendorPosConnectionPublic[]) ?? [];
   }
 
+  // Pre-phase46 public view (no merchant_display_name).
+  const legacyViewRes = await supabase
+    .from('vendor_pos_connections_public')
+    .select(CONNECTION_PUBLIC_COLUMNS_LEGACY)
+    .eq('vendor_id', vendorId);
+
+  if (!legacyViewRes.error) {
+    return (legacyViewRes.data as VendorPosConnectionPublic[]) ?? [];
+  }
+
   // Fallback when the public view is not yet exposed in PostgREST (tokens omitted).
   const tableRes = await supabase
     .from('vendor_pos_connections')
-    .select(CONNECTION_PUBLIC_COLUMNS)
+    .select(CONNECTION_PUBLIC_COLUMNS_LEGACY)
     .eq('vendor_id', vendorId);
 
   if (tableRes.error) throw new Error(tableRes.error.message);

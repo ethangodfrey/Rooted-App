@@ -24,14 +24,33 @@ export interface VendorPosConnectionRow {
   vendor_id: string;
   user_id: string;
   provider: PosIntegrationProvider;
+  /** Prefer null — tokens belong in encrypted_credentials. */
   access_token: string | null;
+  /** Prefer null — tokens belong in encrypted_credentials. */
   refresh_token: string | null;
   token_expires_at: string | null;
   provider_merchant_id: string | null;
   provider_location_id: string | null;
+  merchant_display_name?: string | null;
   oauth_state: string | null;
   status: 'pending' | 'active' | 'error' | 'expired' | 'disconnected';
   metadata?: Record<string, unknown>;
+  updated_at: string;
+}
+
+/** Row shape for encrypted_credentials vault upsert (service-role only). */
+export interface EncryptedCredentialRow {
+  vendor_id: string;
+  connection_id: string | null;
+  provider: PosIntegrationProvider;
+  square_merchant_id: string | null;
+  provider_location_id: string | null;
+  token_expires_at: string | null;
+  merchant_display_name: string | null;
+  secret_cipher: string;
+  cipher_iv: string;
+  cipher_auth_tag: string;
+  key_version: number;
   updated_at: string;
 }
 
