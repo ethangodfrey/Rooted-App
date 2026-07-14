@@ -97,8 +97,12 @@ grant execute on function public.list_my_encrypted_credential_status() to authen
 -- ---------------------------------------------------------------------------
 -- Public connection view — add merchant_display_name; never expose tokens
 -- ---------------------------------------------------------------------------
+-- DROP first: CREATE OR REPLACE cannot insert/reorder view columns by name
+-- (Postgres maps by position and errors on "status" → "merchant_display_name").
 
-create or replace view public.vendor_pos_connections_public as
+drop view if exists public.vendor_pos_connections_public;
+
+create view public.vendor_pos_connections_public as
 select
   id,
   vendor_id,
