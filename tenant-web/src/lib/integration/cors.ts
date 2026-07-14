@@ -15,6 +15,7 @@ function allowedOrigins(): Set<string> {
     'https://vendorly.app',
     'https://www.vendorly.app',
     'https://vendorlymarketplace.vercel.app',
+    'https://vendorly-marketplace1.vercel.app',
   ];
   return new Set([...defaults, ...listed]);
 }

@@ -2,11 +2,18 @@ import { supabase } from '@/lib/supabase';
 
 /** Public tenant-web origin used for Square OAuth edge routes. */
 export function tenantWebBaseUrl(): string | null {
-  const base =
+  const configured =
     import.meta.env.VITE_TENANT_WEB_URL?.trim() ||
     import.meta.env.VITE_MARKETS_API_URL?.trim() ||
     '';
-  return base ? base.replace(/\/$/, '') : null;
+  if (configured) return configured.replace(/\/$/, '');
+
+  // Production fallback when Vercel env was not rebuilt with VITE_TENANT_WEB_URL.
+  // Prefer setting VITE_TENANT_WEB_URL explicitly on the marketplace project.
+  if (import.meta.env.PROD) {
+    return 'https://tenant-web-psi.vercel.app';
+  }
+  return null;
 }
 
 export function squareAuthConnectPath(vendorId: string): string | null {
