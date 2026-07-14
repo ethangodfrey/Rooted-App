@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Builder: install all deps, generate Prisma client, compile TS ----
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Prisma needs openssl/libc compat on alpine.
@@ -18,7 +18,7 @@ COPY src ./src
 RUN npm run build
 
 # ---- Runner: production-only deps + compiled output ----
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
