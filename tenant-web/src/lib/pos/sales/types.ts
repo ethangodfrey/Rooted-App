@@ -47,6 +47,8 @@ export interface PosSalesIngestJobData {
   eventType: string;
   providerMerchantId?: string;
   providerLocationId?: string;
+  /** Phase 45 audit row id from pos_webhook_logs (optional). */
+  webhookLogId?: string;
   transactions: NormalizedLedgerTransaction[];
   observedAt: string;
   rawPayload: Record<string, unknown>;

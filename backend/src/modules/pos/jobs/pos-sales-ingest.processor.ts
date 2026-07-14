@@ -31,7 +31,7 @@ export class PosSalesIngestProcessor extends WorkerHost {
     }
 
     this.logger.log(
-      `pos-sales-ingest ${job.data.provider} event=${job.data.providerEventId} wrote=${result.written} rollups=${result.rollups.length}`,
+      `pos-sales-ingest ${job.data.provider} event=${job.data.providerEventId} ledger=${result.written} analytics=${result.analyticsWritten} rollups=${result.rollups.length}`,
     );
   }
 }

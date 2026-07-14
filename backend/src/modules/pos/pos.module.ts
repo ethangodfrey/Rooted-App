@@ -29,6 +29,7 @@ import { PosSnapshotRollupProcessor } from './processors/pos-snapshot-rollup.pro
 import { PosSchedulerService } from './jobs/pos-scheduler.service';
 import { PosSyncProcessor } from './jobs/pos-sync.processor';
 import { PosAnalyticsService } from './services/pos-analytics.service';
+import { PosAnalyticsSalesService } from './services/pos-analytics-sales.service';
 import { PosActivityDashboardService } from './services/pos-activity-dashboard.service';
 import { PosConnectionService } from './services/pos-connection.service';
 import { PosImportService } from './services/pos-import.service';
@@ -84,6 +85,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosAnalyticsService,
     PosActivityDashboardService,
     PosLedgerWriterService,
+    PosAnalyticsSalesService,
     PosMarketResolverService,
     PosSalesIngestService,
     PosSnapshotRollupService,

@@ -1,16 +1,19 @@
 /**
  * Core sales webhook ingest — shared by BullMQ processor and inline fallback.
+ * Writes pos_transactions (ledger) + analytics_sales (Phase 45) + schedules rollups.
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 
 import { buildSnapshotRollupJobs } from '../utils/tender-aggregation';
+import { PosAnalyticsSalesService } from './pos-analytics-sales.service';
 import { PosLedgerWriterService } from './pos-ledger-writer.service';
 import { PosMarketResolverService } from './pos-market-resolver.service';
 import type { PosSalesIngestJobData, PosSnapshotRollupJobData } from '../types/ledger-transaction';
 
 export interface PosSalesIngestResult {
   written: number;
+  analyticsWritten: number;
   rollups: PosSnapshotRollupJobData[];
 }
 
@@ -20,6 +23,7 @@ export class PosSalesIngestService {
 
   constructor(
     private readonly ledger: PosLedgerWriterService,
+    private readonly analytics: PosAnalyticsSalesService,
     private readonly marketResolver: PosMarketResolverService,
   ) {}
 
@@ -34,10 +38,12 @@ export class PosSalesIngestService {
       this.logger.warn(
         `No active vendor_pos_connections for ${data.provider} event ${data.providerEventId}`,
       );
-      return { written: 0, rollups: [] };
+      return { written: 0, analyticsWritten: 0, rollups: [] };
     }
 
     let written = 0;
+    let analyticsWritten = 0;
+
     for (const txn of data.transactions) {
       const result = await this.ledger.upsertTransaction({
         vendorId: connection.vendorId,
@@ -51,6 +57,30 @@ export class PosSalesIngestService {
         rawPayload: txn.rawPayload,
       });
       if (result?.id) written += 1;
+
+      const sale = await this.analytics.upsertSale({
+        vendorId: connection.vendorId,
+        tenantId: connection.tenantId,
+        connectionId: connection.id,
+        webhookLogId: data.webhookLogId,
+        provider: data.provider,
+        externalTransactionId: txn.externalTransactionId,
+        providerLocationId: txn.providerLocationId ?? data.providerLocationId,
+        providerOrderId: txn.providerOrderId,
+        status: txn.state,
+        currency: txn.currency,
+        grossSalesCents: txn.grossAmountCents,
+        taxCents: txn.taxCents ?? 0,
+        processingFeeCents: txn.processingFeeCents ?? 0,
+        platformFeeCents: txn.platformFeeCents,
+        soldAt: txn.soldAt,
+        tenderType: txn.tenderType,
+        metadata: {
+          cardBrand: txn.cardBrand ?? null,
+          providerEventId: data.providerEventId,
+        },
+      });
+      if (sale?.id) analyticsWritten += 1;
     }
 
     const market = await this.marketResolver.resolveMarketForVendor(
@@ -60,9 +90,9 @@ export class PosSalesIngestService {
 
     if (!market) {
       this.logger.debug(
-        `Sales ingest wrote ${written} txns for vendor=${connection.vendorId} (no approved market registration)`,
+        `Sales ingest wrote ledger=${written} analytics=${analyticsWritten} vendor=${connection.vendorId} (no approved market)`,
       );
-      return { written, rollups: [] };
+      return { written, analyticsWritten, rollups: [] };
     }
 
     const rollups = buildSnapshotRollupJobs({
@@ -74,9 +104,9 @@ export class PosSalesIngestService {
     });
 
     this.logger.debug(
-      `Sales ingest vendor=${connection.vendorId} market=${market.marketId} wrote=${written} rollups=${rollups.length}`,
+      `Sales ingest vendor=${connection.vendorId} market=${market.marketId} ledger=${written} analytics=${analyticsWritten} rollups=${rollups.length}`,
     );
 
-    return { written, rollups };
+    return { written, analyticsWritten, rollups };
   }
 }

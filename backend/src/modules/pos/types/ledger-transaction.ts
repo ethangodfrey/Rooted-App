@@ -28,6 +28,8 @@ export interface PosSalesIngestJobData {
   eventType: string;
   providerMerchantId?: string;
   providerLocationId?: string;
+  /** Phase 45 audit row id from pos_webhook_logs (optional). */
+  webhookLogId?: string;
   transactions: Array<{
     externalTransactionId: string;
     providerOrderId?: string | null;
@@ -37,12 +39,35 @@ export interface PosSalesIngestJobData {
     currency: string;
     grossAmountCents: number;
     platformFeeCents: number;
+    taxCents?: number;
+    processingFeeCents?: number;
     tenderType?: LedgerTenderType;
     cardBrand?: string | null;
     rawPayload: Record<string, unknown>;
   }>;
   observedAt: string;
   rawPayload: Record<string, unknown>;
+}
+
+/** Maps to public.analytics_sales upsert row. */
+export interface AnalyticsSaleInsert {
+  vendorId: string;
+  tenantId?: string | null;
+  connectionId?: string | null;
+  webhookLogId?: string | null;
+  provider: LedgerProvider;
+  externalTransactionId: string;
+  providerLocationId?: string | null;
+  providerOrderId?: string | null;
+  status: LedgerTransactionState;
+  currency: string;
+  grossSalesCents: number;
+  taxCents?: number;
+  processingFeeCents?: number;
+  platformFeeCents: number;
+  soldAt: string;
+  tenderType?: LedgerTenderType | null;
+  metadata?: Record<string, unknown>;
 }
 
 /** Absolute tender counts keyed by LedgerTenderType slug. */
