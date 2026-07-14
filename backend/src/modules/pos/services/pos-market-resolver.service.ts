@@ -31,7 +31,11 @@ export class PosMarketResolverService {
 
   private async restGet<T>(path: string): Promise<T[]> {
     const admin = this.adminConfig();
-    if (!admin) return [];
+    if (!admin) {
+      throw new Error(
+        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for POS connection/market resolution',
+      );
+    }
 
     const res = await fetch(`${admin.url}/rest/v1/${path}`, {
       headers: {
@@ -43,7 +47,7 @@ export class PosMarketResolverService {
     if (!res.ok) {
       const detail = await res.text();
       this.logger.warn(`Supabase GET failed: ${detail.slice(0, 200)}`);
-      return [];
+      throw new Error(`Supabase GET failed: ${detail.slice(0, 300)}`);
     }
 
     return (await res.json()) as T[];

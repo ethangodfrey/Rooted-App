@@ -35,10 +35,10 @@ export class PosSalesIngestService {
     );
 
     if (!connection) {
-      this.logger.warn(
-        `No active vendor_pos_connections for ${data.provider} event ${data.providerEventId}`,
-      );
-      return { written: 0, analyticsWritten: 0, rollups: [] };
+      const msg = `No active vendor_pos_connections for ${data.provider} event ${data.providerEventId} merchant=${data.providerMerchantId ?? ''} location=${data.providerLocationId ?? ''}`;
+      this.logger.warn(msg);
+      // Fail the job so BullMQ retries and Redis failed list surfaces the root cause.
+      throw new Error(msg);
     }
 
     let written = 0;
