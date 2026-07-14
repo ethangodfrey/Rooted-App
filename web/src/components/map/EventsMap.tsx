@@ -89,21 +89,28 @@ function InitialMapView({
     }
 
     function fallbackToEvents() {
-      if (resolvedRef.current || events.length === 0) return;
+      if (resolvedRef.current) return;
 
-      if (events.length === 1) {
-        centerOnCoords(
-          { latitude: events[0].latitude, longitude: events[0].longitude },
-          FOCUS_ZOOM,
+      const mappable = events.filter((event) => isValidCoords(event));
+      if (mappable.length === 0) return;
+
+      try {
+        if (mappable.length === 1) {
+          centerOnCoords(
+            { latitude: mappable[0].latitude, longitude: mappable[0].longitude },
+            FOCUS_ZOOM,
+          );
+          return;
+        }
+
+        const bounds = L.latLngBounds(
+          mappable.map((event) => [event.latitude, event.longitude] as [number, number]),
         );
-        return;
+        map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+        resolvedRef.current = true;
+      } catch {
+        // Skip corrupt or degenerate coordinate sets rather than crashing the map.
       }
-
-      const bounds = L.latLngBounds(
-        events.map((event) => [event.latitude, event.longitude] as [number, number]),
-      );
-      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
-      resolvedRef.current = true;
     }
 
     if (userCoords) {
