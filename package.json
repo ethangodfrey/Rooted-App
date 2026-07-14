@@ -42,6 +42,8 @@
     "smoke:boundaries": "node scripts/smoke-production-boundaries.mjs",
     "smoke:settlement": "node scripts/settlement-dashboard-smoke.mjs",
     "smoke:ui-baseline": "node scripts/verify-ui-production-baseline.mjs",
+    "test:web": "npm run test --prefix web",
+    "test:backend": "npm run test --prefix backend",
     "build:web": "npm run build --prefix web",
     "build:tenant-web": "NODE_ENV=production npm run build --prefix tenant-web",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
