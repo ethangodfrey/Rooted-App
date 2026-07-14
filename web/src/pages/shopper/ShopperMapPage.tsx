@@ -226,8 +226,23 @@ export function ShopperMapPage() {
       />
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
+        <div className="shopper-map-layout">
+          <div className="events-map-panel">
+            <div
+              className="events-map-frame app-skeleton animate-pulse"
+              aria-hidden="true"
+            />
+          </div>
+          <div className="shopper-map-list flex w-full flex-col space-y-3 px-4 md:px-0">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div
+                key={i}
+                className="app-skeleton app-skeleton--card animate-pulse"
+                style={{ height: 72 }}
+                aria-hidden="true"
+              />
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="app-empty">Couldn&apos;t load events: {error}</div>

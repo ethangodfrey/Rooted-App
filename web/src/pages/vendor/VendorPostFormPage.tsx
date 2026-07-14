@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
 import {
   VendorFormPanel,
   VendorHero,
@@ -27,12 +28,18 @@ export function VendorPostFormPage() {
   const [caption, setCaption] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captionError, setCaptionError] = useState<string | null>(null);
 
   async function handleSave() {
-    if (!vendor || !caption.trim()) {
-      setError('Caption is required.');
+    if (!vendor) return;
+
+    if (!caption.trim()) {
+      setCaptionError('Caption is required.');
+      setError(null);
       return;
     }
+
+    setCaptionError(null);
 
     setSaving(true);
     const now = new Date().toISOString();
@@ -74,7 +81,16 @@ export function VendorPostFormPage() {
 
         <div className="app-input-group">
           <label>Caption</label>
-          <textarea className="app-textarea" value={caption} onChange={(e) => setCaption(e.target.value)} rows={5} />
+          <textarea
+            className={`app-textarea${captionError ? ' app-textarea--invalid' : ''}`}
+            value={caption}
+            onChange={(e) => {
+              setCaption(e.target.value);
+              if (captionError) setCaptionError(null);
+            }}
+            rows={5}
+          />
+          <FieldError message={captionError} />
         </div>
 
         {error ? <p className="app-error">{error}</p> : null}

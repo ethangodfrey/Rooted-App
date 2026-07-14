@@ -3,6 +3,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { FallbackImage } from '@/components/ui/FallbackImage';
+import { VendorImage } from '@/components/ui/VendorImage';
 import { VendorProductMenu } from '@/components/vendor/VendorProductMenu';
 import { VendorStorefrontSkeleton } from '@/components/vendor/VendorStorefrontSkeleton';
 import { useAuth } from '@/hooks/use-auth';
@@ -137,36 +139,27 @@ export function ShopperVendorPage() {
         className="relative h-36 w-full overflow-hidden sm:h-44"
         style={{
           background: bannerUrl
-            ? `url(${bannerUrl}) center/cover no-repeat`
+            ? undefined
             : `linear-gradient(135deg, ${accent}22 0%, ${accent}44 100%)`,
         }}
       >
         {bannerUrl ? (
-          <img
+          <FallbackImage
             src={bannerUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
+            variant="banner"
+            category={vendor.category}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ marginBottom: 0, borderRadius: 0 }}
           />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3 px-4">
-          {vendor.logo_url ? (
-            <img
-              src={vendor.logo_url}
-              alt=""
-              className="h-14 w-14 rounded-xl border-2 border-white object-cover shadow-md sm:h-16 sm:w-16"
-            />
-          ) : (
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-white text-lg font-bold text-white shadow-md sm:h-16 sm:w-16"
-              style={{ backgroundColor: accent }}
-            >
-              {(vendor.business_name ?? 'V').charAt(0)}
-            </div>
-          )}
+          <VendorImage
+            src={vendor.logo_url}
+            variant="logo"
+            businessName={vendor.business_name}
+            className="!h-14 !w-14 shrink-0 rounded-xl border-2 border-white shadow-md sm:!h-16 sm:!w-16"
+          />
           <div className="min-w-0 flex-1 text-white">
             <h1 className="truncate text-xl font-bold sm:text-2xl">{vendor.business_name}</h1>
             {vendor.category ? (

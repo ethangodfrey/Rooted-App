@@ -11,6 +11,8 @@
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   z-index: 0;
+  height: min(52vh, 420px);
+  min-height: 280px;
 }
 
 .events-map-frame .leaflet-container {
@@ -168,13 +170,15 @@
 
 .shopper-map-carousel-card {
   flex: 0 0 min(85vw, 280px);
+  width: 100%;
+  max-width: 100%;
   text-align: left;
   border: none;
   cursor: pointer;
   font: inherit;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .events-map-frame {
     height: min(68vh, 520px);
     min-height: 360px;
@@ -190,5 +194,10 @@
   .shopper-map-list {
     max-height: min(68vh, 520px);
     overflow-y: auto;
+  }
+
+  .shopper-map-carousel-card {
+    flex: none;
+    width: 100%;
   }
 }

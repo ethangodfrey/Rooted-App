@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
 import {
   VendorFormPanel,
   VendorHero,
@@ -9,6 +10,7 @@ import {
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
+import { normalizeUrl, validateOptionalUrl } from '@/lib/vendor-application';
 import '@/components/ui/ui.css';
 
 export function VendorStorefrontPage() {
@@ -19,6 +21,7 @@ export function VendorStorefrontPage() {
   const [instagram, setInstagram] = useState(vendor?.instagram_url ?? '');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'website' | 'instagram', string>>>({});
 
   useEffect(() => {
     setBusinessDescription(vendor?.business_description ?? '');
@@ -27,16 +30,39 @@ export function VendorStorefrontPage() {
     setInstagram(vendor?.instagram_url ?? '');
   }, [vendor]);
 
+  function clearFieldError(field: keyof typeof fieldErrors) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!vendor) return;
+
+    const nextFieldErrors: Partial<Record<'website' | 'instagram', string>> = {};
+    const websiteError = validateOptionalUrl(website);
+    const instagramError = validateOptionalUrl(instagram);
+    if (websiteError) nextFieldErrors.website = websiteError;
+    if (instagramError) nextFieldErrors.instagram = instagramError;
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setMessage(null);
+      return;
+    }
+
+    setFieldErrors({});
     setSaving(true);
     const { error } = await supabase
       .from('vendors')
       .update({
         business_description: businessDescription.trim() || null,
         product_summary: productSummary.trim() || null,
-        website_url: website.trim() || null,
-        instagram_url: instagram.trim() || null,
+        website_url: normalizeUrl(website),
+        instagram_url: normalizeUrl(instagram),
         updated_at: new Date().toISOString(),
       })
       .eq('id', vendor.id);
@@ -64,13 +90,33 @@ export function VendorStorefrontPage() {
           <label>Product summary</label>
           <textarea className="app-textarea" value={productSummary} onChange={(e) => setProductSummary(e.target.value)} />
         </div>
-        <div className="app-input-group">
-          <label>Website</label>
-          <input className="app-input" value={website} onChange={(e) => setWebsite(e.target.value)} />
-        </div>
-        <div className="app-input-group">
-          <label>Instagram</label>
-          <input className="app-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+        <div className="app-form-grid">
+          <div className="app-input-group">
+            <label>Website</label>
+            <input
+              className={`app-input${fieldErrors.website ? ' app-input--invalid' : ''}`}
+              value={website}
+              onChange={(e) => {
+                setWebsite(e.target.value);
+                clearFieldError('website');
+              }}
+              placeholder="https://yourbusiness.com"
+            />
+            <FieldError message={fieldErrors.website} />
+          </div>
+          <div className="app-input-group">
+            <label>Instagram</label>
+            <input
+              className={`app-input${fieldErrors.instagram ? ' app-input--invalid' : ''}`}
+              value={instagram}
+              onChange={(e) => {
+                setInstagram(e.target.value);
+                clearFieldError('instagram');
+              }}
+              placeholder="https://instagram.com/you"
+            />
+            <FieldError message={fieldErrors.instagram} />
+          </div>
         </div>
 
         {message ? <p className="app-message">{message}</p> : null}

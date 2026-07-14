@@ -218,7 +218,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       </label>
 
       {reserveEnabled ? (
-        <>
+        <div className="app-form-grid">
           <div className="app-input-group">
             <label>Total reservation limit (optional)</label>
             <input
@@ -245,7 +245,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
             />
             <FieldError message={fieldErrors.limitPerShopper} />
           </div>
-        </>
+        </div>
       ) : null}
 
       {error ? <p className="app-error">{error}</p> : null}

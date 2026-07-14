@@ -46,6 +46,23 @@ export function normalizeUrl(raw: string): string | null {
   return `https://${trimmed}`;
 }
 
+/** Returns a user-facing error message, or null when the URL is empty or valid. */
+export function validateOptionalUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const normalized = normalizeUrl(trimmed);
+  if (!normalized) return 'Enter a valid URL (e.g. https://example.com).';
+  try {
+    const parsed = new URL(normalized);
+    if (!parsed.hostname.includes('.')) {
+      return 'Enter a valid URL (e.g. https://example.com).';
+    }
+    return null;
+  } catch {
+    return 'Enter a valid URL (e.g. https://example.com).';
+  }
+}
+
 export function validateVendorApplicationFields(
   input: VendorApplicationInput,
   attested: boolean,
