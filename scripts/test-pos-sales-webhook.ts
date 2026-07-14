@@ -93,20 +93,21 @@ if (signingKey) {
   headers['x-square-hmacsha256-signature'] = 'test-bypass';
 }
 
-console.log('POST', url);
-console.log('paymentId', paymentId);
-console.log('eventId', eventId);
+async function main(): Promise<void> {
+  console.log('POST', url);
+  console.log('paymentId', paymentId);
+  console.log('eventId', eventId);
 
-const res = await fetch(url, { method: 'POST', headers, body: rawBody });
-const text = await res.text();
-console.log('status', res.status);
-console.log(text);
+  const res = await fetch(url, { method: 'POST', headers, body: rawBody });
+  const text = await res.text();
+  console.log('status', res.status);
+  console.log(text);
 
-if (res.status !== 202 && res.status !== 200) {
-  process.exit(1);
-}
+  if (res.status !== 202 && res.status !== 200) {
+    process.exit(1);
+  }
 
-console.log(`
+  console.log(`
 Verify in Supabase SQL Editor:
 
 -- 1) Raw audit log
@@ -125,3 +126,6 @@ select id, external_transaction_id, gross_amount, platform_fee, sold_at
 from public.pos_transactions
 where external_transaction_id = '${paymentId}';
 `);
+}
+
+void main();
