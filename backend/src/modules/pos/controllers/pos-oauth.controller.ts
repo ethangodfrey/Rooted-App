@@ -39,18 +39,30 @@ export class PosOAuthController {
       .get<string>('SQUARE_APPLICATION_SECRET', '')
       .trim();
     const environment = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox').trim();
+    const isProduction = environment === 'production';
+    const authorizeBaseUrl = isProduction
+      ? 'https://connect.squareup.com'
+      : 'https://connect.squareupsandbox.com';
     const providerBaseUrl = posProviderBaseUrl(this.config);
     const redirectUri = posOAuthRedirectUri(this.config, 'SQUARE');
     return {
       provider: 'SQUARE',
       environment,
+      authorizeBaseUrl,
+      authorizePath: `${authorizeBaseUrl}/oauth2/authorize`,
+      // Public Application ID prefix only — safe to expose for env matching.
+      applicationIdPrefix: applicationId
+        ? `${applicationId.slice(0, 10)}…${applicationId.slice(-4)}`
+        : null,
       squareApplicationIdConfigured: Boolean(applicationId),
       squareApplicationSecretConfigured: Boolean(applicationSecret),
       providerBaseUrl,
       redirectUri,
+      scopes: ['ORDERS_READ', 'PAYMENTS_READ', 'MERCHANT_PROFILE_READ'],
       ready: Boolean(applicationId && applicationSecret && providerBaseUrl),
-      squareDashboardHint:
-        'Register redirectUri under Square Developer → OAuth → Redirect URL (Production when SQUARE_ENVIRONMENT=production).',
+      squareDashboardHint: isProduction
+        ? 'Use Production Application ID/secret and register redirectUri under OAuth → Redirect URL (Production).'
+        : 'Use Sandbox Application ID/secret (Credentials → toggle Sandbox) and register redirectUri under OAuth → Redirect URL (Sandbox). Production IDs with sandbox OAuth dump you on the Developer Console homepage.',
     };
   }
 
