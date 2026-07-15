@@ -45,11 +45,26 @@ export class PosOAuthController {
       : 'https://connect.squareupsandbox.com';
     const providerBaseUrl = posProviderBaseUrl(this.config);
     const redirectUri = posOAuthRedirectUri(this.config, 'SQUARE');
+    const scopes = ['ORDERS_READ', 'PAYMENTS_READ', 'MERCHANT_PROFILE_READ'];
+    // Application ID is public in OAuth authorize URLs; include a clickable sample
+    // so operators can verify host + client_id + redirect_uri without a vendor session.
+    let sampleAuthorizeUrl: string | null = null;
+    if (applicationId) {
+      const params = new URLSearchParams({
+        client_id: applicationId,
+        scope: scopes.join(' '),
+        state: 'config-status-preview',
+        redirect_uri: redirectUri,
+      });
+      sampleAuthorizeUrl = `${authorizeBaseUrl}/oauth2/authorize?${params.toString()}`;
+    }
     return {
       provider: 'SQUARE',
       environment,
       authorizeBaseUrl,
       authorizePath: `${authorizeBaseUrl}/oauth2/authorize`,
+      // NOTE: correct sandbox host is connect.squareupsandbox.com (with "connect."),
+      // not squareupsandbox.com.
       // Public Application ID prefix only — safe to expose for env matching.
       applicationIdPrefix: applicationId
         ? `${applicationId.slice(0, 10)}…${applicationId.slice(-4)}`
@@ -58,7 +73,8 @@ export class PosOAuthController {
       squareApplicationSecretConfigured: Boolean(applicationSecret),
       providerBaseUrl,
       redirectUri,
-      scopes: ['ORDERS_READ', 'PAYMENTS_READ', 'MERCHANT_PROFILE_READ'],
+      scopes,
+      sampleAuthorizeUrl,
       ready: Boolean(applicationId && applicationSecret && providerBaseUrl),
       squareDashboardHint: isProduction
         ? 'Use Production Application ID/secret and register redirectUri under OAuth → Redirect URL (Production).'
