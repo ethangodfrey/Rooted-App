@@ -1,6 +1,43 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { distanceMiles, formatDistance } from './geo';
+import { coordsFrom, distanceMiles, formatDistance, isValidCoords } from './geo';
+
+describe('isValidCoords', () => {
+  it('accepts finite coordinates within Earth bounds', () => {
+    expect(isValidCoords({ latitude: 41.8781, longitude: -87.6298 })).toBe(true);
+    expect(isValidCoords({ latitude: -90, longitude: 180 })).toBe(true);
+    expect(isValidCoords({ latitude: 90, longitude: -180 })).toBe(true);
+  });
+
+  it('rejects null, undefined, and empty objects', () => {
+    expect(isValidCoords(null)).toBe(false);
+    expect(isValidCoords(undefined)).toBe(false);
+    expect(isValidCoords({})).toBe(false);
+  });
+
+  it('rejects out-of-range and non-finite values', () => {
+    expect(isValidCoords({ latitude: 91, longitude: 0 })).toBe(false);
+    expect(isValidCoords({ latitude: 0, longitude: -181 })).toBe(false);
+    expect(isValidCoords({ latitude: Number.NaN, longitude: 0 })).toBe(false);
+    expect(isValidCoords({ latitude: 0, longitude: Number.POSITIVE_INFINITY })).toBe(false);
+  });
+});
+
+describe('coordsFrom', () => {
+  it('returns normalized coordinates for valid input', () => {
+    expect(coordsFrom({ latitude: 41.8781, longitude: -87.6298 })).toEqual({
+      latitude: 41.8781,
+      longitude: -87.6298,
+    });
+  });
+
+  it('returns null for invalid or partial input', () => {
+    expect(coordsFrom(null)).toBeNull();
+    expect(coordsFrom({ latitude: 41.8781 })).toBeNull();
+    expect(coordsFrom({ longitude: -87.6298 })).toBeNull();
+    expect(coordsFrom({ latitude: 200, longitude: 0 })).toBeNull();
+  });
+});
 
 describe('distanceMiles', () => {
   it('returns zero for identical coordinates', () => {
@@ -14,6 +51,12 @@ describe('distanceMiles', () => {
     const miles = distanceMiles(chicago, milwaukee);
     expect(miles).toBeGreaterThan(70);
     expect(miles).toBeLessThan(95);
+  });
+
+  it('returns infinity when either coordinate set is invalid', () => {
+    const valid = { latitude: 41.8781, longitude: -87.6298 };
+    expect(distanceMiles(valid, { latitude: Number.NaN, longitude: 0 })).toBe(Number.POSITIVE_INFINITY);
+    expect(distanceMiles(null as never, valid)).toBe(Number.POSITIVE_INFINITY);
   });
 });
 

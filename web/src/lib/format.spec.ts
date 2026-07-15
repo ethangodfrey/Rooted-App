@@ -25,6 +25,11 @@ describe('formatPrice', () => {
   it('handles large totals', () => {
     expect(formatPrice(1_234_567)).toBe('$12345.67');
   });
+
+  it('rounds fractional cent inputs via toFixed', () => {
+    expect(formatPrice(1001)).toBe('$10.01');
+    expect(formatPrice(1)).toBe('$0.01');
+  });
 });
 
 describe('formatEventDate', () => {
@@ -54,6 +59,20 @@ describe('formatRelativeTime', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
     expect(formatRelativeTime('2026-07-10T11:45:00.000Z')).toBe('15m ago');
+    vi.useRealTimers();
+  });
+
+  it('returns hours ago within the same day', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
+    expect(formatRelativeTime('2026-07-10T08:00:00.000Z')).toBe('4h ago');
+    vi.useRealTimers();
+  });
+
+  it('returns days ago within the same week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
+    expect(formatRelativeTime('2026-07-08T12:00:00.000Z')).toBe('2d ago');
     vi.useRealTimers();
   });
 
