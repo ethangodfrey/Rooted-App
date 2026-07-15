@@ -26,6 +26,19 @@ describe('isTrustedVercelMarketplaceOrigin', () => {
     expect(isTrustedVercelMarketplaceOrigin('https://vendorlymarketplace.vercel.app')).toBe(true);
   });
 
+  it('accepts Vercel deployment / preview URLs for the marketplace project', () => {
+    expect(
+      isTrustedVercelMarketplaceOrigin(
+        'https://vendorly-marketplace1-git-main-ethangodfreys-projects.vercel.app',
+      ),
+    ).toBe(true);
+    expect(
+      isTrustedVercelMarketplaceOrigin(
+        'https://vendorly-marketplace1-65kqh8duhc-ethangodfreys-projects.vercel.app',
+      ),
+    ).toBe(true);
+  });
+
   it('rejects unrelated Vercel apps', () => {
     expect(isTrustedVercelMarketplaceOrigin('https://random-app.vercel.app')).toBe(false);
   });

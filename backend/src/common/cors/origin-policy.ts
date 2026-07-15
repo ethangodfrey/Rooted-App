@@ -3,12 +3,14 @@ import { isDevLanOrigin } from '../network.util';
 const VENDORLY_HTTPS_ORIGIN =
   /^https:\/\/([a-z0-9-]+\.)*vendorly\.app(?::\d+)?$/i;
 
-/** Known Vendorly marketplace hosts on Vercel before custom domain DNS is ready. */
-const TRUSTED_VERCEL_MARKETPLACE_ORIGINS = new Set([
-  'https://vendorly-marketplace1.vercel.app',
-  'https://vendorlymarketplace.vercel.app',
-  'https://vendorlymarketplace1.vercel.app',
-]);
+/**
+ * Vendorly marketplace hosts on Vercel, including:
+ * - production aliases (vendorly-marketplace1.vercel.app)
+ * - git/branch preview + deployment URLs
+ *   (vendorly-marketplace1-*-ethangodfreys-projects.vercel.app)
+ */
+const VERCEL_MARKETPLACE_HOST =
+  /^vendorly([-.]?marketplace\d*)([.-][a-z0-9-]+)*\.vercel\.app$/i;
 
 /** Verified Vendorly production hostnames over HTTPS (apex + subdomains). */
 export function isTrustedVendorlyOrigin(origin: string): boolean {
@@ -26,10 +28,12 @@ export function isTrustedVercelMarketplaceOrigin(origin: string): boolean {
   try {
     const url = new URL(origin);
     if (url.protocol !== 'https:') return false;
-    const normalized = `${url.protocol}//${url.hostname}`.toLowerCase();
-    return TRUSTED_VERCEL_MARKETPLACE_ORIGINS.has(normalized);
+    const host = url.hostname.toLowerCase();
+    if (VERCEL_MARKETPLACE_HOST.test(host)) return true;
+    // Deployment URLs under the Vercel team project namespace.
+    return host.includes('vendorly') && host.endsWith('.vercel.app');
   } catch {
-    return TRUSTED_VERCEL_MARKETPLACE_ORIGINS.has(origin.replace(/\/$/, '').toLowerCase());
+    return false;
   }
 }
 

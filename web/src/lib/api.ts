@@ -20,17 +20,23 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
 
   let res: Response;
   try {
+    const headers: Record<string, string> = { ...(await authHeaders()) };
+    // Only set Content-Type when sending a body — bare GETs with JSON
+    // Content-Type force a CORS preflight that fails on unlisted preview hosts.
+    if (body != null) {
+      headers['Content-Type'] = 'application/json';
+    }
     res = await fetch(`${API_URL}${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+      headers,
       body: body != null ? JSON.stringify(body) : undefined,
     });
   } catch {
     const hint = isExplicitPublicApiUrl()
-      ? 'Check that the backend is deployed and reachable at that URL.'
+      ? 'Check that the backend is deployed and reachable at that URL, and that CORS allows this site origin.'
       : import.meta.env.DEV
         ? `On another device on the same Wi‑Fi, open the site via your PC's network IP (e.g. http://10.0.0.165:5173), start the backend (cd backend && npm run start:dev), and allow port 4000 through Windows Firewall. Off LAN, deploy web + API or set VITE_API_URL to a public HTTPS URL — see docs/OFF_LAN_ACCESS.md.`
-        : 'Set VITE_API_URL to your deployed API (e.g. https://api.vendorly.app). See docs/OFF_LAN_ACCESS.md.';
+        : 'Set VITE_API_URL to your deployed API (e.g. https://rooted-app-production-43fb.up.railway.app). See docs/OFF_LAN_ACCESS.md.';
     throw new Error(`Could not reach the API at ${API_URL}. ${hint}`);
   }
 
