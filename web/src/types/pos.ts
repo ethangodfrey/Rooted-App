@@ -40,6 +40,22 @@ export interface PosOAuthRedirectInfo {
   hint: string;
 }
 
+export interface SquareOAuthConfigStatus {
+  provider: 'SQUARE';
+  environment: 'sandbox' | 'production' | string;
+  authorizeBaseUrl: string;
+  authorizePath: string;
+  applicationIdPrefix: string;
+  squareApplicationIdConfigured: boolean;
+  squareApplicationSecretConfigured: boolean;
+  providerBaseUrl: string;
+  redirectUri: string;
+  scopes: string[];
+  sampleAuthorizeUrl?: string | null;
+  ready: boolean;
+  squareDashboardHint?: string;
+}
+
 export interface PosSyncRun {
   id: string;
   trigger: PosSyncTrigger;
