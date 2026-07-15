@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
-  VendorActionGrid,
   VendorEmpty,
   VendorFormPanel,
   VendorHero,
@@ -10,7 +9,6 @@ import {
   VendorListRow,
   VendorPrimaryButton,
   VendorScreen,
-  VendorSecondaryButton,
   VendorSection,
   VendorStatusPill,
   VENDOR_PRESSABLE,
@@ -22,8 +20,12 @@ import { formatDateTime } from '@/lib/format';
 import { posApi } from '@/lib/pos-api';
 import { getPosOAuthReturnUrl } from '@/lib/pos-oauth-return';
 import { triggerStalePosSync } from '@/lib/pos-sync';
-import { openSquareOAuth, openSquareSandboxSetup } from '@/lib/square-oauth';
-import type { PosConnection } from '@/types/pos';
+import {
+  assertSquareAuthorizeUrl,
+  openSquareOAuth,
+  openSquareSandboxSetup,
+} from '@/lib/square-oauth';
+import type { PosConnection, SquareOAuthConfigStatus } from '@/types/pos';
 import '@/components/ui/ui.css';
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -48,6 +50,8 @@ export function VendorPosPage() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oauthRedirectUri, setOauthRedirectUri] = useState<string | null>(null);
+  const [squareConfig, setSquareConfig] = useState<SquareOAuthConfigStatus | null>(null);
+  const [redirectHint, setRedirectHint] = useState<string | null>(null);
 
   const squareActive = connections.some((c) => c.provider === 'SQUARE' && c.status === 'ACTIVE');
 
@@ -75,11 +79,16 @@ export function VendorPosPage() {
       .getOAuthRedirectUri('SQUARE')
       .then((info) => setOauthRedirectUri(info.redirectUri))
       .catch(() => setOauthRedirectUri(null));
+    void posApi
+      .getSquareOAuthConfigStatus()
+      .then((status) => setSquareConfig(status))
+      .catch(() => setSquareConfig(null));
   }, [load]);
 
   async function connectSquare() {
     setConnecting(true);
     setError(null);
+    setRedirectHint(null);
     try {
       const returnUrl = getPosOAuthReturnUrl();
       const { authorizeUrl, oauthEnvironment, connection } = await posApi.createConnection(
@@ -97,25 +106,15 @@ export function VendorPosPage() {
         return;
       }
 
-      // Do NOT auto-open developer.squareup.com here. On mobile Safari,
-      // window.open steals the tab and users never reach the OAuth consent page.
-      // Sandbox sellers can use the explicit "Open Square Developer" button first.
-      if (oauthEnvironment === 'sandbox') {
-        const host = (() => {
-          try {
-            return new URL(authorizeUrl).hostname;
-          } catch {
-            return '';
-          }
-        })();
-        if (host && host !== 'connect.squareupsandbox.com') {
-          setError(
-            `Sandbox OAuth must use connect.squareupsandbox.com (got ${host}). Check SQUARE_ENVIRONMENT on Railway.`,
-          );
-          return;
-        }
+      const check = assertSquareAuthorizeUrl(authorizeUrl, oauthEnvironment);
+      if (!check.ok) {
+        setError(check.error);
+        return;
       }
 
+      // Do NOT open developer.squareup.com here. That page is the Applications
+      // dashboard (what people confuse with OAuth), not the consent screen.
+      setRedirectHint(`Opening Square authorization at ${check.host}…`);
       openSquareOAuth(authorizeUrl);
     } catch (err) {
       setError((err as Error).message);
@@ -175,10 +174,31 @@ export function VendorPosPage() {
             </VendorSection>
           )}
 
-          {oauthRedirectUri ? (
+          {oauthRedirectUri || squareConfig ? (
             <VendorFormPanel className="mb-5">
-              <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">OAuth redirect URL</p>
-              <p className="m-0 mt-1 break-all text-xs text-stone-600">{oauthRedirectUri}</p>
+              {squareConfig ? (
+                <>
+                  <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                    Square OAuth target
+                  </p>
+                  <p className="m-0 mt-1 text-xs text-stone-600">
+                    {squareConfig.environment} → {squareConfig.authorizeBaseUrl}
+                    {squareConfig.applicationIdPrefix
+                      ? ` · app ${squareConfig.applicationIdPrefix}`
+                      : ''}
+                  </p>
+                </>
+              ) : null}
+              {oauthRedirectUri ? (
+                <>
+                  <p
+                    className={`m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400 ${squareConfig ? 'mt-3' : ''}`}
+                  >
+                    OAuth redirect URL
+                  </p>
+                  <p className="m-0 mt-1 break-all text-xs text-stone-600">{oauthRedirectUri}</p>
+                </>
+              ) : null}
             </VendorFormPanel>
           ) : null}
 
@@ -186,16 +206,32 @@ export function VendorPosPage() {
             <VendorFormPanel className="mb-5">
               <p className="m-0 text-sm font-semibold text-stone-800">Connect Square</p>
               <p className="m-0 mt-1 text-xs text-stone-500">
-                For sandbox, open your Square Developer test account first.
+                Tap Authorize with Square. You should land on Square&apos;s permission screen
+                (connect.squareupsandbox.com in sandbox)—not the Applications list.
               </p>
-              <VendorActionGrid>
-                <VendorSecondaryButton className="w-full" onClick={openSquareSandboxSetup}>
-                  Open Square Developer
-                </VendorSecondaryButton>
-                <VendorPrimaryButton className="w-full" disabled={connecting} onClick={() => void connectSquare()}>
-                  {connecting ? 'Connecting…' : 'Connect Square'}
+              <div className="mt-3">
+                <VendorPrimaryButton
+                  className="w-full"
+                  disabled={connecting}
+                  onClick={() => void connectSquare()}
+                >
+                  {connecting ? 'Connecting…' : 'Authorize with Square'}
                 </VendorPrimaryButton>
-              </VendorActionGrid>
+              </div>
+              {redirectHint ? (
+                <p className="m-0 mt-2 text-xs font-medium text-emerald-700">{redirectHint}</p>
+              ) : null}
+              <p className="m-0 mt-3 text-xs text-stone-500">
+                Only open the Developer Console to copy credentials or register the redirect URL
+                above—not to authorize sellers.{' '}
+                <button
+                  type="button"
+                  className="border-0 bg-transparent p-0 text-xs font-semibold text-stone-700 underline underline-offset-2"
+                  onClick={openSquareSandboxSetup}
+                >
+                  Square Developer Console
+                </button>
+              </p>
             </VendorFormPanel>
           ) : (
             <VendorSection title="Tools">

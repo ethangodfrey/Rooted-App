@@ -9,6 +9,7 @@ import type {
   PosProductMapping,
   PosProvider,
   PosSyncRun,
+  SquareOAuthConfigStatus,
 } from '@/types/pos';
 
 function normalizeLineItem(raw: Record<string, unknown>): PosImportedLineItem {
@@ -52,6 +53,9 @@ export const posApi = {
 
   getOAuthRedirectUri: (provider: PosProvider) =>
     api.get<PosOAuthRedirectInfo>(`/pos/oauth/${provider.toLowerCase()}/redirect-uri`),
+
+  getSquareOAuthConfigStatus: () =>
+    api.get<SquareOAuthConfigStatus>('/pos/oauth/square/config-status'),
 
   disconnect: (id: string) => api.del<PosConnection>(`/pos/connections/${id}`),
 
