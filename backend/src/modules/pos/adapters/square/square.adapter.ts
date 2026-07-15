@@ -6,6 +6,10 @@ import axios, { AxiosError, type AxiosInstance } from 'axios';
 
 import { POS_DEFAULTS } from '../../pos.constants';
 import { posWebhookUrl } from '../../pos-public-url';
+import {
+  normalizeSquareEnvironment,
+  squareAuthorizeBaseUrl,
+} from '../../square-environment';
 import type {
   NormalizedLineItem,
   NormalizedTransaction,
@@ -48,11 +52,10 @@ export class SquareAdapter implements PosProviderAdapter {
   private readonly apiVersion: string;
 
   constructor(private readonly config: ConfigService) {
-    const env = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox');
-    this.baseUrl =
-      env === 'production'
-        ? 'https://connect.squareup.com'
-        : 'https://connect.squareupsandbox.com';
+    const environment = normalizeSquareEnvironment(
+      this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox'),
+    );
+    this.baseUrl = squareAuthorizeBaseUrl(environment);
     this.appId = this.config.get<string>('SQUARE_APPLICATION_ID', '');
     this.appSecret = this.config.get<string>('SQUARE_APPLICATION_SECRET', '');
     // Pin a Square-Version; override via env as Square releases new versions.
@@ -76,7 +79,9 @@ export class SquareAdapter implements PosProviderAdapter {
       redirect_uri: request.redirectUri,
     });
     // Sandbox only supports session=true (default). Production requires session=false.
-    const isProduction = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox') === 'production';
+    const isProduction =
+      normalizeSquareEnvironment(this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox')) ===
+      'production';
     if (isProduction) {
       params.set('session', 'false');
     }

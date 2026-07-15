@@ -84,21 +84,30 @@ https://abc123.ngrok-free.app/pos/oauth/square/callback
 
 Must match `{POS_PROVIDER_BASE_URL}/pos/oauth/square/callback` exactly.
 
-### Open a sandbox test account first (required on mobile)
+### Open a sandbox test account first (required)
 
-Square returns a **blank page** (HTTP 400) unless a sandbox seller session is already
-open in the **same phone browser** (Safari/Chrome). The Rooted in-app browser cannot
-share that session.
+Square Sandbox OAuth **cannot** show the Allow screen until a Sandbox seller session
+is already open in the **same browser**. If you skip this, Square often lands you on
+Developer Console → **Applications** (looks like a broken redirect) with error:
 
-In the app, use the two-step card on the POS screen:
+> To start the OAuth flow for a sandbox account, first launch the seller test account
+> from the Developer Console.
 
-1. **Open sandbox test account** → opens [developer.squareup.com/apps](https://developer.squareup.com/apps)
-2. In the browser: your app → **Sandbox test accounts** → **Open** (leave that tab open)
-3. Return to Rooted → **Connect Square** (opens OAuth in the same system browser)
-4. Tap **Allow** → you should land back in the app on “Square connected”
+Web Vendor → Point of Sale uses a two-step card:
 
-> If the page is still blank, step 2 was skipped or a different browser was used.
-> Production OAuth works differently (real Square login).
+1. **Open Developer Console** → your app → **Sandbox test accounts** → **Open**
+   (Sandbox Dashboard). Leave that tab open.
+2. Check “Sandbox seller dashboard is open…” → **Authorize with Square**
+3. Tap **Allow** → return to Vendorly on “Square connected”
+
+Railway redirect URL to register under OAuth → Redirect URL (**Sandbox**):
+
+`https://rooted-app-production-43fb.up.railway.app/pos/oauth/square/callback`
+
+`SQUARE_ENVIRONMENT` must be exactly `sandbox` or `production` (not an authorize URL).
+
+> If Authorize still fails, step 1 was skipped or a different browser/profile was used.
+> Production OAuth works differently (real Square seller login — no test-account launch).
 
 ## 3. Copy credentials into `backend/.env`
 

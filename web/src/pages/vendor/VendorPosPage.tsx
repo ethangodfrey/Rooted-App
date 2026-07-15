@@ -9,6 +9,7 @@ import {
   VendorListRow,
   VendorPrimaryButton,
   VendorScreen,
+  VendorSecondaryButton,
   VendorSection,
   VendorStatusPill,
   VENDOR_PRESSABLE,
@@ -52,8 +53,12 @@ export function VendorPosPage() {
   const [oauthRedirectUri, setOauthRedirectUri] = useState<string | null>(null);
   const [squareConfig, setSquareConfig] = useState<SquareOAuthConfigStatus | null>(null);
   const [redirectHint, setRedirectHint] = useState<string | null>(null);
+  const [sandboxSellerReady, setSandboxSellerReady] = useState(false);
 
   const squareActive = connections.some((c) => c.provider === 'SQUARE' && c.status === 'ACTIVE');
+  const isSandbox =
+    (squareConfig?.environment ?? 'sandbox') !== 'production' ||
+    Boolean(squareConfig?.sandboxSellerLaunchRequired);
 
   const load = useCallback(async () => {
     if (!isApiConfigured || !vendor) {
@@ -86,6 +91,13 @@ export function VendorPosPage() {
   }, [load]);
 
   async function connectSquare() {
+    if (isSandbox && !sandboxSellerReady) {
+      setError(
+        'Open your Sandbox seller dashboard first (Step 1), leave that tab open, then authorize.',
+      );
+      return;
+    }
+
     setConnecting(true);
     setError(null);
     setRedirectHint(null);
@@ -112,8 +124,6 @@ export function VendorPosPage() {
         return;
       }
 
-      // Do NOT open developer.squareup.com here. That page is the Applications
-      // dashboard (what people confuse with OAuth), not the consent screen.
       setRedirectHint(`Opening Square authorization at ${check.host}…`);
       openSquareOAuth(authorizeUrl);
     } catch (err) {
@@ -205,33 +215,68 @@ export function VendorPosPage() {
           {!squareActive ? (
             <VendorFormPanel className="mb-5">
               <p className="m-0 text-sm font-semibold text-stone-800">Connect Square</p>
-              <p className="m-0 mt-1 text-xs text-stone-500">
-                Tap Authorize with Square. You should land on Square&apos;s permission screen
-                (connect.squareupsandbox.com in sandbox)—not the Applications list.
-              </p>
-              <div className="mt-3">
-                <VendorPrimaryButton
-                  className="w-full"
-                  disabled={connecting}
-                  onClick={() => void connectSquare()}
-                >
-                  {connecting ? 'Connecting…' : 'Authorize with Square'}
-                </VendorPrimaryButton>
-              </div>
+              {isSandbox ? (
+                <>
+                  <p className="m-0 mt-1 text-xs text-stone-500">
+                    Sandbox cannot show the Allow screen until a seller test account is open in
+                    this same browser. Square sends you to Applications if you skip that.
+                  </p>
+                  <ol className="m-0 mt-3 list-decimal space-y-3 pl-4 text-xs text-stone-600">
+                    <li>
+                      <span className="font-semibold text-stone-800">Launch sandbox seller</span>
+                      <p className="m-0 mt-1">
+                        Developer Console → open app → <em>Sandbox test accounts</em> →{' '}
+                        <em>Open</em> (Sandbox Dashboard). Leave that tab open.
+                      </p>
+                      <VendorSecondaryButton
+                        className="mt-2 w-full"
+                        onClick={openSquareSandboxSetup}
+                      >
+                        Open Developer Console
+                      </VendorSecondaryButton>
+                    </li>
+                    <li>
+                      <span className="font-semibold text-stone-800">Authorize this app</span>
+                      <label className="mt-2 flex cursor-pointer items-start gap-2">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={sandboxSellerReady}
+                          onChange={(e) => setSandboxSellerReady(e.target.checked)}
+                        />
+                        <span>
+                          Sandbox seller dashboard is open in another tab of this browser
+                        </span>
+                      </label>
+                      <VendorPrimaryButton
+                        className="mt-2 w-full"
+                        disabled={connecting || !sandboxSellerReady}
+                        onClick={() => void connectSquare()}
+                      >
+                        {connecting ? 'Connecting…' : 'Authorize with Square'}
+                      </VendorPrimaryButton>
+                    </li>
+                  </ol>
+                </>
+              ) : (
+                <>
+                  <p className="m-0 mt-1 text-xs text-stone-500">
+                    Sign in with your Square seller account and allow Vendorly to read orders.
+                  </p>
+                  <div className="mt-3">
+                    <VendorPrimaryButton
+                      className="w-full"
+                      disabled={connecting}
+                      onClick={() => void connectSquare()}
+                    >
+                      {connecting ? 'Connecting…' : 'Authorize with Square'}
+                    </VendorPrimaryButton>
+                  </div>
+                </>
+              )}
               {redirectHint ? (
                 <p className="m-0 mt-2 text-xs font-medium text-emerald-700">{redirectHint}</p>
               ) : null}
-              <p className="m-0 mt-3 text-xs text-stone-500">
-                Only open the Developer Console to copy credentials or register the redirect URL
-                above—not to authorize sellers.{' '}
-                <button
-                  type="button"
-                  className="border-0 bg-transparent p-0 text-xs font-semibold text-stone-700 underline underline-offset-2"
-                  onClick={openSquareSandboxSetup}
-                >
-                  Square Developer Console
-                </button>
-              </p>
             </VendorFormPanel>
           ) : (
             <VendorSection title="Tools">

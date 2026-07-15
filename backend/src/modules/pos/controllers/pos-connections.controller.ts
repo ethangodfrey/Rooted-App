@@ -18,6 +18,7 @@ import { RolesGuard } from '../../../common/auth/roles.guard';
 import { SupabaseAuthGuard } from '../../../common/auth/supabase-auth.guard';
 import { CreatePosConnectionDto } from '../dto/create-pos-connection.dto';
 import { PosConnectionService } from '../services/pos-connection.service';
+import { normalizeSquareEnvironment } from '../square-environment';
 
 @Controller('pos/connections')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
@@ -51,9 +52,7 @@ export class PosConnectionsController {
 
   private oauthEnvironment(provider: PosProvider): 'sandbox' | 'production' | undefined {
     if (provider !== 'SQUARE') return undefined;
-    return this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox') === 'production'
-      ? 'production'
-      : 'sandbox';
+    return normalizeSquareEnvironment(this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox'));
   }
 
   @Get()
