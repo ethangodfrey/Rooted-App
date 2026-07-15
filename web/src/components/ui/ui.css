@@ -566,6 +566,7 @@
   background: linear-gradient(135deg, var(--color-warm-sage) 0%, rgba(212, 168, 83, 0.28) 100%);
 }
 
+.app-image-fallback--vendor-logo,
 .app-image-fallback--vendor {
   background: var(--color-honeydew);
   font-size: 1.5rem;
@@ -1652,6 +1653,11 @@
 .app-skeleton--tile {
   flex: 0 0 min(72vw, 240px);
   height: 120px;
+}
+
+.app-skeleton--heading {
+  height: 1.25rem;
+  border-radius: 0.5rem;
 }
 
 @keyframes skeleton-shimmer {

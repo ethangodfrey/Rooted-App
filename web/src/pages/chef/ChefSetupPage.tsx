@@ -1,12 +1,16 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
 import { useAuth } from '@/hooks/use-auth';
 import { geocodeAddress } from '@/lib/geocode';
 import { supabase } from '@/lib/supabase';
 import { uploadBannerImage, uploadProfilePhoto } from '@/lib/upload';
 import '@/components/ui/ui.css';
+
+type ChefField = 'displayName' | 'bio' | 'city' | 'state';
 
 export function ChefSetupPage() {
   const navigate = useNavigate();
@@ -26,6 +30,16 @@ export function ChefSetupPage() {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ChefField, string>>>({});
+
+  function clearFieldError(field: ChefField) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   async function handlePhotoChange(file: File | undefined) {
     if (!file || !user) return;
@@ -60,11 +74,23 @@ export function ChefSetupPage() {
       setError('Chef profile is still loading. Try again in a moment.');
       return;
     }
-    if (!displayName.trim() || !bio.trim() || !city.trim() || !state.trim()) {
-      setError('Display name, bio, city, and state are required.');
+
+    const nextFieldErrors: Partial<Record<ChefField, string>> = {};
+    if (!displayName.trim()) nextFieldErrors.displayName = 'Display name is required.';
+    if (!bio.trim()) nextFieldErrors.bio = 'Bio is required.';
+    if (!city.trim()) nextFieldErrors.city = 'City is required.';
+    if (!state.trim()) nextFieldErrors.state = 'State is required.';
+    else if (!/^[A-Za-z]{2}$/.test(state.trim())) {
+      nextFieldErrors.state = 'Enter a two-letter state code (e.g. TX).';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
 
+    setFieldErrors({});
     setSaving(true);
     setError(null);
 
@@ -73,8 +99,6 @@ export function ChefSetupPage() {
     const cleanState = state.trim().toUpperCase();
     const cleanPostal = postalCode.trim();
 
-    // Best-effort geocode so the chef is geo-ranked in nearby/search. Falls back
-    // to a city/state centroid and never blocks the save on failure.
     const coords = await geocodeAddress({
       streetAddress: cleanStreet,
       city: cleanCity,
@@ -150,16 +174,11 @@ export function ChefSetupPage() {
       <div className="app-input-group">
         <label>Banner image</label>
         {bannerUrl ? (
-          <img
+          <FallbackImage
             src={bannerUrl}
             alt=""
-            style={{
-              width: '100%',
-              borderRadius: '16px',
-              marginBottom: '0.75rem',
-              maxHeight: '160px',
-              objectFit: 'cover',
-            }}
+            variant="banner"
+            className="mb-3 w-full max-h-40 rounded-2xl object-cover"
           />
         ) : null}
         <input
@@ -190,21 +209,29 @@ export function ChefSetupPage() {
         <label htmlFor="chef-name">Display name</label>
         <input
           id="chef-name"
-          className="app-input"
+          className={`app-input${fieldErrors.displayName ? ' app-input--invalid' : ''}`}
           value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
+          onChange={(e) => {
+            setDisplayName(e.target.value);
+            clearFieldError('displayName');
+          }}
           placeholder="Chef Maria"
         />
+        <FieldError message={fieldErrors.displayName} />
       </div>
       <div className="app-input-group">
         <label htmlFor="chef-bio">Bio</label>
         <textarea
           id="chef-bio"
-          className="app-textarea"
+          className={`app-textarea${fieldErrors.bio ? ' app-textarea--invalid' : ''}`}
           value={bio}
-          onChange={(e) => setBio(e.target.value)}
+          onChange={(e) => {
+            setBio(e.target.value);
+            clearFieldError('bio');
+          }}
           placeholder="Your background, signature dishes, and what makes your cooking special."
         />
+        <FieldError message={fieldErrors.bio} />
       </div>
       <div className="app-input-group">
         <label htmlFor="chef-cuisines">Cuisine specialties (comma-separated)</label>
@@ -227,26 +254,36 @@ export function ChefSetupPage() {
           autoComplete="street-address"
         />
       </div>
-      <div className="app-input-group">
-        <label htmlFor="chef-city">City</label>
-        <input
-          id="chef-city"
-          className="app-input"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="Austin"
-        />
-      </div>
-      <div className="app-input-group">
-        <label htmlFor="chef-state">State</label>
-        <input
-          id="chef-state"
-          className="app-input"
-          value={state}
-          onChange={(e) => setState(e.target.value.toUpperCase())}
-          maxLength={2}
-          placeholder="TX"
-        />
+      <div className="app-form-grid">
+        <div className="app-input-group">
+          <label htmlFor="chef-city">City</label>
+          <input
+            id="chef-city"
+            className={`app-input${fieldErrors.city ? ' app-input--invalid' : ''}`}
+            value={city}
+            onChange={(e) => {
+              setCity(e.target.value);
+              clearFieldError('city');
+            }}
+            placeholder="Austin"
+          />
+          <FieldError message={fieldErrors.city} />
+        </div>
+        <div className="app-input-group">
+          <label htmlFor="chef-state">State</label>
+          <input
+            id="chef-state"
+            className={`app-input${fieldErrors.state ? ' app-input--invalid' : ''}`}
+            value={state}
+            onChange={(e) => {
+              setState(e.target.value.toUpperCase());
+              clearFieldError('state');
+            }}
+            maxLength={2}
+            placeholder="TX"
+          />
+          <FieldError message={fieldErrors.state} />
+        </div>
       </div>
       <div className="app-input-group">
         <label htmlFor="chef-zip">ZIP code (optional)</label>

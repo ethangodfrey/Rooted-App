@@ -46,6 +46,38 @@ export function normalizeUrl(raw: string): string | null {
   return `https://${trimmed}`;
 }
 
+/** Returns a user-facing error when a non-empty value is not a valid http(s) URL. */
+export function validateOptionalUrl(raw: string, fieldLabel: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  try {
+    const normalized = normalizeUrl(trimmed);
+    if (!normalized) return null;
+    const url = new URL(normalized);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return `Enter a valid ${fieldLabel} URL (https://…).`;
+    }
+    return null;
+  } catch {
+    return `Enter a valid ${fieldLabel} URL (https://…).`;
+  }
+}
+
+/** Instagram handles (@user) or profile URLs. */
+export function validateOptionalInstagram(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('@')) {
+    const handle = trimmed.slice(1);
+    if (!/^[a-zA-Z0-9._]{1,30}$/.test(handle)) {
+      return 'Enter a valid Instagram handle (e.g. @yourshop).';
+    }
+    return null;
+  }
+  return validateOptionalUrl(trimmed, 'Instagram');
+}
+
 export function validateVendorApplicationFields(
   input: VendorApplicationInput,
   attested: boolean,

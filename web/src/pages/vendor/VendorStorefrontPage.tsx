@@ -7,9 +7,17 @@ import {
   VendorPrimaryButton,
   VendorScreen,
 } from '@/components/vendor/vendor-ui';
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  normalizeUrl,
+  validateOptionalInstagram,
+  validateOptionalUrl,
+} from '@/lib/vendor-application';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
+
+type StorefrontField = 'website' | 'instagram';
 
 export function VendorStorefrontPage() {
   const { vendor, refreshUser } = useAuth();
@@ -19,6 +27,7 @@ export function VendorStorefrontPage() {
   const [instagram, setInstagram] = useState(vendor?.instagram_url ?? '');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<StorefrontField, string>>>({});
 
   useEffect(() => {
     setBusinessDescription(vendor?.business_description ?? '');
@@ -27,16 +36,41 @@ export function VendorStorefrontPage() {
     setInstagram(vendor?.instagram_url ?? '');
   }, [vendor]);
 
+  function clearFieldError(field: StorefrontField) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!vendor) return;
+
+    const nextFieldErrors: Partial<Record<StorefrontField, string>> = {};
+    const websiteError = validateOptionalUrl(website, 'website');
+    if (websiteError) nextFieldErrors.website = websiteError;
+    const instagramError = validateOptionalInstagram(instagram);
+    if (instagramError) nextFieldErrors.instagram = instagramError;
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setMessage(null);
+      return;
+    }
+
+    setFieldErrors({});
     setSaving(true);
     const { error } = await supabase
       .from('vendors')
       .update({
         business_description: businessDescription.trim() || null,
         product_summary: productSummary.trim() || null,
-        website_url: website.trim() || null,
-        instagram_url: instagram.trim() || null,
+        website_url: normalizeUrl(website),
+        instagram_url: instagram.trim().startsWith('@')
+          ? normalizeUrl(`https://instagram.com/${instagram.trim().slice(1)}`)
+          : normalizeUrl(instagram),
         updated_at: new Date().toISOString(),
       })
       .eq('id', vendor.id);
@@ -66,11 +100,29 @@ export function VendorStorefrontPage() {
         </div>
         <div className="app-input-group">
           <label>Website</label>
-          <input className="app-input" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          <input
+            className={`app-input${fieldErrors.website ? ' app-input--invalid' : ''}`}
+            value={website}
+            onChange={(e) => {
+              setWebsite(e.target.value);
+              clearFieldError('website');
+            }}
+            placeholder="https://yourshop.com"
+          />
+          <FieldError message={fieldErrors.website} />
         </div>
         <div className="app-input-group">
           <label>Instagram</label>
-          <input className="app-input" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+          <input
+            className={`app-input${fieldErrors.instagram ? ' app-input--invalid' : ''}`}
+            value={instagram}
+            onChange={(e) => {
+              setInstagram(e.target.value);
+              clearFieldError('instagram');
+            }}
+            placeholder="@yourshop or https://instagram.com/yourshop"
+          />
+          <FieldError message={fieldErrors.instagram} />
         </div>
 
         {message ? <p className="app-message">{message}</p> : null}

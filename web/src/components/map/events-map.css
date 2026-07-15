@@ -166,15 +166,21 @@
   min-width: 0;
 }
 
+.shopper-map-list .app-hscroll-card,
+.shopper-map-list .shopper-map-carousel-card {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+}
+
 .shopper-map-carousel-card {
-  flex: 0 0 min(85vw, 280px);
   text-align: left;
   border: none;
   cursor: pointer;
   font: inherit;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .events-map-frame {
     height: min(68vh, 520px);
     min-height: 360px;

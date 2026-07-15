@@ -16,27 +16,22 @@ export function MarketGuideSections({ event }: MarketGuideSectionsProps) {
   const tips = getShopperTips(event);
 
   return (
-    <div style={{ marginBottom: '1.5rem' }}>
+    <div className="mb-6 flex flex-col gap-4">
       {event.what_to_look_for ? (
-        <div className="app-card" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>What to look for</h2>
-          <p style={{ lineHeight: 1.6 }}>{event.what_to_look_for}</p>
+        <div className="app-card">
+          <h2 className="mb-2 text-lg font-semibold text-stone-900">What to look for</h2>
+          <p className="text-sm leading-relaxed text-stone-600 sm:text-base">{event.what_to_look_for}</p>
         </div>
       ) : null}
 
       {categories.length > 0 ? (
-        <div className="app-card" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>What you&apos;ll find</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className="app-card">
+          <h2 className="mb-3 text-lg font-semibold text-stone-900">What you&apos;ll find</h2>
+          <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <span
                 key={category}
-                style={{
-                  background: 'var(--color-honeydew, #f0f7f0)',
-                  borderRadius: '999px',
-                  padding: '0.35rem 0.75rem',
-                  fontSize: '0.875rem',
-                }}
+                className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm text-emerald-900"
               >
                 {category}
               </span>
@@ -46,20 +41,18 @@ export function MarketGuideSections({ event }: MarketGuideSectionsProps) {
       ) : null}
 
       {event.market_highlights ? (
-        <div className="app-card" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Highlights & news</h2>
-          <p style={{ lineHeight: 1.6 }}>{event.market_highlights}</p>
+        <div className="app-card">
+          <h2 className="mb-2 text-lg font-semibold text-stone-900">Highlights & news</h2>
+          <p className="text-sm leading-relaxed text-stone-600 sm:text-base">{event.market_highlights}</p>
         </div>
       ) : null}
 
       {tips.length > 0 ? (
         <div className="app-card">
-          <h2 style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>Shopper tips</h2>
-          <ul style={{ margin: 0, paddingLeft: '1.25rem', lineHeight: 1.6 }}>
+          <h2 className="mb-3 text-lg font-semibold text-stone-900">Shopper tips</h2>
+          <ul className="m-0 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-stone-600 sm:text-base">
             {tips.map((tip) => (
-              <li key={tip} style={{ marginBottom: '0.35rem' }}>
-                {tip}
-              </li>
+              <li key={tip}>{tip}</li>
             ))}
           </ul>
         </div>

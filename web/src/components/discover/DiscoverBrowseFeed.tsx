@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useNow } from '@/hooks/use-now';
 import { categoryVisual } from '@/lib/category-visuals';
 
@@ -55,17 +56,18 @@ function productCategory(product: PopularProduct | SuggestedProduct): string | n
 
 
 function ProductVisual({ product }: { product: PopularProduct | SuggestedProduct }) {
-
   const visual = categoryVisual(productCategory(product));
 
-  if (product.displayImageUrl) {
-
-    return <img src={product.displayImageUrl} alt="" />;
-
-  }
-
-  return <span aria-hidden="true">{visual.emoji}</span>;
-
+  return (
+    <FallbackImage
+      src={product.displayImageUrl}
+      alt=""
+      variant="product"
+      category={productCategory(product)}
+      className="h-full w-full object-cover"
+      fallbackIcon={<span aria-hidden="true">{visual.emoji}</span>}
+    />
+  );
 }
 
 
@@ -125,9 +127,12 @@ function DiscoverPostCard({ post }: { post: FeedPost }) {
       ) : null}
 
       {thumbUrl ? (
-
-        <img src={thumbUrl} alt="" className="app-postcard__media" />
-
+        <FallbackImage
+          src={thumbUrl}
+          alt=""
+          variant="product"
+          className="app-postcard__media"
+        />
       ) : null}
 
     </article>
