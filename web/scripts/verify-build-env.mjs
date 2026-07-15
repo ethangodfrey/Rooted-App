@@ -40,7 +40,7 @@ if (isProductionTarget && !apiLooksProduction) {
   console.error('');
   console.error('Build blocked: production web builds require VITE_API_URL.');
   console.error('');
-  console.error('  VITE_API_URL=https://api.vendorly.app');
+  console.error('  VITE_API_URL=https://rooted-app-production-43fb.up.railway.app');
   console.error('');
   console.error('Set in Vercel → Environment Variables → Production only.');
   console.error('Preview/dev builds may omit VITE_API_URL for Supabase-only mode.');
