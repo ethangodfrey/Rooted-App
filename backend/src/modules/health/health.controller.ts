@@ -32,6 +32,8 @@ export class HealthController {
       status: result.ok ? 'ok' : 'degraded',
       db: result.db,
       redis: result.redis,
+      dbTarget: result.dbTarget ?? null,
+      dbError: result.dbError ?? null,
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     };

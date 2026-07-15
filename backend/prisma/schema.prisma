@@ -10,6 +10,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Runtime DATABASE_URL should be the Supabase transaction pooler
+// (*.pooler.supabase.com:6543?pgbouncer=true). For migrate/deploy from a
+// machine with IPv4, temporarily use the direct db.*.supabase.co:5432 URI.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
