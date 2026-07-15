@@ -5,7 +5,6 @@ import { ActionRow } from '@/src/components/ui/action-row';
 import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
-import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { LegalLinks } from '@/src/components/account/legal-links';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
