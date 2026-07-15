@@ -20,6 +20,10 @@ export interface PosTransactionInsert {
   currency: string;
   soldAt: string;
   rawPayload: Record<string, unknown>;
+  /** Phase 47 ledger columns (integer cents). */
+  taxAmount?: number;
+  tipAmount?: number;
+  paymentStatus?: LedgerTransactionState | string;
 }
 
 export interface PosSalesIngestJobData {

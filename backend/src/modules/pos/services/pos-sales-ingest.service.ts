@@ -1,13 +1,22 @@
 /**
  * Core sales webhook ingest — shared by BullMQ processor and inline fallback.
- * Writes pos_transactions (ledger) + analytics_sales (Phase 45) + schedules rollups.
+ * Writes:
+ *   1. pos_transactions (ledger)
+ *   2. analytics_sales (Phase 45)
+ *   3. pos_analytics_transactions (+ items) via PosAnalyticsIngestService (Phase 47)
+ *   4. schedules market snapshot rollups
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 
 import { buildSnapshotRollupJobs } from '../utils/tender-aggregation';
 import type { AnalyticsPaymentStatus } from '../types/analytics-transaction';
-import type { PosSalesIngestJobData, PosSnapshotRollupJobData } from '../types/ledger-transaction';
+import type {
+  LedgerProvider,
+  PosSalesIngestJobData,
+  PosSnapshotRollupJobData,
+  ResolvedPosConnection,
+} from '../types/ledger-transaction';
 import { PosAnalyticsIngestService } from './pos-analytics-ingest.service';
 import { PosAnalyticsSalesService } from './pos-analytics-sales.service';
 import { PosLedgerWriterService } from './pos-ledger-writer.service';
@@ -58,6 +67,9 @@ export class PosSalesIngestService {
         externalTransactionId: txn.externalTransactionId,
         grossAmount: txn.grossAmountCents,
         platformFee: txn.platformFeeCents,
+        taxAmount: txn.taxCents ?? 0,
+        tipAmount: 0,
+        paymentStatus: txn.state,
         currency: txn.currency,
         soldAt: txn.soldAt,
         rawPayload: txn.rawPayload,
@@ -88,57 +100,10 @@ export class PosSalesIngestService {
       });
       if (sale?.id) analyticsWritten += 1;
 
-      // Phase 47 unified analytics rows (with line items when present in raw payload).
-      try {
-        if (data.provider === 'square') {
-          const mapped = await this.analyticsIngest.ingestSquarePayload(txn.rawPayload, {
-            vendorId: connection.vendorId,
-            posConnectionId: connection.id,
-            provider: 'square',
-          });
-          if (mapped) {
-            analyticsTxnWritten += 1;
-          } else {
-            await this.analyticsIngest.upsertTransaction({
-              externalTransactionId: txn.externalTransactionId,
-              vendorId: connection.vendorId,
-              posConnectionId: connection.id,
-              provider: data.provider,
-              totalAmountCents: txn.grossAmountCents,
-              taxAmountCents: txn.taxCents ?? 0,
-              tipAmountCents: 0,
-              currency: txn.currency,
-              paymentStatus: txn.state as AnalyticsPaymentStatus,
-              transactionCreatedAt: txn.soldAt,
-              providerLocationId: txn.providerLocationId ?? data.providerLocationId,
-              items: [],
-              rawPayload: txn.rawPayload,
-            });
-            analyticsTxnWritten += 1;
-          }
-        } else {
-          await this.analyticsIngest.upsertTransaction({
-            externalTransactionId: txn.externalTransactionId,
-            vendorId: connection.vendorId,
-            posConnectionId: connection.id,
-            provider: data.provider,
-            totalAmountCents: txn.grossAmountCents,
-            taxAmountCents: txn.taxCents ?? 0,
-            tipAmountCents: 0,
-            currency: txn.currency,
-            paymentStatus: txn.state as AnalyticsPaymentStatus,
-            transactionCreatedAt: txn.soldAt,
-            providerLocationId: txn.providerLocationId ?? data.providerLocationId,
-            items: [],
-            rawPayload: txn.rawPayload,
-          });
-          analyticsTxnWritten += 1;
-        }
-      } catch (err) {
-        // Non-fatal: ledger + analytics_sales already written; log and continue.
-        this.logger.warn(
-          `phase47 analytics ingest skipped for ${txn.externalTransactionId}: ${(err as Error).message}`,
-        );
+      // Phase 47 only after a successful ledger write.
+      if (result?.id) {
+        const phase47 = await this.writePhase47Analytics(connection, data.provider, txn);
+        if (phase47) analyticsTxnWritten += 1;
       }
     }
 
@@ -167,5 +132,48 @@ export class PosSalesIngestService {
     );
 
     return { written, analyticsWritten, analyticsTxnWritten, rollups };
+  }
+
+  /**
+   * Upsert into pos_analytics_transactions (+ items). Non-fatal on failure so
+   * ledger / analytics_sales success is preserved.
+   */
+  private async writePhase47Analytics(
+    connection: ResolvedPosConnection,
+    provider: LedgerProvider,
+    txn: PosSalesIngestJobData['transactions'][number],
+  ): Promise<boolean> {
+    try {
+      if (provider === 'square') {
+        const mapped = await this.analyticsIngest.ingestSquarePayload(txn.rawPayload, {
+          vendorId: connection.vendorId,
+          posConnectionId: connection.id,
+          provider: 'square',
+        });
+        if (mapped) return true;
+      }
+
+      await this.analyticsIngest.upsertTransaction({
+        externalTransactionId: txn.externalTransactionId,
+        vendorId: connection.vendorId,
+        posConnectionId: connection.id,
+        provider,
+        totalAmountCents: txn.grossAmountCents,
+        taxAmountCents: txn.taxCents ?? 0,
+        tipAmountCents: 0,
+        currency: txn.currency,
+        paymentStatus: txn.state as AnalyticsPaymentStatus,
+        transactionCreatedAt: txn.soldAt,
+        providerLocationId: txn.providerLocationId ?? null,
+        items: [],
+        rawPayload: txn.rawPayload,
+      });
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `phase47 analytics ingest skipped for ${txn.externalTransactionId}: ${(err as Error).message}`,
+      );
+      return false;
+    }
   }
 }

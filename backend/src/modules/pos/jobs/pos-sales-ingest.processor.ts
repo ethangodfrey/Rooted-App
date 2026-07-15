@@ -1,5 +1,6 @@
 /**
- * Consumes pos-sales-ingest queue → pos_transactions ledger writes + rollup scheduling.
+ * Consumes pos-sales-ingest queue →
+ * pos_transactions ledger + analytics_sales + phase47 analytics upserts + rollups.
  */
 
 import { Processor, WorkerHost } from '@nestjs/bullmq';
