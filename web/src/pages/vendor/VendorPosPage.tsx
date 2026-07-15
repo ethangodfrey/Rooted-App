@@ -97,8 +97,23 @@ export function VendorPosPage() {
         return;
       }
 
+      // Do NOT auto-open developer.squareup.com here. On mobile Safari,
+      // window.open steals the tab and users never reach the OAuth consent page.
+      // Sandbox sellers can use the explicit "Open Square Developer" button first.
       if (oauthEnvironment === 'sandbox') {
-        openSquareSandboxSetup();
+        const host = (() => {
+          try {
+            return new URL(authorizeUrl).hostname;
+          } catch {
+            return '';
+          }
+        })();
+        if (host && host !== 'connect.squareupsandbox.com') {
+          setError(
+            `Sandbox OAuth must use connect.squareupsandbox.com (got ${host}). Check SQUARE_ENVIRONMENT on Railway.`,
+          );
+          return;
+        }
       }
 
       openSquareOAuth(authorizeUrl);
