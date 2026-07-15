@@ -2,6 +2,15 @@ import type { ConfigService } from '@nestjs/config';
 import type { PosProvider } from '@prisma/client';
 
 /**
+ * Retired Railway public hostnames → current production service URL.
+ * Keeps OAuth/webhook redirects working when PUBLIC_BASE_URL still points at a deleted deploy.
+ */
+const STALE_PROVIDER_BASE_REMAP: Record<string, string> = {
+  'rooted-app-production-8ba5.up.railway.app':
+    'https://rooted-app-production-43fb.up.railway.app',
+};
+
+/**
  * Public HTTPS URL Square (and other providers) use for OAuth redirects and
  * webhooks. Prefer `POS_PROVIDER_BASE_URL` in local dev so the mobile app can
  * keep calling the backend over a LAN IP while provider callbacks use a tunnel.
@@ -9,17 +18,30 @@ import type { PosProvider } from '@prisma/client';
 export function posProviderBaseUrl(config: ConfigService): string {
   const explicit = config.get<string>('POS_PROVIDER_BASE_URL', '').trim();
   if (explicit) {
-    return explicit.replace(/\/$/, '');
+    return remapStaleProviderBase(explicit);
   }
 
   // Only fall back when PUBLIC_BASE_URL is already HTTPS (production). Never use a
   // LAN http:// address for provider OAuth redirects or webhooks.
   const fallback = config.get<string>('PUBLIC_BASE_URL', '').trim();
   if (fallback && isHttpsUrl(fallback)) {
-    return fallback.replace(/\/$/, '');
+    return remapStaleProviderBase(fallback);
   }
 
-  return '';
+  // Last-resort production default when env still points at a retired Railway URL.
+  return 'https://rooted-app-production-43fb.up.railway.app';
+}
+
+export function remapStaleProviderBase(url: string): string {
+  const normalized = url.trim().replace(/\/$/, '');
+  try {
+    const host = new URL(normalized).hostname.toLowerCase();
+    const mapped = STALE_PROVIDER_BASE_REMAP[host];
+    if (mapped) return mapped;
+  } catch {
+    /* keep normalized */
+  }
+  return normalized;
 }
 
 export function isHttpsUrl(url: string): boolean {

@@ -1,8 +1,17 @@
-import { BadRequestException, Controller, Get, Param, Query, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PosProvider } from '@prisma/client';
 import type { Response } from 'express';
 
 import { OAuthCallbackDto } from '../dto/oauth-callback.dto';
+import { posOAuthRedirectUri, posProviderBaseUrl } from '../pos-public-url';
 import { PosConnectionService } from '../services/pos-connection.service';
 import { PosSyncService } from '../services/pos-sync.service';
 import { renderOAuthReturnHtml } from '../utils/oauth-return-html';
@@ -16,7 +25,34 @@ export class PosOAuthController {
   constructor(
     private readonly connections: PosConnectionService,
     private readonly sync: PosSyncService,
+    private readonly config: ConfigService,
   ) {}
+
+  /**
+   * Public Square/Nest POS OAuth readiness (no secrets).
+   * Use to verify Railway env after setting SQUARE_APPLICATION_* + PUBLIC_BASE_URL.
+   */
+  @Get('square/config-status')
+  squareConfigStatus() {
+    const applicationId = this.config.get<string>('SQUARE_APPLICATION_ID', '').trim();
+    const applicationSecret = this.config
+      .get<string>('SQUARE_APPLICATION_SECRET', '')
+      .trim();
+    const environment = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox').trim();
+    const providerBaseUrl = posProviderBaseUrl(this.config);
+    const redirectUri = posOAuthRedirectUri(this.config, 'SQUARE');
+    return {
+      provider: 'SQUARE',
+      environment,
+      squareApplicationIdConfigured: Boolean(applicationId),
+      squareApplicationSecretConfigured: Boolean(applicationSecret),
+      providerBaseUrl,
+      redirectUri,
+      ready: Boolean(applicationId && applicationSecret && providerBaseUrl),
+      squareDashboardHint:
+        'Register redirectUri under Square Developer → OAuth → Redirect URL (Production when SQUARE_ENVIRONMENT=production).',
+    };
+  }
 
   /** Returns the HTTPS redirect URI to register in the provider developer console. */
   @Get(':provider/redirect-uri')
@@ -24,12 +60,13 @@ export class PosOAuthController {
     const provider = this.parseProvider(providerParam);
     const redirectUri = this.connections.getOAuthRedirectUri(provider);
     const providerBaseUrl = redirectUri.replace(/\/pos\/oauth\/[^/]+\/callback$/, '');
+    const environment = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox').trim();
     return {
       redirectUri,
       providerBaseUrl,
       hint:
         provider === 'SQUARE'
-          ? 'Add redirectUri exactly under OAuth → Redirect URL (Sandbox) in the Square Developer Dashboard, then restart the backend after any tunnel URL change.'
+          ? `Add redirectUri exactly under OAuth → Redirect URL (${environment === 'production' ? 'Production' : 'Sandbox'}) in the Square Developer Dashboard.`
           : 'Register redirectUri as the OAuth callback for this provider.',
     };
   }

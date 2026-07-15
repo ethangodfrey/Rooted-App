@@ -33,9 +33,23 @@ describe('pos-public-url', () => {
     expect(posProviderBaseUrl(config)).toBe('https://api.rooted.app');
   });
 
-  it('ignores HTTP PUBLIC_BASE_URL when POS_PROVIDER_BASE_URL is unset', () => {
+  it('remaps retired Railway public hosts to the live production service', () => {
+    const config = fakeConfig({
+      PUBLIC_BASE_URL: 'https://rooted-app-production-8ba5.up.railway.app',
+    });
+    expect(posProviderBaseUrl(config)).toBe(
+      'https://rooted-app-production-43fb.up.railway.app',
+    );
+    expect(posOAuthRedirectUri(config, 'SQUARE')).toBe(
+      'https://rooted-app-production-43fb.up.railway.app/pos/oauth/square/callback',
+    );
+  });
+
+  it('ignores HTTP PUBLIC_BASE_URL and uses the live Railway production default', () => {
     const config = fakeConfig({ PUBLIC_BASE_URL: 'http://10.0.0.165:4000' });
-    expect(posProviderBaseUrl(config)).toBe('');
+    expect(posProviderBaseUrl(config)).toBe(
+      'https://rooted-app-production-43fb.up.railway.app',
+    );
   });
 
   it('detects HTTPS URLs', () => {
