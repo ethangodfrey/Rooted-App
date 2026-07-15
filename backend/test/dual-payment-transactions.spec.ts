@@ -239,5 +239,29 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         grossAmount: 0,
       });
     });
+
+    it('skips re-importing identical completed payloads without changing stored state', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const completed = normalizeSquareOrder(adapter, {
+        id: 'sq-dup-1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 500, currency: 'USD' },
+        line_items: [{ uid: 'li-1', name: 'Honey', quantity: '1', gross_sales_money: { amount: 500 } }],
+      });
+
+      await importer.importTransactions(connection(), SYNC_RUN_ID, [completed]);
+      const second = await importer.importTransactions(connection(), SYNC_RUN_ID, [completed]);
+
+      expect(second).toMatchObject({ imported: 0, skipped: 1, updated: 0 });
+      expect(fake.store.transactions).toHaveLength(1);
+      expect(fake.store.transactions[0].state).toBe('COMPLETED');
+    });
   });
 });

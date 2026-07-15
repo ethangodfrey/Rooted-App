@@ -175,6 +175,33 @@ describe('StripeService payment webhook handling', () => {
     expect(vendorUpdateManyCalls).toHaveLength(0);
   });
 
+  it('compensates checkout inventory when checkout.session.expired is received', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    await service.handleWebhookEvent({
+      id: 'evt_expired',
+      type: 'checkout.session.expired',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          metadata: {
+            order_id: 'order-abc',
+            customer_user_id: 'user-1',
+          },
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(inventory.compensateStripeCheckout).toHaveBeenCalledWith(
+      expect.anything(),
+      'order-abc',
+      'user-1',
+    );
+    expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
+  });
+
   describe('verifyWebhook', () => {
     it('delegates signature verification to Stripe SDK', () => {
       const { prisma } = fakePrisma();
