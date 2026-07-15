@@ -43,6 +43,7 @@ export interface PosOAuthRedirectInfo {
 export interface SquareOAuthConfigStatus {
   provider: 'SQUARE';
   environment: 'sandbox' | 'production' | string;
+  environmentRaw?: string;
   authorizeBaseUrl: string;
   authorizePath: string;
   applicationIdPrefix: string;
@@ -53,6 +54,7 @@ export interface SquareOAuthConfigStatus {
   scopes: string[];
   sampleAuthorizeUrl?: string | null;
   ready: boolean;
+  sandboxSellerLaunchRequired?: boolean;
   squareDashboardHint?: string;
 }
 

@@ -14,6 +14,10 @@ import { OAuthCallbackDto } from '../dto/oauth-callback.dto';
 import { posOAuthRedirectUri, posProviderBaseUrl } from '../pos-public-url';
 import { PosConnectionService } from '../services/pos-connection.service';
 import { PosSyncService } from '../services/pos-sync.service';
+import {
+  normalizeSquareEnvironment,
+  squareAuthorizeBaseUrl,
+} from '../square-environment';
 import { renderOAuthReturnHtml } from '../utils/oauth-return-html';
 
 /**
@@ -38,11 +42,10 @@ export class PosOAuthController {
     const applicationSecret = this.config
       .get<string>('SQUARE_APPLICATION_SECRET', '')
       .trim();
-    const environment = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox').trim();
+    const environmentRaw = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox').trim();
+    const environment = normalizeSquareEnvironment(environmentRaw);
     const isProduction = environment === 'production';
-    const authorizeBaseUrl = isProduction
-      ? 'https://connect.squareup.com'
-      : 'https://connect.squareupsandbox.com';
+    const authorizeBaseUrl = squareAuthorizeBaseUrl(environment);
     const providerBaseUrl = posProviderBaseUrl(this.config);
     const redirectUri = posOAuthRedirectUri(this.config, 'SQUARE');
     const scopes = ['ORDERS_READ', 'PAYMENTS_READ', 'MERCHANT_PROFILE_READ'];
@@ -61,6 +64,7 @@ export class PosOAuthController {
     return {
       provider: 'SQUARE',
       environment,
+      environmentRaw,
       authorizeBaseUrl,
       authorizePath: `${authorizeBaseUrl}/oauth2/authorize`,
       // NOTE: correct sandbox host is connect.squareupsandbox.com (with "connect."),
@@ -76,9 +80,10 @@ export class PosOAuthController {
       scopes,
       sampleAuthorizeUrl,
       ready: Boolean(applicationId && applicationSecret && providerBaseUrl),
+      sandboxSellerLaunchRequired: !isProduction,
       squareDashboardHint: isProduction
         ? 'Use Production Application ID/secret and register redirectUri under OAuth → Redirect URL (Production).'
-        : 'Use Sandbox Application ID/secret (Credentials → toggle Sandbox) and register redirectUri under OAuth → Redirect URL (Sandbox). Production IDs with sandbox OAuth dump you on the Developer Console homepage.',
+        : 'Sandbox OAuth requires opening a Sandbox test account (Developer Console → Sandbox test accounts → Open) in this same browser before Authorize. Also register redirectUri under OAuth → Redirect URL (Sandbox).',
     };
   }
 
@@ -88,7 +93,9 @@ export class PosOAuthController {
     const provider = this.parseProvider(providerParam);
     const redirectUri = this.connections.getOAuthRedirectUri(provider);
     const providerBaseUrl = redirectUri.replace(/\/pos\/oauth\/[^/]+\/callback$/, '');
-    const environment = this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox').trim();
+    const environment = normalizeSquareEnvironment(
+      this.config.get<string>('SQUARE_ENVIRONMENT', 'sandbox'),
+    );
     return {
       redirectUri,
       providerBaseUrl,
