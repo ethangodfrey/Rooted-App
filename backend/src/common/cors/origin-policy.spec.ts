@@ -1,4 +1,8 @@
-import { isCorsOriginAllowed, isTrustedVendorlyOrigin } from './origin-policy';
+import {
+  isCorsOriginAllowed,
+  isTrustedVercelMarketplaceOrigin,
+  isTrustedVendorlyOrigin,
+} from './origin-policy';
 
 describe('isTrustedVendorlyOrigin', () => {
   it('accepts https vendorly.app and subdomains', () => {
@@ -14,6 +18,19 @@ describe('isTrustedVendorlyOrigin', () => {
   });
 });
 
+describe('isTrustedVercelMarketplaceOrigin', () => {
+  it('accepts known Vendorly marketplace Vercel hosts', () => {
+    expect(isTrustedVercelMarketplaceOrigin('https://vendorly-marketplace1.vercel.app')).toBe(
+      true,
+    );
+    expect(isTrustedVercelMarketplaceOrigin('https://vendorlymarketplace.vercel.app')).toBe(true);
+  });
+
+  it('rejects unrelated Vercel apps', () => {
+    expect(isTrustedVercelMarketplaceOrigin('https://random-app.vercel.app')).toBe(false);
+  });
+});
+
 describe('isCorsOriginAllowed', () => {
   const allowed = new Set(['https://vendorly.app']);
 
@@ -26,6 +43,15 @@ describe('isCorsOriginAllowed', () => {
   it('allows vendorly subdomains in production without explicit listing', () => {
     expect(
       isCorsOriginAllowed('https://ops.vendorly.app', { isDev: false, allowedOrigins: allowed }),
+    ).toBe(true);
+  });
+
+  it('allows marketplace Vercel hosts in production without explicit listing', () => {
+    expect(
+      isCorsOriginAllowed('https://vendorly-marketplace1.vercel.app', {
+        isDev: false,
+        allowedOrigins: allowed,
+      }),
     ).toBe(true);
   });
 

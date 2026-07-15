@@ -3,6 +3,13 @@ import { isDevLanOrigin } from '../network.util';
 const VENDORLY_HTTPS_ORIGIN =
   /^https:\/\/([a-z0-9-]+\.)*vendorly\.app(?::\d+)?$/i;
 
+/** Known Vendorly marketplace hosts on Vercel before custom domain DNS is ready. */
+const TRUSTED_VERCEL_MARKETPLACE_ORIGINS = new Set([
+  'https://vendorly-marketplace1.vercel.app',
+  'https://vendorlymarketplace.vercel.app',
+  'https://vendorlymarketplace1.vercel.app',
+]);
+
 /** Verified Vendorly production hostnames over HTTPS (apex + subdomains). */
 export function isTrustedVendorlyOrigin(origin: string): boolean {
   try {
@@ -12,6 +19,17 @@ export function isTrustedVendorlyOrigin(origin: string): boolean {
     return url.hostname.endsWith('.vendorly.app');
   } catch {
     return VENDORLY_HTTPS_ORIGIN.test(origin);
+  }
+}
+
+export function isTrustedVercelMarketplaceOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'https:') return false;
+    const normalized = `${url.protocol}//${url.hostname}`.toLowerCase();
+    return TRUSTED_VERCEL_MARKETPLACE_ORIGINS.has(normalized);
+  } catch {
+    return TRUSTED_VERCEL_MARKETPLACE_ORIGINS.has(origin.replace(/\/$/, '').toLowerCase());
   }
 }
 
@@ -37,6 +55,10 @@ export function isCorsOriginAllowed(
   }
 
   if (!options.isDev && isTrustedVendorlyOrigin(origin)) {
+    return true;
+  }
+
+  if (!options.isDev && isTrustedVercelMarketplaceOrigin(origin)) {
     return true;
   }
 

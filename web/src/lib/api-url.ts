@@ -1,9 +1,33 @@
 const API_PORT = 4000;
 
+/**
+ * Live Railway public URL. Used when `api.vendorly.app` DNS is not configured
+ * (or as a production fallback). Prefer a custom domain once DNS points at Railway.
+ */
+export const RAILWAY_PUBLIC_API_URL =
+  'https://rooted-app-production-43fb.up.railway.app';
+
 /** True when VITE_API_URL is set to an absolute https URL (production / tunnel). */
 export function isExplicitPublicApiUrl(): boolean {
   const configured = (import.meta.env.VITE_API_URL ?? '').trim();
   return configured.startsWith('https://');
+}
+
+function normalizeConfiguredApiUrl(configured: string): string {
+  const trimmed = configured.replace(/\/$/, '');
+  if (!trimmed) return trimmed;
+
+  try {
+    const host = new URL(trimmed).hostname.toLowerCase();
+    // Custom domain is documented but not yet resolving in DNS.
+    if (host === 'api.vendorly.app') {
+      return RAILWAY_PUBLIC_API_URL;
+    }
+  } catch {
+    /* keep configured value */
+  }
+
+  return trimmed;
 }
 
 function tryParseHostname(url: string): string | null {
@@ -15,10 +39,11 @@ function tryParseHostname(url: string): string | null {
 }
 
 export function resolveApiBaseUrl(): string {
-  const configured = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
+  const rawConfigured = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
+  const configured = normalizeConfiguredApiUrl(rawConfigured);
 
   if (typeof window === 'undefined') {
-    return configured;
+    return configured || (import.meta.env.PROD ? RAILWAY_PUBLIC_API_URL : '');
   }
 
   const { hostname, protocol } = window.location;
@@ -42,12 +67,14 @@ export function resolveApiBaseUrl(): string {
     return `${protocol}//${hostname}:${API_PORT}`;
   }
 
-  return '';
+  // Production builds without VITE_API_URL still need the live Railway API.
+  return RAILWAY_PUBLIC_API_URL;
 }
 
 export function isApiUrlConfigured(): boolean {
   const configured = (import.meta.env.VITE_API_URL ?? '').trim();
-  return configured.length > 0 || import.meta.env.DEV;
+  // Production always has the Railway fallback in resolveApiBaseUrl().
+  return configured.length > 0 || import.meta.env.DEV || import.meta.env.PROD;
 }
 
 /** User-facing note when optional backend features are unavailable. */
