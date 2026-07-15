@@ -37,6 +37,7 @@ docs/supabase/phase44_national_harvester_pos_analytics.sql
 docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql
 docs/supabase/phase45_pos_webhook_analytics.sql
 docs/supabase/phase46_encrypted_credentials.sql
+docs/supabase/phase47_pos_analytics_ingestion.sql
 ```
 
 Optional (any time after `phase1_auth.sql`):
@@ -57,6 +58,7 @@ Phase43 adds POS OAuth foundation tables (`vendor_pos_connections`, `pos_transac
 Phase44 extends regional `markets` with geo/schedules, adds `market_sales_snapshots` daily POS rollups, and tenant-routing columns on POS connection tables. See `docs/supabase/PHASE44_SCHEMA_REVIEW.md`.
 Phase45 adds `pos_webhook_logs` (raw audit) and `analytics_sales` (normalized finance) with vendor/admin RLS.
 Phase46 adds `encrypted_credentials` (AES-256-GCM vault) and hardens token column grants on `vendor_pos_connections`. See `docs/supabase/PHASE46_ENCRYPTED_CREDENTIALS_DESIGN.md`.
+Phase47 adds platform-agnostic analytics ingest tables (`pos_analytics_transactions`, `pos_analytics_transaction_items`), a connections view, and ledger line items (`pos_transaction_items`). See `docs/supabase/PHASE47_POS_ANALYTICS_INGESTION.md`.
 
 ## Key RPCs
 
