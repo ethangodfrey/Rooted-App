@@ -9,13 +9,13 @@ import '@/components/ui/ui.css';
 const ROLE_OPTIONS: { role: OnboardingRole; title: string; meta: string }[] = [
   {
     role: 'shopper',
-    title: 'Customer',
-    meta: 'Discover markets, browse vendors and chefs, and reserve items for pickup.',
+    title: 'Shopper',
+    meta: 'Explore markets, follow creators, chat, and reserve pickup orders.',
   },
   {
     role: 'vendor',
     title: 'Vendor',
-    meta: 'Manage your storefront, inventory, orders, and event presence.',
+    meta: 'Run your storefront, hand-offs, inbox, and local vendor network.',
   },
   {
     role: 'chef',

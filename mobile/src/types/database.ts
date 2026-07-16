@@ -79,6 +79,8 @@ export interface Shopper {
   saved_vendors: string[];
   saved_events: string[];
   default_location: string | null;
+  /** Phase 50 — localize USDA / nearby market feeds */
+  zip_code?: string | null;
 }
 
 export interface Vendor {

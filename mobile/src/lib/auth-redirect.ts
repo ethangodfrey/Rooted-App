@@ -13,8 +13,10 @@ export type AuthRedirectHref =
   | '/(onboarding)/role-select'
   | '/(onboarding)/interests'
   | '/(shopper)/(tabs)/home'
+  | '/(shopper)/(tabs)/map'
   | '/(vendor)/profile/setup'
   | '/(vendor)/(tabs)/dashboard'
+  | '/(vendor)/(tabs)/more'
   | '/(chef)/profile/setup'
   | '/(chef)/(tabs)/dashboard'
   | '/(admin)/(tabs)/vendors'
@@ -60,7 +62,7 @@ export function resolveAuthRedirect(
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);
-    return hasInterests ? '/(shopper)/(tabs)/home' : '/(onboarding)/interests';
+    return hasInterests ? '/(shopper)/(tabs)/map' : '/(onboarding)/interests';
   }
 
   if (role === 'vendor') {

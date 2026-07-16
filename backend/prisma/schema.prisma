@@ -23,6 +23,7 @@ datasource db {
 // ===========================================================================
 
 /// Maps to auth-backed users table; `role` drives app authorization.
+/// Phase 50 marketplace roles: shopper | vendor (chef/admin retained).
 model User {
   id    String  @id @db.Uuid
   role  String
@@ -39,6 +40,8 @@ model Shopper {
   userId          String  @unique @map("user_id") @db.Uuid
   user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   interests       String[] @default([])
+  /// Phase 50 — localize USDA / nearby market feeds
+  zipCode         String? @map("zip_code")
   savedVendors    String[] @default([]) @map("saved_vendors") @db.Uuid
   savedEvents     String[] @default([]) @map("saved_events") @db.Uuid
   defaultLocation String? @map("default_location")

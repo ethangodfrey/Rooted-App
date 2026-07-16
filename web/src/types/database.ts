@@ -1,3 +1,4 @@
+/** Phase 50: primary marketplace roles are shopper|vendor; customer kept as legacy alias. */
 export type UserRole = 'customer' | 'shopper' | 'vendor' | 'chef' | 'admin';
 
 export type VendorType =
@@ -149,6 +150,26 @@ export interface Shopper {
   saved_vendors: string[];
   saved_events: string[];
   default_location: string | null;
+  /** Phase 50 — localize USDA / nearby market feeds */
+  zip_code?: string | null;
+}
+
+export interface Follow {
+  id: string;
+  shopper_id: string;
+  vendor_id: string;
+  created_at: string;
+}
+
+export type VendorConnectionStatus = 'pending' | 'connected';
+
+export interface VendorConnection {
+  id: string;
+  sender_vendor_id: string;
+  receiver_vendor_id: string;
+  status: VendorConnectionStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Vendor {

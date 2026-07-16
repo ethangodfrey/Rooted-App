@@ -37,7 +37,7 @@ export function InterestsPage() {
   }
 
   if (user?.role === 'shopper' && (shopper?.interests?.length ?? 0) > 0) {
-    return <Navigate to="/shopper/home" replace />;
+    return <Navigate to="/explore" replace />;
   }
 
   function toggle(option: string) {

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/use-cart';
 import { useNow } from '@/hooks/use-now';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { useVendorStorefront } from '@/hooks/use-vendor-storefront';
+import { followVendor, isFollowingVendor, unfollowVendor } from '@/lib/follows';
 import { formatEventDisplayDate } from '@/lib/format';
 import { vendorPath } from '@/lib/market-routes';
 import type { MenuProduct } from '@/lib/product-menu';
@@ -24,11 +25,23 @@ export function ShopperVendorPage() {
   const [searchParams] = useSearchParams();
   const marketQueryId = searchParams.get('market');
   const now = useNow(60_000);
-  const { user } = useAuth();
+  const { user, shopper } = useAuth();
   const { isSaved, toggle, pending } = useSavedVendors();
+  const [following, setFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
   const { cart, addToCart, openDrawer, itemCount, inventoryError, clearInventoryError } = useCart();
   const { vendor, products, upcomingMarkets, distanceLabel, loading, error } =
     useVendorStorefront(id);
+
+  useEffect(() => {
+    if (!shopper?.id || !id) {
+      setFollowing(false);
+      return;
+    }
+    void isFollowingVendor(shopper.id, id)
+      .then(setFollowing)
+      .catch(() => setFollowing(false));
+  }, [shopper?.id, id]);
 
   const accent = useMemo(() => {
     if (!vendor) return '#228B22';
@@ -94,7 +107,7 @@ export function ShopperVendorPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
         <p className="text-sm text-red-600">{error ?? 'Vendor not found.'}</p>
-        <Link to="/shopper/home" className="mt-4 inline-block text-sm text-emerald-700 hover:underline">
+        <Link to="/explore" className="mt-4 inline-block text-sm text-emerald-700 hover:underline">
           Back to home
         </Link>
       </div>
@@ -107,7 +120,7 @@ export function ShopperVendorPage() {
     <div className="mx-auto max-w-3xl pb-24 sm:px-6">
       <div className="flex items-center justify-between px-4 pt-4">
         <Link
-          to="/shopper/home"
+          to="/explore"
           className="inline-flex items-center gap-1 text-sm font-medium text-emerald-800 hover:underline"
         >
           ← Back
@@ -120,6 +133,31 @@ export function ShopperVendorPage() {
               onClick={() => openDrawer()}
             >
               Cart ({itemCount})
+            </button>
+          ) : null}
+          {shopper?.id ? (
+            <button
+              type="button"
+              className="app-btn app-btn--primary app-btn--small"
+              disabled={followBusy}
+              onClick={() => {
+                void (async () => {
+                  setFollowBusy(true);
+                  try {
+                    if (following) {
+                      await unfollowVendor(shopper.id, id);
+                      setFollowing(false);
+                    } else {
+                      await followVendor(shopper.id, id);
+                      setFollowing(true);
+                    }
+                  } finally {
+                    setFollowBusy(false);
+                  }
+                })();
+              }}
+            >
+              {following ? 'Following' : 'Follow'}
             </button>
           ) : null}
           <button

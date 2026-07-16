@@ -47,10 +47,11 @@ import { CheckoutSuccessPage } from '@/pages/shopper/CheckoutSuccessPage';
 import { ShopperEventDetailPage } from '@/pages/shopper/ShopperEventDetailPage';
 import { ShopperEventsPage } from '@/pages/shopper/ShopperEventsPage';
 import { ShopperExplorePage } from '@/pages/shopper/ShopperExplorePage';
-import { ShopperFeedPage } from '@/pages/shopper/ShopperFeedPage';
 import { ShopperHomePage } from '@/pages/shopper/ShopperHomePage';
 import { ShopperLeftoverDetailPage } from '@/pages/shopper/ShopperLeftoverDetailPage';
 import { ShopperLeftoversPage } from '@/pages/shopper/ShopperLeftoversPage';
+import { ShopperFollowingPage } from '@/pages/shopper/ShopperFollowingPage';
+import { ShopperInboxPage } from '@/pages/shopper/ShopperInboxPage';
 import { ShopperLayout } from '@/pages/shopper/ShopperLayout';
 import { ShopperMapPage } from '@/pages/shopper/ShopperMapPage';
 import { ShopperOrderDetailPage } from '@/pages/shopper/ShopperOrderDetailPage';
@@ -63,10 +64,11 @@ import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
+import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
+import { VendorNetworkPage } from '@/pages/vendor/VendorNetworkPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
 import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
-import { VendorDashboardPage } from '@/pages/vendor/VendorDashboardPage';
 import { VendorEventsPage } from '@/pages/vendor/VendorEventsPage';
 import { VendorExplorePage } from '@/pages/vendor/VendorExplorePage';
 import { VendorInventoryPage } from '@/pages/vendor/VendorInventoryPage';
@@ -116,16 +118,25 @@ export default function App() {
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
 
-        <Route path="/shopper" element={<ShopperLayout />}>
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<ShopperHomePage />} />
-          <Route path="search" element={<ShopperSearchPage />} />
-          <Route path="explore" element={<ShopperExplorePage />} />
-          <Route path="events" element={<ShopperEventsPage />} />
-          <Route path="map" element={<ShopperMapPage />} />
-          <Route path="feed" element={<ShopperFeedPage />} />
-          <Route path="profile" element={<ShopperProfilePage />} />
+        {/* Shopper workspace — Explore / Inbox / Following / Orders */}
+        <Route element={<ShopperLayout />}>
+          <Route path="/explore" element={<ShopperMapPage />} />
+          <Route path="/explore/feed" element={<ShopperExplorePage />} />
+          <Route path="/inbox" element={<ShopperInboxPage />} />
+          <Route path="/following" element={<ShopperFollowingPage />} />
+          <Route path="/orders" element={<ShopperOrdersPage />} />
+          <Route path="/orders/:id" element={<ShopperOrderDetailPage />} />
+          <Route path="/shopper/home" element={<ShopperHomePage />} />
+          <Route path="/shopper/search" element={<ShopperSearchPage />} />
+          <Route path="/shopper/explore" element={<ShopperExplorePage />} />
+          <Route path="/shopper/events" element={<ShopperEventsPage />} />
+          <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
+          <Route path="/shopper/feed" element={<Navigate to="/following" replace />} />
+          <Route path="/shopper/profile" element={<ShopperProfilePage />} />
+          <Route path="/shopper/cart" element={<ShopperCartPage />} />
         </Route>
+
+        <Route path="/shopper" element={<Navigate to="/explore" replace />} />
 
         <Route path="/markets/:id" element={<ShopperEventDetailPage />} />
         <Route path="/vendors/:id" element={<ShopperVendorPage />} />
@@ -137,23 +148,27 @@ export default function App() {
         <Route path="/shopper/bookings" element={<ShopperBookingsPage />} />
         <Route path="/shopper/bookings/:id" element={<ShopperBookingDetailPage />} />
         <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
-        <Route path="/shopper/cart" element={<ShopperCartPage />} />
         <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
         <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
         <Route path="/shopper/saved" element={<ShopperSavedPage />} />
-        <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
+        <Route path="/shopper/orders" element={<Navigate to="/orders" replace />} />
         <Route path="/shopper/orders/:id" element={<ShopperOrderDetailPage />} />
-        <Route path="/profile/orders" element={<ShopperOrdersPage />} />
+        <Route path="/profile/orders" element={<Navigate to="/orders" replace />} />
         <Route path="/profile/orders/:id" element={<ShopperOrderDetailPage />} />
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
 
+        {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
         <Route path="/vendor" element={<VendorLayout />}>
+          <Route index element={<Navigate to="storefront" replace />} />
           <Route path="setup" element={<VendorSetupPage />} />
-          <Route path="dashboard" element={<VendorDashboardPage />} />
+          <Route path="storefront" element={<VendorStorefrontPage />} />
+          <Route path="dashboard" element={<Navigate to="/vendor/storefront" replace />} />
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
+          <Route path="inbox" element={<VendorInboxPage />} />
+          <Route path="network" element={<VendorNetworkPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="products" element={<VendorProductsPage />} />
@@ -177,7 +192,6 @@ export default function App() {
         <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />
         <Route path="/vendor/pos/mappings" element={<VendorPosMappingsPage />} />
         <Route path="/vendor/pos/:id" element={<VendorPosConnectionPage />} />
-        <Route path="/vendor/storefront" element={<VendorStorefrontPage />} />
         <Route path="/vendor/preview" element={<VendorPreviewPage />} />
         <Route path="/vendor/explore" element={<VendorExplorePage />} />
         <Route path="/vendor/compliance" element={<VendorCompliancePage />} />

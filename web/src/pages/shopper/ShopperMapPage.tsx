@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMapFetchOrigin } from '@/hooks/use-map-fetch-origin';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -237,7 +238,11 @@ export function ShopperMapPage() {
   return (
     <div className="app-screen app-screen--map app-screen--titled">
       <p className="app-subtitle">
-        Tap a pin to preview a market, then open details when you&apos;re ready.
+        Explore markets on the map — or open the{' '}
+        <Link to="/explore/feed" className="font-semibold text-orange-400 underline-offset-2 hover:underline">
+          swipe feed
+        </Link>{' '}
+        for personalized listings.
       </p>
 
       <input

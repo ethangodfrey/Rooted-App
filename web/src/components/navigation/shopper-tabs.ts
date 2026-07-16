@@ -2,12 +2,36 @@ import type { AppTab } from '@/components/navigation/app-tabs';
 
 export type { AppTab };
 
-/** Primary shopper tab bar — Map lives on the floating FAB. */
+/**
+ * Shopper workspace — role-gated (no creator toggle).
+ * Explore Map & Feed · Inbox · Following · Orders
+ */
 export const SHOPPER_TABS: AppTab[] = [
-  { to: '/shopper/home', label: 'Home', icon: 'home' },
-  { to: '/shopper/search', label: 'Discover', icon: 'search' },
-  { to: '/shopper/events', label: 'Markets', icon: 'markets' },
-  { to: '/shopper/profile', label: 'You', icon: 'profile' },
+  {
+    to: '/explore',
+    label: 'Explore',
+    icon: 'map',
+    matchPaths: ['/shopper/map', '/shopper/explore', '/shopper/home', '/shopper/events', '/shopper/search'],
+  },
+  {
+    to: '/inbox',
+    label: 'Inbox',
+    icon: 'messages',
+    matchPaths: ['/shopper/messages'],
+  },
+  {
+    to: '/following',
+    label: 'Following',
+    icon: 'feed',
+    matchPaths: ['/shopper/feed'],
+  },
+  {
+    to: '/orders',
+    label: 'Orders',
+    icon: 'orders',
+    matchPaths: ['/shopper/orders', '/profile/orders'],
+  },
 ];
 
-export const SHOPPER_MAP_HREF = '/shopper/map';
+/** Map FAB — same Explore markets map. */
+export const SHOPPER_MAP_HREF = '/explore';

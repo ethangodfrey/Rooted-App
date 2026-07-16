@@ -13,13 +13,17 @@ import { useNearbyOpenMarkets } from '@/hooks/use-nearby-open-markets';
 import '@/components/ui/ui.css';
 
 const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
-  shopper: '/shopper/home',
-  vendor: '/vendor/dashboard',
+  shopper: '/explore',
+  vendor: '/vendor/storefront',
   chef: '/chef/dashboard',
   admin: '/admin/vendors',
 };
 
 const SHOPPER_SCREEN_TITLES: Record<string, string> = {
+  '/explore': 'Explore',
+  '/inbox': 'Inbox',
+  '/following': 'Following',
+  '/orders': 'Orders',
   '/shopper/search': 'Search',
   '/shopper/events': 'Markets',
   '/shopper/profile': 'You',
@@ -96,7 +100,7 @@ export function AppShell({
   const [fabCompact, setFabCompact] = useState(false);
 
   const tabbarTabs = mobileTabs ?? tabs;
-  const isShopperHome = role === 'shopper' && location.pathname === '/shopper/home';
+  const isShopperHome = role === 'shopper' && location.pathname === '/explore';
   const shopperScreenTitle =
     role === 'shopper' ? SHOPPER_SCREEN_TITLES[location.pathname] : undefined;
 
