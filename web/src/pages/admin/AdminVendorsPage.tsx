@@ -138,9 +138,12 @@ export function AdminVendorsPage() {
   }
 
   return (
-    <div className="app-screen">
+    <div className="app-screen" style={{ maxWidth: 960 }}>
       <p className="app-eyebrow">Admin</p>
       <h1 className="app-title">Vendors</h1>
+      <p className="ft-subhead" style={{ marginBottom: '1rem' }}>
+        Review queue — micro-label headers, light horizontal rules only.
+      </p>
 
       {isAdminAgentConfigured() && filter === 'pending' ? (
         <button
@@ -148,7 +151,8 @@ export function AdminVendorsPage() {
           className="app-btn app-btn--secondary"
           style={{ marginBottom: '1rem' }}
           disabled={reviewingQueue}
-          onClick={() => void handleRunAiReview()}>
+          onClick={() => void handleRunAiReview()}
+        >
           {reviewingQueue ? 'Running AI review…' : 'Run AI review queue'}
         </button>
       ) : null}
@@ -159,7 +163,8 @@ export function AdminVendorsPage() {
             key={item.key}
             type="button"
             className={`app-chip${filter === item.key ? ' app-chip--selected' : ''}`}
-            onClick={() => setFilter(item.key)}>
+            onClick={() => setFilter(item.key)}
+          >
             {item.label}
           </button>
         ))}
@@ -168,53 +173,81 @@ export function AdminVendorsPage() {
       {error ? <p className="app-error">{error}</p> : null}
 
       {loading ? (
-        <div className="app-loading"><div className="app-spinner" /></div>
+        <div className="app-loading">
+          <div className="app-spinner" />
+        </div>
       ) : vendors.length === 0 ? (
         <div className="app-empty">No vendors in this filter.</div>
       ) : (
-        <div className="app-list">
-          {vendors.map((vendor) => {
-            const suggestion = suggestionsByVendor[vendor.id];
-            return (
-              <div key={vendor.id} className="app-card">
-                <div className="app-row">
-                  <div className="app-row-body">
-                    <Link to={`/admin/vendors/${vendor.id}`} className="app-row-title" style={{ color: 'var(--color-forest)' }}>
-                      {vendor.business_name ?? 'Unnamed business'}
-                    </Link>
-                    <p className="app-row-meta">{vendor.users?.email ?? '—'}</p>
-                    <p className="app-row-meta" style={{ textTransform: 'capitalize' }}>{vendor.approval_status}</p>
-                  </div>
-                </div>
-
-                {suggestion ? (
-                  <div className="app-card app-card--honeydew" style={{ marginTop: '0.75rem' }}>
-                    <p className="app-row-meta">AI: {RECOMMENDATION_LABEL[suggestion.recommendation]} ({Math.round(suggestion.confidence * 100)}%)</p>
-                    <p className="app-row-meta">{suggestion.summary}</p>
-                  </div>
-                ) : null}
-
-                {vendor.approval_status === 'pending' ? (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                    <button
-                      type="button"
-                      className="app-btn app-btn--primary app-btn--small"
-                      disabled={actingId === vendor.id}
-                      onClick={() => void setApproval(vendor, 'approved')}>
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      className="app-btn app-btn--secondary app-btn--small"
-                      disabled={actingId === vendor.id}
-                      onClick={() => void setApproval(vendor, 'rejected')}>
-                      Reject
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
+        <div style={{ overflowX: 'auto' }}>
+          <table className="ft-data-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>Signal</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vendors.map((vendor) => {
+                const suggestion = suggestionsByVendor[vendor.id];
+                return (
+                  <tr key={vendor.id}>
+                    <td>
+                      <Link to={`/admin/vendors/${vendor.id}`}>
+                        {vendor.business_name ?? 'Unnamed business'}
+                      </Link>
+                    </td>
+                    <td>
+                      <span className="ft-subhead">{vendor.users?.email ?? '—'}</span>
+                    </td>
+                    <td style={{ textTransform: 'capitalize' }}>{vendor.approval_status}</td>
+                    <td>
+                      {suggestion ? (
+                        <>
+                          <div className="ft-subhead">
+                            AI: {RECOMMENDATION_LABEL[suggestion.recommendation]} (
+                            {Math.round(suggestion.confidence * 100)}%)
+                          </div>
+                          <div className="ft-subhead" style={{ marginTop: '0.2rem' }}>
+                            {suggestion.summary}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="ft-subhead">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {vendor.approval_status === 'pending' ? (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="app-btn app-btn--primary app-btn--small"
+                            disabled={actingId === vendor.id}
+                            onClick={() => void setApproval(vendor, 'approved')}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="app-btn app-btn--secondary app-btn--small"
+                            disabled={actingId === vendor.id}
+                            onClick={() => void setApproval(vendor, 'rejected')}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="ft-subhead">Reviewed</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

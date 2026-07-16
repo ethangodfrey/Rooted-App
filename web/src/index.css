@@ -1,41 +1,51 @@
 :root {
-  /* Digital Terroir — warm earth palette (no pure white/black) */
-  --color-primary: #c4704b;
-  --color-accent: #5b7c5f;
-  --color-terracotta: #c4704b;
-  --color-garden: #5b7c5f;
-  --color-sage: #5b7c5f;
-  --color-cream: #faf6f1;
-  --color-honeydew: #f3ede4;
-  --color-surface: #f5f0ea;
-  --color-white: #f5f0ea;
-  --color-soil: #2d2a26;
-  --color-stone: #7a746b;
-  --color-harvest: #d4a853;
-  --color-text: #2d2a26;
-  --color-muted: #7a746b;
-  --color-border: #e8e2d9;
-  --color-border-subtle: rgba(45, 42, 38, 0.08);
-  --color-primary-dark: #a85a38;
-  --color-primary-soft: rgba(196, 112, 75, 0.12);
-  --color-warm-sage: #f0f4e8;
-  --color-warm-sage-alt: #eef2e6;
-  --color-accent-soft: rgba(91, 124, 95, 0.12);
+  /* Vendorly Fintech — zinc canvas, razor borders, high-contrast type */
+  color-scheme: light;
 
-  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-logo: 'Quicksand', system-ui, sans-serif;
+  --color-canvas: #fbfbfb;
+  --color-canvas-ink: #09090b;
+  --color-surface: #ffffff;
+  --color-surface-muted: rgba(24, 24, 27, 0.03);
+  --color-cream: #fbfbfb;
+  --color-honeydew: #f4f4f5;
+  --color-white: #ffffff;
+  --color-soil: #18181b;
+  --color-stone: #71717a;
+  --color-text: #18181b;
+  --color-muted: #71717a;
+  --color-border: rgba(24, 24, 27, 0.08);
+  --color-border-subtle: rgba(24, 24, 27, 0.06);
+  --color-border-strong: rgba(24, 24, 27, 0.12);
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
-  --radius-card: 20px;
+  --color-primary: #18181b;
+  --color-primary-dark: #09090b;
+  --color-primary-soft: rgba(24, 24, 27, 0.06);
+  --color-accent: #059669;
+  --color-accent-soft: rgba(5, 150, 105, 0.12);
+  --color-terracotta: #18181b;
+  --color-garden: #059669;
+  --color-sage: #059669;
+  --color-harvest: #a1a1aa;
+  --color-warm-sage: #f4f4f5;
+  --color-warm-sage-alt: #f4f4f5;
+  --color-forest: #059669;
 
-  --shadow-sm: 0 1px 2px rgba(45, 42, 38, 0.05);
-  --shadow-md: 0 2px 10px rgba(45, 42, 38, 0.07);
-  --shadow-lg: 0 4px 18px rgba(45, 42, 38, 0.09);
-  --shadow-card: 0 2px 8px rgba(45, 42, 38, 0.06);
-  --shadow-fab: 0 6px 20px rgba(196, 112, 75, 0.28), 0 2px 8px rgba(91, 124, 95, 0.12);
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-logo: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-card: 14px;
+  --radius-button: 10px;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-card: none;
+  --shadow-fab: 0 8px 24px rgba(9, 9, 11, 0.18);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -50,6 +60,31 @@
   --max-width: 1120px;
   --nav-height: 64px;
   --app-tabbar-height: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-canvas: #09090b;
+    --color-cream: #09090b;
+    --color-honeydew: #18181b;
+    --color-surface: #18181b;
+    --color-surface-muted: rgba(255, 255, 255, 0.04);
+    --color-white: #18181b;
+    --color-soil: #fafafa;
+    --color-stone: #a1a1aa;
+    --color-text: #fafafa;
+    --color-muted: #a1a1aa;
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-border-subtle: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.14);
+    --color-primary: #fafafa;
+    --color-primary-dark: #ffffff;
+    --color-primary-soft: rgba(255, 255, 255, 0.08);
+    --color-warm-sage: #18181b;
+    --color-warm-sage-alt: #18181b;
+  }
 }
 
 *,
@@ -68,9 +103,14 @@ body {
   font-size: 16px;
   line-height: 1.55;
   color: var(--color-text);
-  background: var(--color-cream);
+  background: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
 }
 
 img {
@@ -103,14 +143,31 @@ button {
   padding-block: var(--space-10);
 }
 
-.eyebrow {
+.eyebrow,
+.ft-label {
   display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-sage);
+  color: #a1a1aa;
   margin-bottom: var(--space-3);
+}
+
+.ft-metric {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ft-subhead {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #71717a;
+  margin: 0;
 }
 
 .section-title {
@@ -138,12 +195,12 @@ button {
   border-radius: var(--radius-md);
   font-weight: 600;
   font-size: 0.9375rem;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
 .btn--primary {
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--color-canvas);
 }
 
 .btn--primary:hover {
@@ -151,17 +208,18 @@ button {
 }
 
 .btn--secondary {
-  background: var(--color-white);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: none;
 }
 
 .btn--secondary:hover {
-  background: var(--color-honeydew);
+  background: var(--color-surface-muted);
 }
 
 .btn--ghost {
-  color: var(--color-primary);
+  color: var(--color-text);
   padding-inline: var(--space-4);
 }
 
@@ -170,10 +228,11 @@ button {
 }
 
 .card {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
 }
 
 .card-icon {
@@ -210,7 +269,7 @@ button {
 
 @media (min-width: 768px) {
   .grid-3 {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1.6fr 1fr 1fr;
   }
 }
 
@@ -221,6 +280,6 @@ button {
 
 @media (min-width: 768px) {
   .grid-2 {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1.4fr 1fr;
   }
 }

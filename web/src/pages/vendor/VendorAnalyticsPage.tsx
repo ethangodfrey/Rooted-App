@@ -220,10 +220,18 @@ export function VendorAnalyticsPage() {
         />
       </ChartCard>
 
-      <VendorKpiGrid cols={3}>
-        <VendorKpiStat value={formatPrice(data.totalRevenue)} label="Total revenue" />
-        <VendorKpiStat value={data.unitsSold} label="Units sold" />
-        <VendorKpiStat value={formatPrice(data.reservationRevenue)} label="Reservations" />
+      <div className="vendor-asym mb-5">
+        <VendorKpiStat
+          value={formatPrice(data.totalRevenue)}
+          label="Gross revenue"
+          emphasize
+        />
+        <div className="vendor-asym__stack">
+          <VendorKpiStat value={data.unitsSold} label="Total operations" />
+          <VendorKpiStat value={formatPrice(data.reservationRevenue)} label="Active period · reservations" />
+        </div>
+      </div>
+      <VendorKpiGrid cols={2}>
         <VendorKpiStat value={formatPrice(data.inPersonRevenue)} label="In-person" />
         <VendorKpiStat
           value={formatPrice(data.cardSalesRevenue)}
@@ -242,11 +250,13 @@ export function VendorAnalyticsPage() {
               }
             />
           ) : (
-            <VendorKpiGrid cols={3}>
-              <VendorKpiStat value={formatPrice(data.posGrossTotal)} label="Gross" />
-              <VendorKpiStat value={formatPrice(data.posPlatformFees)} label="Platform fees" />
-              <VendorKpiStat value={formatPrice(data.posNetTotal)} label="Net to vendor" />
-            </VendorKpiGrid>
+            <div className="vendor-asym">
+              <VendorKpiStat value={formatPrice(data.posGrossTotal)} label="Gross" emphasize />
+              <div className="vendor-asym__stack">
+                <VendorKpiStat value={formatPrice(data.posPlatformFees)} label="Platform fees" />
+                <VendorKpiStat value={formatPrice(data.posNetTotal)} label="Net to vendor" />
+              </div>
+            </div>
           )}
         </ChartCard>
       ) : null}
