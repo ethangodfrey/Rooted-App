@@ -169,6 +169,13 @@ export function VendorDashboardPage() {
       <VendorSection title="Operations">
         <VendorActionGrid>
           <VendorActionTile
+            to="/vendor/load-in"
+            title="Morning load-in"
+            subtitle="Focus mode at the market"
+            icon="map-pin"
+            tone="orange"
+          />
+          <VendorActionTile
             to="/vendor/fulfillment"
             title="Fulfillment ledger"
             subtitle="Track live pickups"

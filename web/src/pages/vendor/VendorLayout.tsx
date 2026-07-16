@@ -14,6 +14,8 @@ export function VendorLayout() {
   const { user, vendor, session, isProfileLoading } = useAuth();
   const location = useLocation();
   const onSetup = location.pathname.startsWith('/vendor/setup');
+  /** Distraction-free surfaces — no sidebar / tab bar. */
+  const onFocusMode = location.pathname.startsWith('/vendor/load-in');
   const [routeCache, setRouteCache] = useState<AuthRouteCache | null | undefined>(undefined);
 
   const mobileTabs = useMemo(
@@ -55,7 +57,7 @@ export function VendorLayout() {
     return <Navigate to="/vendor/setup" replace />;
   }
 
-  if (onSetup) {
+  if (onSetup || onFocusMode) {
     return <Outlet />;
   }
 
