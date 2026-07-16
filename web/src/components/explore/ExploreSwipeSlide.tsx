@@ -12,6 +12,8 @@ import {
 export interface ExploreSwipeSlideProps {
   item: ExploreHybridFeedItem;
   index: number;
+  /** Vendor accepts SNAP/EBT or sells SNAP-eligible SKUs. */
+  snapEligible?: boolean;
 }
 
 function resolveMedia(item: ExploreHybridFeedItem): string | null {
@@ -48,7 +50,7 @@ function directionsUrl(item: ExploreHybridFeedItem): string | null {
 /**
  * Full-viewport snap slide for the shopper explore swipe feed.
  */
-export function ExploreSwipeSlide({ item, index }: ExploreSwipeSlideProps) {
+export function ExploreSwipeSlide({ item, index, snapEligible = false }: ExploreSwipeSlideProps) {
   const [mediaFailed, setMediaFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isSaved, toggle, pending } = useSavedVendors();
@@ -119,6 +121,11 @@ export function ExploreSwipeSlide({ item, index }: ExploreSwipeSlideProps) {
             Nearby
           </span>
         )}
+        {snapEligible ? (
+          <span className="mt-2 inline-flex items-center rounded-lg border border-emerald-800 bg-emerald-950 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-300">
+            SNAP/EBT Eligible
+          </span>
+        ) : null}
       </header>
 
       <div className="explore-swipe__bottom relative z-10">

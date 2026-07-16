@@ -222,6 +222,13 @@ export function VendorDashboardPage() {
 
       <VendorSection title="Compliance & Settings">
         <VendorListPanel>
+          <VendorListRow
+            to="/vendor/settings/payments"
+            title="Payment settings"
+            subtitle="Stripe Connect & pay-at-pickup"
+            icon="credit-card"
+            tone="amber"
+          />
           <VendorListRow to="/vendor/pos" title="Connect Square POS" icon="credit-card" tone="stone" />
           <VendorListRow to="/vendor/compliance" title="Food safety checklist" icon="shield-check" tone="teal" />
           <VendorListRow to="/vendor/credentials" title="Verification credentials" icon="badge" tone="stone" />

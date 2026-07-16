@@ -39,6 +39,7 @@ docs/supabase/phase45_pos_webhook_analytics.sql
 docs/supabase/phase46_encrypted_credentials.sql
 docs/supabase/phase47_pos_analytics_ingestion.sql
 docs/supabase/phase48_pickup_codes_storefront.sql
+docs/supabase/phase49_stripe_policy_snap_ebt.sql
 docs/supabase/farmers_markets_directory.sql
 ```
 
@@ -62,6 +63,7 @@ Phase45 adds `pos_webhook_logs` (raw audit) and `analytics_sales` (normalized fi
 Phase46 adds `encrypted_credentials` (AES-256-GCM vault) and hardens token column grants on `vendor_pos_connections`. See `docs/supabase/PHASE46_ENCRYPTED_CREDENTIALS_DESIGN.md`.
 Phase47 adds platform-agnostic analytics ingest tables (`pos_analytics_transactions`, `pos_analytics_transaction_items`), a connections view, and ledger line items (`pos_transaction_items`). See `docs/supabase/PHASE47_POS_ANALYTICS_INGESTION.md`.
 Phase48 updates `create_storefront_checkout` to mint 6-char `pickup_code`s (Nest alphabet), set fulfillment windows from the event, and bridge `orders.market_id` via `markets.event_id`.
+Phase49 adds `vendors.preorder_payment_policy`, `vendors.accepts_snap_ebt`, and `products.is_snap_eligible` for Stripe pay-at-preorder UX and SNAP/EBT discovery filters.
 `farmers_markets_directory.sql` adds `public.farmers_markets` (PostGIS directory + GiST) for seedable national directory rows; complements `national_farmers_markets`. Seed with `npm run markets:seed-directory`.
 
 ## Key RPCs

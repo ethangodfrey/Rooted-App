@@ -17,6 +17,7 @@ import {
 import { formatEventDisplayDate } from '@/lib/format';
 import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
 import { fetchPublicEvents } from '@/lib/events-query';
+import { fetchSnapEligibleEventIds } from '@/lib/snap-ebt';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 import '@/components/map/events-map.css';
@@ -39,6 +40,8 @@ export function ShopperMapPage() {
   const [searchCenter, setSearchCenter] = useState<Coords | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<Coords | null>(null);
+  const [snapOnly, setSnapOnly] = useState(false);
+  const [snapEventIds, setSnapEventIds] = useState<Set<string> | null>(null);
   const hasInitializedFocusRef = useRef(false);
 
   const eventFetchOrigin = searchCenter ?? fetchOrigin ?? coords;
@@ -134,10 +137,29 @@ export function ShopperMapPage() {
     };
   }, [eventFetchOrigin]);
 
-  const filteredEvents = useMemo(
-    () => filterEventsForMapSearch(events, query, searchCenter),
-    [events, query, searchCenter],
-  );
+  useEffect(() => {
+    if (events.length === 0) {
+      setSnapEventIds(new Set());
+      return;
+    }
+    let active = true;
+    void fetchSnapEligibleEventIds(events.map((event) => event.id))
+      .then((ids) => {
+        if (active) setSnapEventIds(ids);
+      })
+      .catch(() => {
+        if (active) setSnapEventIds(new Set());
+      });
+    return () => {
+      active = false;
+    };
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    const searched = filterEventsForMapSearch(events, query, searchCenter);
+    if (!snapOnly || !snapEventIds) return searched;
+    return searched.filter((event) => snapEventIds.has(event.id));
+  }, [events, query, searchCenter, snapOnly, snapEventIds]);
 
   const sortOrigin = searchCenter ?? fetchOrigin ?? coords;
 
@@ -224,6 +246,21 @@ export function ShopperMapPage() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by ZIP, city, or market name"
       />
+
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Map filters">
+        <button
+          type="button"
+          onClick={() => setSnapOnly((prev) => !prev)}
+          aria-pressed={snapOnly}
+          className={`inline-flex items-center rounded-lg border px-3 py-2 text-[11px] font-bold tracking-wide transition ${
+            snapOnly
+              ? 'border-emerald-500/70 bg-emerald-950 text-emerald-300 shadow-[0_0_0_1px_rgba(52,211,153,0.25)]'
+              : 'border-emerald-800 bg-emerald-950/50 text-emerald-300/90'
+          }`}
+        >
+          🌾 Accepts SNAP / EBT
+        </button>
+      </div>
 
       {loading ? (
         <div className="app-loading">

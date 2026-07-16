@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExploreMenuDrawer } from '@/components/ExploreMenuDrawer';
+import { fetchSnapEligibleVendorIds, SNAP_EBT_BADGE_CLASS } from '@/lib/snap-ebt';
 
 export interface ExploreSwipeFeedProps {
   initialLat?: number | null;
@@ -71,6 +72,22 @@ export function ExploreSwipeFeed({
     initialLat != null && initialLng != null ? 'provided' : 'pending',
   );
   const [menuVendor, setMenuVendor] = useState<{ id: string; name: string } | null>(null);
+  const [snapOnly, setSnapOnly] = useState(false);
+  const [snapVendorIds, setSnapVendorIds] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchSnapEligibleVendorIds(apiBaseUrl)
+      .then((ids) => {
+        if (active) setSnapVendorIds(ids);
+      })
+      .catch(() => {
+        if (active) setSnapVendorIds(new Set());
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     if (initialLat != null && initialLng != null) return;
@@ -141,6 +158,12 @@ export function ExploreSwipeFeed({
 
   const marketBase = marketplaceUrl?.replace(/\/$/, '') ?? '';
 
+  const visibleItems = useMemo(() => {
+    if (!snapOnly) return items;
+    if (!snapVendorIds) return items;
+    return items.filter((item) => item.vendor_id && snapVendorIds.has(item.vendor_id));
+  }, [items, snapOnly, snapVendorIds]);
+
   return (
     <div className="relative bg-[#0B1228] text-zinc-50">
       <header className="fixed top-0 right-0 left-0 z-50 border-b border-white/5 bg-[#0B1228]/60 p-4 backdrop-blur-md">
@@ -148,7 +171,19 @@ export function ExploreSwipeFeed({
           <p className="m-0 text-[11px] font-extrabold tracking-[0.14em] text-orange-400 uppercase">
             Explore
           </p>
-          <div className="flex gap-1.5 overflow-x-auto">
+          <div className="flex gap-1.5 overflow-x-auto" role="group" aria-label="Discovery filters">
+            <button
+              type="button"
+              onClick={() => setSnapOnly((prev) => !prev)}
+              aria-pressed={snapOnly}
+              className={`shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-bold tracking-wide transition ${
+                snapOnly
+                  ? 'border-emerald-500/70 bg-emerald-950 text-emerald-300'
+                  : 'border-emerald-800 bg-emerald-950/50 text-emerald-300/90'
+              }`}
+            >
+              🌾 Accepts SNAP / EBT
+            </button>
             {RADIUS_OPTIONS.map((miles) => (
               <button
                 key={miles}
@@ -195,16 +230,20 @@ export function ExploreSwipeFeed({
           </div>
         ) : null}
 
-        {!loading && !error && items.length === 0 && lat != null ? (
+        {!loading && !error && visibleItems.length === 0 && lat != null ? (
           <div className="flex h-[100dvh] flex-col items-center justify-center gap-2 px-6 text-center">
-            <h2 className="text-2xl font-extrabold">Nothing nearby yet</h2>
+            <h2 className="text-2xl font-extrabold">
+              {snapOnly ? 'No SNAP / EBT booths nearby' : 'Nothing nearby yet'}
+            </h2>
             <p className="max-w-sm text-sm text-white/65">
-              No posts within {radiusMiles} miles. Widen the radius filter above.
+              {snapOnly
+                ? 'Try turning off the SNAP filter or widening the radius.'
+                : `No posts within ${radiusMiles} miles. Widen the radius filter above.`}
             </p>
           </div>
         ) : null}
 
-        {items.map((item, index) => {
+        {visibleItems.map((item, index) => {
           const media = mediaFor(item);
           const name = item.creator_name?.trim() || item.title?.trim() || 'Local maker';
           const desc =
@@ -224,6 +263,7 @@ export function ExploreSwipeFeed({
                 ? 'Pre-Order From Booth'
                 : 'Explore Menu';
           const opensMenu = Boolean(item.vendor_id);
+          const snapEligible = Boolean(item.vendor_id && snapVendorIds?.has(item.vendor_id));
 
           return (
             <article
@@ -251,6 +291,9 @@ export function ExploreSwipeFeed({
                 <span className="mt-3 inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/15 px-3 py-1.5 text-xs text-orange-400">
                   {formatDistance(item.distance_miles)} away
                 </span>
+                {snapEligible ? (
+                  <span className={`mt-2 ${SNAP_EBT_BADGE_CLASS}`}>SNAP/EBT Eligible</span>
+                ) : null}
               </header>
 
               <div className="relative z-10">

@@ -11,6 +11,7 @@ interface ProductRow {
   category: string | null;
   reserve_enabled: boolean;
   media_urls: string[] | null;
+  is_snap_eligible?: boolean | null;
   product_event_availability?: { available_quantity_presale: number | null }[] | null;
 }
 
@@ -69,7 +70,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   });
   const productsQs = new URLSearchParams({
     select:
-      'id,name,description,price,category,reserve_enabled,media_urls,product_event_availability(available_quantity_presale)',
+      'id,name,description,price,category,reserve_enabled,media_urls,is_snap_eligible,product_event_availability(available_quantity_presale)',
     vendor_id: `eq.${vendorId}`,
     status: 'eq.active',
     order: 'name.asc',
@@ -123,6 +124,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       category: row.category,
       reserve_enabled: row.reserve_enabled,
       media_urls: row.media_urls,
+      is_snap_eligible: Boolean(row.is_snap_eligible),
       available_quantity_presale: available,
     };
   });

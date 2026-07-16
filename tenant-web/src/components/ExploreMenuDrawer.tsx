@@ -19,8 +19,12 @@ interface MenuProduct {
   category: string | null;
   reserve_enabled: boolean;
   media_urls: string[] | null;
+  is_snap_eligible?: boolean;
   available_quantity_presale: number;
 }
+
+const SNAP_EBT_BADGE_CLASS =
+  'inline-flex items-center rounded-lg border border-emerald-800 bg-emerald-950 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-300';
 
 interface MenuMarket {
   id: string;
@@ -298,6 +302,9 @@ export function ExploreMenuDrawer({
                           {formatUsd(product.price)}
                         </span>
                       </div>
+                      {product.is_snap_eligible ? (
+                        <span className={`mt-1.5 ${SNAP_EBT_BADGE_CLASS}`}>SNAP/EBT Eligible</span>
+                      ) : null}
                       <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-white/60">
                         {product.description?.trim() || 'Ready for market pickup.'}
                       </p>

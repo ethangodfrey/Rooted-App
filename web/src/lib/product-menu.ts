@@ -20,6 +20,7 @@ export interface MenuProduct {
   category: string | null;
   reserve_enabled: boolean;
   media_urls: string[] | null;
+  is_snap_eligible?: boolean | null;
   product_event_availability?: { available_quantity_presale: number }[];
 }
 
