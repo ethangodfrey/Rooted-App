@@ -17,6 +17,8 @@
     "markets:usda:apply": "npx tsx scripts/importMarketsFromJson.ts --apply",
     "markets:national:ingest": "npx tsx scripts/ingest-national-farmers-markets.ts",
     "markets:national:ingest:dry": "npx tsx scripts/ingest-national-farmers-markets.ts --dry-run",
+    "markets:seed-directory": "npx tsx scripts/seed-markets.ts",
+    "markets:seed-directory:dry": "npx tsx scripts/seed-markets.ts --dry-run",
     "markets:usda:pipeline": "npm run markets:usda:seed && npm run markets:usda:schedules && npm run markets:usda:import",
     "markets:usda:enrich": "npm run markets:enrich --prefix backend",
     "markets:usda:fix-schedules": "npm run markets:usda:fix-schedules --prefix backend",
