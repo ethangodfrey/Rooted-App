@@ -239,7 +239,7 @@ export function CartDrawer() {
                     ) : staging ? (
                       <>
                         {!staging.inventoryValid ? (
-                          <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                          <p className="mb-3 rounded-xl border border-zinc-200/50 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
                             Inventory changed — update quantities before checkout.
                             <ul className="mt-2 list-disc pl-5">
                               {staging.inventoryIssues.map((issue) => (

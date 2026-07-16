@@ -44,7 +44,8 @@ export function EventThumb({ event, size = 56, large = false }: EventThumbProps)
         borderRadius: large ? 16 : 12,
         flexShrink: 0,
         marginBottom: large ? '1rem' : 0,
-        background: imageUrl && !failed ? undefined : 'linear-gradient(135deg, var(--color-warm-sage) 0%, rgba(212, 168, 83, 0.35) 100%)',
+        background: imageUrl && !failed ? undefined : '#18181b',
+        color: '#a1a1aa',
       }}
     >
       {eventPlaceholderEmoji(event.market_type)}

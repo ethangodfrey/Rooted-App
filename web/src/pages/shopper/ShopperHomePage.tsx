@@ -219,7 +219,7 @@ export function ShopperHomePage() {
             {openNow.map((event) => (
               <Link key={event.id} to={marketPath(event.id)} className="app-hscroll-card">
                 <div className="app-hscroll-card__visual" aria-hidden="true">
-                  🧺
+                  Open
                 </div>
                 <div className="app-hscroll-card__body">
                   <span className="app-hscroll-card__badge">Live</span>
@@ -251,7 +251,7 @@ export function ShopperHomePage() {
             {newThisWeek.slice(0, 8).map((event) => (
               <Link key={event.id} to={marketPath(event.id)} className="app-hscroll-card">
                 <div className="app-hscroll-card__visual" aria-hidden="true">
-                  🌿
+                  New
                 </div>
                 <div className="app-hscroll-card__body">
                   <p className="app-hscroll-card__title">{event.name}</p>

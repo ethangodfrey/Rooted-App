@@ -138,7 +138,7 @@ export function ShopperVendorPage() {
         style={{
           background: bannerUrl
             ? `url(${bannerUrl}) center/cover no-repeat`
-            : `linear-gradient(135deg, ${accent}22 0%, ${accent}44 100%)`,
+            : '#09090b',
         }}
       >
         {bannerUrl ? (
@@ -151,26 +151,30 @@ export function ShopperVendorPage() {
             }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3 px-4">
           {vendor.logo_url ? (
             <img
               src={vendor.logo_url}
               alt=""
-              className="h-14 w-14 rounded-xl border-2 border-white object-cover shadow-md sm:h-16 sm:w-16"
+              className="h-14 w-14 rounded-lg border border-white/20 object-cover sm:h-16 sm:w-16"
             />
           ) : (
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-white text-lg font-bold text-white shadow-md sm:h-16 sm:w-16"
-              style={{ backgroundColor: accent }}
+              className="flex h-14 w-14 items-center justify-center rounded-lg border border-white/20 text-lg font-bold text-white sm:h-16 sm:w-16"
+              style={{ backgroundColor: accent || '#18181b' }}
             >
               {(vendor.business_name ?? 'V').charAt(0)}
             </div>
           )}
           <div className="min-w-0 flex-1 text-white">
-            <h1 className="truncate text-xl font-bold sm:text-2xl">{vendor.business_name}</h1>
+            <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
+              {vendor.business_name}
+            </h1>
             {vendor.category ? (
-              <p className="truncate text-sm text-white/90">{vendor.category}</p>
+              <p className="truncate text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+                {vendor.category}
+              </p>
             ) : null}
             <TrustBadges userId={vendor.user_id} />
           </div>
@@ -179,22 +183,24 @@ export function ShopperVendorPage() {
 
       <div className="px-4 py-5">
         {distanceLabel ? (
-          <p className="mb-3 text-sm font-medium text-emerald-700">{distanceLabel} away</p>
+          <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500 tabular-nums">
+            {distanceLabel} away
+          </p>
         ) : null}
         {activeMarket ? (
-          <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <p className="mb-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-800">
             Presale pickup: <strong>{activeMarket.name}</strong>
             {formatEventDisplayDate(activeMarket, now)
               ? ` · ${formatEventDisplayDate(activeMarket, now)}`
               : ''}
           </p>
         ) : upcomingMarkets.length > 1 ? (
-          <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <p className="mb-3 rounded-xl border border-zinc-200/50 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600">
             Select a market from upcoming markets below before adding items to your cart.
           </p>
         ) : null}
         {inventoryError ? (
-          <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mb-3 rounded-xl border border-rose-200/60 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800">
             {inventoryError}
             <button type="button" className="ml-2 underline" onClick={clearInventoryError}>
               Dismiss
@@ -202,10 +208,10 @@ export function ShopperVendorPage() {
           </p>
         ) : null}
         {vendor.business_description ? (
-          <p className="mb-4 text-sm leading-relaxed text-stone-600">{vendor.business_description}</p>
+          <p className="mb-4 text-sm leading-relaxed text-zinc-600">{vendor.business_description}</p>
         ) : null}
         {vendor.product_summary ? (
-          <p className="mb-6 text-sm text-stone-500">{vendor.product_summary}</p>
+          <p className="mb-6 text-xs font-medium text-zinc-500">{vendor.product_summary}</p>
         ) : null}
 
         {upcomingMarkets.length > 0 ? (
