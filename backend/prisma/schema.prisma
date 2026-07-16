@@ -59,6 +59,11 @@ model Vendor {
   stripeChargesEnabled Boolean @default(false) @map("stripe_charges_enabled")
   stripePayoutsEnabled Boolean @default(false) @map("stripe_payouts_enabled")
 
+  /// Phase 49 — pickup_only | stripe_only | pickup_or_stripe
+  preorderPaymentPolicy String  @default("pickup_or_stripe") @map("preorder_payment_policy")
+  /// Phase 49 — booth accepts SNAP/EBT (discovery)
+  acceptsSnapEbt        Boolean @default(false) @map("accepts_snap_ebt")
+
   posts                Post[]
   certifications       VendorCertification[]
   orders               Order[]
@@ -77,6 +82,9 @@ model Product {
   vendorId String @map("vendor_id") @db.Uuid
   name     String
   price    Int
+
+  /// Phase 49 — SNAP/EBT eligible SKU
+  isSnapEligible Boolean @default(false) @map("is_snap_eligible")
 
   availability       ProductEventAvailability[]
   orderItems         OrderItem[]

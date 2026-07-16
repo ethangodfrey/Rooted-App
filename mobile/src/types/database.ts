@@ -114,9 +114,25 @@ export interface Vendor {
   lead_time_hours: number | null;
   portfolio_gallery: string[];
   payouts_enabled: boolean;
+  /**
+   * Stripe Connect Express account id (Phase 32).
+   * Product-language alias: `stripe_connect_id` → this column.
+   */
   stripe_account_id?: string | null;
+  /**
+   * Charges enabled on the Connect account (Phase 32).
+   * Product-language alias: `stripe_onboarding_completed` ≈
+   * `Boolean(stripe_account_id && stripe_charges_enabled)`.
+   */
   stripe_charges_enabled?: boolean;
   stripe_payouts_enabled?: boolean;
+  /**
+   * Phase 49 — cart payment policy for pre-orders.
+   * Product-language alias: `payment_policy` / value `choice` → `pickup_or_stripe`.
+   */
+  preorder_payment_policy?: 'pickup_only' | 'stripe_only' | 'pickup_or_stripe';
+  /** Phase 49 — booth accepts SNAP/EBT (discovery) */
+  accepts_snap_ebt?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -311,6 +327,8 @@ export interface Product {
   allergen_info: string | null;
   serving_size: string | null;
   availability_type: ProductAvailabilityType;
+  /** Phase 49 — SNAP/EBT eligible SKU */
+  is_snap_eligible?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -1,9 +1,18 @@
 /**
  * Fetch vendor IDs that accept SNAP/EBT or sell at least one SNAP-eligible SKU.
- * Uses Supabase REST from the browser when env is exposed, otherwise via relative API.
+ * Passes `snap=true|false` through to `/api/explore/snap-vendors`.
  */
-export async function fetchSnapEligibleVendorIds(apiBaseUrl = ''): Promise<Set<string>> {
-  const res = await fetch(`${apiBaseUrl}/api/explore/snap-vendors`, { cache: 'no-store' });
+export async function fetchSnapEligibleVendorIds(
+  apiBaseUrl = '',
+  snapEnabled = true,
+): Promise<Set<string>> {
+  const params = new URLSearchParams({
+    snap: snapEnabled ? 'true' : 'false',
+    accepts_snap_ebt: snapEnabled ? 'true' : 'false',
+  });
+  const res = await fetch(`${apiBaseUrl}/api/explore/snap-vendors?${params.toString()}`, {
+    cache: 'no-store',
+  });
   if (!res.ok) return new Set();
   const body = (await res.json().catch(() => null)) as { vendorIds?: string[] } | null;
   return new Set(Array.isArray(body?.vendorIds) ? body.vendorIds : []);
