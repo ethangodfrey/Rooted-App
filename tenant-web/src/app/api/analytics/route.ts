@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 
+import type { PosAnalyticsApiResponse, PosAnalyticsTransactionRow } from '@/lib/analytics/types';
 import { verifySupabaseAccessToken } from '@/lib/checkout/supabase-client';
 import { fetchVendorForUser } from '@/lib/integration/pos-connections-db';
-import type { PosAnalyticsApiResponse, PosAnalyticsTransactionRow } from '@/lib/analytics/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const RANGE_DAYS = 30;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function supabaseServiceConfig(): { url: string; serviceKey: string } | null {
   const url = process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
@@ -33,9 +35,12 @@ function bearerToken(request: Request): string | null {
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
-  const vendorId = url.searchParams.get('vendorId')?.trim();
+  const vendorId = url.searchParams.get('vendorId')?.trim() ?? '';
   if (!vendorId) {
     return NextResponse.json({ error: 'vendorId query parameter is required' }, { status: 400 });
+  }
+  if (!UUID_RE.test(vendorId)) {
+    return NextResponse.json({ error: 'vendorId must be a valid UUID' }, { status: 400 });
   }
 
   const token = bearerToken(request);
@@ -55,7 +60,10 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const config = supabaseServiceConfig();
   if (!config) {
-    return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
+    return NextResponse.json(
+      { error: 'Supabase is not configured (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)' },
+      { status: 503 },
+    );
   }
 
   const since = new Date();
@@ -65,7 +73,8 @@ export async function GET(request: Request): Promise<NextResponse> {
   const params = new URLSearchParams({
     vendor_id: `eq.${vendorId}`,
     transaction_created_at: `gte.${sinceIso}`,
-    select: 'id,total_amount_cents,tax_amount_cents,tip_amount_cents,payment_status,transaction_created_at',
+    select:
+      'id,total_amount_cents,tax_amount_cents,tip_amount_cents,payment_status,transaction_created_at',
     order: 'transaction_created_at.asc',
   });
 
@@ -73,6 +82,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     headers: {
       apikey: config.serviceKey,
       Authorization: `Bearer ${config.serviceKey}`,
+      Accept: 'application/json',
     },
   });
 
@@ -84,7 +94,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     );
   }
 
-  const transactions = (await res.json()) as PosAnalyticsTransactionRow[];
+  const payload = (await res.json()) as unknown;
+  const transactions = Array.isArray(payload)
+    ? (payload as PosAnalyticsTransactionRow[])
+    : [];
+
   const body: PosAnalyticsApiResponse = {
     vendorId,
     rangeDays: RANGE_DAYS,
