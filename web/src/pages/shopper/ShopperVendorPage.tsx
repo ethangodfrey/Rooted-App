@@ -3,8 +3,10 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { UserSticker } from '@/components/ui/UserSticker';
 import { VendorProductMenu } from '@/components/vendor/VendorProductMenu';
 import { VendorStorefrontSkeleton } from '@/components/vendor/VendorStorefrontSkeleton';
+import '@/components/ui/user-sticker.css';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 import { useNow } from '@/hooks/use-now';
@@ -168,9 +170,12 @@ export function ShopperVendorPage() {
             </div>
           )}
           <div className="min-w-0 flex-1 text-white">
-            <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
-              {vendor.business_name}
-            </h1>
+            <div className="user-sticker-row mb-1">
+              <h1 className="m-0 truncate text-xl font-extrabold tracking-tight sm:text-2xl">
+                {vendor.business_name}
+              </h1>
+              <UserSticker role="vendor" />
+            </div>
             {vendor.category ? (
               <p className="truncate text-[10px] font-bold uppercase tracking-widest text-zinc-300">
                 {vendor.category}

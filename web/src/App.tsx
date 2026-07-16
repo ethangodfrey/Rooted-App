@@ -114,6 +114,7 @@ export default function App() {
         <Route element={<ShopperCartHost />}>
         <Route path="/app" element={<DashboardRedirect />} />
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
+        <Route path="/onboarding/role" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
 
         <Route path="/shopper" element={<ShopperLayout />}>

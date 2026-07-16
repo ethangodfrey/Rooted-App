@@ -1,38 +1,31 @@
 import { Link } from 'react-router-dom';
 
-
-
-import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
-import { useAuth } from '@/hooks/use-auth';
 import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
 import { LegalLinks } from '@/components/account/LegalLinks';
+import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
+import { UserSticker } from '@/components/ui/UserSticker';
+import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
-
-
+import '@/components/ui/user-sticker.css';
 
 export function ShopperProfilePage() {
-
   const { user, session, signOut } = useAuth();
 
-
-
   const displayEmail = user?.email ?? session?.user?.email ?? '—';
-
   const initials = (user?.name || displayEmail || '?').toString().trim().charAt(0).toUpperCase();
-
   const displayName = user?.name?.trim() || 'You';
-
-
 
   return (
     <div className="app-screen app-screen--narrow app-screen--titled">
-
       <div className="app-profile-header">
         <ProfilePhoto photoUrl={user?.profile_photo} initials={initials} />
         <div>
-          <p className="app-row-title" style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>
-            {displayName}
-          </p>
+          <div className="user-sticker-row" style={{ marginBottom: '0.25rem' }}>
+            <p className="app-row-title" style={{ fontSize: '1.125rem', margin: 0 }}>
+              {displayName}
+            </p>
+            <UserSticker role={user?.role ?? 'shopper'} />
+          </div>
           <p className="app-row-meta">{displayEmail}</p>
         </div>
       </div>

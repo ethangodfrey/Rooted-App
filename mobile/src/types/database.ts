@@ -1,3 +1,4 @@
+/** Sticker roles: shopper | vendor. customer = legacy alias; chef/admin = ops. */
 export type UserRole = 'customer' | 'shopper' | 'vendor' | 'chef' | 'admin';
 
 export type VendorType =

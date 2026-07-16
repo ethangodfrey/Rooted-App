@@ -5,8 +5,8 @@ import { ActionRow } from '@/src/components/ui/action-row';
 import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
-import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
 import { LegalLinks } from '@/src/components/account/legal-links';
+import { UserSticker } from '@/src/components/ui/UserSticker';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
@@ -19,9 +19,12 @@ export default function VendorMoreScreen() {
       <Text variant="eyebrow" className="mb-2">
         Account
       </Text>
-      <Text variant="title" className="mb-6">
-        Profile
-      </Text>
+      <View className="mb-6 flex-row flex-wrap items-center gap-2">
+        <Text variant="title" className="mb-0">
+          Profile
+        </Text>
+        <UserSticker role="vendor" />
+      </View>
 
       <Card className="mb-4">
         <Text variant="caption" className="mb-1">

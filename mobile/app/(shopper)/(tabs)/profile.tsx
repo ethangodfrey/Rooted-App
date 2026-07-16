@@ -7,6 +7,7 @@ import { LegalLinks } from '@/src/components/account/legal-links';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
+import { UserSticker } from '@/src/components/ui/UserSticker';
 import { useAuth } from '@/src/hooks/use-auth';
 import { colors } from '@/src/theme/colors';
 
@@ -71,9 +72,12 @@ export default function ShopperProfileScreen() {
             </Text>
           </View>
         )}
-        <Text variant="body" className="font-semibold">
-          {displayName}
-        </Text>
+        <View className="flex-row items-center justify-center gap-2">
+          <Text variant="body" className="font-semibold">
+            {displayName}
+          </Text>
+          <UserSticker role={user?.role ?? 'shopper'} />
+        </View>
         <Text variant="caption" className="mt-1">
           {displayEmail}
         </Text>

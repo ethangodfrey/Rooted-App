@@ -41,6 +41,7 @@ docs/supabase/phase47_pos_analytics_ingestion.sql
 docs/supabase/phase48_pickup_codes_storefront.sql
 docs/supabase/phase49_stripe_policy_snap_ebt.sql
 docs/supabase/phase49_seed_snap_stripe_test_vendor.sql # optional smoke-test UPDATE for Connect + SNAP
+docs/supabase/phase50_user_role_stickers.sql # shopper|vendor sticker roles; null until onboarding
 docs/supabase/farmers_markets_directory.sql
 ```
 

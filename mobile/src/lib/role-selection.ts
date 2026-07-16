@@ -1,7 +1,11 @@
 import { supabase } from '@/src/lib/supabase';
 import type { UserRole } from '@/src/types/database';
 
-export type OnboardingRole = 'customer' | 'vendor' | 'chef';
+/** Permanent sticker roles selected during onboarding. */
+export type StickerOnboardingRole = 'shopper' | 'vendor';
+
+/** @deprecated Prefer StickerOnboardingRole */
+export type OnboardingRole = StickerOnboardingRole | 'customer' | 'chef';
 
 /** Ensures the correct extension row exists when onboarding picks a role. */
 export async function ensureRoleExtension(
@@ -12,7 +16,7 @@ export async function ensureRoleExtension(
   await supabase.from('vendors').delete().eq('user_id', userId);
   await supabase.from('chefs').delete().eq('user_id', userId);
 
-  if (role === 'customer') {
+  if (role === 'shopper' || role === 'customer') {
     const { data: existing } = await supabase
       .from('shoppers')
       .select('id')
@@ -56,9 +60,7 @@ export async function ensureRoleExtension(
     .maybeSingle();
 
   const displayName =
-    userRow?.name?.trim() ||
-    userRow?.email?.split('@')[0] ||
-    'Chef';
+    userRow?.name?.trim() || userRow?.email?.split('@')[0] || 'Chef';
 
   const { error } = await supabase.from('chefs').insert({
     user_id: userId,
@@ -69,8 +71,8 @@ export async function ensureRoleExtension(
   return { error: error?.message ?? null };
 }
 
-/** Maps DB role to storage/API — normalizes legacy shopper. */
+/** Maps DB role for display — keeps shopper sticker canonical. */
 export function normalizeUserRole(role: UserRole | null): UserRole | null {
-  if (role === 'shopper') return 'customer';
+  if (role === 'customer') return 'shopper';
   return role;
 }

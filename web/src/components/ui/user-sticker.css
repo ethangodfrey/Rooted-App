@@ -1,0 +1,7 @@
+/* Optional utility classes for UserSticker hosts on dark canvas */
+.user-sticker-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}

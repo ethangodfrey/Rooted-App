@@ -1,6 +1,10 @@
 import { supabase } from '@/lib/supabase';
 
-export type OnboardingRole = 'shopper' | 'vendor' | 'chef';
+/** Permanent sticker roles selected during onboarding. */
+export type StickerOnboardingRole = 'shopper' | 'vendor';
+
+/** @deprecated Prefer StickerOnboardingRole — chef retained for legacy ops paths. */
+export type OnboardingRole = StickerOnboardingRole | 'chef';
 
 /** Ensures the correct extension row exists when onboarding picks a role. */
 export async function ensureRoleExtension(

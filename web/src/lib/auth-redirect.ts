@@ -6,6 +6,7 @@ import type { Chef, Shopper, User, Vendor } from '@/types/database';
 export type AuthRedirectPath =
   | '/login'
   | '/onboarding/role-select'
+  | '/onboarding/role'
   | '/onboarding/interests'
   | '/shopper/home'
   | '/vendor/setup'
