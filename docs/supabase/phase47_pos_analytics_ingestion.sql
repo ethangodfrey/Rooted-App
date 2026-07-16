@@ -157,11 +157,25 @@ create table if not exists public.pos_transaction_items (
   quantity             numeric(12, 3) not null default 1 check (quantity > 0),
   unit_price_cents     bigint not null default 0,
   total_price_cents    bigint not null default 0,
+  tax_amount           bigint not null default 0 check (tax_amount >= 0),
+  tip_amount           bigint not null default 0 check (tip_amount >= 0),
+  payment_status       text not null default 'completed'
+    check (payment_status in (
+      'pending', 'completed', 'refunded', 'partially_refunded', 'voided', 'failed'
+    )),
   provider_catalog_id  text,
   raw_payload          jsonb not null default '{}'::jsonb,
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
+
+-- Idempotent column adds if an earlier phase47 run created the table without them.
+alter table public.pos_transaction_items
+  add column if not exists tax_amount bigint not null default 0;
+alter table public.pos_transaction_items
+  add column if not exists tip_amount bigint not null default 0;
+alter table public.pos_transaction_items
+  add column if not exists payment_status text not null default 'completed';
 
 create index if not exists pos_transaction_items_txn_idx
   on public.pos_transaction_items (transaction_id);

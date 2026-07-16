@@ -34,8 +34,8 @@ Mirrored at `supabase/migrations/20260715194500_phase47_pos_analytics_ingestion.
 ### Wire-up (already done in module)
 
 1. Register `PosAnalyticsIngestService` in `PosModule` providers.
-2. `PosSalesIngestService` calls `PosAnalyticsIngestService` **after a successful ledger write** (`result?.id`); Square uses `ingestSquarePayload`, others use `upsertTransaction`. Failures are non-fatal.
-3. `pos-sales-ingest.processor.ts` logs `phase47=${result.analyticsTxnWritten}`.
+2. `PosSalesIngestService` calls `upsertTransaction()` **only after a successful ledger write** (`result?.id`). Failures are non-fatal.
+3. `pos-sales-ingest.processor.ts` logs `processor: phase47=...` on success.
 4. Env required on Railway: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 
 ### Direct usage (Square poll / one-off)

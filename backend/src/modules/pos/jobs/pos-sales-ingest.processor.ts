@@ -32,7 +32,7 @@ export class PosSalesIngestProcessor extends WorkerHost {
     }
 
     this.logger.log(
-      `pos-sales-ingest ${job.data.provider} event=${job.data.providerEventId} ledger=${result.written} analytics=${result.analyticsWritten} phase47=${result.analyticsTxnWritten} rollups=${result.rollups.length}`,
+      `processor: phase47=${result.analyticsTxnWritten} provider=${job.data.provider} event=${job.data.providerEventId} ledger=${result.written} analytics=${result.analyticsWritten} rollups=${result.rollups.length}`,
     );
   }
 }
