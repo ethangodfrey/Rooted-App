@@ -22,6 +22,10 @@ describe('formatPrice', () => {
     expect(formatPrice(0)).toBe('$0.00');
   });
 
+  it('handles negative cent values', () => {
+    expect(formatPrice(-250)).toBe('$-2.50');
+  });
+
   it('handles large totals', () => {
     expect(formatPrice(1_234_567)).toBe('$12345.67');
   });
