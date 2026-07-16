@@ -17,8 +17,8 @@ export function VendorInboxPage() {
         <Link to="/vendor/network" className="app-btn app-btn--primary">
           Open Vendor Network
         </Link>
-        <Link to="/explore" className="app-btn app-btn--secondary">
-          Shop markets
+        <Link to="/vendor/map" className="app-btn app-btn--secondary">
+          Open markets map
         </Link>
       </div>
     </div>

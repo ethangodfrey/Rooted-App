@@ -2,7 +2,7 @@ import type { AppTab } from '@/components/navigation/app-tabs';
 
 /**
  * Vendor workspace — role-gated (no shopper/creator toggle).
- * Storefront · Hand-offs · Inbox · Network
+ * Storefront · Hand-offs · Inbox · Network (+ Map via FAB / sidebar Map link)
  */
 export const VENDOR_SIDEBAR_TABS: AppTab[] = [
   {
@@ -28,6 +28,9 @@ export const VENDOR_SIDEBAR_TABS: AppTab[] = [
     icon: 'explore',
   },
 ];
+
+/** Farmers-market map — same surface as shopper Explore. */
+export const VENDOR_MAP_HREF = '/vendor/map';
 
 export function buildVendorMobileTabs(_vendorId: string): AppTab[] {
   return [

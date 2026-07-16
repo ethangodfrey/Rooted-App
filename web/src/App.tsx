@@ -165,6 +165,8 @@ export default function App() {
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="storefront" element={<VendorStorefrontPage />} />
           <Route path="dashboard" element={<Navigate to="/vendor/storefront" replace />} />
+          {/* Same farmers-market map as shopper Explore — available inside vendor shell */}
+          <Route path="map" element={<ShopperMapPage />} />
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
           <Route path="inbox" element={<VendorInboxPage />} />

@@ -94,8 +94,11 @@ export function VendorNetworkPage() {
         collaboration.
       </p>
 
-      <div className="mb-4">
-        <Link to="/explore" className="app-btn app-btn--secondary app-btn--small">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Link to="/vendor/map" className="app-btn app-btn--primary app-btn--small">
+          Markets map
+        </Link>
+        <Link to="/explore/feed" className="app-btn app-btn--secondary app-btn--small">
           Shop the Explore feed
         </Link>
       </div>
