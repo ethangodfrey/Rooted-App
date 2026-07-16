@@ -11,12 +11,13 @@ import {
   YAxis,
 } from 'recharts';
 
+import { centsToDollars, formatUsd, parseCents } from '@/lib/analytics/money';
 import type { PosAnalyticsTransactionRow } from '@/lib/analytics/types';
 
 export interface POSDashboardProps {
   /** Vendor UUID used to query /api/analytics */
   vendorId: string;
-  /** Supabase access token (Bearer). When omitted, component expects same-origin cookie proxy. */
+  /** Supabase access token sent as Authorization Bearer. */
   accessToken?: string | null;
   /** Override API base (defaults to same origin). */
   apiBaseUrl?: string;
@@ -26,26 +27,6 @@ interface DayPoint {
   day: string;
   label: string;
   grossDollars: number;
-}
-
-function centsToDollars(cents: number): number {
-  return Math.round(cents) / 100;
-}
-
-function formatUsd(dollars: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(dollars);
-}
-
-function formatUsdPrecise(dollars: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(dollars);
 }
 
 function dayKey(iso: string): string {
@@ -60,19 +41,19 @@ function dayLabel(isoDay: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** Group by UTC day using integer cents, then convert once to dollars. */
 function buildDailySeries(rows: PosAnalyticsTransactionRow[]): DayPoint[] {
   const map = new Map<string, number>();
   for (const row of rows) {
     const key = dayKey(row.transaction_created_at);
-    const prev = map.get(key) ?? 0;
-    map.set(key, prev + centsToDollars(row.total_amount_cents ?? 0));
+    map.set(key, (map.get(key) ?? 0) + parseCents(row.total_amount_cents));
   }
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, grossDollars]) => ({
+    .map(([day, grossCents]) => ({
       day,
       label: dayLabel(day),
-      grossDollars,
+      grossDollars: centsToDollars(grossCents),
     }));
 }
 
@@ -129,8 +110,8 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
     let grossCents = 0;
     let tipCents = 0;
     for (const row of rows) {
-      grossCents += row.total_amount_cents ?? 0;
-      tipCents += row.tip_amount_cents ?? 0;
+      grossCents += parseCents(row.total_amount_cents);
+      tipCents += parseCents(row.tip_amount_cents);
     }
     return {
       grossDollars: centsToDollars(grossCents),
@@ -183,13 +164,13 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
         <article className="rounded-2xl border border-stone-200/70 bg-white/80 px-5 py-4 shadow-sm backdrop-blur">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Gross sales</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-ink-950">
-            {formatUsdPrecise(kpis.grossDollars)}
+            {formatUsd(kpis.grossDollars)}
           </p>
         </article>
         <article className="rounded-2xl border border-stone-200/70 bg-white/80 px-5 py-4 shadow-sm backdrop-blur">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Tips collected</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-ink-950">
-            {formatUsdPrecise(kpis.tipDollars)}
+            {formatUsd(kpis.tipDollars)}
           </p>
         </article>
         <article className="rounded-2xl border border-stone-200/70 bg-white/80 px-5 py-4 shadow-sm backdrop-blur">
@@ -236,7 +217,7 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
                   axisLine={false}
                   width={64}
                   tick={{ fill: '#6b5e52', fontSize: 12 }}
-                  tickFormatter={(value: number) => formatUsd(value)}
+                  tickFormatter={(value: number) => formatUsd(value, 0)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -244,7 +225,7 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
                     border: '1px solid #e7e0d6',
                     boxShadow: '0 8px 24px rgba(26,20,16,0.08)',
                   }}
-                  formatter={(value: number) => [formatUsdPrecise(value), 'Gross']}
+                  formatter={(value) => [formatUsd(Number(value) || 0), 'Gross']}
                   labelFormatter={(label) => String(label)}
                 />
                 <Area

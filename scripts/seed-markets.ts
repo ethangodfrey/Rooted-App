@@ -65,22 +65,32 @@ const DEFAULT_SEED: FarmersMarketSeedInput[] = [
   },
 ];
 
+function env(name: string): string {
+  return process.env[name]?.trim() ?? '';
+}
+
 function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
+  const value = env(name);
   if (!value) throw new Error(`${name} is required`);
   return value;
 }
 
 function loadSeedInputs(): FarmersMarketSeedInput[] {
-  const jsonPath = process.env.SEED_MARKETS_JSON?.trim();
+  const jsonPath = env('SEED_MARKETS_JSON');
   if (!jsonPath) return DEFAULT_SEED;
 
-  const raw = readFileSync(resolve(jsonPath), 'utf8');
-  const parsed = JSON.parse(raw) as FarmersMarketSeedInput[];
-  if (!Array.isArray(parsed)) {
-    throw new Error('SEED_MARKETS_JSON must be a JSON array of market objects');
+  try {
+    const raw = readFileSync(resolve(jsonPath), 'utf8');
+    const parsed = JSON.parse(raw) as FarmersMarketSeedInput[];
+    if (!Array.isArray(parsed)) {
+      throw new Error('SEED_MARKETS_JSON must be a JSON array of market objects');
+    }
+    return parsed;
+  } catch (err) {
+    throw new Error(
+      `Failed to read SEED_MARKETS_JSON (${jsonPath}): ${err instanceof Error ? err.message : err}`,
+    );
   }
-  return parsed;
 }
 
 async function upsertViaSupabase(rows: FarmersMarketInsertRow[]): Promise<number> {
@@ -96,12 +106,12 @@ async function upsertViaSupabase(rows: FarmersMarketInsertRow[]): Promise<number
     .select('id');
 
   if (error) {
-    throw new Error(`farmers_markets upsert failed: ${error.message}`);
+    throw new Error(`Supabase REST upsert failed: ${error.message}`);
   }
   return data?.length ?? rows.length;
 }
 
-/** Fallback when SUPABASE_SERVICE_ROLE_KEY is not configured in the agent env. */
+/** Fallback when SUPABASE_SERVICE_ROLE_KEY is not configured. */
 async function upsertViaDatabaseUrl(rows: FarmersMarketInsertRow[]): Promise<number> {
   const databaseUrl = requireEnv('DATABASE_URL');
   const require = createRequire(resolve('backend/package.json'));
@@ -112,8 +122,17 @@ async function upsertViaDatabaseUrl(rows: FarmersMarketInsertRow[]): Promise<num
     connectionString: databaseUrl,
     ssl: { rejectUnauthorized: false },
   });
-  await client.connect();
+
   try {
+    await client.connect();
+  } catch (err) {
+    throw new Error(
+      `DATABASE_URL connection failed: ${err instanceof Error ? err.message : err}`,
+    );
+  }
+
+  try {
+    await client.query('begin');
     let upserted = 0;
     for (const row of rows) {
       const result = await client.query(
@@ -158,9 +177,19 @@ async function upsertViaDatabaseUrl(rows: FarmersMarketInsertRow[]): Promise<num
       );
       if (result.rowCount) upserted += result.rowCount;
     }
+    await client.query('commit');
     return upserted;
+  } catch (err) {
+    try {
+      await client.query('rollback');
+    } catch {
+      /* ignore rollback errors */
+    }
+    throw new Error(
+      `DATABASE_URL upsert failed: ${err instanceof Error ? err.message : err}`,
+    );
   } finally {
-    await client.end();
+    await client.end().catch(() => undefined);
   }
 }
 
@@ -184,22 +213,39 @@ async function main(): Promise<void> {
     `[seed-markets] prepared=${rows.length} skipped=${skipped} geom_example=${rows[0]?.geom ?? 'n/a'}`,
   );
 
+  if (rows.length === 0) {
+    throw new Error('No valid market rows to seed (check coordinates / required fields)');
+  }
+
   if (dryRun) {
     console.log('[seed-markets] dry-run — no writes');
     return;
   }
 
-  const hasServiceRole = Boolean(
-    process.env.SUPABASE_URL?.trim() && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
-  );
+  const hasServiceRole = Boolean(env('SUPABASE_URL') && env('SUPABASE_SERVICE_ROLE_KEY'));
+  const hasDatabaseUrl = Boolean(env('DATABASE_URL'));
 
-  const upserted = hasServiceRole
-    ? await upsertViaSupabase(rows)
-    : await upsertViaDatabaseUrl(rows);
+  if (!hasServiceRole && !hasDatabaseUrl) {
+    throw new Error(
+      'Set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (preferred) or DATABASE_URL for direct Postgres upsert',
+    );
+  }
 
-  console.log(
-    `[seed-markets] upserted=${upserted} via=${hasServiceRole ? 'supabase-service-role' : 'database-url'}`,
-  );
+  if (hasServiceRole) {
+    try {
+      const upserted = await upsertViaSupabase(rows);
+      console.log(`[seed-markets] upserted=${upserted} via=supabase-service-role`);
+      return;
+    } catch (err) {
+      if (!hasDatabaseUrl) throw err;
+      console.warn(
+        `[seed-markets] service-role path failed (${err instanceof Error ? err.message : err}); falling back to DATABASE_URL`,
+      );
+    }
+  }
+
+  const upserted = await upsertViaDatabaseUrl(rows);
+  console.log(`[seed-markets] upserted=${upserted} via=database-url`);
 }
 
 main().catch((err: unknown) => {
