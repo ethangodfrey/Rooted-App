@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { FieldError } from '@/components/ui/FieldError';
 import {
@@ -21,6 +21,11 @@ import {
   type SellingChannel,
   type VendorApplicationInput,
 } from '@/lib/vendor-application';
+import {
+  isVendorPersona,
+  VENDOR_PERSONA_OPTIONS,
+  type VendorPersona,
+} from '@/lib/vendor-types';
 import '@/components/ui/ui.css';
 
 export function VendorSetupPage() {
@@ -30,6 +35,9 @@ export function VendorSetupPage() {
   const [productSummary, setProductSummary] = useState(vendor?.product_summary ?? '');
   const [description, setDescription] = useState(vendor?.business_description ?? '');
   const [category, setCategory] = useState(vendor?.category ?? '');
+  const [vendorType, setVendorType] = useState<VendorPersona | null>(
+    isVendorPersona(vendor?.vendor_type) ? vendor.vendor_type : null,
+  );
   const [streetAddress, setStreetAddress] = useState(vendor?.street_address ?? '');
   const [sellCity, setSellCity] = useState(vendor?.sell_city ?? '');
   const [sellState, setSellState] = useState(vendor?.sell_state ?? '');
@@ -113,6 +121,7 @@ export function VendorSetupPage() {
         product_summary: application.product_summary.trim(),
         business_description: application.business_description,
         category: application.category,
+        vendor_type: vendorType,
         street_address: cleanStreet || null,
         sell_city: cleanCity,
         sell_state: cleanState,
@@ -165,6 +174,40 @@ export function VendorSetupPage() {
       <VendorHero eyebrow="Onboarding" title="Tell us about your business" />
 
       <VendorFormPanel>
+        <p className="m-0 mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+          Vendor type
+        </p>
+        <div className="mb-4 grid gap-2 md:grid-cols-3">
+          {VENDOR_PERSONA_OPTIONS.map((option) => {
+            const selected = vendorType === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setVendorType(option.value)}
+                aria-pressed={selected}
+                className={`rounded-xl border px-3 py-3 text-left transition ${
+                  selected
+                    ? 'border-orange-500/55 bg-orange-500/10'
+                    : 'border-stone-200 bg-white hover:border-stone-300'
+                }`}
+              >
+                <span className="mr-1" aria-hidden>
+                  {option.emoji}
+                </span>
+                <span className="text-sm font-bold text-stone-900">{option.title}</span>
+                <span className="mt-1 block text-xs text-stone-500">{option.description}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mb-4 text-xs text-stone-500">
+          Prefer the full-screen picker?{' '}
+          <Link to="/vendor/onboarding" className="font-semibold text-orange-600">
+            Open vendor onboarding
+          </Link>
+        </p>
+
         <div className="app-input-group">
           <label>Business name</label>
           <input

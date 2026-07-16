@@ -63,6 +63,7 @@ import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
+import { VendorFulfillmentSettingsPage } from '@/pages/vendor/VendorFulfillmentSettingsPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
 import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
@@ -74,6 +75,7 @@ import { VendorLeftoverFormPage } from '@/pages/vendor/VendorLeftoverFormPage';
 import { VendorLeftoversPage } from '@/pages/vendor/VendorLeftoversPage';
 import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
+import { VendorOnboardingPage } from '@/pages/vendor/VendorOnboardingPage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
 import { VendorPaymentsPage } from '@/pages/vendor/VendorPaymentsPage';
@@ -151,6 +153,7 @@ export default function App() {
 
         <Route path="/vendor" element={<VendorLayout />}>
           <Route path="setup" element={<VendorSetupPage />} />
+          <Route path="onboarding" element={<VendorOnboardingPage />} />
           <Route path="dashboard" element={<VendorDashboardPage />} />
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
@@ -172,6 +175,7 @@ export default function App() {
         <Route path="/vendor/events" element={<VendorEventsPage />} />
         <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
         <Route path="/vendor/settings/payments" element={<VendorPaymentsPage />} />
+        <Route path="/vendor/settings/fulfillment" element={<VendorFulfillmentSettingsPage />} />
         <Route path="/vendor/pos" element={<VendorPosPage />} />
         <Route path="/vendor/pos/activity" element={<VendorPosActivityPage />} />
         <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />

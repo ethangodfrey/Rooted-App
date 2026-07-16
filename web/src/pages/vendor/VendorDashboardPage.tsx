@@ -223,6 +223,20 @@ export function VendorDashboardPage() {
       <VendorSection title="Compliance & Settings">
         <VendorListPanel>
           <VendorListRow
+            to="/vendor/onboarding"
+            title="Vendor type"
+            subtitle="Market, Home Chef, or Private Chef"
+            icon="store"
+            tone="sky"
+          />
+          <VendorListRow
+            to="/vendor/settings/fulfillment"
+            title="Fulfillment & services"
+            subtitle="Pickup, delivery, or private dining rates"
+            icon="check-square"
+            tone="emerald"
+          />
+          <VendorListRow
             to="/vendor/settings/payments"
             title="Payment settings"
             subtitle="Stripe Connect & pay-at-pickup"

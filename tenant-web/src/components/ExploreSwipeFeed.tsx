@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExploreMenuDrawer } from '@/components/ExploreMenuDrawer';
 import { fetchSnapEligibleVendorIds, SNAP_EBT_BADGE_CLASS } from '@/lib/snap-ebt';
+import { HOME_KITCHEN_BADGE_CLASS, PRIVATE_CHEF_BADGE_CLASS } from '@/lib/vendor-types';
 
 export interface ExploreSwipeFeedProps {
   initialLat?: number | null;
@@ -74,6 +75,7 @@ export function ExploreSwipeFeed({
   const [menuVendor, setMenuVendor] = useState<{ id: string; name: string } | null>(null);
   const [snapOnly, setSnapOnly] = useState(false);
   const [snapVendorIds, setSnapVendorIds] = useState<Set<string> | null>(null);
+  const [vendorTypes, setVendorTypes] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     let active = true;
@@ -138,6 +140,25 @@ export function ExploreSwipeFeed({
         setItems((prev) => (append ? [...prev, ...pageItems] : pageItems));
         setNextCursor(body?.nextCursor ?? null);
         setError(null);
+
+        const vendorIds = pageItems
+          .map((item) => item.vendor_id)
+          .filter((id): id is string => Boolean(id));
+        if (vendorIds.length > 0) {
+          const typeRes = await fetch(
+            `${apiBaseUrl}/api/explore/vendor-types?ids=${encodeURIComponent(vendorIds.join(','))}`,
+          );
+          const typeBody = (await typeRes.json().catch(() => null)) as {
+            types?: Record<string, string | null>;
+          } | null;
+          if (typeRes.ok && typeBody?.types) {
+            setVendorTypes((prev) => (append ? { ...prev, ...typeBody.types } : { ...typeBody.types }));
+          } else if (!append) {
+            setVendorTypes({});
+          }
+        } else if (!append) {
+          setVendorTypes({});
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load explore feed');
       } finally {
@@ -256,14 +277,27 @@ export function ExploreSwipeFeed({
               : marketBase && item.chef_id
                 ? `${marketBase}/shopper/chefs/${item.chef_id}`
                 : null;
-          const ctaLabel =
-            item.creator_type === 'chef'
+          const vendorType = item.vendor_id ? vendorTypes[item.vendor_id] ?? null : null;
+          const privateChef = vendorType === 'private_chef';
+          const typeBadge =
+            vendorType === 'private_chef'
+              ? { label: 'Private Chef', className: PRIVATE_CHEF_BADGE_CLASS }
+              : vendorType === 'home_kitchen'
+                ? { label: 'Home Kitchen', className: HOME_KITCHEN_BADGE_CLASS }
+                : null;
+          const ctaLabel = privateChef
+            ? 'Inquire / Book Date'
+            : item.creator_type === 'chef'
               ? 'Explore Menu'
               : item.item_type === 'vendor_post'
                 ? 'Pre-Order From Booth'
                 : 'Explore Menu';
-          const opensMenu = Boolean(item.vendor_id);
+          const opensMenu = Boolean(item.vendor_id) && !privateChef;
           const snapEligible = Boolean(item.vendor_id && snapVendorIds?.has(item.vendor_id));
+          const inquireHref =
+            privateChef && marketBase && item.vendor_id
+              ? `${marketBase}/vendors/${item.vendor_id}?inquire=1`
+              : null;
 
           return (
             <article
@@ -291,9 +325,14 @@ export function ExploreSwipeFeed({
                 <span className="mt-3 inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/15 px-3 py-1.5 text-xs text-orange-400">
                   {formatDistance(item.distance_miles)} away
                 </span>
-                {snapEligible ? (
-                  <span className={`mt-2 ${SNAP_EBT_BADGE_CLASS}`}>SNAP/EBT Eligible</span>
-                ) : null}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {typeBadge ? (
+                    <span className={typeBadge.className}>{typeBadge.label}</span>
+                  ) : null}
+                  {snapEligible ? (
+                    <span className={SNAP_EBT_BADGE_CLASS}>SNAP/EBT Eligible</span>
+                  ) : null}
+                </div>
               </header>
 
               <div className="relative z-10">
@@ -303,7 +342,14 @@ export function ExploreSwipeFeed({
                 <p className="mt-3 line-clamp-2 max-w-md text-sm font-medium leading-relaxed text-white/70 md:text-base">
                   {desc}
                 </p>
-                {opensMenu ? (
+                {inquireHref ? (
+                  <a
+                    href={inquireHref}
+                    className="mt-6 block w-full rounded-xl bg-amber-600 px-6 py-[1.125rem] text-center text-base font-bold tracking-wide text-white shadow-lg transition-all hover:bg-amber-500 active:scale-[0.98]"
+                  >
+                    {ctaLabel}
+                  </a>
+                ) : opensMenu ? (
                   <button
                     type="button"
                     onClick={() =>

@@ -8,12 +8,19 @@ import {
   resolveExploreHybridHref,
   type ExploreHybridFeedItem,
 } from '@/lib/explore-hybrid-feed';
+import {
+  isPrivateChefVendor,
+  vendorTypeBadgeClass,
+  vendorTypeBadgeLabel,
+} from '@/lib/vendor-types';
+import type { VendorType } from '@/types/database';
 
 export interface ExploreSwipeSlideProps {
   item: ExploreHybridFeedItem;
   index: number;
   /** Vendor accepts SNAP/EBT or sells SNAP-eligible SKUs. */
   snapEligible?: boolean;
+  vendorType?: VendorType | null;
 }
 
 function resolveMedia(item: ExploreHybridFeedItem): string | null {
@@ -50,7 +57,12 @@ function directionsUrl(item: ExploreHybridFeedItem): string | null {
 /**
  * Full-viewport snap slide for the shopper explore swipe feed.
  */
-export function ExploreSwipeSlide({ item, index, snapEligible = false }: ExploreSwipeSlideProps) {
+export function ExploreSwipeSlide({
+  item,
+  index,
+  snapEligible = false,
+  vendorType = null,
+}: ExploreSwipeSlideProps) {
   const [mediaFailed, setMediaFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isSaved, toggle, pending } = useSavedVendors();
@@ -63,9 +75,13 @@ export function ExploreSwipeSlide({ item, index, snapEligible = false }: Explore
   const mapsUrl = directionsUrl(item);
   const vendorId = item.vendor_id;
   const saved = vendorId ? isSaved(vendorId) : false;
-  const opensMenuDrawer = Boolean(vendorId);
-  const ctaLabel =
-    item.creator_type === 'chef'
+  const privateChef = isPrivateChefVendor(vendorType);
+  const opensMenuDrawer = Boolean(vendorId) && !privateChef;
+  const typeBadge = vendorTypeBadgeLabel(vendorType);
+  const typeBadgeClass = vendorTypeBadgeClass(vendorType);
+  const ctaLabel = privateChef
+    ? 'Inquire / Book Date'
+    : item.creator_type === 'chef'
       ? 'Explore Menu'
       : item.item_type === 'vendor_post'
         ? 'Pre-Order From Booth'
@@ -121,11 +137,16 @@ export function ExploreSwipeSlide({ item, index, snapEligible = false }: Explore
             Nearby
           </span>
         )}
-        {snapEligible ? (
-          <span className="mt-2 inline-flex items-center rounded-lg border border-emerald-800 bg-emerald-950 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-300">
-            SNAP/EBT Eligible
-          </span>
-        ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {typeBadge && typeBadgeClass ? (
+            <span className={typeBadgeClass}>{typeBadge}</span>
+          ) : null}
+          {snapEligible ? (
+            <span className="inline-flex items-center rounded-lg border border-emerald-800 bg-emerald-950 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-300">
+              SNAP/EBT Eligible
+            </span>
+          ) : null}
+        </div>
       </header>
 
       <div className="explore-swipe__bottom relative z-10">
@@ -135,7 +156,14 @@ export function ExploreSwipeSlide({ item, index, snapEligible = false }: Explore
         <p className="explore-swipe__desc">{description}</p>
 
         <div className="explore-swipe__actions mt-6">
-          {opensMenuDrawer ? (
+          {privateChef && href ? (
+            <Link
+              to={`${href}?inquire=1`}
+              className="w-full py-[1.125rem] px-6 bg-amber-600 hover:bg-amber-500 active:scale-[0.98] text-white text-base font-bold tracking-wide rounded-xl shadow-lg transition-all text-center no-underline block"
+            >
+              {ctaLabel}
+            </Link>
+          ) : opensMenuDrawer ? (
             <button
               type="button"
               onClick={() => setMenuOpen(true)}

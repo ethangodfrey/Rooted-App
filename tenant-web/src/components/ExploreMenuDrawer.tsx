@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
+import { HOME_KITCHEN_BADGE_CLASS, PRIVATE_CHEF_BADGE_CLASS } from '@/lib/vendor-types';
+
 export interface ExploreMenuDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -41,6 +43,8 @@ interface MenuMarket {
 interface MenuResponse {
   error?: string;
   vendorName?: string;
+  vendorType?: string | null;
+  cottageFoodDisclosure?: string | null;
   products?: MenuProduct[];
   markets?: MenuMarket[];
   market?: { id: string; name: string; start_datetime?: string } | null;
@@ -85,6 +89,8 @@ export function ExploreMenuDrawer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(vendorName);
+  const [vendorType, setVendorType] = useState<string | null>(null);
+  const [cottageDisclosure, setCottageDisclosure] = useState<string | null>(null);
   const [products, setProducts] = useState<MenuProduct[]>([]);
   const [markets, setMarkets] = useState<MenuMarket[]>([]);
   const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
@@ -98,6 +104,8 @@ export function ExploreMenuDrawer({
         const body = (await res.json().catch(() => null)) as MenuResponse | null;
         if (!res.ok) throw new Error(body?.error || `Menu failed (${res.status})`);
         setDisplayName(body?.vendorName?.trim() || vendorName);
+        setVendorType(body?.vendorType ?? null);
+        setCottageDisclosure(body?.cottageFoodDisclosure ?? null);
         setProducts(Array.isArray(body?.products) ? body.products : []);
         const nextMarkets = Array.isArray(body?.markets)
           ? body.markets
@@ -155,6 +163,13 @@ export function ExploreMenuDrawer({
   }, [markets, selectedMarketId]);
 
   const marketBase = marketplaceUrl?.replace(/\/$/, '') ?? '';
+  const privateChef = vendorType === 'private_chef';
+  const typeBadge =
+    vendorType === 'private_chef'
+      ? { label: 'Private Chef', className: PRIVATE_CHEF_BADGE_CLASS }
+      : vendorType === 'home_kitchen'
+        ? { label: 'Home Kitchen', className: HOME_KITCHEN_BADGE_CLASS }
+        : null;
 
   return (
     <div
@@ -192,9 +207,15 @@ export function ExploreMenuDrawer({
               >
                 {displayName}
               </h2>
-              {selectedMarket ? (
+              {typeBadge ? <span className={`mt-2 ${typeBadge.className}`}>{typeBadge.label}</span> : null}
+              {selectedMarket && !privateChef ? (
                 <p className="mt-1 text-sm font-medium text-white/55">
                   Pre-order for {selectedMarket.name}
+                </p>
+              ) : null}
+              {privateChef ? (
+                <p className="mt-1 text-sm font-medium text-amber-200/80">
+                  Private dining & catering — inquire to book a date
                 </p>
               ) : null}
             </div>
@@ -268,6 +289,12 @@ export function ExploreMenuDrawer({
             </div>
           ) : null}
 
+          {!loading && cottageDisclosure ? (
+            <p className="mb-3 rounded-xl border border-orange-800/50 bg-orange-950/40 px-3 py-2 text-xs leading-relaxed text-orange-100/85">
+              {cottageDisclosure}
+            </p>
+          ) : null}
+
           {!loading && products.length > 0 ? (
             <ul className="m-0 flex list-none flex-col gap-1 p-0 pb-4" role="list">
               {products.map((product) => {
@@ -279,6 +306,10 @@ export function ExploreMenuDrawer({
                 const href = marketBase
                   ? `${marketBase}/shopper/products/${product.id}${marketQuery}`
                   : null;
+                const inquireHref =
+                  marketBase && vendorId
+                    ? `${marketBase}/vendors/${vendorId}?inquire=1`
+                    : null;
                 const thumb = product.media_urls?.[0] ?? null;
 
                 return (
@@ -306,14 +337,22 @@ export function ExploreMenuDrawer({
                         <span className={`mt-1.5 ${SNAP_EBT_BADGE_CLASS}`}>SNAP/EBT Eligible</span>
                       ) : null}
                       <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-white/60">
-                        {product.description?.trim() || 'Ready for market pickup.'}
+                        {product.description?.trim() ||
+                          (privateChef ? 'Available for custom bookings.' : 'Ready for market pickup.')}
                       </p>
-                      {product.available_quantity_presale > 0 ? (
+                      {product.available_quantity_presale > 0 && !privateChef ? (
                         <p className="mt-1 text-[11px] font-bold tracking-widest text-white/40 uppercase">
                           {product.available_quantity_presale} pre-order available
                         </p>
                       ) : null}
-                      {href && reservable ? (
+                      {privateChef && inquireHref ? (
+                        <a
+                          href={inquireHref}
+                          className={`${TACTILE_ADD} mt-3 w-full bg-amber-600 hover:bg-amber-500`}
+                        >
+                          Inquire / Book Date
+                        </a>
+                      ) : href && reservable ? (
                         <a href={href} className={`${TACTILE_ADD} mt-3 w-full`}>
                           Add to Pre-Order Bag
                         </a>

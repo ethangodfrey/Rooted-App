@@ -11,6 +11,13 @@ import type { PresaleCartMarket } from '@/lib/presale-cart';
 import { SNAP_EBT_BADGE_CLASS } from '@/lib/snap-ebt';
 import { supabase } from '@/lib/supabase';
 import { vendorPath } from '@/lib/market-routes';
+import {
+  HOME_KITCHEN_BADGE_CLASS,
+  isPrivateChefVendor,
+  PRIVATE_CHEF_BADGE_CLASS,
+  vendorTypeBadgeLabel,
+} from '@/lib/vendor-types';
+import type { VendorType } from '@/types/database';
 
 export interface ExploreMenuDrawerProps {
   open: boolean;
@@ -25,6 +32,8 @@ interface MenuMarket extends PresaleCartMarket {
 
 interface LoadedMenu {
   vendorName: string;
+  vendorType: VendorType | null;
+  cottageFoodDisclosure: string | null;
   products: MenuProduct[];
   markets: MenuMarket[];
 }
@@ -56,7 +65,11 @@ export function ExploreMenuDrawer({
     setError(null);
 
     const [vendorRes, productsRes, marketsRes] = await Promise.all([
-      supabase.from('vendors').select('id, business_name').eq('id', id).maybeSingle(),
+      supabase
+        .from('vendors')
+        .select('id, business_name, vendor_type, cottage_food_disclosure')
+        .eq('id', id)
+        .maybeSingle(),
       supabase
         .from('products')
         .select(
@@ -108,6 +121,8 @@ export function ExploreMenuDrawer({
 
     setMenu({
       vendorName: vendorRes.data.business_name?.trim() || vendorName,
+      vendorType: (vendorRes.data.vendor_type as VendorType | null) ?? null,
+      cottageFoodDisclosure: (vendorRes.data.cottage_food_disclosure as string | null) ?? null,
       products: (productsRes.data as MenuProduct[] | null) ?? [],
       markets: marketList,
     });
@@ -177,6 +192,15 @@ export function ExploreMenuDrawer({
   const displayName = menu?.vendorName || vendorName;
   const products = menu?.products ?? [];
   const storefrontHref = vendorId ? vendorPath(vendorId) : null;
+  const inquireHref = vendorId ? `${vendorPath(vendorId)}?inquire=1` : null;
+  const privateChef = isPrivateChefVendor(menu?.vendorType);
+  const typeBadge = vendorTypeBadgeLabel(menu?.vendorType ?? null);
+  const typeBadgeClass =
+    menu?.vendorType === 'private_chef'
+      ? PRIVATE_CHEF_BADGE_CLASS
+      : menu?.vendorType === 'home_kitchen'
+        ? HOME_KITCHEN_BADGE_CLASS
+        : null;
 
   return (
     <div
@@ -214,9 +238,17 @@ export function ExploreMenuDrawer({
               >
                 {displayName}
               </h2>
-              {selectedMarket ? (
+              {typeBadge && typeBadgeClass ? (
+                <span className={`mt-2 ${typeBadgeClass}`}>{typeBadge}</span>
+              ) : null}
+              {selectedMarket && !privateChef ? (
                 <p className="mt-1 text-sm font-medium text-white/55">
                   Pre-order for {selectedMarket.name}
+                </p>
+              ) : null}
+              {privateChef ? (
+                <p className="mt-1 text-sm font-medium text-amber-200/80">
+                  Private dining & catering — inquire to book a date
                 </p>
               ) : null}
             </div>
@@ -272,6 +304,12 @@ export function ExploreMenuDrawer({
             </div>
           ) : null}
 
+          {!loading && menu?.cottageFoodDisclosure ? (
+            <p className="mb-3 rounded-xl border border-orange-800/50 bg-orange-950/40 px-3 py-2 text-xs leading-relaxed text-orange-100/85">
+              {menu.cottageFoodDisclosure}
+            </p>
+          ) : null}
+
           {!loading && products.length > 0 ? (
             <ul className="m-0 flex list-none flex-col gap-1 p-0 pb-4" role="list">
               {products.map((product) => {
@@ -313,27 +351,39 @@ export function ExploreMenuDrawer({
                           {product.description}
                         </p>
                       ) : (
-                        <p className="mt-1.5 text-sm text-white/45">Ready for market pickup.</p>
+                        <p className="mt-1.5 text-sm text-white/45">
+                          {privateChef ? 'Available for custom bookings.' : 'Ready for market pickup.'}
+                        </p>
                       )}
-                      {presale > 0 ? (
+                      {presale > 0 && !privateChef ? (
                         <p className="mt-1 text-[11px] font-bold tracking-widest text-white/40 uppercase">
                           {presale} pre-order available
                         </p>
                       ) : null}
-                      <button
-                        type="button"
-                        className={`${TACTILE_ADD} mt-3 w-full`}
-                        disabled={!reservable || adding || !selectedMarket}
-                        onClick={() => void handleAdd(product)}
-                      >
-                        {adding
-                          ? 'Adding…'
-                          : justAdded
-                            ? 'Added to bag'
-                            : reservable
-                              ? 'Add to Pre-Order Bag'
-                              : 'Unavailable for pre-order'}
-                      </button>
+                      {privateChef && inquireHref ? (
+                        <Link
+                          to={inquireHref}
+                          onClick={onClose}
+                          className={`${TACTILE_ADD} mt-3 w-full bg-amber-600 hover:bg-amber-500 no-underline`}
+                        >
+                          Inquire / Book Date
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`${TACTILE_ADD} mt-3 w-full`}
+                          disabled={!reservable || adding || !selectedMarket}
+                          onClick={() => void handleAdd(product)}
+                        >
+                          {adding
+                            ? 'Adding…'
+                            : justAdded
+                              ? 'Added to bag'
+                              : reservable
+                                ? 'Add to Pre-Order Bag'
+                                : 'Unavailable for pre-order'}
+                        </button>
+                      )}
                     </div>
                   </li>
                 );

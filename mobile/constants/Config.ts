@@ -6,8 +6,9 @@ export const APP_TAGLINE =
 export const APP_SLUG = 'vendorly';
 
 export const VENDOR_TYPES = [
-  { value: 'farmers_market', label: 'Farmers Market Vendor' },
+  { value: 'farmers_market', label: 'Market Vendor' },
   { value: 'home_kitchen', label: 'Home Kitchen' },
+  { value: 'private_chef', label: 'Private Chef' },
   { value: 'food_business', label: 'Food Business' },
   { value: 'caterer', label: 'Caterer' },
   { value: 'meal_prep', label: 'Meal Prep' },

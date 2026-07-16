@@ -64,6 +64,17 @@ model Vendor {
   /// Phase 49 — booth accepts SNAP/EBT (discovery)
   acceptsSnapEbt        Boolean @default(false) @map("accepts_snap_ebt")
 
+  /// Phase 22/50 — farmers_market | home_kitchen | private_chef | …
+  vendorType            String?  @map("vendor_type")
+  servesDelivery        Boolean  @default(false) @map("serves_delivery")
+  deliveryRadiusMiles   Int?     @map("delivery_radius_miles")
+  /// Phase 50 — Home Chef cottage-food disclaimer
+  cottageFoodDisclosure String?  @map("cottage_food_disclosure")
+  /// Phase 50 — Private Chef base rate (cents)
+  baseServiceRateCents  Int?     @map("base_service_rate_cents")
+  /// Phase 50 — Private Chef minimum guests
+  minimumGuestCount     Int?     @map("minimum_guest_count")
+
   posts                Post[]
   certifications       VendorCertification[]
   orders               Order[]

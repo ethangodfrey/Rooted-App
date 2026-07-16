@@ -24,8 +24,9 @@ export function roleDisplayName(role: UserRole | null | undefined): string {
 export function vendorTypeLabel(type: string | null | undefined): string | null {
   if (!type) return null;
   const labels: Record<string, string> = {
-    farmers_market: 'Farmers Market',
+    farmers_market: 'Market Vendor',
     home_kitchen: 'Home Kitchen',
+    private_chef: 'Private Chef',
     food_business: 'Food Business',
     caterer: 'Caterer',
     meal_prep: 'Meal Prep',

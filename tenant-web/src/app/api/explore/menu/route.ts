@@ -18,6 +18,8 @@ interface ProductRow {
 interface VendorRow {
   id: string;
   business_name: string | null;
+  vendor_type?: string | null;
+  cottage_food_disclosure?: string | null;
 }
 
 interface EventRow {
@@ -64,7 +66,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   };
 
   const vendorQs = new URLSearchParams({
-    select: 'id,business_name',
+    select: 'id,business_name,vendor_type,cottage_food_disclosure',
     id: `eq.${vendorId}`,
     limit: '1',
   });
@@ -171,6 +173,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   return NextResponse.json({
     vendorName: vendor.business_name?.trim() || 'Local maker',
+    vendorType: vendor.vendor_type ?? null,
+    cottageFoodDisclosure: vendor.cottage_food_disclosure ?? null,
     products,
     markets,
     /** @deprecated use markets[0] — kept for older clients */

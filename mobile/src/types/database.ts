@@ -5,7 +5,8 @@ export type VendorType =
   | 'home_kitchen'
   | 'food_business'
   | 'caterer'
-  | 'meal_prep';
+  | 'meal_prep'
+  | 'private_chef';
 
 export type ProductAvailabilityType = 'always' | 'event_only' | 'preorder_only' | 'seasonal';
 
@@ -112,6 +113,12 @@ export interface Vendor {
   dietary_tags: string[];
   minimum_order_amount: number | null;
   lead_time_hours: number | null;
+  /** Phase 50 — Home Chef cottage-food disclaimer */
+  cottage_food_disclosure?: string | null;
+  /** Phase 50 — Private Chef base rate (cents) */
+  base_service_rate_cents?: number | null;
+  /** Phase 50 — Private Chef minimum guests */
+  minimum_guest_count?: number | null;
   portfolio_gallery: string[];
   payouts_enabled: boolean;
   /**

@@ -10,6 +10,8 @@ import {
   type ExploreHybridFeedItem,
 } from '@/lib/explore-hybrid-feed';
 import { fetchSnapEligibleVendorIds } from '@/lib/snap-ebt';
+import { fetchVendorTypesByIds } from '@/lib/vendor-type-lookup';
+import type { VendorType } from '@/types/database';
 import '@/components/explore/explore-swipe-feed.css';
 
 const RADIUS_OPTIONS = [15, 25, 35, 50];
@@ -28,6 +30,7 @@ export function ShopperExplorePage() {
   const [error, setError] = useState<string | null>(null);
   const [snapOnly, setSnapOnly] = useState(false);
   const [snapVendorIds, setSnapVendorIds] = useState<Set<string> | null>(null);
+  const [vendorTypes, setVendorTypes] = useState<Map<string, VendorType | null>>(new Map());
 
   const loadPage = useCallback(
     async (cursor: string | null, append: boolean) => {
@@ -53,6 +56,20 @@ export function ShopperExplorePage() {
         setItems((prev) => (append ? [...prev, ...page.items] : page.items));
         setNextCursor(page.nextCursor);
         setError(null);
+
+        const vendorIds = page.items
+          .map((item) => item.vendor_id)
+          .filter((id): id is string => Boolean(id));
+        if (vendorIds.length > 0) {
+          const types = await fetchVendorTypesByIds(vendorIds);
+          setVendorTypes((prev) => {
+            const next = append ? new Map(prev) : new Map<string, VendorType | null>();
+            for (const [id, type] of types) next.set(id, type);
+            return next;
+          });
+        } else if (!append) {
+          setVendorTypes(new Map());
+        }
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -187,6 +204,7 @@ export function ShopperExplorePage() {
             item={item}
             index={index}
             snapEligible={Boolean(item.vendor_id && snapVendorIds?.has(item.vendor_id))}
+            vendorType={item.vendor_id ? vendorTypes.get(item.vendor_id) ?? null : null}
           />
         ))}
       </div>
