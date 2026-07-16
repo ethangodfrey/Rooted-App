@@ -112,20 +112,27 @@ export function ShopperMapPage() {
     async function load() {
       setLoading(true);
       setError(null);
-      const { data, error: queryError } = await fetchPublicEvents({
-        forMap: true,
-        near: eventFetchOrigin,
-      });
+      try {
+        const { data, error: queryError } = await fetchPublicEvents({
+          forMap: true,
+          near: eventFetchOrigin,
+        });
 
-      if (!active) return;
+        if (!active) return;
 
-      if (queryError) {
-        setError(queryError);
+        if (queryError) {
+          setError(queryError);
+          setEvents([]);
+        } else {
+          setEvents(data);
+        }
+      } catch {
+        if (!active) return;
+        setError('Failed to load events');
         setEvents([]);
-      } else {
-        setEvents(data);
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     }
 
     void load();

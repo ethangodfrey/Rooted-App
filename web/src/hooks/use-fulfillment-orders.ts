@@ -64,32 +64,37 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
       return;
     }
 
-    const { data, error: queryError } = await supabase
-      .from('vendor_events')
-      .select('event:events(id, name, start_datetime)')
-      .eq('vendor_id', vendorId)
-      .eq('participation_status', 'approved')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error: queryError } = await supabase
+        .from('vendor_events')
+        .select('event:events(id, name, start_datetime)')
+        .eq('vendor_id', vendorId)
+        .eq('participation_status', 'approved')
+        .order('created_at', { ascending: false });
 
-    if (queryError) {
-      setError(queryError.message);
+      if (queryError) {
+        setError(queryError.message);
+        setMarkets([]);
+        return;
+      }
+
+      const slots = (data ?? [])
+        .map((row) => {
+          const raw = row.event as unknown as VendorMarketSlot | VendorMarketSlot[] | null;
+          if (Array.isArray(raw)) return raw[0] ?? null;
+          return raw;
+        })
+        .filter((event): event is VendorMarketSlot => Boolean(event?.id))
+        .sort(
+          (a, b) =>
+            new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime(),
+        );
+
+      setMarkets(slots);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load markets');
       setMarkets([]);
-      return;
     }
-
-    const slots = (data ?? [])
-      .map((row) => {
-        const raw = row.event as unknown as VendorMarketSlot | VendorMarketSlot[] | null;
-        if (Array.isArray(raw)) return raw[0] ?? null;
-        return raw;
-      })
-      .filter((event): event is VendorMarketSlot => Boolean(event?.id))
-      .sort(
-        (a, b) =>
-          new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime(),
-      );
-
-    setMarkets(slots);
   }, [vendorId]);
 
   const loadOrders = useCallback(async () => {
@@ -104,38 +109,45 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
     setLoading(true);
     setError(null);
 
-    let query = supabase
-      .from('orders')
-      .select(FULFILLMENT_SELECT)
-      .eq('vendor_id', vendorId)
-      .in('order_status', [...PENDING_PICKUP_STATUSES, ...FULFILLED_ARCHIVE_STATUSES])
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('orders')
+        .select(FULFILLMENT_SELECT)
+        .eq('vendor_id', vendorId)
+        .in('order_status', [...PENDING_PICKUP_STATUSES, ...FULFILLED_ARCHIVE_STATUSES])
+        .order('created_at', { ascending: false });
 
-    if (selectedMarketId !== 'all') {
-      query = query.eq('event_id', selectedMarketId);
-    } else if (marketIds.length > 0) {
-      query = query.in('event_id', marketIds);
-    }
+      if (selectedMarketId !== 'all') {
+        query = query.eq('event_id', selectedMarketId);
+      } else if (marketIds.length > 0) {
+        query = query.in('event_id', marketIds);
+      }
 
-    const { data, error: queryError } = await query;
+      const { data, error: queryError } = await query;
 
-    if (queryError) {
-      setError(queryError.message);
+      if (queryError) {
+        setError(queryError.message);
+        setPendingOrders([]);
+        setFulfilledOrders([]);
+        setCounts({ pending: 0, fulfilled: 0 });
+        return;
+      }
+
+      const rows = (data as unknown as FulfillmentOrderRow[]) ?? [];
+      const pending = rows.filter((row) => isPendingPickup(row.order_status));
+      const fulfilled = rows.filter((row) => isFulfilledArchive(row.order_status));
+
+      setPendingOrders(pending);
+      setFulfilledOrders(fulfilled);
+      setCounts({ pending: pending.length, fulfilled: fulfilled.length });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load orders');
       setPendingOrders([]);
       setFulfilledOrders([]);
       setCounts({ pending: 0, fulfilled: 0 });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const rows = (data as unknown as FulfillmentOrderRow[]) ?? [];
-    const pending = rows.filter((row) => isPendingPickup(row.order_status));
-    const fulfilled = rows.filter((row) => isFulfilledArchive(row.order_status));
-
-    setPendingOrders(pending);
-    setFulfilledOrders(fulfilled);
-    setCounts({ pending: pending.length, fulfilled: fulfilled.length });
-    setLoading(false);
   }, [vendorId, selectedMarketId, marketIds]);
 
   useEffect(() => {
