@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
-import { SHOPPER_TABS } from '@/components/navigation/shopper-tabs';
+import { SHOPPER_MAP_HREF, SHOPPER_TABS } from '@/components/navigation/shopper-tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isCustomerRole } from '@/lib/role-utils';
@@ -47,5 +47,5 @@ export function ShopperLayout() {
     }
   }
 
-  return <AppShell role="shopper" tabs={SHOPPER_TABS} />;
+  return <AppShell role="shopper" tabs={SHOPPER_TABS} mapFabHref={SHOPPER_MAP_HREF} />;
 }

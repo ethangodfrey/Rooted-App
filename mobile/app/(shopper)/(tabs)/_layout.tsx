@@ -61,8 +61,9 @@ export default function ShopperTabsLayout() {
           headerTitle: () => <Logo size="small" />,
           headerTitleAlign: 'center',
           headerRight: () => <CreatorModeButton />,
+          // Farmers-market map + list (all public market events)
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="map" color={color} size={size} focused={focused} />
+            <TabIcon name="map-marker" color={color} size={size} focused={focused} />
           ),
         }}
       />

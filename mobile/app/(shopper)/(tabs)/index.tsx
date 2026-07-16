@@ -1,5 +1,5 @@
 /**
- * Explore — unified map + list feed (primary shopper home).
- * Reuses the existing map screen which already pairs markers with a list sheet.
+ * Explore — farmers-market map + list (primary shopper home).
+ * Same screen as the legacy map tab: all public market events with markers + sheet.
  */
 export { default } from './map';

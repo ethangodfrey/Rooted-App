@@ -155,8 +155,8 @@ function MapFab({ compact, pulse }: { compact?: boolean; pulse?: boolean }) {
   return (
     <AnimatedPressable
       accessibilityRole="button"
-      accessibilityLabel="Open map"
-      onPress={() => router.push('/(shopper)/(tabs)/map')}
+      accessibilityLabel="Open farmers market map"
+      onPress={() => router.push('/(shopper)/(tabs)/')}
       onPressIn={() => {
         scale.value = withTiming(0.94, { duration: 120 });
       }}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
@@ -8,6 +8,7 @@ import { TabIcon } from '@/components/navigation/TabIcon';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
+import { useNearbyOpenMarkets } from '@/hooks/use-nearby-open-markets';
 
 import '@/components/ui/ui.css';
 
@@ -19,7 +20,7 @@ const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
 };
 
 const SHOPPER_SCREEN_TITLES: Record<string, string> = {
-  '/explore': 'Explore',
+  '/explore': 'Markets map',
   '/inbox': 'Inbox',
   '/orders': 'Orders',
   '/shopper/profile': 'You',
@@ -137,23 +138,39 @@ export function AppShell({
   role,
   tabs,
   mobileTabs,
+  mapFabHref,
 }: {
   role: 'shopper' | 'vendor' | 'chef' | 'admin';
   tabs: AppTab[];
   /** When set, mobile tab bar uses this subset (e.g. vendor 4-tab bar). */
   mobileTabs?: AppTab[];
-  /** @deprecated Map is part of Explore — kept for call-site compatibility. */
+  /** Farmers-market map shortcut (Explore). Shown when not already on that route. */
   mapFabHref?: string;
 }) {
   const { user, vendor, signOut } = useAuth();
   const { itemCount, openDrawer } = useCart();
   const location = useLocation();
   const homeTo = ROLE_HOME[role];
+  const nearbyMarketsOpen = useNearbyOpenMarkets();
+  const [fabCompact, setFabCompact] = useState(false);
 
   const tabbarTabs = mobileTabs ?? tabs;
   const isShopperExplore = role === 'shopper' && location.pathname === '/explore';
   const shopperScreenTitle =
     role === 'shopper' ? SHOPPER_SCREEN_TITLES[location.pathname] : undefined;
+  const showMapFab = Boolean(mapFabHref) && !isShopperExplore;
+
+  useEffect(() => {
+    if (!showMapFab) return;
+
+    const onScroll = () => {
+      setFabCompact(window.scrollY > 48);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [showMapFab, location.pathname]);
 
   return (
     <div className="app-shell">
@@ -246,6 +263,16 @@ export function AppShell({
           <TabBarLink key={tab.to} tab={tab} pathname={location.pathname} />
         ))}
       </nav>
+
+      {showMapFab && mapFabHref ? (
+        <NavLink
+          to={mapFabHref}
+          className={`app-map-fab fixed bottom-24 right-4 z-40 md:hidden${fabCompact ? ' app-map-fab--compact' : ''}${nearbyMarketsOpen ? ' app-map-fab--pulse' : ''}`}
+          aria-label="Open farmers market map"
+        >
+          <TabIcon name="map" size={22} color="var(--color-surface)" />
+        </NavLink>
+      ) : null}
     </div>
   );
 }

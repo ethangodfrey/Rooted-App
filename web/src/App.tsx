@@ -121,7 +121,7 @@ export default function App() {
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
 
-        {/* Unified shopper shell: Explore / Inbox / Orders */}
+        {/* Unified shopper shell: Explore (farmers-market map) / Inbox / Orders */}
         <Route element={<ShopperLayout />}>
           <Route path="/explore" element={<ShopperMapPage />} />
           <Route path="/inbox" element={<ShopperInboxPage />} />
