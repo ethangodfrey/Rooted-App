@@ -149,6 +149,112 @@
   gap: var(--space-3);
 }
 
+.hero__actions .btn {
+  min-height: 3.5rem;
+  padding: 1.125rem 2rem;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+@media (min-width: 768px) {
+  .hero__actions .btn {
+    min-height: 3.75rem;
+    padding: 1.25rem 2.25rem;
+  }
+}
+
+/* Asymmetric bento — mission + features */
+.bento-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+@media (min-width: 900px) {
+  .bento-grid--mission {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1.25rem;
+  }
+
+  .bento-grid--mission .bento-card--wide {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 280px;
+  }
+
+  .bento-grid--mission .bento-card--tall {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-height: 100%;
+  }
+
+  .bento-grid--mission .bento-card--span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .bento-grid--features {
+    grid-template-columns: 1.6fr 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .bento-grid--features .bento-card--wide {
+    min-height: 260px;
+  }
+
+  .bento-grid--features .bento-card--tall {
+    min-height: 260px;
+  }
+}
+
+.bento-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  min-height: 200px;
+}
+
+.bento-card--wide,
+.bento-card--tall {
+  background:
+    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(249, 115, 22, 0.16), transparent 55%),
+    rgba(255, 255, 255, 0.04);
+  border-color: rgba(249, 115, 22, 0.22);
+}
+
+.bento-card__label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-orange-400);
+  opacity: 0.9;
+}
+
+.bento-card h3 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.bento-card p:not(.bento-card__label) {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--color-muted);
+  max-width: 42rem;
+}
+
 .phone-mock {
   max-width: 280px;
   margin-inline: auto;
