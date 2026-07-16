@@ -239,20 +239,29 @@ export function LandingPage() {
               </div>
             </div>
 
-            {PHILOSOPHY_PILLARS.map((pillar, index) => (
-              <div
-                key={pillar.title}
-                className={`editorial-row${index % 2 === 1 ? ' editorial-row--flip' : ''}`}
-              >
-                <p className="editorial-row__label">
-                  {pillar.index} / {pillar.label}
+            <div className="bento-grid bento-grid--mission">
+              <article className="bento-card bento-card--wide">
+                <p className="bento-card__label">
+                  {PHILOSOPHY_PILLARS[0]!.index} / {PHILOSOPHY_PILLARS[0]!.label}
                 </p>
-                <div className="editorial-row__copy">
-                  <h3>{pillar.title}</h3>
-                  <p>{pillar.body}</p>
-                </div>
-              </div>
-            ))}
+                <h3>{PHILOSOPHY_PILLARS[0]!.title}</h3>
+                <p>{PHILOSOPHY_PILLARS[0]!.body}</p>
+              </article>
+              <article className="bento-card bento-card--tall">
+                <p className="bento-card__label">
+                  {PHILOSOPHY_PILLARS[1]!.index} / {PHILOSOPHY_PILLARS[1]!.label}
+                </p>
+                <h3>{PHILOSOPHY_PILLARS[1]!.title}</h3>
+                <p>{PHILOSOPHY_PILLARS[1]!.body}</p>
+              </article>
+              <article className="bento-card bento-card--span">
+                <p className="bento-card__label">
+                  {PHILOSOPHY_PILLARS[2]!.index} / {PHILOSOPHY_PILLARS[2]!.label}
+                </p>
+                <h3>{PHILOSOPHY_PILLARS[2]!.title}</h3>
+                <p>{PHILOSOPHY_PILLARS[2]!.body}</p>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -269,20 +278,18 @@ export function LandingPage() {
               </div>
             </div>
 
-            <div className="features-timeline">
+            <div className="bento-grid bento-grid--features">
               {SHOPPER_FEATURES.map((feature, index) => (
-                <div
+                <article
                   key={feature.title}
-                  className={`editorial-row${index % 2 === 1 ? ' editorial-row--flip' : ''}`}
+                  className={`bento-card${index === 0 ? ' bento-card--wide' : ''}${index === 1 ? ' bento-card--tall' : ''}`}
                 >
-                  <p className="editorial-row__label">
+                  <p className="bento-card__label">
                     {feature.index} / {feature.label}
                   </p>
-                  <div className="editorial-row__copy">
-                    <h3>{feature.title}</h3>
-                    <p>{feature.body}</p>
-                  </div>
-                </div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.body}</p>
+                </article>
               ))}
             </div>
           </div>

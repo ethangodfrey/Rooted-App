@@ -127,16 +127,19 @@ export function ShopperEventsPage() {
 
   return (
     <div className="app-screen app-screen--titled" style={{ maxWidth: 1100 }}>
-      <div className="app-section-header-inline" style={{ marginBottom: '0.75rem' }}>
+      <p className="app-eyebrow">Boutique directory</p>
+      <h1 className="app-title" style={{ marginBottom: '0.35rem' }}>
+        Markets
+      </h1>
+      <div className="app-section-header-inline" style={{ marginBottom: '1rem' }}>
         <p className="app-subtitle" style={{ margin: 0 }}>
           {scope === 'local'
-            ? 'Curated markets near you — editorial preview on select.'
+            ? 'Curated markets near you — select a card to preview.'
             : 'Nationwide directory — sorted by date.'}
         </p>
         <button
           type="button"
           className="app-inline-link"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           onClick={() => setScope((current) => (current === 'local' ? 'nationwide' : 'local'))}
         >
           {scope === 'local' ? 'Show all markets' : 'Nearby only'}

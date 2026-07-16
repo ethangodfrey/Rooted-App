@@ -191,10 +191,10 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: 3rem;
-  padding: 1rem 1.5rem;
+  min-height: 3.25rem;
+  padding: 1.125rem 2rem;
   border-radius: var(--radius-button);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.02em;
   border: none;
@@ -210,8 +210,8 @@ button {
 @media (min-width: 768px) {
   .btn,
   .app-btn {
-    min-height: 3.25rem;
-    padding: 1.25rem 2rem;
+    min-height: 3.5rem;
+    padding: 1.25rem 2.25rem;
   }
 }
 

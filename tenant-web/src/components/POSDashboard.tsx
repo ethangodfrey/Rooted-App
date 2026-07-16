@@ -183,35 +183,37 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
         </p>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-        <article className="flex min-h-[240px] flex-col justify-end rounded-xl border border-orange-500/35 bg-[radial-gradient(ellipse_80%_70%_at_100%_0%,rgba(249,115,22,0.28),transparent_55%),#121a36] px-6 py-6">
+      <div className="grid gap-4 md:grid-cols-[2fr_1fr] md:grid-rows-[auto]">
+        <article className="flex min-h-[280px] flex-col justify-end rounded-xl border border-orange-500/35 bg-[radial-gradient(ellipse_80%_70%_at_100%_0%,rgba(249,115,22,0.28),transparent_55%),#121a36] px-6 py-7 md:row-span-2">
           <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-90">
             Gross revenue
           </p>
-          <p className="mt-2 text-4xl font-extrabold tracking-tight tabular-nums md:text-5xl">
+          <p className="mt-2 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent tabular-nums md:text-6xl">
             {formatUsd(kpis.grossDollars)}
           </p>
-          <p className="mt-3 text-sm font-medium leading-relaxed text-white/65">
+          <p className="mt-3 text-sm font-medium leading-relaxed text-white/65 md:text-base">
             Primary ledger total · 30d window
           </p>
         </article>
 
-        <div className="flex flex-col gap-3">
-          <article className="flex min-h-[7rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4">
+        <div className="flex flex-col gap-3 md:row-span-2">
+          <article className="flex min-h-[8.5rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-5">
             <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
               Total operations
             </p>
-            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums">{kpis.count}</p>
-            <p className="mt-1 text-sm font-medium text-white/65">Transaction count</p>
+            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums md:text-4xl">
+              {kpis.count}
+            </p>
+            <p className="mt-1 text-sm font-medium leading-relaxed text-white/65">Transaction count</p>
           </article>
-          <article className="flex min-h-[7rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4">
+          <article className="flex min-h-[8.5rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-5">
             <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
               Active period
             </p>
-            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums">
+            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums md:text-4xl">
               {formatUsd(kpis.tipDollars)}
             </p>
-            <p className="mt-1 text-sm font-medium text-white/65">Tips collected</p>
+            <p className="mt-1 text-sm font-medium leading-relaxed text-white/65">Tips collected</p>
           </article>
         </div>
       </div>
@@ -237,12 +239,12 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
               <AreaChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="posSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.45} />
-                    <stop offset="55%" stopColor="#ea580c" stopOpacity={0.16} />
+                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.35} />
+                    <stop offset="70%" stopColor="#ea580c" stopOpacity={0.08} />
                     <stop offset="100%" stopColor="#ea580c" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} horizontal />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
@@ -265,10 +267,10 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
                   type="monotone"
                   dataKey="grossDollars"
                   stroke="#f97316"
-                  strokeWidth={2}
+                  strokeWidth={1.25}
                   fill="url(#posSalesGradient)"
                   dot={false}
-                  activeDot={{ r: 4, fill: '#fb923c', strokeWidth: 0 }}
+                  activeDot={{ r: 3, fill: '#fb923c', strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
