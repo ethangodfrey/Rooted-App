@@ -21,6 +21,9 @@ SEED_MARKETS_JSON=./path/markets.json npm run markets:seed-directory
 ```
 
 `scripts/seed-markets.ts` formats coordinates as EWKT `SRID=4326;POINT(longitude latitude)` before bulk upsert.
+Helpers: `scripts/lib/seed-markets.ts` (also re-exported from `scripts/lib/markets.ts` — import does not run the CLI).
+
+Auth: prefers `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`; falls back to `DATABASE_URL` (Postgres) when service-role is unset.
 
 ## POS analytics dashboard (tenant-web)
 
