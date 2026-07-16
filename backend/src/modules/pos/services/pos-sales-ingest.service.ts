@@ -3,14 +3,18 @@
  * Writes:
  *   1. pos_transactions (ledger)
  *   2. analytics_sales (Phase 45)
- *   3. pos_analytics_transactions (+ items) via PosAnalyticsIngestService (Phase 47)
+ *   3. pos_analytics_transactions (+ items) via PosAnalyticsIngestService.upsertTransaction (Phase 47)
  *   4. schedules market snapshot rollups
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { mapSquarePayloadToTransaction } from '../mappers/square-analytics.mapper';
 import { buildSnapshotRollupJobs } from '../utils/tender-aggregation';
-import type { AnalyticsPaymentStatus } from '../types/analytics-transaction';
+import type {
+  AnalyticsPaymentStatus,
+  Transaction,
+} from '../types/analytics-transaction';
 import type {
   LedgerProvider,
   PosSalesIngestJobData,
@@ -60,6 +64,8 @@ export class PosSalesIngestService {
     let analyticsTxnWritten = 0;
 
     for (const txn of data.transactions) {
+      const tipCents = txn.tipCents ?? 0;
+
       const result = await this.ledger.upsertTransaction({
         vendorId: connection.vendorId,
         connectionId: connection.id,
@@ -68,7 +74,7 @@ export class PosSalesIngestService {
         grossAmount: txn.grossAmountCents,
         platformFee: txn.platformFeeCents,
         taxAmount: txn.taxCents ?? 0,
-        tipAmount: 0,
+        tipAmount: tipCents,
         paymentStatus: txn.state,
         currency: txn.currency,
         soldAt: txn.soldAt,
@@ -100,10 +106,10 @@ export class PosSalesIngestService {
       });
       if (sale?.id) analyticsWritten += 1;
 
-      // Phase 47 only after a successful ledger write.
+      // Phase 47: invoke upsertTransaction ONLY after a successful ledger write.
       if (result?.id) {
-        const phase47 = await this.writePhase47Analytics(connection, data.provider, txn);
-        if (phase47) analyticsTxnWritten += 1;
+        const ok = await this.writePhase47Analytics(connection, data.provider, txn, tipCents);
+        if (ok) analyticsTxnWritten += 1;
       }
     }
 
@@ -135,39 +141,52 @@ export class PosSalesIngestService {
   }
 
   /**
-   * Upsert into pos_analytics_transactions (+ items). Non-fatal on failure so
-   * ledger / analytics_sales success is preserved.
+   * Build a unified Transaction, then call PosAnalyticsIngestService.upsertTransaction().
+   * Non-fatal on failure so ledger / analytics_sales success is preserved.
    */
   private async writePhase47Analytics(
     connection: ResolvedPosConnection,
     provider: LedgerProvider,
     txn: PosSalesIngestJobData['transactions'][number],
+    tipCents: number,
   ): Promise<boolean> {
     try {
+      let unified: Transaction | null = null;
+
       if (provider === 'square') {
-        const mapped = await this.analyticsIngest.ingestSquarePayload(txn.rawPayload, {
+        unified = mapSquarePayloadToTransaction(txn.rawPayload, {
           vendorId: connection.vendorId,
           posConnectionId: connection.id,
           provider: 'square',
         });
-        if (mapped) return true;
       }
 
-      await this.analyticsIngest.upsertTransaction({
+      const payload: Transaction = unified ?? {
         externalTransactionId: txn.externalTransactionId,
         vendorId: connection.vendorId,
         posConnectionId: connection.id,
         provider,
         totalAmountCents: txn.grossAmountCents,
         taxAmountCents: txn.taxCents ?? 0,
-        tipAmountCents: 0,
+        tipAmountCents: tipCents,
         currency: txn.currency,
         paymentStatus: txn.state as AnalyticsPaymentStatus,
         transactionCreatedAt: txn.soldAt,
         providerLocationId: txn.providerLocationId ?? null,
         items: [],
         rawPayload: txn.rawPayload,
-      });
+      };
+
+      // Prefer job external id when the mapper used a nested order id.
+      if (
+        unified &&
+        unified.externalTransactionId !== txn.externalTransactionId &&
+        txn.externalTransactionId
+      ) {
+        payload.externalTransactionId = txn.externalTransactionId;
+      }
+
+      await this.analyticsIngest.upsertTransaction(payload);
       return true;
     } catch (err) {
       this.logger.warn(

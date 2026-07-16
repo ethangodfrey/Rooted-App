@@ -143,6 +143,11 @@ alter table public.pos_transactions
       'pending', 'completed', 'refunded', 'partially_refunded', 'voided', 'failed'
     ));
 
+-- Ledger upsert key for PostgREST on_conflict=provider,external_transaction_id
+-- (idempotent — also created in phase43 as pos_transactions_provider_external_id_key).
+create unique index if not exists pos_transactions_provider_external_id_key
+  on public.pos_transactions (provider, external_transaction_id);
+
 create table if not exists public.pos_transaction_items (
   id                   uuid primary key default gen_random_uuid(),
   transaction_id       uuid not null

@@ -44,6 +44,8 @@ export interface PosSalesIngestJobData {
     grossAmountCents: number;
     platformFeeCents: number;
     taxCents?: number;
+    /** Tip in integer cents (phase47 ledger + analytics). */
+    tipCents?: number;
     processingFeeCents?: number;
     tenderType?: LedgerTenderType;
     cardBrand?: string | null;
