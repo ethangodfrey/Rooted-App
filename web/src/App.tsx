@@ -84,6 +84,7 @@ import { VendorPostsPage } from '@/pages/vendor/VendorPostsPage';
 import { VendorVideoPostFormPage } from '@/pages/vendor/VendorVideoPostFormPage';
 import { VendorProductAvailabilityPage } from '@/pages/vendor/VendorProductAvailabilityPage';
 import { VendorProductFormPage } from '@/pages/vendor/VendorProductFormPage';
+import { VendorInventoryPage } from '@/pages/vendor/VendorInventoryPage';
 import { VendorProductsPage } from '@/pages/vendor/VendorProductsPage';
 import { VendorProfilePage } from '@/pages/vendor/VendorProfilePage';
 import { VendorSetupPage } from '@/pages/vendor/VendorSetupPage';
@@ -152,6 +153,7 @@ export default function App() {
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="products" element={<VendorProductsPage />} />
+          <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
         </Route>

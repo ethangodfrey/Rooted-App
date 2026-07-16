@@ -2456,3 +2456,9 @@
 .vendor-asym__stat .ft-metric {
   font-size: 1.75rem;
 }
+
+.vendor-asym__action {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
