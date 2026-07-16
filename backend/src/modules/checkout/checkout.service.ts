@@ -181,6 +181,19 @@ export class CheckoutService {
         vendorEvents.map((row) => [groupKey(row.vendorId, row.eventId), row.boothDetails]),
       );
 
+      const eventIds = [...new Set(groups.map((group) => group.eventId))];
+      const markets = await tx.market.findMany({
+        where: { eventId: { in: eventIds } },
+        select: { id: true, eventId: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      const marketIdByEvent = new Map<string, string>();
+      for (const market of markets) {
+        if (market.eventId && !marketIdByEvent.has(market.eventId)) {
+          marketIdByEvent.set(market.eventId, market.id);
+        }
+      }
+
       const orders: CheckoutReceipt[] = [];
       const orderIds: string[] = [];
 
@@ -193,6 +206,7 @@ export class CheckoutService {
             shopperId: shopper.id,
             vendorId: group.vendorId,
             eventId: group.eventId,
+            marketId: marketIdByEvent.get(group.eventId) ?? null,
             orderType: 'event_pickup',
             orderStatus: 'pending',
             paymentStatus: paymentMethod === 'stripe' ? 'stripe_pending' : 'paid_at_pickup',

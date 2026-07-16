@@ -70,6 +70,7 @@ docs/supabase/phase43_pos_national_markets_foundation.sql # POS OAuth tables + n
 docs/supabase/phase43c_pos_data_rls.sql # POS RLS + realtime + nearby national markets RPC
 docs/supabase/phase44_national_harvester_pos_analytics.sql # extend markets geo/schedules + market_sales_snapshots rollups
 docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql # phase44 RLS policies
+docs/supabase/phase48_pickup_codes_storefront.sql # storefront checkout pickup codes + fulfillment windows + market_id
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

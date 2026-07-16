@@ -1,3 +1,6 @@
+import { useMemo, useState } from 'react';
+
+import { normalizePickupCode } from '@/components/orders/PickupPass';
 import { OrdersListSkeleton } from '@/components/orders/OrdersListSkeleton';
 import { IconBadge } from '@/components/vendor/dashboard-icons';
 import {
@@ -30,6 +33,17 @@ function itemSummary(items: FulfillmentOrderRow['order_items']): string {
   return items.length > 2 ? `${preview} +${items.length - 2} more` : preview;
 }
 
+function matchesCodeQuery(order: FulfillmentOrderRow, query: string): boolean {
+  const needle = query.trim().toUpperCase();
+  if (!needle) return true;
+  const code = normalizePickupCode(order.pickup_code) ?? '';
+  const shopper =
+    order.shopper?.user?.name?.trim().toUpperCase() ||
+    order.shopper?.user?.email?.trim().toUpperCase() ||
+    '';
+  return code.includes(needle) || shopper.includes(needle) || order.id.toUpperCase().includes(needle);
+}
+
 function FulfillmentOrderRowCard({
   order,
   mode,
@@ -44,7 +58,8 @@ function FulfillmentOrderRowCard({
   const shopperLabel =
     order.shopper?.user?.name?.trim() ||
     order.shopper?.user?.email?.trim() ||
-    `Order ${order.pickup_code ?? order.id.slice(0, 8)}`;
+    'Shopper';
+  const code = normalizePickupCode(order.pickup_code);
 
   return (
     <div className="p-3.5">
@@ -52,7 +67,14 @@ function FulfillmentOrderRowCard({
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <IconBadge name="package" tone="emerald" />
           <div className="min-w-0">
-            <p className="m-0 truncate text-sm font-semibold text-stone-800">{shopperLabel}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="m-0 truncate text-sm font-semibold text-stone-800">{shopperLabel}</p>
+              {code ? (
+                <span className="inline-flex items-center rounded-lg bg-orange-500/15 px-2.5 py-1 font-mono text-xs font-extrabold tracking-[0.14em] text-orange-600">
+                  {code}
+                </span>
+              ) : null}
+            </div>
             <p className="m-0 mt-0.5 truncate text-xs text-stone-500">{itemSummary(order.order_items)}</p>
             <p className="m-0 mt-0.5 text-xs text-stone-400">
               {formatPrice(order.total)} · {formatDateTime(order.created_at)}
@@ -89,6 +111,7 @@ function FulfillmentOrderRowCard({
 
 export function VendorFulfillmentPage() {
   const { vendor } = useAuth();
+  const [codeQuery, setCodeQuery] = useState('');
   const {
     markets,
     selectedMarketId,
@@ -101,6 +124,15 @@ export function VendorFulfillmentPage() {
     fulfillingIds,
     fulfillOrder,
   } = useFulfillmentOrders(vendor?.id);
+
+  const filteredPending = useMemo(
+    () => pendingOrders.filter((order) => matchesCodeQuery(order, codeQuery)),
+    [pendingOrders, codeQuery],
+  );
+  const filteredFulfilled = useMemo(
+    () => fulfilledOrders.filter((order) => matchesCodeQuery(order, codeQuery)),
+    [fulfilledOrders, codeQuery],
+  );
 
   return (
     <VendorScreen>
@@ -115,7 +147,7 @@ export function VendorFulfillmentPage() {
         <VendorFormPanel>
           <label className="block">
             <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
-              Filter by market
+              Filter by market date
             </span>
             <select
               className={`app-input mt-2 w-full ${VENDOR_PRESSABLE}`}
@@ -132,6 +164,23 @@ export function VendorFulfillmentPage() {
               ))}
             </select>
           </label>
+
+          <label className="mt-4 block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              Lookup pickup code
+            </span>
+            <input
+              className={`app-input mt-2 w-full font-mono tracking-[0.14em] uppercase ${VENDOR_PRESSABLE}`}
+              value={codeQuery}
+              onChange={(event) => setCodeQuery(event.target.value)}
+              placeholder="e.g. AB3K7M"
+              inputMode="text"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={12}
+            />
+          </label>
         </VendorFormPanel>
       </VendorSection>
 
@@ -142,11 +191,17 @@ export function VendorFulfillmentPage() {
       ) : (
         <>
           <VendorSection title="Pending pickup">
-            {pendingOrders.length === 0 ? (
-              <VendorEmpty message="No shoppers waiting right now." />
+            {filteredPending.length === 0 ? (
+              <VendorEmpty
+                message={
+                  codeQuery.trim()
+                    ? 'No pending orders match that pickup code.'
+                    : 'No shoppers waiting right now.'
+                }
+              />
             ) : (
               <VendorListPanel>
-                {pendingOrders.map((order) => (
+                {filteredPending.map((order) => (
                   <FulfillmentOrderRowCard
                     key={order.id}
                     order={order}
@@ -160,11 +215,11 @@ export function VendorFulfillmentPage() {
           </VendorSection>
 
           <VendorSection title="Fulfilled">
-            {fulfilledOrders.length === 0 ? (
+            {filteredFulfilled.length === 0 ? (
               <VendorEmpty message="Fulfilled orders archive here after pickup." />
             ) : (
               <VendorListPanel>
-                {fulfilledOrders.map((order) => (
+                {filteredFulfilled.map((order) => (
                   <FulfillmentOrderRowCard key={order.id} order={order} mode="fulfilled" />
                 ))}
               </VendorListPanel>

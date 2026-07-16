@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { MarketSlotPicker } from '@/components/explore/MarketSlotPicker';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { useCart } from '@/hooks/use-cart';
+import { useNow } from '@/hooks/use-now';
 import { formatPrice } from '@/lib/format';
 import { isProductReservable, type MenuProduct } from '@/lib/product-menu';
 import type { PresaleCartMarket } from '@/lib/presale-cart';
@@ -39,10 +41,12 @@ export function ExploreMenuDrawer({
   vendorName,
 }: ExploreMenuDrawerProps) {
   const titleId = useId();
+  const now = useNow(60_000);
   const { addToCart, openDrawer: openCartDrawer, inventoryError, clearInventoryError } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menu, setMenu] = useState<LoadedMenu | null>(null);
+  const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addedId, setAddedId] = useState<string | null>(null);
 
@@ -106,6 +110,7 @@ export function ExploreMenuDrawer({
       products: (productsRes.data as MenuProduct[] | null) ?? [],
       markets: marketList,
     });
+    setSelectedMarketId(marketList[0]?.id ?? null);
     setLoading(false);
   }, [vendorName]);
 
@@ -136,9 +141,14 @@ export function ExploreMenuDrawer({
     }
   }, [open, clearInventoryError]);
 
+  const selectedMarket = useMemo(() => {
+    if (!menu?.markets.length) return null;
+    return menu.markets.find((m) => m.id === selectedMarketId) ?? menu.markets[0];
+  }, [menu, selectedMarketId]);
+
   async function handleAdd(product: MenuProduct) {
     if (!vendorId || !menu) return;
-    const market = menu.markets[0];
+    const market = selectedMarket;
     if (!market) {
       setError('This vendor has no upcoming market for pre-orders yet.');
       return;
@@ -203,9 +213,9 @@ export function ExploreMenuDrawer({
               >
                 {displayName}
               </h2>
-              {menu?.markets[0] ? (
+              {selectedMarket ? (
                 <p className="mt-1 text-sm font-medium text-white/55">
-                  Pre-order for {menu.markets[0].name}
+                  Pre-order for {selectedMarket.name}
                 </p>
               ) : null}
             </div>
@@ -218,6 +228,15 @@ export function ExploreMenuDrawer({
               <CloseIcon />
             </button>
           </div>
+
+          {menu && menu.markets.length > 0 ? (
+            <MarketSlotPicker
+              markets={menu.markets}
+              selectedId={selectedMarket?.id ?? null}
+              onSelect={setSelectedMarketId}
+              now={now}
+            />
+          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5">
@@ -300,7 +319,7 @@ export function ExploreMenuDrawer({
                       <button
                         type="button"
                         className={`${TACTILE_ADD} mt-3 w-full`}
-                        disabled={!reservable || adding || !menu?.markets[0]}
+                        disabled={!reservable || adding || !selectedMarket}
                         onClick={() => void handleAdd(product)}
                       >
                         {adding

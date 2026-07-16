@@ -22,14 +22,19 @@ interface VendorRow {
 interface EventRow {
   id: string;
   name: string;
+  city: string | null;
+  state: string | null;
+  address: string | null;
   start_datetime: string;
   end_datetime: string | null;
+  timezone: string | null;
+  hours_summary: string | null;
 }
 
 /**
  * GET /api/explore/menu?vendorId=
  *
- * Public menu payload for the shopper Explore Menu drawer (pre-order stock only).
+ * Public menu payload for the shopper Explore Menu drawer (pre-order stock + market slots).
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
@@ -70,7 +75,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     order: 'name.asc',
   });
   const eventsQs = new URLSearchParams({
-    select: 'event:events(id,name,start_datetime,end_datetime)',
+    select:
+      'event:events(id,name,city,state,address,start_datetime,end_datetime,timezone,hours_summary)',
     vendor_id: `eq.${vendorId}`,
     participation_status: 'eq.approved',
   });
@@ -121,7 +127,18 @@ export async function GET(request: Request): Promise<NextResponse> {
     };
   });
 
-  let market: { id: string; name: string } | null = null;
+  let markets: Array<{
+    id: string;
+    name: string;
+    city: string | null;
+    state: string | null;
+    address: string | null;
+    start_datetime: string;
+    end_datetime: string | null;
+    timezone: string | null;
+    hours_summary: string | null;
+  }> = [];
+
   if (eventsRes.ok) {
     const eventRows = (await eventsRes.json()) as { event: EventRow | EventRow[] | null }[];
     const now = Date.now();
@@ -132,16 +149,31 @@ export async function GET(request: Request): Promise<NextResponse> {
       })
       .filter((ev): ev is EventRow => Boolean(ev))
       .sort((a, b) => a.start_datetime.localeCompare(b.start_datetime));
-    const upcoming = events.find(
+
+    const upcoming = events.filter(
       (ev) => new Date(ev.end_datetime || ev.start_datetime).getTime() >= now,
     );
-    const pick = upcoming ?? events[0];
-    if (pick) market = { id: pick.id, name: pick.name };
+    const pick = upcoming.length > 0 ? upcoming : events;
+    markets = pick.map((ev) => ({
+      id: ev.id,
+      name: ev.name,
+      city: ev.city,
+      state: ev.state,
+      address: ev.address,
+      start_datetime: ev.start_datetime,
+      end_datetime: ev.end_datetime,
+      timezone: ev.timezone,
+      hours_summary: ev.hours_summary,
+    }));
   }
 
   return NextResponse.json({
     vendorName: vendor.business_name?.trim() || 'Local maker',
     products,
-    market,
+    markets,
+    /** @deprecated use markets[0] — kept for older clients */
+    market: markets[0]
+      ? { id: markets[0].id, name: markets[0].name, start_datetime: markets[0].start_datetime }
+      : null,
   });
 }
