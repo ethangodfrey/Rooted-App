@@ -228,6 +228,7 @@ export function EventsMap({
               >
                 <Popup>
                   <div className="events-map-popup">
+                    <p className="events-map-popup__label">Market</p>
                     <div style={{ marginBottom: '0.35rem' }}>
                       <EventStatusBadge event={event} now={now} />
                     </div>

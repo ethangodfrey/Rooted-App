@@ -21,14 +21,14 @@ function vendorDistanceLabel(vendor: MarketAttendingVendor, userCoords: Coords |
 export function AttendingVendorGrid({ vendors, userCoords, marketId }: AttendingVendorGridProps) {
   if (vendors.length === 0) {
     return (
-      <p className="app-row-meta rounded-2xl bg-slate-50 px-4 py-6 text-center">
+      <p className="app-row-meta rounded-xl border border-zinc-200/50 bg-white/80 px-4 py-6 text-center backdrop-blur-md">
         No Vendorly vendors are linked to this market yet. Vendors can join from their dashboard.
       </p>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr]">
       {vendors.map((vendor) => {
         const distance = isValidCoords(userCoords)
           ? vendorDistanceLabel(vendor, userCoords)
@@ -38,24 +38,30 @@ export function AttendingVendorGrid({ vendors, userCoords, marketId }: Attending
           <Link
             key={vendor.id}
             to={vendorPath(vendor.id, marketId)}
-            className="app-card app-card--pressable flex flex-row items-center gap-3 p-3 transition hover:shadow-md"
+            className="app-card app-card--pressable flex flex-row items-center gap-3 p-3 transition"
           >
             <FallbackImage
               src={vendor.logo_url}
               variant="vendor-logo"
               category={vendor.category}
-              style={{ width: 52, height: 52, borderRadius: 12, flexShrink: 0 }}
+              style={{ width: 52, height: 52, borderRadius: 10, flexShrink: 0 }}
             />
             <div className="min-w-0 flex-1">
               <p className="app-row-title truncate">{vendor.business_name ?? 'Vendor'}</p>
               {vendor.category ? (
-                <p className="app-row-meta truncate">{vendor.category}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 truncate">
+                  {vendor.category}
+                </p>
               ) : null}
               {vendor.product_summary ? (
-                <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{vendor.product_summary}</p>
+                <p className="mt-0.5 line-clamp-2 text-xs font-medium text-zinc-500">
+                  {vendor.product_summary}
+                </p>
               ) : null}
               {distance ? (
-                <p className="mt-1 text-xs font-medium text-emerald-700">{distance} away</p>
+                <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500 tabular-nums">
+                  {distance} away
+                </p>
               ) : null}
             </div>
           </Link>
