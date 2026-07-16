@@ -35,9 +35,9 @@ export function VendorOnboardingPage() {
       return;
     }
     if (!persona) {
-                    setError(
-                      'Choose how you sell — Market Vendor, Home Chef, Private Chef, or Micro-Brand.',
-                    );
+      setError(
+        'Choose how you sell — Market Vendor, Home Chef, Private Chef, or Micro-Brand.',
+      );
       return;
     }
 
