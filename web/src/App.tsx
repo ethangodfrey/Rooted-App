@@ -39,6 +39,7 @@ import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
 import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
 import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
+import { ShopperCartPage } from '@/pages/shopper/ShopperCartPage';
 import { ShopperChefBookingPage } from '@/pages/shopper/ShopperChefBookingPage';
 import { ShopperChefPage } from '@/pages/shopper/ShopperChefPage';
 import { ShopperChefsPage } from '@/pages/shopper/ShopperChefsPage';
@@ -75,6 +76,7 @@ import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
+import { VendorPaymentsPage } from '@/pages/vendor/VendorPaymentsPage';
 import { VendorPosActivityPage } from '@/pages/vendor/VendorPosActivityPage';
 import { VendorPosConnectedPage } from '@/pages/vendor/VendorPosConnectedPage';
 import { VendorPosConnectionPage } from '@/pages/vendor/VendorPosConnectionPage';
@@ -135,6 +137,7 @@ export default function App() {
         <Route path="/shopper/bookings" element={<ShopperBookingsPage />} />
         <Route path="/shopper/bookings/:id" element={<ShopperBookingDetailPage />} />
         <Route path="/shopper/products/:id" element={<ShopperProductPage />} />
+        <Route path="/shopper/cart" element={<ShopperCartPage />} />
         <Route path="/shopper/checkout/:productId" element={<ShopperReservePage />} />
         <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
@@ -168,6 +171,7 @@ export default function App() {
         <Route path="/vendor/leftovers/new" element={<VendorLeftoverFormPage />} />
         <Route path="/vendor/events" element={<VendorEventsPage />} />
         <Route path="/vendor/sales/manual" element={<VendorManualSalePage />} />
+        <Route path="/vendor/settings/payments" element={<VendorPaymentsPage />} />
         <Route path="/vendor/pos" element={<VendorPosPage />} />
         <Route path="/vendor/pos/activity" element={<VendorPosActivityPage />} />
         <Route path="/vendor/pos/connected" element={<VendorPosConnectedPage />} />

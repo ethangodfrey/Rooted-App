@@ -15,6 +15,7 @@ export interface ProductFormValues {
   reserve_limit_total: number | null;
   reserve_limit_per_shopper: number | null;
   media_urls: string[];
+  is_snap_eligible: boolean;
 }
 
 interface ProductFormProps {
@@ -51,6 +52,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
     initial?.reserve_limit_per_shopper != null ? String(initial.reserve_limit_per_shopper) : '',
   );
   const [mediaUrls, setMediaUrls] = useState<string[]>(initial?.media_urls ?? []);
+  const [snapEligible, setSnapEligible] = useState(initial?.is_snap_eligible ?? false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProductField, string>>>({});
@@ -136,6 +138,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       reserve_limit_total: limitTotalValue,
       reserve_limit_per_shopper: limitPerShopperValue,
       media_urls: mediaUrls,
+      is_snap_eligible: snapEligible,
     });
   }
 
@@ -215,6 +218,25 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       <label style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <input type="checkbox" checked={reserveEnabled} onChange={(e) => setReserveEnabled(e.target.checked)} />
         <span>Enable reservations</span>
+      </label>
+
+      <label
+        className="mb-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-800/50 bg-emerald-950/30 px-4 py-3"
+      >
+        <span>
+          <span className="block text-sm font-bold text-emerald-800">SNAP / EBT Eligible Product</span>
+          <span className="mt-0.5 block text-xs font-medium text-emerald-900/70">
+            Show an emerald SNAP badge in discovery when shoppers filter for EBT-friendly items.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          role="switch"
+          aria-checked={snapEligible}
+          className="h-5 w-5 accent-emerald-600"
+          checked={snapEligible}
+          onChange={(e) => setSnapEligible(e.target.checked)}
+        />
       </label>
 
       {reserveEnabled ? (

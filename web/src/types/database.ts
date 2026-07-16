@@ -187,6 +187,10 @@ export interface Vendor {
   stripe_account_id?: string | null;
   stripe_charges_enabled?: boolean;
   stripe_payouts_enabled?: boolean;
+  /** Phase 49 — cart payment policy for pre-orders */
+  preorder_payment_policy?: 'pickup_only' | 'stripe_only' | 'pickup_or_stripe';
+  /** Phase 49 — booth accepts SNAP/EBT (discovery) */
+  accepts_snap_ebt?: boolean;
   latitude?: number | null;
   longitude?: number | null;
   created_at: string;
@@ -373,6 +377,8 @@ export interface Product {
   allergen_info: string | null;
   serving_size: string | null;
   availability_type: ProductAvailabilityType;
+  /** Phase 49 — SNAP/EBT eligible SKU */
+  is_snap_eligible?: boolean;
   created_at: string;
   updated_at: string;
 }

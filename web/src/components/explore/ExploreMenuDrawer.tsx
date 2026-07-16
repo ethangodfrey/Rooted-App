@@ -8,6 +8,7 @@ import { useNow } from '@/hooks/use-now';
 import { formatPrice } from '@/lib/format';
 import { isProductReservable, type MenuProduct } from '@/lib/product-menu';
 import type { PresaleCartMarket } from '@/lib/presale-cart';
+import { SNAP_EBT_BADGE_CLASS } from '@/lib/snap-ebt';
 import { supabase } from '@/lib/supabase';
 import { vendorPath } from '@/lib/market-routes';
 
@@ -59,7 +60,7 @@ export function ExploreMenuDrawer({
       supabase
         .from('products')
         .select(
-          `id, name, description, price, category, reserve_enabled, media_urls,
+          `id, name, description, price, category, reserve_enabled, media_urls, is_snap_eligible,
            product_event_availability(available_quantity_presale)`,
         )
         .eq('vendor_id', id)
@@ -304,6 +305,9 @@ export function ExploreMenuDrawer({
                           {formatPrice(product.price)}
                         </span>
                       </div>
+                      {product.is_snap_eligible ? (
+                        <span className={`mt-1.5 ${SNAP_EBT_BADGE_CLASS}`}>SNAP/EBT Eligible</span>
+                      ) : null}
                       {product.description ? (
                         <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-white/60">
                           {product.description}

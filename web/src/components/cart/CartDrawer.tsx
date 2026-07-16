@@ -1,6 +1,6 @@
 import './cart-drawer.css';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { CartMarketConflictModal } from '@/components/cart/CartMarketConflictModal';
@@ -11,6 +11,11 @@ import { isApiConfigured } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { pickupSummaryFromCart } from '@/lib/pickup-schedule';
 import type { StagedCheckoutPreview } from '@/lib/cart-checkout-staging';
+import {
+  resolveCartPaymentPolicy,
+  type PreorderPaymentPolicy,
+} from '@/lib/stripe-connect';
+import { supabase } from '@/lib/supabase';
 
 function CartLineRow({
   name,
@@ -89,6 +94,41 @@ export function CartDrawer() {
   const [stagingLoading, setStagingLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [paymentChoice, setPaymentChoice] = useState<'pickup' | 'stripe'>('pickup');
+  const [vendorPolicy, setVendorPolicy] = useState<PreorderPaymentPolicy>('pickup_or_stripe');
+  const [stripeReady, setStripeReady] = useState(false);
+
+  const vendorIds = useMemo(
+    () => [...new Set((cart?.lines ?? []).map((line) => line.vendorId))],
+    [cart?.lines],
+  );
+
+  useEffect(() => {
+    if (!drawerOpen || vendorIds.length === 0) return;
+    let active = true;
+    void (async () => {
+      const { data } = await supabase
+        .from('vendors')
+        .select('id, preorder_payment_policy, stripe_charges_enabled, stripe_account_id')
+        .in('id', vendorIds);
+      if (!active) return;
+      const policies = (data ?? []).map(
+        (row) =>
+          (row.preorder_payment_policy as PreorderPaymentPolicy | null) ?? 'pickup_or_stripe',
+      );
+      const policy = resolveCartPaymentPolicy(policies);
+      setVendorPolicy(policy);
+      const ready = (data ?? []).every(
+        (row) => Boolean(row.stripe_account_id) && Boolean(row.stripe_charges_enabled),
+      );
+      setStripeReady(ready);
+      if (policy === 'stripe_only' && ready) setPaymentChoice('stripe');
+      else if (policy === 'pickup_only' || !ready) setPaymentChoice('pickup');
+    })();
+    return () => {
+      active = false;
+    };
+  }, [drawerOpen, vendorIds]);
 
   useEffect(() => {
     if (!drawerOpen || drawerStage !== 'review' || !cart) {
@@ -286,6 +326,71 @@ export function CartDrawer() {
                             placeholder="Allergies, booth preferences, etc."
                           />
                         </label>
+
+                        {vendorPolicy === 'pickup_or_stripe' ||
+                        (vendorPolicy === 'stripe_only' && !stripeReady) ? (
+                          <div className="mt-4">
+                            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                              Payment method
+                            </p>
+                            <div
+                              className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
+                              role="group"
+                              aria-label="Payment method"
+                            >
+                              <button
+                                type="button"
+                                className={`rounded-lg px-3 py-3 text-left text-sm font-bold transition ${
+                                  paymentChoice === 'stripe'
+                                    ? 'bg-white text-orange-600 shadow'
+                                    : 'text-slate-600'
+                                }`}
+                                onClick={() => setPaymentChoice('stripe')}
+                                disabled={!stripeReady}
+                              >
+                                <span className="block">💳 Pay Now (Card)</span>
+                                <span className="mt-0.5 block text-[11px] font-medium text-slate-500">
+                                  Secure Stripe Checkout
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                className={`rounded-lg px-3 py-3 text-left text-sm font-bold transition ${
+                                  paymentChoice === 'pickup'
+                                    ? 'bg-white text-orange-600 shadow'
+                                    : 'text-slate-600'
+                                }`}
+                                onClick={() => setPaymentChoice('pickup')}
+                              >
+                                <span className="block">🤝 Pay at Pickup</span>
+                                <span className="mt-0.5 block text-[11px] font-medium text-slate-500">
+                                  Swipe card or use EBT at the booth terminal
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {paymentChoice === 'stripe' &&
+                        (vendorPolicy === 'stripe_only' ||
+                          vendorPolicy === 'pickup_or_stripe') ? (
+                          <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+                            <p className="m-0 text-sm font-bold text-orange-800">
+                              Card payment via Stripe Checkout
+                            </p>
+                            <p className="m-0 mt-1 text-xs font-medium text-orange-900/70">
+                              You’ll confirm on Stripe’s secure page (card, Apple Pay, Google Pay).
+                              No card details are stored in Vendorly.
+                            </p>
+                          </div>
+                        ) : null}
+
+                        {vendorPolicy === 'stripe_only' && !stripeReady ? (
+                          <p className="mt-3 text-xs font-semibold text-amber-700">
+                            A vendor requires card payment but isn’t Stripe-ready yet — pay at pickup
+                            is available for this basket.
+                          </p>
+                        ) : null}
                       </>
                     ) : null}
                   </>
@@ -335,22 +440,39 @@ export function CartDrawer() {
                   >
                     Back to cart
                   </button>
-                  <button
-                    type="button"
-                    className="app-btn app-btn--primary"
-                    disabled={submitting || stagingLoading || !staging?.inventoryValid || !isApiConfigured}
-                    onClick={() => void handleSubmit('pickup')}
-                  >
-                    {submitting ? 'Placing presale order…' : 'Reserve & pay at pickup'}
-                  </button>
-                  <button
-                    type="button"
-                    className="app-btn app-btn--primary"
-                    disabled={submitting || stagingLoading || !staging?.inventoryValid || !isApiConfigured}
-                    onClick={() => void handleSubmit('stripe')}
-                  >
-                    Pay online (Stripe)
-                  </button>
+                  {(() => {
+                    const method: 'pickup' | 'stripe' =
+                      vendorPolicy === 'stripe_only' && stripeReady
+                        ? 'stripe'
+                        : vendorPolicy === 'pickup_only'
+                          ? 'pickup'
+                          : paymentChoice === 'stripe' && stripeReady
+                            ? 'stripe'
+                            : 'pickup';
+                    const label =
+                      method === 'stripe'
+                        ? submitting
+                          ? 'Redirecting to Stripe…'
+                          : 'Pay now with card'
+                        : submitting
+                          ? 'Confirming reservation…'
+                          : 'Confirm Reservation';
+                    return (
+                      <button
+                        type="button"
+                        className="app-btn app-btn--primary"
+                        disabled={
+                          submitting ||
+                          stagingLoading ||
+                          !staging?.inventoryValid ||
+                          !isApiConfigured
+                        }
+                        onClick={() => void handleSubmit(method)}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })()}
                 </div>
               )}
             </footer>

@@ -111,6 +111,20 @@
   color: #fb923c;
 }
 
+.explore-swipe__chip--snap {
+  border-color: rgba(6, 78, 59, 0.85);
+  background: rgba(2, 44, 34, 0.55);
+  color: #6ee7b7;
+  letter-spacing: 0.02em;
+}
+
+.explore-swipe__chip--snap-active {
+  border-color: rgba(16, 185, 129, 0.75);
+  background: rgba(6, 78, 59, 0.85);
+  color: #a7f3d0;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.25);
+}
+
 .explore-swipe__slide {
   background: #0b1228;
 }

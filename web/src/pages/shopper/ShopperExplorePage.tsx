@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExploreSwipeSlide } from '@/components/explore/ExploreSwipeSlide';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -9,6 +9,7 @@ import {
   fetchExploreHybridFeed,
   type ExploreHybridFeedItem,
 } from '@/lib/explore-hybrid-feed';
+import { fetchSnapEligibleVendorIds } from '@/lib/snap-ebt';
 import '@/components/explore/explore-swipe-feed.css';
 
 const RADIUS_OPTIONS = [15, 25, 35, 50];
@@ -25,6 +26,8 @@ export function ShopperExplorePage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [snapOnly, setSnapOnly] = useState(false);
+  const [snapVendorIds, setSnapVendorIds] = useState<Set<string> | null>(null);
 
   const loadPage = useCallback(
     async (cursor: string | null, append: boolean) => {
@@ -67,6 +70,20 @@ export function ShopperExplorePage() {
     scrollerRef.current?.scrollTo({ top: 0 });
   }, [loadPage]);
 
+  useEffect(() => {
+    let active = true;
+    void fetchSnapEligibleVendorIds()
+      .then((ids) => {
+        if (active) setSnapVendorIds(ids);
+      })
+      .catch(() => {
+        if (active) setSnapVendorIds(new Set());
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Prefetch next page when the user nears the end of the snap stack.
   useEffect(() => {
     const root = scrollerRef.current;
@@ -83,12 +100,28 @@ export function ShopperExplorePage() {
     return () => root.removeEventListener('scroll', onScroll);
   }, [nextCursor, loadingMore, loadPage]);
 
+  const visibleItems = useMemo(() => {
+    if (!snapOnly) return items;
+    if (!snapVendorIds) return items;
+    return items.filter((item) => item.vendor_id && snapVendorIds.has(item.vendor_id));
+  }, [items, snapOnly, snapVendorIds]);
+
   return (
     <div className="explore-swipe">
       <header className="explore-swipe__header fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0B1228]/60 border-b border-white/5 p-4">
         <div className="explore-swipe__header-inner">
           <p className="explore-swipe__brand">Explore</p>
-          <div className="explore-swipe__filters" role="group" aria-label="Search radius">
+          <div className="explore-swipe__filters" role="group" aria-label="Discovery filters">
+            <button
+              type="button"
+              onClick={() => setSnapOnly((prev) => !prev)}
+              className={`explore-swipe__chip explore-swipe__chip--snap${
+                snapOnly ? ' explore-swipe__chip--snap-active' : ''
+              }`}
+              aria-pressed={snapOnly}
+            >
+              🌾 Accepts SNAP / EBT
+            </button>
             {RADIUS_OPTIONS.filter(
               (miles) =>
                 miles >= EXPLORE_FEED_MIN_RADIUS_MILES && miles <= EXPLORE_FEED_MAX_RADIUS_MILES,
@@ -137,26 +170,28 @@ export function ShopperExplorePage() {
           </div>
         ) : null}
 
-        {!loading && items.length === 0 && coords && !error ? (
+        {!loading && visibleItems.length === 0 && coords && !error ? (
           <div className="explore-swipe__state">
-            <h2>Nothing nearby yet</h2>
+            <h2>{snapOnly ? 'No SNAP / EBT booths nearby' : 'Nothing nearby yet'}</h2>
             <p>
-              No posts within {radiusMiles} miles. Widen the radius filter above or check back after
-              vendors publish.
+              {snapOnly
+                ? 'Try turning off the SNAP filter or widening the radius — more vendors may accept EBT at the booth.'
+                : `No posts within ${radiusMiles} miles. Widen the radius filter above or check back after vendors publish.`}
             </p>
           </div>
         ) : null}
 
-        {items.map((item, index) => (
+        {visibleItems.map((item, index) => (
           <ExploreSwipeSlide
             key={`${item.item_type}-${item.item_id}`}
             item={item}
             index={index}
+            snapEligible={Boolean(item.vendor_id && snapVendorIds?.has(item.vendor_id))}
           />
         ))}
       </div>
 
-      {nextCursor && items.length > 0 ? (
+      {nextCursor && visibleItems.length > 0 ? (
         <div className="explore-swipe__load-more">
           <button
             type="button"

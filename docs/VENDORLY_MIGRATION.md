@@ -71,6 +71,7 @@ docs/supabase/phase43c_pos_data_rls.sql # POS RLS + realtime + nearby national m
 docs/supabase/phase44_national_harvester_pos_analytics.sql # extend markets geo/schedules + market_sales_snapshots rollups
 docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql # phase44 RLS policies
 docs/supabase/phase48_pickup_codes_storefront.sql # storefront checkout pickup codes + fulfillment windows + market_id
+docs/supabase/phase49_stripe_policy_snap_ebt.sql # preorder payment policy + SNAP/EBT vendor/product flags
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

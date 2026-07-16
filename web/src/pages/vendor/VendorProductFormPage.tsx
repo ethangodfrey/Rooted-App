@@ -26,6 +26,7 @@ export function VendorProductFormPage() {
     reserve_limit_total: number | null;
     reserve_limit_per_shopper: number | null;
     media_urls: string[];
+    is_snap_eligible: boolean;
   }> | null>(null);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -45,6 +46,7 @@ export function VendorProductFormPage() {
           reserve_limit_total: data.reserve_limit_total,
           reserve_limit_per_shopper: data.reserve_limit_per_shopper,
           media_urls: data.media_urls ?? [],
+          is_snap_eligible: Boolean(data.is_snap_eligible),
         });
       }
       setLoading(false);
@@ -61,6 +63,7 @@ export function VendorProductFormPage() {
     reserve_limit_total: number | null;
     reserve_limit_per_shopper: number | null;
     media_urls: string[];
+    is_snap_eligible: boolean;
   }) {
     if (!vendor) return;
     setSaving(true);
@@ -76,6 +79,7 @@ export function VendorProductFormPage() {
       reserve_limit_total: values.reserve_limit_total,
       reserve_limit_per_shopper: values.reserve_limit_per_shopper,
       media_urls: values.media_urls,
+      is_snap_eligible: values.is_snap_eligible,
       status: 'active' as const,
       updated_at: new Date().toISOString(),
     };
