@@ -27,3 +27,14 @@ body {
   outline: 2px solid var(--orange);
   outline-offset: 3px;
 }
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
