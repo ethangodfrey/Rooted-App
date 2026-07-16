@@ -48,6 +48,8 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type EventStatus = 'upcoming' | 'live' | 'completed' | 'cancelled';
 export type VisibilityStatus = 'draft' | 'public';
 export type ProductStatus = 'active' | 'archived';
+/** Phase 50 — who can see the SKU via RLS */
+export type ProductVisibility = 'public' | 'connected_vendors' | 'private';
 export type PostType =
   | 'update'
   | 'product'
@@ -391,6 +393,8 @@ export interface Product {
   availability_type: ProductAvailabilityType;
   /** Phase 49 — SNAP/EBT eligible SKU */
   is_snap_eligible?: boolean;
+  /** Phase 50 — public | connected_vendors (V2V wholesale) | private */
+  visibility?: ProductVisibility;
   created_at: string;
   updated_at: string;
 }
