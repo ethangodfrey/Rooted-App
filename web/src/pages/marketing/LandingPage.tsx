@@ -8,17 +8,20 @@ import '@/components/ui/ui.css';
 
 const SHOPPER_FEATURES = [
   {
-    icon: '🗺️',
+    index: '01',
+    label: 'Discovery',
     title: 'Explore near you',
     body: 'Find farmers markets, private chefs, and local food businesses in your area — or browse popular makers nationwide.',
   },
   {
-    icon: '❤️',
+    index: '02',
+    label: 'Following',
     title: 'Follow your favorites',
     body: 'Save vendors and chefs you love and get a personalized feed of updates, products, and booking announcements.',
   },
   {
-    icon: '🛒',
+    index: '03',
+    label: 'Commerce',
     title: 'Order, reserve & book',
     body: 'Browse products, place reservations, book chef services, and pick up fresh goods from home cooks and cottage food vendors.',
   },
@@ -26,17 +29,17 @@ const SHOPPER_FEATURES = [
 
 const VENDOR_FEATURES = [
   {
-    icon: '🏪',
+    index: '01',
     title: 'Your storefront',
     body: 'Customize your shop with a banner, logo, story, and links — all in one profile.',
   },
   {
-    icon: '📣',
+    index: '02',
     title: 'Posts & updates',
     body: 'Share what is in season, market days, and specials with shoppers who follow you.',
   },
   {
-    icon: '📊',
+    index: '03',
     title: 'Orders & analytics',
     body: 'Manage reservations, track sales, and connect Square POS when you are ready.',
   },
@@ -44,16 +47,22 @@ const VENDOR_FEATURES = [
 
 const PHILOSOPHY_PILLARS = [
   {
+    index: '01',
+    label: 'Community',
     title: 'Connect the community',
     body:
       'Vendorly brings local shoppers, private chefs, home cooks, and independent vendors into one place — so discovery, trust, and repeat business happen in your neighborhood, not across a dozen apps and social feeds.',
   },
   {
+    index: '02',
+    label: 'Revenue',
     title: 'Sell beyond market day',
     body:
       'Farmers markets are only a few hours a week. Vendorly helps makers capture their full sales potential with direct orders, chef bookings, and presale pickup — turning interest into revenue before and after the booth closes.',
   },
   {
+    index: '03',
+    label: 'Presence',
     title: 'One home for your business',
     body:
       'Vendors and chefs get a single storefront to promote every product, service, and update. Your catalog, your story, your schedule — everything shoppers need in one profile.',
@@ -145,7 +154,8 @@ export function LandingPage() {
                 <span className="hero__title-accent">Private chefs. Home cooks.</span>
               </h1>
               <p className="hero__lead">
-                Discover, book, and order from makers near you — markets, chefs, and home kitchens in one app.
+                Discover, book, and order from makers near you — markets, chefs, and home kitchens
+                in one app.
               </p>
               <div className="hero__actions">
                 <Link to="/signup" className="btn btn--primary">
@@ -208,63 +218,77 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="about" className="section section--about">
-          <div className="container about__inner">
-            <div className="about__intro">
-              <p className="eyebrow">Why Vendorly exists</p>
-              <h2 className="section-title">Built for local food, built for both sides</h2>
-              <p className="about__mission">
-                Vendorly was created because local food deserves better than scattered listings
-                and a few market hours a week. We believe shoppers, chefs, and vendors thrive when
-                they are connected year-round — not just on Saturday morning.
-              </p>
-              <blockquote className="about__quote">
+        <section id="about" className="section section--about editorial-band">
+          <div className="container">
+            <div className="editorial-row">
+              <p className="editorial-row__label">00 / Mission</p>
+              <div className="editorial-row__copy">
+                <h2>Built for local food, built for both sides</h2>
                 <p>
-                  &ldquo;Markets bring people together. Vendorly keeps them together — helping
-                  chefs, home cooks, and vendors sell their full output and giving shoppers one
-                  trusted place to find, follow, and buy local.&rdquo;
+                  Vendorly was created because local food deserves better than scattered listings
+                  and a few market hours a week. We believe shoppers, chefs, and vendors thrive when
+                  they are connected year-round — not just on Saturday morning.
                 </p>
-              </blockquote>
+                <blockquote className="about__quote">
+                  <p>
+                    &ldquo;Markets bring people together. Vendorly keeps them together — helping
+                    chefs, home cooks, and vendors sell their full output and giving shoppers one
+                    trusted place to find, follow, and buy local.&rdquo;
+                  </p>
+                </blockquote>
+              </div>
             </div>
 
-            <div className="about__pillars">
-              {PHILOSOPHY_PILLARS.map((pillar, index) => (
-                <article key={pillar.title} className="about__pillar">
-                  <span className="about__pillar-index" aria-hidden="true">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
+            {PHILOSOPHY_PILLARS.map((pillar, index) => (
+              <div
+                key={pillar.title}
+                className={`editorial-row${index % 2 === 1 ? ' editorial-row--flip' : ''}`}
+              >
+                <p className="editorial-row__label">
+                  {pillar.index} / {pillar.label}
+                </p>
+                <div className="editorial-row__copy">
                   <h3>{pillar.title}</h3>
                   <p>{pillar.body}</p>
-                </article>
-              ))}
-            </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
-        <section id="features" className="section">
+        <section id="features" className="section editorial-band">
           <div className="container">
-            <p className="eyebrow">For shoppers</p>
-            <h2 className="section-title">Everything local, in your pocket</h2>
-            <p className="section-lead">
-              Browse farmers markets on a map, book private chefs, order from home kitchens, and
-              reserve pickup without chasing down five different websites.
-            </p>
+            <div className="editorial-row">
+              <p className="editorial-row__label">For shoppers</p>
+              <div className="editorial-row__copy">
+                <h2>Everything local, in your pocket</h2>
+                <p>
+                  Browse farmers markets on a map, book private chefs, order from home kitchens, and
+                  reserve pickup without chasing down five different websites.
+                </p>
+              </div>
+            </div>
 
-            <div className="grid-3 features-grid">
-              {SHOPPER_FEATURES.map((feature) => (
-                <article key={feature.title} className="card">
-                  <div className="card-icon" aria-hidden="true">
-                    {feature.icon}
+            <div className="features-timeline">
+              {SHOPPER_FEATURES.map((feature, index) => (
+                <div
+                  key={feature.title}
+                  className={`editorial-row${index % 2 === 1 ? ' editorial-row--flip' : ''}`}
+                >
+                  <p className="editorial-row__label">
+                    {feature.index} / {feature.label}
+                  </p>
+                  <div className="editorial-row__copy">
+                    <h3>{feature.title}</h3>
+                    <p>{feature.body}</p>
                   </div>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.body}</p>
-                </article>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="vendors" className="section section--vendors">
+        <section id="vendors" className="section section--vendors editorial-band">
           <div className="container vendors__inner">
             <div className="vendors__copy">
               <p className="eyebrow">For vendors</p>
@@ -278,12 +302,10 @@ export function LandingPage() {
               </Link>
             </div>
 
-            <div className="grid-2 vendors__cards">
+            <div className="vendors__cards">
               {VENDOR_FEATURES.map((feature) => (
-                <article key={feature.title} className="card card--accent">
-                  <div className="card-icon" aria-hidden="true">
-                    {feature.icon}
-                  </div>
+                <article key={feature.title} className="vendors__feature">
+                  <span className="vendors__feature-index">{feature.index}</span>
                   <h3>{feature.title}</h3>
                   <p>{feature.body}</p>
                 </article>
@@ -292,11 +314,13 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="section section--honeydew">
+        <section id="how-it-works" className="section section--honeydew editorial-band">
           <div className="container">
-            <div className="section-header-center">
-              <p className="eyebrow">How it works</p>
-              <h2 className="section-title">Three steps to get started</h2>
+            <div className="editorial-row">
+              <p className="editorial-row__label">How it works</p>
+              <div className="editorial-row__copy">
+                <h2>Three steps to get started</h2>
+              </div>
             </div>
 
             <ol className="steps">
@@ -328,7 +352,11 @@ export function LandingPage() {
                 <span className="store-badge__small">New here?</span>
                 <span className="store-badge__large">Sign up</span>
               </Link>
-              <Link to="/login" className="store-badge store-badge--outline" aria-label="Sign in to Vendorly">
+              <Link
+                to="/login"
+                className="store-badge store-badge--outline"
+                aria-label="Sign in to Vendorly"
+              >
                 <span className="store-badge__small">Already have an account?</span>
                 <span className="store-badge__large">Sign in</span>
               </Link>

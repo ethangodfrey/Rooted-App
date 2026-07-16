@@ -3,21 +3,14 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
-  --canvas: #fbfbfb;
-  --ink: #18181b;
-  --muted: #71717a;
-  --border: rgba(24, 24, 27, 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --canvas: #09090b;
-    --ink: #fafafa;
-    --muted: #a1a1aa;
-    --border: rgba(255, 255, 255, 0.1);
-  }
+  color-scheme: dark;
+  --canvas: #0b1228;
+  --indigo-900: #121a36;
+  --orange: #f97316;
+  --orange-dark: #ea580c;
+  --ink: #f8fafc;
+  --muted: rgba(248, 250, 252, 0.68);
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -27,9 +20,10 @@ body {
   color: var(--ink);
   font-family: 'IBM Plex Sans', Segoe UI, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  line-height: 1.65;
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
 }

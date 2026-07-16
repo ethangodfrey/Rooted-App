@@ -99,7 +99,7 @@ export function VendorDashboardPage() {
         <Link to="/vendor/analytics" className="vendor-asym__hero no-underline">
           <p className="ft-label">Gross revenue</p>
           <p className="ft-metric">{grossValue}</p>
-          <p className="ft-subhead" style={{ marginTop: '0.65rem', color: '#a1a1aa' }}>
+          <p className="ft-subhead" style={{ marginTop: '0.65rem' }}>
             {posLoading
               ? 'Syncing POS ledger…'
               : posSummary.transactionCount > 0

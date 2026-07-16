@@ -1,54 +1,63 @@
 :root {
-  /* Vendorly Fintech — zinc canvas, razor borders, high-contrast type */
-  color-scheme: light;
+  /* Vendorly — deep indigo canvas + warm orange accents (locked) */
+  color-scheme: dark;
 
-  --color-canvas: #fbfbfb;
-  --color-canvas-ink: #09090b;
-  --color-surface: #ffffff;
-  --color-surface-muted: rgba(24, 24, 27, 0.03);
-  --color-cream: #fbfbfb;
-  --color-honeydew: #f4f4f5;
-  --color-white: #ffffff;
-  --color-soil: #18181b;
-  --color-stone: #71717a;
-  --color-text: #18181b;
-  --color-muted: #71717a;
-  --color-border: rgba(24, 24, 27, 0.08);
-  --color-border-subtle: rgba(24, 24, 27, 0.06);
-  --color-border-strong: rgba(24, 24, 27, 0.12);
+  --color-indigo-950: #0b1228;
+  --color-indigo-900: #121a36;
+  --color-indigo-800: #1a2448;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-400: #fb923c;
+  --color-orange-soft: rgba(249, 115, 22, 0.16);
 
-  --color-primary: #18181b;
-  --color-primary-dark: #09090b;
-  --color-primary-soft: rgba(24, 24, 27, 0.06);
-  --color-accent: #4f46e5; /* indigo-600 focus */
-  --color-accent-soft: rgba(79, 70, 229, 0.12);
-  --color-live: #10b981; /* emerald status pulse */
-  --color-live-soft: rgba(16, 185, 129, 0.14);
-  --color-terracotta: #18181b;
-  --color-garden: #10b981;
-  --color-sage: #4f46e5;
-  --color-harvest: #a1a1aa;
-  --color-warm-sage: #f4f4f5;
-  --color-warm-sage-alt: #f4f4f5;
-  --color-forest: #4f46e5;
-  --color-divider: #f0f0f0;
+  --color-canvas: var(--color-indigo-950);
+  --color-canvas-ink: var(--color-indigo-950);
+  --color-surface: var(--color-indigo-900);
+  --color-surface-muted: rgba(255, 255, 255, 0.05);
+  --color-cream: var(--color-indigo-950);
+  --color-honeydew: var(--color-indigo-800);
+  --color-white: var(--color-indigo-900);
+  --color-soil: #f8fafc;
+  --color-stone: rgba(248, 250, 252, 0.62);
+  --color-text: #f8fafc;
+  --color-muted: rgba(248, 250, 252, 0.68);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Orange = primary actions / focus / active */
+  --color-primary: var(--color-orange-500);
+  --color-primary-dark: var(--color-orange-600);
+  --color-primary-soft: var(--color-orange-soft);
+  --color-accent: var(--color-orange-400);
+  --color-accent-soft: var(--color-orange-soft);
+  --color-live: #34d399;
+  --color-live-soft: rgba(52, 211, 153, 0.16);
+  --color-terracotta: var(--color-orange-500);
+  --color-garden: var(--color-orange-400);
+  --color-sage: var(--color-orange-400);
+  --color-harvest: var(--color-orange-400);
+  --color-warm-sage: var(--color-indigo-800);
+  --color-warm-sage-alt: var(--color-indigo-900);
+  --color-forest: var(--color-orange-500);
+  --color-divider: rgba(255, 255, 255, 0.1);
 
   --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   --font-logo: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-card: 14px;
-  --radius-button: 10px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-card: 16px;
+  --radius-button: 12px;
 
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.35);
   --shadow-card: none;
-  --shadow-fab: 0 8px 24px rgba(9, 9, 11, 0.18);
+  --shadow-fab: 0 10px 28px rgba(249, 115, 22, 0.35);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -61,33 +70,8 @@
   --space-12: 3rem;
 
   --max-width: 1120px;
-  --nav-height: 64px;
-  --app-tabbar-height: 56px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --color-canvas: #09090b;
-    --color-cream: #09090b;
-    --color-honeydew: #18181b;
-    --color-surface: #18181b;
-    --color-surface-muted: rgba(255, 255, 255, 0.04);
-    --color-white: #18181b;
-    --color-soil: #fafafa;
-    --color-stone: #a1a1aa;
-    --color-text: #fafafa;
-    --color-muted: #a1a1aa;
-    --color-border: rgba(255, 255, 255, 0.1);
-    --color-border-subtle: rgba(255, 255, 255, 0.08);
-    --color-border-strong: rgba(255, 255, 255, 0.14);
-    --color-primary: #fafafa;
-    --color-primary-dark: #ffffff;
-    --color-primary-soft: rgba(255, 255, 255, 0.08);
-    --color-warm-sage: #18181b;
-    --color-warm-sage-alt: #18181b;
-  }
+  --nav-height: 72px;
+  --app-tabbar-height: 64px;
 }
 
 *,
@@ -104,7 +88,7 @@ body {
   margin: 0;
   font-family: var(--font-body);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.65;
   color: var(--color-text);
   background: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
@@ -112,8 +96,8 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-text);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-orange-500);
+  outline-offset: 3px;
 }
 
 img {
@@ -139,7 +123,7 @@ button {
 }
 
 .section {
-  padding-block: var(--space-12);
+  padding-block: clamp(3.5rem, 8vw, 6rem);
 }
 
 .section--tight {
@@ -149,16 +133,17 @@ button {
 .eyebrow,
 .ft-label {
   display: inline-block;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #a1a1aa;
+  color: var(--color-orange-400);
+  opacity: 0.85;
   margin-bottom: var(--space-3);
 }
 
 .ft-metric {
-  font-size: 2.25rem;
+  font-size: clamp(2.25rem, 5vw, 3rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.05;
@@ -167,67 +152,142 @@ button {
 }
 
 .ft-subhead {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  color: #71717a;
+  line-height: 1.65;
+  color: var(--color-muted);
   margin: 0;
 }
 
-.section-title {
-  font-size: clamp(1.625rem, 3.5vw, 2.25rem);
-  font-weight: 700;
-  line-height: 1.2;
+.section-title,
+.app-title {
+  font-size: clamp(1.875rem, 4.5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
   margin: 0 0 var(--space-4);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
 }
 
-.section-lead {
-  font-size: 1.0625rem;
+.section-lead,
+.app-subtitle {
+  font-size: 0.9375rem;
+  line-height: 1.7;
   color: var(--color-muted);
   max-width: 40rem;
   margin: 0;
-  line-height: 1.65;
 }
 
-.btn {
+@media (min-width: 768px) {
+  .section-lead,
+  .app-subtitle {
+    font-size: 1.0625rem;
+  }
+}
+
+/* —— Tactile primary / secondary buttons —— */
+.btn,
+.app-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: 0.8125rem 1.375rem;
-  border-radius: var(--radius-md);
+  min-height: 3rem;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-button);
   font-weight: 600;
-  font-size: 0.9375rem;
-  transition: background 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.btn--primary {
-  background: var(--color-primary);
-  color: var(--color-canvas);
+@media (min-width: 768px) {
+  .btn,
+  .app-btn {
+    min-height: 3.25rem;
+    padding: 1.25rem 2rem;
+  }
 }
 
-.btn--primary:hover {
-  background: var(--color-primary-dark);
+.btn:active,
+.app-btn:active {
+  transform: scale(0.98);
 }
 
-.btn--secondary {
+.btn--primary,
+.app-btn--primary {
+  background: linear-gradient(135deg, var(--color-orange-500) 0%, var(--color-orange-600) 100%);
+  color: #fff7ed;
+  box-shadow: 0 10px 28px rgba(249, 115, 22, 0.28);
+  width: auto;
+}
+
+.btn--primary:hover,
+.app-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%);
+  box-shadow: 0 12px 32px rgba(249, 115, 22, 0.38);
+}
+
+.btn--secondary,
+.app-btn--secondary {
   background: transparent;
   color: var(--color-text);
   border: 1px solid var(--color-border-strong);
   box-shadow: none;
 }
 
-.btn--secondary:hover {
+.btn--secondary:hover,
+.app-btn--secondary:hover:not(:disabled) {
   background: var(--color-surface-muted);
+  border-color: var(--color-orange-400);
+  color: #fff;
 }
 
-.btn--ghost {
+.btn--ghost,
+.app-btn--ghost {
   color: var(--color-text);
-  padding-inline: var(--space-4);
+  background: transparent;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
 }
 
-.btn--ghost:hover {
-  opacity: 0.75;
+.btn--ghost:hover,
+.app-btn--ghost:hover:not(:disabled) {
+  color: var(--color-orange-400);
+  background: var(--color-orange-soft);
+}
+
+.app-btn--small {
+  min-height: 2.75rem;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.875rem;
+}
+
+.app-inline-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-orange-400);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-inline-link:hover {
+  background: var(--color-orange-soft);
+  color: #fff;
 }
 
 .card {
@@ -239,11 +299,11 @@ button {
 }
 
 .card-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-md);
-  background: var(--color-honeydew);
-  color: var(--color-primary);
+  background: var(--color-orange-soft);
+  color: var(--color-orange-400);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,36 +313,36 @@ button {
 
 .card h3 {
   margin: 0 0 var(--space-2);
-  font-size: 1.0625rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .card p {
   margin: 0;
   color: var(--color-muted);
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .grid-3 {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
 @media (min-width: 768px) {
   .grid-3 {
-    grid-template-columns: 1.6fr 1fr 1fr;
+    grid-template-columns: 1.5fr 1fr 1fr;
   }
 }
 
 .grid-2 {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
 @media (min-width: 768px) {
   .grid-2 {
-    grid-template-columns: 1.4fr 1fr;
+    grid-template-columns: 1.35fr 1fr;
   }
 }
