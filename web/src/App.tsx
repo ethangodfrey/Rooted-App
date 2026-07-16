@@ -9,6 +9,7 @@ import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
+import { AdminMixAnalyticsPage } from '@/pages/admin/AdminMixAnalyticsPage';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
 import { AdminOrderDetailPage } from '@/pages/admin/AdminOrderDetailPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
@@ -197,6 +198,7 @@ export default function App() {
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="posts" element={<AdminPostsPage />} />
+          <Route path="mix-analytics" element={<AdminMixAnalyticsPage />} />
           <Route path="credentials" element={<AdminCredentialsPage />} />
           <Route path="more" element={<AdminMorePage />} />
         </Route>

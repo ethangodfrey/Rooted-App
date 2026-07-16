@@ -90,7 +90,10 @@ export function AdminMorePage() {
 
         <aside className="admin-console__actions" aria-label="System actions">
           <p className="ft-label">System actions</p>
-          <Link to="/admin/credentials" className="app-btn app-btn--primary">
+          <Link to="/admin/mix-analytics" className="app-btn app-btn--primary">
+            Mix analytics
+          </Link>
+          <Link to="/admin/credentials" className="app-btn app-btn--secondary">
             Credential review
           </Link>
           <Link to="/admin/vendors" className="app-btn app-btn--secondary">
