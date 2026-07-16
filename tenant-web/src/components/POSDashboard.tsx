@@ -57,7 +57,7 @@ function buildDailySeries(rows: PosAnalyticsTransactionRow[]): DayPoint[] {
     }));
 }
 
-function ObsidianTooltip({
+function IndigoTooltip({
   active,
   payload,
   label,
@@ -69,8 +69,10 @@ function ObsidianTooltip({
   if (!active || !payload?.length) return null;
   const value = Number(payload[0]?.value) || 0;
   return (
-    <div className="rounded-lg border border-zinc-800/60 bg-zinc-950/95 px-3 py-2 text-zinc-50 shadow-none backdrop-blur-md">
-      <p className="m-0 text-[10px] font-bold uppercase tracking-widest text-zinc-400">{label}</p>
+    <div className="rounded-xl border border-orange-500/30 bg-[#0b1228]/95 px-3 py-2 text-zinc-50 shadow-none backdrop-blur-md">
+      <p className="m-0 text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-90">
+        {label}
+      </p>
       <p className="m-0 mt-1 font-mono text-sm font-semibold tracking-tight tabular-nums">
         {formatUsd(value)}
       </p>
@@ -146,15 +148,15 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
   if (loading) {
     return (
       <section className="mx-auto w-full max-w-5xl px-4 py-10" aria-busy="true">
-        <div className="h-8 w-56 animate-pulse rounded bg-zinc-200/80" />
-        <div className="mt-6 grid gap-4 md:grid-cols-[1.55fr_1fr]">
-          <div className="h-40 animate-pulse rounded-xl bg-zinc-950/90" />
+        <div className="h-10 w-64 animate-pulse rounded-lg bg-white/10" />
+        <div className="mt-8 grid gap-4 md:grid-cols-[2fr_1fr]">
+          <div className="h-56 animate-pulse rounded-xl bg-white/10" />
           <div className="flex flex-col gap-3">
-            <div className="h-[4.5rem] animate-pulse rounded-xl bg-white/70" />
-            <div className="h-[4.5rem] animate-pulse rounded-xl bg-white/70" />
+            <div className="h-24 animate-pulse rounded-xl bg-white/10" />
+            <div className="h-24 animate-pulse rounded-xl bg-white/10" />
           </div>
         </div>
-        <div className="mt-6 h-72 animate-pulse rounded-xl bg-white/70" />
+        <div className="mt-6 h-80 animate-pulse rounded-xl bg-white/10" />
       </section>
     );
   }
@@ -162,7 +164,7 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
   if (error) {
     return (
       <section className="mx-auto w-full max-w-5xl px-4 py-10">
-        <p className="rounded-xl border border-rose-200/80 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-100">
           {error}
         </p>
       </section>
@@ -170,95 +172,103 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-10 font-sans">
+    <section className="mx-auto w-full max-w-5xl px-4 py-10 font-sans text-zinc-50">
       <header className="mb-8">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Point of sale</p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-zinc-900 sm:text-4xl">
-          Sales analytics
-        </h1>
-        <p className="mt-2 max-w-xl text-xs font-medium text-zinc-500">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
+          Point of sale
+        </p>
+        <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-5xl">Sales analytics</h1>
+        <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-white/70 md:text-base">
           Last 30 days from Square, Toast, and Clover — unified via phase47 analytics ingest.
         </p>
       </header>
 
-      <div className="grid gap-3 md:grid-cols-[1.55fr_1fr]">
-        <article className="flex min-h-[160px] flex-col justify-end rounded-xl border border-zinc-800/60 bg-zinc-950 px-5 py-5 text-zinc-50">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Gross revenue</p>
-          <p className="mt-2 text-4xl font-extrabold tracking-tight tabular-nums">
+      <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
+        <article className="flex min-h-[240px] flex-col justify-end rounded-xl border border-orange-500/35 bg-[radial-gradient(ellipse_80%_70%_at_100%_0%,rgba(249,115,22,0.28),transparent_55%),#121a36] px-6 py-6">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-90">
+            Gross revenue
+          </p>
+          <p className="mt-2 text-4xl font-extrabold tracking-tight tabular-nums md:text-5xl">
             {formatUsd(kpis.grossDollars)}
           </p>
-          <p className="mt-2 text-xs font-medium text-zinc-400">Primary ledger total · 30d window</p>
+          <p className="mt-3 text-sm font-medium leading-relaxed text-white/65">
+            Primary ledger total · 30d window
+          </p>
         </article>
 
         <div className="flex flex-col gap-3">
-          <article className="flex-1 rounded-xl border border-zinc-200/50 bg-white px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+          <article className="flex min-h-[7rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
               Total operations
             </p>
-            <p className="mt-2 text-2xl font-extrabold tracking-tight tabular-nums text-zinc-900">
-              {kpis.count}
-            </p>
-            <p className="mt-1 text-xs font-medium text-zinc-500">Transaction count</p>
+            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums">{kpis.count}</p>
+            <p className="mt-1 text-sm font-medium text-white/65">Transaction count</p>
           </article>
-          <article className="flex-1 rounded-xl border border-zinc-200/50 bg-white px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+          <article className="flex min-h-[7rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
               Active period
             </p>
-            <p className="mt-2 text-2xl font-extrabold tracking-tight tabular-nums text-zinc-900">
+            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums">
               {formatUsd(kpis.tipDollars)}
             </p>
-            <p className="mt-1 text-xs font-medium text-zinc-500">Tips collected</p>
+            <p className="mt-1 text-sm font-medium text-white/65">Tips collected</p>
           </article>
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-zinc-200/50 bg-white p-4 sm:p-6">
-        <div className="mb-4 flex items-end justify-between gap-3">
+      <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-6">
+        <div className="mb-5 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Trend</p>
-            <h2 className="mt-1 text-sm font-semibold text-zinc-900">Sales path</h2>
-            <p className="text-xs font-medium text-zinc-500">Daily gross totals</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
+              Trend
+            </p>
+            <h2 className="mt-1 text-xl font-extrabold tracking-tight">Sales path</h2>
+            <p className="text-sm font-medium leading-relaxed text-white/65">Daily gross totals</p>
           </div>
         </div>
 
         {series.length === 0 ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/40 px-4 text-center text-sm text-zinc-500">
+          <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/[0.03] px-4 text-center text-sm leading-relaxed text-white/65">
             No POS sales in the last 30 days yet. Connect Square and sync to populate this chart.
           </div>
         ) : (
-          <div className="h-72 w-full sm:h-80">
+          <div className="h-80 w-full sm:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="posSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#34d399" stopOpacity={0.08} />
-                    <stop offset="100%" stopColor="#34d399" stopOpacity={0.0} />
+                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.45} />
+                    <stop offset="55%" stopColor="#ea580c" stopOpacity={0.16} />
+                    <stop offset="100%" stopColor="#ea580c" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: '#71717a', fontSize: 11 }}
+                  tick={{ fill: 'rgba(248,250,252,0.55)', fontSize: 11 }}
                   interval="preserveStartEnd"
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   width={64}
-                  tick={{ fill: '#71717a', fontSize: 11 }}
+                  tick={{ fill: 'rgba(248,250,252,0.55)', fontSize: 11 }}
                   tickFormatter={(value: number) => formatUsd(value, 0)}
                 />
-                <Tooltip content={<ObsidianTooltip />} cursor={{ stroke: '#a1a1aa', strokeWidth: 1 }} />
+                <Tooltip
+                  content={<IndigoTooltip />}
+                  cursor={{ stroke: '#fb923c', strokeWidth: 1 }}
+                />
                 <Area
                   type="monotone"
                   dataKey="grossDollars"
-                  stroke="#10b981"
-                  strokeWidth={1.5}
+                  stroke="#f97316"
+                  strokeWidth={2}
                   fill="url(#posSalesGradient)"
                   dot={false}
-                  activeDot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+                  activeDot={{ r: 4, fill: '#fb923c', strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>

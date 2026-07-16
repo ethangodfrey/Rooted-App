@@ -14,13 +14,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
+        <meta name="theme-color" content="#0B1228" />
       </head>
-      <body className="bg-zinc-50/40 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-50">
-        {children}
-      </body>
+      <body className="bg-[#0B1228] text-zinc-50 antialiased">{children}</body>
     </html>
   );
 }

@@ -9,10 +9,10 @@ export const VENDOR_PRESSABLE =
   'active:scale-[0.99] transition-all duration-150 cursor-pointer';
 
 export const VENDOR_LIST_PANEL =
-  'overflow-hidden rounded-xl border border-zinc-200/50 bg-white divide-y divide-zinc-200/50';
+  'overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] divide-y divide-white/10';
 
 export const VENDOR_FORM_PANEL =
-  'rounded-xl border border-zinc-200/50 bg-zinc-50/40 p-4';
+  'rounded-xl border border-white/10 bg-white/[0.04] p-4';
 
 export function VendorScreen({ children }: { children: ReactNode }) {
   return <div className="app-screen min-w-0 px-4 pb-10">{children}</div>;
@@ -32,14 +32,16 @@ export function VendorHero({
   children?: ReactNode;
 }) {
   return (
-    <div className="mb-6 rounded-xl border border-zinc-800/60 bg-zinc-950 p-5 text-zinc-50">
+    <div className="mb-6 rounded-xl border border-orange-500/30 bg-[radial-gradient(ellipse_80%_70%_at_100%_0%,rgba(249,115,22,0.28),transparent_55%),#121a36] p-5 text-zinc-50">
       {eyebrow ? (
-        <p className="m-0 text-[10px] font-bold uppercase tracking-widest text-zinc-400">{eyebrow}</p>
+        <p className="m-0 text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-90">
+          {eyebrow}
+        </p>
       ) : null}
-      <h1 className="m-0 mt-1 text-2xl font-extrabold tracking-tight">{title}</h1>
-      {subtitle ? <p className="m-0 mt-1 text-xs font-medium text-zinc-400">{subtitle}</p> : null}
+      <h1 className="m-0 mt-1 text-3xl font-extrabold tracking-tight md:text-5xl">{title}</h1>
+      {subtitle ? <p className="m-0 mt-2 text-sm font-medium leading-relaxed text-white/70">{subtitle}</p> : null}
       {pill ? (
-        <span className="mt-3 inline-block rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+        <span className="mt-3 inline-block rounded-lg border border-orange-400/30 bg-orange-500/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-orange-300">
           {pill}
         </span>
       ) : null}
@@ -50,8 +52,10 @@ export function VendorHero({
 
 export function VendorSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mb-5">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">{title}</p>
+    <section className="mb-6">
+      <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
+        {title}
+      </p>
       {children}
     </section>
   );
@@ -77,15 +81,17 @@ export function VendorActionTile({
   tone: VendorTone;
   onClick?: () => void;
 }) {
-  const className = `flex min-h-[74px] min-w-0 items-start gap-2.5 rounded-xl border border-zinc-200/50 bg-white p-3 text-left no-underline text-inherit ${VENDOR_PRESSABLE}`;
+  const className = `flex min-h-[88px] min-w-0 items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left no-underline text-inherit ${VENDOR_PRESSABLE}`;
 
   const body = (
     <>
       <IconBadge name={icon} tone={tone} />
       <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-zinc-900">{title}</span>
+        <span className="block truncate text-sm font-semibold text-zinc-50">{title}</span>
         {subtitle ? (
-          <span className="mt-0.5 block line-clamp-2 text-xs font-medium text-zinc-500">{subtitle}</span>
+          <span className="mt-0.5 block line-clamp-2 text-xs font-medium leading-relaxed text-white/65">
+            {subtitle}
+          </span>
         ) : null}
       </span>
     </>
@@ -109,7 +115,7 @@ export function VendorActionTile({
 export function ChevronRight({ className = '' }: { className?: string }) {
   return (
     <svg
-      className={`shrink-0 text-zinc-400 ${className}`}
+      className={`shrink-0 text-orange-400/80 ${className}`}
       width="16"
       height="16"
       viewBox="0 0 24 24"
@@ -150,18 +156,18 @@ export function VendorListRow({
   trailing?: ReactNode;
   external?: boolean;
 }) {
-  const className = `flex w-full items-center justify-between gap-3 bg-transparent p-3.5 text-left no-underline active:bg-zinc-50 ${VENDOR_PRESSABLE}`;
+  const className = `flex w-full items-center justify-between gap-3 bg-transparent p-4 text-left no-underline active:bg-white/5 ${VENDOR_PRESSABLE}`;
 
   const content = (
     <>
       <span className="flex min-w-0 flex-1 items-center gap-3">
         <IconBadge name={icon} tone={tone} />
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-zinc-900">{title}</span>
+          <span className="block truncate text-sm font-semibold text-zinc-50">{title}</span>
           {subtitle ? (
-            <span className="mt-0.5 block truncate text-xs font-medium text-zinc-500">{subtitle}</span>
+            <span className="mt-0.5 block truncate text-xs font-medium text-white/65">{subtitle}</span>
           ) : null}
-          {meta ? <span className="mt-0.5 block truncate text-xs text-zinc-400">{meta}</span> : null}
+          {meta ? <span className="mt-0.5 block truncate text-xs text-white/45">{meta}</span> : null}
         </span>
       </span>
       {trailing ?? <ChevronRight />}
@@ -191,13 +197,12 @@ export function VendorListRow({
     );
   }
 
-  return <div className="flex items-center justify-between gap-3 p-3.5">{content}</div>;
+  return <div className="flex items-center justify-between gap-3 p-4">{content}</div>;
 }
 
 export function VendorKpiGrid({ children, cols = 2 }: { children: ReactNode; cols?: 2 | 3 }) {
-  // Prefer asymmetric layouts — avoid uniform 3-up rows when possible.
   const gridClass =
-    cols === 3 ? 'grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr_1fr]' : 'grid-cols-2 gap-3';
+    cols === 3 ? 'grid-cols-1 gap-3 sm:grid-cols-[1.6fr_1fr_1fr]' : 'grid-cols-2 gap-3';
   return <div className={`mb-5 grid ${gridClass}`}>{children}</div>;
 }
 
@@ -215,25 +220,19 @@ export function VendorKpiStat({
   emphasize?: boolean;
 }) {
   const className = emphasize
-    ? `flex min-h-[120px] min-w-0 flex-col justify-end rounded-xl border border-zinc-800/60 bg-zinc-950 p-4 text-left no-underline ${VENDOR_PRESSABLE}`
-    : `flex min-h-[74px] min-w-0 flex-col items-start justify-center rounded-xl border border-zinc-200/50 bg-white p-3 text-left no-underline ${VENDOR_PRESSABLE}`;
+    ? `flex min-h-[140px] min-w-0 flex-col justify-end rounded-xl border border-orange-500/35 bg-[radial-gradient(ellipse_80%_70%_at_100%_0%,rgba(249,115,22,0.28),transparent_55%),#121a36] p-5 text-left no-underline ${VENDOR_PRESSABLE}`
+    : `flex min-h-[88px] min-w-0 flex-col items-start justify-center rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left no-underline ${VENDOR_PRESSABLE}`;
 
   const body = (
     <>
-      <p
-        className={
-          emphasize
-            ? 'm-0 text-[10px] font-bold uppercase tracking-widest text-zinc-400'
-            : 'm-0 text-[10px] font-bold uppercase tracking-widest text-zinc-400'
-        }
-      >
+      <p className="m-0 text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-90">
         {label}
       </p>
       <p
         className={
           emphasize
-            ? 'm-0 mt-2 text-4xl font-extrabold tracking-tight tabular-nums text-zinc-50'
-            : 'm-0 mt-1.5 text-2xl font-extrabold tracking-tight tabular-nums leading-none text-zinc-900'
+            ? 'm-0 mt-2 text-4xl font-extrabold tracking-tight tabular-nums text-white md:text-5xl'
+            : 'm-0 mt-1.5 text-2xl font-extrabold tracking-tight tabular-nums leading-none text-zinc-50'
         }
       >
         {value}
@@ -266,7 +265,7 @@ export function VendorFormPanel({ children, className = '' }: { children: ReactN
 
 export function VendorEmpty({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-zinc-200/60 bg-zinc-50/40 px-4 py-6 text-center text-sm text-zinc-500">
+    <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-6 text-center text-sm leading-relaxed text-white/65">
       {message}
     </div>
   );
@@ -274,7 +273,7 @@ export function VendorEmpty({ message }: { message: string }) {
 
 export function VendorStatusPill({ label }: { label: string }) {
   return (
-    <span className="inline-flex shrink-0 rounded border border-zinc-200/50 bg-zinc-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+    <span className="inline-flex shrink-0 rounded-lg border border-orange-400/25 bg-orange-500/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-orange-300">
       {label}
     </span>
   );
