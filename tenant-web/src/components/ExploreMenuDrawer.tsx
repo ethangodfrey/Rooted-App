@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 export interface ExploreMenuDrawerProps {
   open: boolean;
@@ -22,11 +22,24 @@ interface MenuProduct {
   available_quantity_presale: number;
 }
 
+interface MenuMarket {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  start_datetime: string;
+  end_datetime: string | null;
+  timezone: string | null;
+  hours_summary: string | null;
+}
+
 interface MenuResponse {
   error?: string;
   vendorName?: string;
   products?: MenuProduct[];
-  market?: { id: string; name: string } | null;
+  markets?: MenuMarket[];
+  market?: { id: string; name: string; start_datetime?: string } | null;
 }
 
 const TACTILE_ADD =
@@ -34,6 +47,23 @@ const TACTILE_ADD =
 
 function formatUsd(cents: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+}
+
+function formatSlotDate(iso: string, timeZone?: string | null): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      ...(timeZone ? { timeZone } : {}),
+    });
+  } catch {
+    return new Date(iso).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
 }
 
 /**
@@ -52,7 +82,8 @@ export function ExploreMenuDrawer({
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(vendorName);
   const [products, setProducts] = useState<MenuProduct[]>([]);
-  const [marketName, setMarketName] = useState<string | null>(null);
+  const [markets, setMarkets] = useState<MenuMarket[]>([]);
+  const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
 
   const loadMenu = useCallback(
     async (id: string) => {
@@ -64,10 +95,29 @@ export function ExploreMenuDrawer({
         if (!res.ok) throw new Error(body?.error || `Menu failed (${res.status})`);
         setDisplayName(body?.vendorName?.trim() || vendorName);
         setProducts(Array.isArray(body?.products) ? body.products : []);
-        setMarketName(body?.market?.name ?? null);
+        const nextMarkets = Array.isArray(body?.markets)
+          ? body.markets
+          : body?.market
+            ? [
+                {
+                  id: body.market.id,
+                  name: body.market.name,
+                  city: null,
+                  state: null,
+                  address: null,
+                  start_datetime: body.market.start_datetime ?? new Date().toISOString(),
+                  end_datetime: null,
+                  timezone: null,
+                  hours_summary: null,
+                },
+              ]
+            : [];
+        setMarkets(nextMarkets);
+        setSelectedMarketId(nextMarkets[0]?.id ?? null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load menu');
         setProducts([]);
+        setMarkets([]);
       } finally {
         setLoading(false);
       }
@@ -94,6 +144,11 @@ export function ExploreMenuDrawer({
       window.removeEventListener('keydown', onKey);
     };
   }, [open, onClose]);
+
+  const selectedMarket = useMemo(() => {
+    if (!markets.length) return null;
+    return markets.find((m) => m.id === selectedMarketId) ?? markets[0];
+  }, [markets, selectedMarketId]);
 
   const marketBase = marketplaceUrl?.replace(/\/$/, '') ?? '';
 
@@ -133,8 +188,10 @@ export function ExploreMenuDrawer({
               >
                 {displayName}
               </h2>
-              {marketName ? (
-                <p className="mt-1 text-sm font-medium text-white/55">Pre-order for {marketName}</p>
+              {selectedMarket ? (
+                <p className="mt-1 text-sm font-medium text-white/55">
+                  Pre-order for {selectedMarket.name}
+                </p>
               ) : null}
             </div>
             <button
@@ -146,6 +203,42 @@ export function ExploreMenuDrawer({
               ✕
             </button>
           </div>
+
+          {markets.length > 0 ? (
+            <div>
+              <p className="m-0 text-[11px] font-bold tracking-[0.14em] text-white/45 uppercase">
+                Pickup market date
+              </p>
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {markets.map((market) => {
+                  const selected = market.id === selectedMarket?.id;
+                  return (
+                    <button
+                      key={market.id}
+                      type="button"
+                      onClick={() => setSelectedMarketId(market.id)}
+                      className={`min-w-[9.5rem] shrink-0 rounded-xl border px-3.5 py-3 text-left transition-all active:scale-[0.98] ${
+                        selected
+                          ? 'border-orange-500/60 bg-orange-500/20'
+                          : 'border-white/10 bg-white/[0.04]'
+                      }`}
+                    >
+                      <span
+                        className={`block text-[11px] font-extrabold ${
+                          selected ? 'text-orange-400' : 'text-white/55'
+                        }`}
+                      >
+                        {formatSlotDate(market.start_datetime, market.timezone)}
+                      </span>
+                      <span className="mt-1 block truncate text-sm font-bold text-white">
+                        {market.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5">
@@ -175,8 +268,12 @@ export function ExploreMenuDrawer({
             <ul className="m-0 flex list-none flex-col gap-1 p-0 pb-4" role="list">
               {products.map((product) => {
                 const reservable = product.reserve_enabled && product.available_quantity_presale > 0;
+                const marketQuery =
+                  selectedMarket != null
+                    ? `?market=${encodeURIComponent(selectedMarket.id)}`
+                    : '';
                 const href = marketBase
-                  ? `${marketBase}/shopper/products/${product.id}`
+                  ? `${marketBase}/shopper/products/${product.id}${marketQuery}`
                   : null;
                 const thumb = product.media_urls?.[0] ?? null;
 

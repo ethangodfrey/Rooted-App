@@ -16,6 +16,8 @@ import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
 const NEXT_STATUS: Record<string, string> = {
+  /** Nest multi-vendor checkout starts here */
+  pending: 'preparing',
   submitted: 'pending_review',
   pending_review: 'accepted',
   accepted: 'preparing',
@@ -33,6 +35,7 @@ export function VendorOrderDetailPage() {
     total: number;
     created_at: string;
     notes: string | null;
+    pickup_code: string | null;
     event: { name: string; start_datetime: string } | null;
     leftover_listing: {
       title: string;
@@ -52,7 +55,7 @@ export function VendorOrderDetailPage() {
     }
     const { data } = await supabase
       .from('orders')
-      .select('id, order_status, fulfillment_type, total, created_at, notes, event:events(name, start_datetime), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes), order_items(id, quantity, item_price, item_title, product:products(name))')
+      .select('id, order_status, fulfillment_type, total, created_at, notes, pickup_code, event:events(name, start_datetime), leftover_listing:leftover_listings(title, pickup_address, pickup_city, pickup_state, pickup_notes), order_items(id, quantity, item_price, item_title, product:products(name))')
       .eq('id', id)
       .maybeSingle();
     setOrder(data as unknown as typeof order);
@@ -85,8 +88,18 @@ export function VendorOrderDetailPage() {
 
       <VendorFormPanel className="mb-5">
         <p className="m-0 text-xs text-stone-500">Placed {formatDateTime(order.created_at)}</p>
+        {order.pickup_code ? (
+          <p className="m-0 mt-3">
+            <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-400">
+              Pickup code
+            </span>
+            <span className="mt-1 inline-flex rounded-xl bg-orange-500/15 px-3 py-2 font-mono text-lg font-extrabold tracking-[0.18em] text-orange-600">
+              {order.pickup_code}
+            </span>
+          </p>
+        ) : null}
         {order.event ? (
-          <p className="m-0 mt-2 text-sm text-stone-700">Pickup event: {order.event.name}</p>
+          <p className="m-0 mt-2 text-sm text-stone-700">Pickup market date: {order.event.name}</p>
         ) : order.leftover_listing ? (
           <p className="m-0 mt-2 text-sm text-stone-700">
             Leftover pickup: {order.leftover_listing.pickup_address ??

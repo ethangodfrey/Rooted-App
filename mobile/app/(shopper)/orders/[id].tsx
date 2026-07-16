@@ -117,9 +117,23 @@ export default function ShopperOrderDetailScreen() {
             <StatusPill status={order.order_status} />
           </View>
 
+          {order.pickup_code ? (
+            <Card className="mb-4 items-center">
+              <Text variant="caption" className="mb-1">
+                Pickup code — show at the booth
+              </Text>
+              <Text variant="title" className="tracking-widest">
+                {order.pickup_code}
+              </Text>
+              <Text variant="caption" className="mt-2 text-center">
+                Give this 6-character code to the vendor when you collect your order.
+              </Text>
+            </Card>
+          ) : null}
+
           <Card className="mb-4">
             <Text variant="caption" className="mb-1">
-              {order.leftover_listing ? 'Leftover pickup' : 'Pickup at'}
+              {order.leftover_listing ? 'Leftover pickup' : 'Pickup market date'}
             </Text>
             <Text variant="body" className="font-semibold">
               {order.event?.name ?? order.leftover_listing?.title ?? 'Pickup'}

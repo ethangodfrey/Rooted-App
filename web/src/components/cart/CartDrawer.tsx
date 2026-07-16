@@ -180,7 +180,7 @@ export function CartDrawer() {
               </h2>
               {cart ? (
                 <p className="cart-drawer__subtitle">
-                  {cart.marketName}
+                  Market date slot · {cart.marketName}
                   {cart.marketCity ? ` · ${cart.marketCity}` : ''}
                 </p>
               ) : null}
@@ -195,7 +195,17 @@ export function CartDrawer() {
               <p className="app-row-meta">Your presale cart is empty. Browse vendors at a market to add items.</p>
             ) : (
               <>
-                {pickupLabel ? <div className="cart-pickup-banner">{pickupLabel}</div> : null}
+                {pickupLabel ? (
+                  <div className="cart-pickup-banner">
+                    <span className="block text-[10px] font-bold uppercase tracking-widest opacity-70">
+                      Pickup market date
+                    </span>
+                    <span className="mt-0.5 block">{pickupLabel}</span>
+                    <span className="mt-1 block text-xs opacity-80">
+                      You’ll get a 6-character pickup code after checkout to show at the booth.
+                    </span>
+                  </div>
+                ) : null}
 
                 {inventoryError ? (
                   <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
