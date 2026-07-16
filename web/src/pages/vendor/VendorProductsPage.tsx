@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 import type { Product } from '@/types/database';
 import '@/components/ui/ui.css';
 
-export function VendorProductsPage({ inventoryMode = false }: { inventoryMode?: boolean }) {
+export function VendorProductsPage() {
   const { vendor } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,8 +43,8 @@ export function VendorProductsPage({ inventoryMode = false }: { inventoryMode?: 
   return (
     <VendorScreen>
       <VendorHero
-        eyebrow={inventoryMode ? 'Catalog' : 'Manage'}
-        title={inventoryMode ? 'Inventory' : 'Products'}
+        eyebrow="Manage"
+        title="Products"
         pill={loading ? undefined : `${products.length} listed`}
       />
 
