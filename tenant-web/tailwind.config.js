@@ -1,22 +1,27 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
+  darkMode: 'media',
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Iowan Old Style"', 'Palatino', 'Georgia', 'serif'],
-        sans: ['"Source Sans 3"', 'Segoe UI', 'system-ui', 'sans-serif'],
+        sans: ['"IBM Plex Sans"', 'Segoe UI', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
+        canvas: {
+          DEFAULT: '#FBFBFB',
+          ink: '#09090B',
+        },
         ink: {
-          950: '#1a1410',
-          800: '#3d342c',
-          600: '#6b5e52',
-          400: '#9a8b7a',
+          950: '#18181b',
+          800: '#27272a',
+          600: '#52525b',
+          400: '#a1a1aa',
         },
         meadow: {
-          600: '#3d6b4f',
-          500: '#4f8a63',
+          600: '#059669',
+          500: '#10b981',
         },
       },
     },

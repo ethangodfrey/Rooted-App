@@ -9,18 +9,22 @@
 .analytics-chip {
   flex-shrink: 0;
   padding: 0.4rem 0.85rem;
-  border-radius: 999px;
-  border: 1px solid var(--border, #d4e8d4);
+  border-radius: 8px;
+  border: 1px solid rgba(24, 24, 27, 0.1);
   background: #fff;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
   font-family: inherit;
+  color: #71717a;
 }
 
 .analytics-chip--active {
-  background: var(--forest, #228b22);
-  color: #fff;
-  border-color: var(--forest, #228b22);
+  background: #18181b;
+  color: #fafafa;
+  border-color: #18181b;
 }
 
 .analytics-grid {

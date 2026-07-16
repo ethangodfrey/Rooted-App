@@ -119,7 +119,12 @@ export function AppShell({
             <Logo size="small" />
           </NavLink>
         ) : shopperScreenTitle ? (
-          <h1 className="app-topbar__screen-title">{shopperScreenTitle}</h1>
+          <div>
+            <p className="app-eyebrow" style={{ marginBottom: 0 }}>
+              {role === 'shopper' ? 'Marketplace' : role}
+            </p>
+            <h1 className="app-topbar__screen-title">{shopperScreenTitle}</h1>
+          </div>
         ) : (
           <NavLink to={homeTo} className="app-topbar__brand" aria-label="Vendorly home">
             <Logo size="small" />

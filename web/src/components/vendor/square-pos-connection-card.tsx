@@ -48,32 +48,32 @@ export function SquarePosConnectionCard({
 
   return (
     <section
-      className="rounded-2xl border border-stone-200/80 bg-gradient-to-br from-stone-50 via-white to-emerald-50/40 p-4 shadow-sm"
+      className="rounded-xl border border-zinc-200/50 bg-white p-4"
       aria-label="Square Point of Sale connection"
     >
       <div className="flex items-start gap-3">
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-            connected ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-600'
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200/50 ${
+            connected ? 'bg-emerald-500/10 text-emerald-700' : 'bg-zinc-50 text-zinc-600'
           }`}
         >
           <Store className="h-5 w-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="m-0 text-sm font-semibold text-stone-900">Point of Sale</h3>
+            <h3 className="m-0 text-sm font-semibold text-zinc-900">Point of Sale</h3>
             {loading ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
+              <span className="inline-flex items-center gap-1 rounded border border-zinc-200/50 bg-zinc-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
                 Checking
               </span>
             ) : connected ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+              <span className="inline-flex items-center gap-1 rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-800">
                 <CheckCircle2 className="h-3 w-3" aria-hidden />
                 Connected
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
+              <span className="inline-flex items-center gap-1 rounded border border-zinc-200/50 bg-zinc-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 Disconnected
               </span>
             )}

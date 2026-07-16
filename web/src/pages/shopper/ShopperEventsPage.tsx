@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { EventThumb } from '@/components/events/EventThumb';
 import { WeekStrip } from '@/components/events/WeekStrip';
+import { useMarketDetail } from '@/hooks/use-market-detail';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
 import { EVENTS_PAGE_SIZE } from '@/lib/events-display-limits';
@@ -15,6 +16,7 @@ import {
   formatCalendarDayLabel,
   startOfDay,
 } from '@/lib/event-day-filter';
+import { resolveEventBannerUrl } from '@/lib/event-image';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
@@ -24,6 +26,13 @@ import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
 const LIST_NOW_MS = 60_000;
+
+function hoursBadge(event: Event, now: Date): string {
+  if (event.hours_summary?.trim()) return event.hours_summary.trim();
+  const date = formatEventDisplayDate(event, now);
+  const range = formatEventDisplayTimeRange(event);
+  return `${date} · ${range}`;
+}
 
 export function ShopperEventsPage() {
   const { coords } = useUserCoords();
@@ -35,6 +44,7 @@ export function ShopperEventsPage() {
   const [truncated, setTruncated] = useState(false);
   const [visibleCount, setVisibleCount] = useState(EVENTS_PAGE_SIZE);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const loadEvents = useCallback(async () => {
     setError(null);
@@ -97,13 +107,31 @@ export function ShopperEventsPage() {
   const visibleEvents = dayFilteredEvents.slice(0, visibleCount);
   const hasMore = visibleCount < dayFilteredEvents.length;
 
+  useEffect(() => {
+    if (visibleEvents.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !visibleEvents.some((event) => event.id === selectedId)) {
+      setSelectedId(visibleEvents[0]!.id);
+    }
+  }, [visibleEvents, selectedId]);
+
+  const selectedEvent = useMemo(
+    () => visibleEvents.find((event) => event.id === selectedId) ?? null,
+    [visibleEvents, selectedId],
+  );
+
+  const preview = useMarketDetail(selectedEvent?.id);
+  const previewImage = selectedEvent ? resolveEventBannerUrl(selectedEvent) : null;
+
   return (
-    <div className="app-screen app-screen--titled">
-      <div className="app-section-header-inline" style={{ marginBottom: '0.5rem' }}>
+    <div className="app-screen app-screen--titled" style={{ maxWidth: 1100 }}>
+      <div className="app-section-header-inline" style={{ marginBottom: '0.75rem' }}>
         <p className="app-subtitle" style={{ margin: 0 }}>
           {scope === 'local'
-            ? 'Upcoming farmers markets and pop-ups near you.'
-            : 'Markets nationwide — sorted by date.'}
+            ? 'Curated markets near you — editorial preview on select.'
+            : 'Nationwide directory — sorted by date.'}
         </p>
         <button
           type="button"
@@ -157,47 +185,130 @@ export function ShopperEventsPage() {
                 : 'Showing nearby markets only. Use the map to explore further out.'}
             </p>
           ) : null}
-          <div className="app-list">
-            {visibleEvents.map((event) => {
-              const phase = eventRuntimePhase(event, now);
-              const dist =
-                scope === 'local' && coords && event.latitude != null
-                  ? formatDistance(distanceMiles(coords, { latitude: event.latitude, longitude: event.longitude }))
-                  : null;
-              return (
-                <Link
-                  key={event.id}
-                  to={marketPath(event.id)}
-                  className={`app-card app-card--pressable app-row${phase === 'closed' ? ' app-card--closed' : ''}${phase === 'live' ? ' app-card--live' : ''}`}
+
+          <div className="markets-split">
+            <div className="markets-split__list">
+              <div className="app-list">
+                {visibleEvents.map((event) => {
+                  const phase = eventRuntimePhase(event, now);
+                  const miles =
+                    scope === 'local' && coords && event.latitude != null
+                      ? distanceMiles(coords, {
+                          latitude: event.latitude,
+                          longitude: event.longitude,
+                        })
+                      : null;
+                  const dist = miles != null ? formatDistance(miles) : null;
+                  const active = event.id === selectedId;
+
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      className={`markets-split__item${active ? ' markets-split__item--active' : ''}${
+                        phase === 'closed' ? ' app-card--closed' : ''
+                      }${phase === 'live' ? ' app-card--live' : ''}`}
+                      onClick={() => setSelectedId(event.id)}
+                    >
+                      <EventThumb event={event} size={52} />
+                      <div className="app-row-body">
+                        <div style={{ marginBottom: '0.25rem' }}>
+                          <EventStatusBadge event={event} now={now} />
+                        </div>
+                        <p className="app-row-title" style={{ fontSize: '0.9375rem' }}>
+                          {event.name}
+                        </p>
+                        <span className="markets-split__hours">{hoursBadge(event, now)}</span>
+                        {dist ? (
+                          <span className="markets-split__distance">{dist} away</span>
+                        ) : (
+                          <span className="markets-split__distance">
+                            {[event.city, event.state].filter(Boolean).join(', ') || 'Location TBD'}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {hasMore ? (
+                <button
+                  type="button"
+                  className="app-btn app-btn--secondary"
+                  style={{ margin: '0.75rem', width: 'calc(100% - 1.5rem)' }}
+                  onClick={() => setVisibleCount((count) => count + EVENTS_PAGE_SIZE)}
                 >
-                  <EventThumb event={event} />
-                  <div className="app-row-body">
-                    <div style={{ marginBottom: '0.35rem' }}>
-                      <EventStatusBadge event={event} now={now} />
-                    </div>
-                    <p className="app-row-title">{event.name}</p>
-                    <p className="app-row-meta">
-                      {formatEventDisplayDate(event, now)} · {formatEventDisplayTimeRange(event)}
-                    </p>
-                    <p className="app-row-meta">
-                      {[event.city, event.state].filter(Boolean).join(', ')}
-                      {dist ? ` · ${dist}` : ''}
-                    </p>
+                  Load more ({dayFilteredEvents.length - visibleCount} remaining)
+                </button>
+              ) : null}
+            </div>
+
+            <div className="markets-split__preview">
+              {selectedEvent ? (
+                <article className="markets-preview">
+                  <div className="markets-preview__hero">
+                    {previewImage ? (
+                      <img src={previewImage} alt="" />
+                    ) : (
+                      <div className="markets-preview__hero-fallback">Market preview</div>
+                    )}
                   </div>
-                </Link>
-              );
-            })}
+                  <div className="markets-preview__body">
+                    <p className="ft-label" style={{ marginBottom: 0 }}>
+                      Selected market
+                    </p>
+                    <h2 className="markets-preview__title">{selectedEvent.name}</h2>
+                    <p className="markets-preview__meta">
+                      {hoursBadge(selectedEvent, now)}
+                      {[selectedEvent.city, selectedEvent.state].filter(Boolean).length
+                        ? ` · ${[selectedEvent.city, selectedEvent.state].filter(Boolean).join(', ')}`
+                        : ''}
+                      {preview.distanceLabel ? ` · ${preview.distanceLabel} away` : ''}
+                    </p>
+                    {selectedEvent.description ? (
+                      <p className="markets-preview__meta" style={{ marginTop: '0.85rem', maxWidth: '36rem' }}>
+                        {selectedEvent.description}
+                      </p>
+                    ) : null}
+
+                    <div className="markets-preview__vendors">
+                      <p className="ft-label">Local vendor roster</p>
+                      {preview.loading ? (
+                        <p className="ft-subhead">Loading vendors…</p>
+                      ) : preview.vendors.length === 0 ? (
+                        <p className="ft-subhead">No approved vendors listed for this market yet.</p>
+                      ) : (
+                        preview.vendors.slice(0, 8).map((vendor) => (
+                          <div key={vendor.id} className="markets-preview__vendor-row">
+                            <div>
+                              <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
+                                {vendor.business_name ?? 'Vendor'}
+                              </p>
+                              <p className="ft-subhead">
+                                {vendor.category ?? vendor.product_summary ?? 'Local maker'}
+                              </p>
+                            </div>
+                            <span className="markets-split__distance">On site</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <Link
+                      to={marketPath(selectedEvent.id)}
+                      className="app-btn app-btn--primary"
+                      style={{ marginTop: '1.25rem', maxWidth: 280 }}
+                    >
+                      Open market detail
+                    </Link>
+                  </div>
+                </article>
+              ) : (
+                <div className="app-empty">Select a market to preview.</div>
+              )}
+            </div>
           </div>
-          {hasMore ? (
-            <button
-              type="button"
-              className="app-btn app-btn--secondary"
-              style={{ marginTop: '1rem', width: '100%' }}
-              onClick={() => setVisibleCount((count) => count + EVENTS_PAGE_SIZE)}
-            >
-              Load more ({dayFilteredEvents.length - visibleCount} remaining)
-            </button>
-          ) : null}
         </>
       )}
     </div>

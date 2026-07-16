@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
 import { usePosLedger } from '@/hooks/use-pos-ledger';
@@ -8,9 +9,6 @@ import { supabase } from '@/lib/supabase';
 import {
   VendorActionGrid,
   VendorActionTile,
-  VendorHero,
-  VendorKpiGrid,
-  VendorKpiStat,
   VendorListPanel,
   VendorListRow,
   VendorScreen,
@@ -76,23 +74,57 @@ export function VendorDashboardPage() {
   }, [vendor]);
 
   const status = vendor?.approval_status ?? 'pending';
+  const grossValue =
+    !posLoading && posSummary.transactionCount > 0
+      ? formatPrice(posSummary.grossTotal)
+      : formatPrice(0);
 
   return (
     <VendorScreen>
-      <VendorHero
-        eyebrow="Vendor"
-        title="Dashboard"
-        subtitle={user?.email ? `Signed in as ${user.email}` : undefined}
-        pill={status}
-      >
-        <p className="m-0 mt-2 text-xs leading-snug text-white/90">{statusCopy[status]}</p>
-      </VendorHero>
+      <p className="ft-label" style={{ marginBottom: '0.35rem' }}>
+        Vendor workspace
+      </p>
+      <h1 className="app-title" style={{ marginBottom: '0.35rem' }}>
+        Dashboard
+      </h1>
+      <p className="ft-subhead" style={{ marginBottom: '1.25rem' }}>
+        {user?.email ? `Signed in as ${user.email}` : 'Merchant console'}
+        {' · '}
+        <span className="capitalize">{status}</span>
+        {' — '}
+        {statusCopy[status]}
+      </p>
 
-      <VendorKpiGrid cols={3}>
-        <VendorKpiStat to="/vendor/fulfillment" value={pendingPickup} label="Awaiting pickup" />
-        <VendorKpiStat to="/vendor/fulfillment" value={fulfilledToday} label="Fulfilled today" />
-        <VendorKpiStat to="/vendor/products" value={activeProducts} label="Active products" />
-      </VendorKpiGrid>
+      <div className="vendor-asym">
+        <Link to="/vendor/analytics" className="vendor-asym__hero no-underline">
+          <p className="ft-label">Gross revenue</p>
+          <p className="ft-metric">{grossValue}</p>
+          <p className="ft-subhead" style={{ marginTop: '0.65rem', color: '#a1a1aa' }}>
+            {posLoading
+              ? 'Syncing POS ledger…'
+              : posSummary.transactionCount > 0
+                ? `${posSummary.transactionCount} POS ops · last 30 days`
+                : 'Connect Square to populate live gross'}
+          </p>
+        </Link>
+
+        <div className="vendor-asym__stack">
+          <Link to="/vendor/fulfillment" className="vendor-asym__stat">
+            <p className="ft-label">Total operations</p>
+            <p className="ft-metric">{pendingPickup + fulfilledToday}</p>
+            <p className="ft-subhead" style={{ marginTop: '0.35rem' }}>
+              {pendingPickup} awaiting · {fulfilledToday} fulfilled today
+            </p>
+          </Link>
+          <Link to="/vendor/products" className="vendor-asym__stat">
+            <p className="ft-label">Active period</p>
+            <p className="ft-metric">{activeProducts}</p>
+            <p className="ft-subhead" style={{ marginTop: '0.35rem' }}>
+              Active catalog SKUs this period
+            </p>
+          </Link>
+        </div>
+      </div>
 
       <VendorSection title="POS sales">
         <div className="mb-4">
@@ -104,23 +136,20 @@ export function VendorDashboardPage() {
         </div>
         {posError ? <p className="app-error mb-3">{posError}</p> : null}
         {!posLoading && posSummary.transactionCount > 0 ? (
-          <VendorKpiGrid cols={3}>
-            <VendorKpiStat
-              to="/vendor/analytics"
-              value={formatPrice(posSummary.grossTotal)}
-              label="Gross (30d)"
-            />
-            <VendorKpiStat
-              to="/vendor/analytics"
-              value={formatPrice(posSummary.platformFeeTotal)}
-              label="Platform fees"
-            />
-            <VendorKpiStat
-              to="/vendor/analytics"
-              value={formatPrice(posSummary.netTotal)}
-              label="Net (30d)"
-            />
-          </VendorKpiGrid>
+          <div className="vendor-asym" style={{ marginBottom: '1rem' }}>
+            <Link to="/vendor/analytics" className="vendor-asym__stat">
+              <p className="ft-label">Platform fees</p>
+              <p className="ft-metric" style={{ fontSize: '1.75rem' }}>
+                {formatPrice(posSummary.platformFeeTotal)}
+              </p>
+            </Link>
+            <Link to="/vendor/analytics" className="vendor-asym__stat">
+              <p className="ft-label">Net (30d)</p>
+              <p className="ft-metric" style={{ fontSize: '1.75rem' }}>
+                {formatPrice(posSummary.netTotal)}
+              </p>
+            </Link>
+          </div>
         ) : null}
         <div className={posSummary.transactionCount > 0 ? 'mt-4' : undefined}>
           <PosLiveTransactionFeed

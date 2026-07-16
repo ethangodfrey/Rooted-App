@@ -4,15 +4,32 @@
 
 :root {
   color-scheme: light;
+  --canvas: #fbfbfb;
+  --ink: #18181b;
+  --muted: #71717a;
+  --border: rgba(24, 24, 27, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --canvas: #09090b;
+    --ink: #fafafa;
+    --muted: #a1a1aa;
+    --border: rgba(255, 255, 255, 0.1);
+  }
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, 0.12), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, rgba(168, 85, 247, 0.1), transparent 50%),
-    linear-gradient(180deg, #f7f4ef 0%, #efe8df 100%);
-  color: #1a1410;
-  font-family: "Source Sans 3", Segoe UI, system-ui, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', Segoe UI, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }

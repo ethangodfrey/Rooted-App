@@ -80,9 +80,12 @@ export function AdminOrdersPage() {
   );
 
   return (
-    <div className="app-screen">
+    <div className="app-screen" style={{ maxWidth: 960 }}>
       <p className="app-eyebrow">Admin</p>
       <h1 className="app-title">Orders</h1>
+      <p className="ft-subhead" style={{ marginBottom: '1rem' }}>
+        Settlement log — currency aligned, no zebra striping.
+      </p>
 
       <div className="app-chip-row" style={{ marginBottom: '1rem' }}>
         {FILTERS.map((item) => (
@@ -90,7 +93,8 @@ export function AdminOrdersPage() {
             key={item.key}
             type="button"
             className={`app-chip${filter === item.key ? ' app-chip--selected' : ''}`}
-            onClick={() => setFilter(item.key)}>
+            onClick={() => setFilter(item.key)}
+          >
             {item.label}
           </button>
         ))}
@@ -99,25 +103,52 @@ export function AdminOrdersPage() {
       {error ? <p className="app-error">{error}</p> : null}
 
       {loading ? (
-        <div className="app-loading"><div className="app-spinner" /></div>
+        <div className="app-loading">
+          <div className="app-spinner" />
+        </div>
       ) : filtered.length === 0 ? (
         <div className="app-empty">No orders.</div>
       ) : (
-        <div className="app-list">
-          {filtered.map((order) => {
-            const itemCount = (order.order_items ?? []).reduce((s, i) => s + i.quantity, 0);
-            return (
-              <Link key={order.id} to={`/admin/orders/${order.id}`} className="app-card app-card--pressable app-row">
-                <div className="app-row-body">
-                  <p className="app-row-title">{formatPrice(order.total)}</p>
-                  <p className="app-row-meta">
-                    {ORDER_STATUS_LABEL[order.order_status]} · {order.vendor?.business_name ?? 'Vendor'}
-                  </p>
-                  <p className="app-row-meta">{formatDateTime(order.created_at)} · {itemCount} items</p>
-                </div>
-              </Link>
-            );
-          })}
+        <div style={{ overflowX: 'auto' }}>
+          <table className="ft-data-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Vendor</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th className="ft-data-table__currency">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((order) => {
+                const itemCount = (order.order_items ?? []).reduce((s, i) => s + i.quantity, 0);
+                return (
+                  <tr key={order.id}>
+                    <td>
+                      <Link to={`/admin/orders/${order.id}`}>
+                        {order.id.slice(0, 8)}…
+                      </Link>
+                      <div className="ft-subhead" style={{ marginTop: '0.2rem' }}>
+                        {itemCount} items · {order.payment_status}
+                      </div>
+                    </td>
+                    <td>
+                      <div>{order.vendor?.business_name ?? 'Vendor'}</div>
+                      <div className="ft-subhead" style={{ marginTop: '0.2rem' }}>
+                        {order.event?.name ?? '—'}
+                      </div>
+                    </td>
+                    <td>{ORDER_STATUS_LABEL[order.order_status]}</td>
+                    <td>
+                      <span className="ft-subhead">{formatDateTime(order.created_at)}</span>
+                    </td>
+                    <td className="ft-data-table__currency">{formatPrice(order.total)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
