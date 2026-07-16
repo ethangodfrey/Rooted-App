@@ -30,9 +30,9 @@ This doc maps the **research-backed enhanced plan** to repo status. Apply SQL in
 | 5. Inventory holds | ✅ SQL | `reserve_inventory()` RPC; checkout not wired |
 | 6. Hyperlocal (PostGIS) | ✅ SQL + mobile | `phase24_geo_search.sql` enables PostGIS + `find_nearby_*` RPCs (geography `ST_DWithin`/`ST_Distance`); `phase30` adds `find_nearby_chefs` + chef `geog` for full parity. Mobile search + home discovery geo-rank events with "X mi away" labels and fall back to text/bbox when coords/RPC unavailable |
 | 7. Onboarding wizard | 🟡 Address capture done | Vendor setup has `vendor_type`; `phase27` adds street address + ZIP capture to vendor + chef setup (web+mobile). Vendor **and chef** saves auto-geocode the address via shared `lib/geocode.ts` (Nominatim, full-address→city/state-centroid fallback, never blocks save) → `latitude/longitude` so `find_nearby_vendors`/`find_nearby_chefs` return accurate points. The mobile storefront editor also re-geocodes when the city/state changes. Multi-step wizard still not built |
-| 8. Messaging | ❌ Phase 2 | Schema in plan only — do not build yet |
-| 9. Navigation (Messages tab) | ❌ Phase 2 | Current tabs: Home, Explore, Markets, Map, Feed, Search, Profile |
-| 10. New components | 🔲 Partial | Trust badges, compliance util; reviews/messaging TBD |
+| 8. Messaging | ✅ UI + realtime | `conversation_threads` / `messages` (phase32); web `ChatThread`, `/shopper/messages`, `/vendor/messages` with Supabase Realtime |
+| 9. Navigation (Messages tab) | ✅ | Shopper tab + vendor sidebar/mobile Messages; Posts kept under Posts |
+| 10. New components | 🔲 Partial | Trust badges, compliance util, messaging UI shipped; chef threads TBD |
 | 11. Phase 1 timeline | 🔲 In progress | See `VENDORLY_MIGRATION.md` |
 
 ## Mobile additions (this pass)
@@ -58,4 +58,5 @@ This doc maps the **research-backed enhanced plan** to repo status. Apply SQL in
 
 ## Explicitly Phase 2+ (do not build)
 
-Stripe, push notifications, in-app messaging threads, delivery logistics, multi-vendor cart, AI recommendations, organizer portal.
+Push notifications, delivery logistics, AI recommendations, organizer portal.
+(Stripe Connect, multi-vendor cart, and messaging UI have since shipped in later passes.)

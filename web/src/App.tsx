@@ -52,6 +52,7 @@ import { ShopperLeftoverDetailPage } from '@/pages/shopper/ShopperLeftoverDetail
 import { ShopperLeftoversPage } from '@/pages/shopper/ShopperLeftoversPage';
 import { ShopperLayout } from '@/pages/shopper/ShopperLayout';
 import { ShopperMapPage } from '@/pages/shopper/ShopperMapPage';
+import { ShopperMessagesPage } from '@/pages/shopper/ShopperMessagesPage';
 import { ShopperOrderDetailPage } from '@/pages/shopper/ShopperOrderDetailPage';
 import { ShopperOrdersPage } from '@/pages/shopper/ShopperOrdersPage';
 import { ShopperProductPage } from '@/pages/shopper/ShopperProductPage';
@@ -73,6 +74,7 @@ import { VendorLeftoverFormPage } from '@/pages/vendor/VendorLeftoverFormPage';
 import { VendorLeftoversPage } from '@/pages/vendor/VendorLeftoversPage';
 import { VendorLayout } from '@/pages/vendor/VendorLayout';
 import { VendorManualSalePage } from '@/pages/vendor/VendorManualSalePage';
+import { VendorMessagesPage } from '@/pages/vendor/VendorMessagesPage';
 import { VendorOrderDetailPage } from '@/pages/vendor/VendorOrderDetailPage';
 import { VendorOrdersPage } from '@/pages/vendor/VendorOrdersPage';
 import { VendorPosActivityPage } from '@/pages/vendor/VendorPosActivityPage';
@@ -122,6 +124,7 @@ export default function App() {
           <Route path="events" element={<ShopperEventsPage />} />
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="feed" element={<ShopperFeedPage />} />
+          <Route path="messages" element={<ShopperMessagesPage />} />
           <Route path="profile" element={<ShopperProfilePage />} />
         </Route>
 
@@ -154,6 +157,7 @@ export default function App() {
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="products" element={<VendorProductsPage />} />
+          <Route path="messages" element={<VendorMessagesPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
         </Route>

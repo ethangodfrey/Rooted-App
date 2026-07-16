@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { PickupPass } from '@/components/orders/PickupPass';
 import { OrdersListSkeleton } from '@/components/orders/OrdersListSkeleton';
+import { useAuth } from '@/hooks/use-auth';
 import { formatDateTime, formatPrice } from '@/lib/format';
+import { ensureVendorThread } from '@/lib/messaging';
 import { showPickupPass } from '@/lib/order-fulfillment';
 import { ORDER_STATUS_LABEL } from '@/lib/order-status';
 import { supabase } from '@/lib/supabase';
@@ -14,6 +16,9 @@ const ORDERS_BASE = '/profile/orders';
 
 export function ShopperOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [messaging, setMessaging] = useState(false);
   const [order, setOrder] = useState<{
     id: string;
     order_status: OrderStatus;
@@ -25,6 +30,7 @@ export function ShopperOrderDetailPage() {
     pickup_code: string | null;
     fulfillment_window_start: string | null;
     fulfillment_window_end: string | null;
+    vendor_id: string;
     vendor: { business_name: string | null } | null;
     event: {
       id: string;
@@ -122,6 +128,32 @@ export function ShopperOrderDetailPage() {
           fulfillmentWindowStart={order.fulfillment_window_start}
           fulfillmentWindowEnd={order.fulfillment_window_end}
         />
+      ) : null}
+
+      {user?.id && order.vendor_id ? (
+        <button
+          type="button"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-orange-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg transition-all hover:bg-orange-500 active:scale-[0.98] disabled:opacity-55"
+          disabled={messaging}
+          onClick={() => {
+            void (async () => {
+              setMessaging(true);
+              try {
+                const threadId = await ensureVendorThread({
+                  customerUserId: user.id,
+                  vendorId: order.vendor_id,
+                  orderId: order.id,
+                  subject: order.pickup_code ? `Order ${order.pickup_code}` : null,
+                });
+                navigate(`/shopper/messages?thread=${encodeURIComponent(threadId)}`);
+              } finally {
+                setMessaging(false);
+              }
+            })();
+          }}
+        >
+          {messaging ? 'Opening chat…' : 'Message vendor'}
+        </button>
       ) : null}
 
       <div className="app-card" style={{ marginTop: '1rem' }}>

@@ -6,7 +6,7 @@ export type { AppTab };
 export const SHOPPER_TABS: AppTab[] = [
   { to: '/shopper/home', label: 'Home', icon: 'home' },
   { to: '/shopper/search', label: 'Discover', icon: 'search' },
-  { to: '/shopper/events', label: 'Markets', icon: 'markets' },
+  { to: '/shopper/messages', label: 'Messages', icon: 'messages' },
   { to: '/shopper/profile', label: 'You', icon: 'profile' },
 ];
 
