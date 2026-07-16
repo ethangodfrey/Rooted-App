@@ -2,6 +2,7 @@ import { Link, Navigate } from 'react-router-dom';
 
 import { LeafIcon } from '@/components/LeafIcon';
 import { Logo } from '@/components/Logo';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { useAuth } from '@/hooks/use-auth';
 import '@/App.css';
 import '@/components/ui/ui.css';
@@ -106,6 +107,7 @@ function LandingNav() {
         </nav>
 
         <div className="nav__actions">
+          <ThemeToggle />
           <Link to="/login" className="btn btn--secondary nav__signin">
             Sign in
           </Link>
