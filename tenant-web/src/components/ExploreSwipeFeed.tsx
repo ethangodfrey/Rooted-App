@@ -77,7 +77,7 @@ export function ExploreSwipeFeed({
 
   useEffect(() => {
     let active = true;
-    void fetchSnapEligibleVendorIds(apiBaseUrl)
+    void fetchSnapEligibleVendorIds(apiBaseUrl, true)
       .then((ids) => {
         if (active) setSnapVendorIds(ids);
       })

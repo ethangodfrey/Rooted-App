@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 /**
  * Shopper cart / pay-at-preorder entry — `/shopper/cart`.
  * Deep-links into the marketplace SPA cart when configured.
+ *
+ * Pay Now vs Pay at Pickup UI + reservation payload live in the SPA
+ * (`web` CartDrawer → POST /checkout with `paymentMethod: 'pickup' | 'stripe'`).
+ * Pickup bypasses Stripe Connect validation on the Nest checkout service.
  */
 export default function ShopperCartPage() {
   const marketplaceUrl = process.env.NEXT_PUBLIC_MARKETPLACE_URL?.trim().replace(/\/$/, '') || null;

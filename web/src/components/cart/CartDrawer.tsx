@@ -441,6 +441,9 @@ export function CartDrawer() {
                     Back to cart
                   </button>
                   {(() => {
+                    // Pay at Pickup → paymentMethod 'pickup': Nest checkout skips
+                    // assertVendorsStripeReady / Stripe session creation and writes
+                    // paid_at_pickup reservations with pickup codes.
                     const method: 'pickup' | 'stripe' =
                       vendorPolicy === 'stripe_only' && stripeReady
                         ? 'stripe'

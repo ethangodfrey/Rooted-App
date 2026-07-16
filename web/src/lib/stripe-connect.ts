@@ -1,5 +1,14 @@
 import { api } from '@/lib/api';
 
+/**
+ * Phase 49 cart policy (DB: `vendors.preorder_payment_policy`).
+ * Product-language `payment_policy = 'choice'` maps to `pickup_or_stripe`.
+ *
+ * Stripe Connect columns (Phase 32, not renamed in Phase 49):
+ * - `stripe_account_id` ← product alias `stripe_connect_id`
+ * - `stripe_charges_enabled` ← product alias `stripe_onboarding_completed`
+ *   (UI treats onboarding complete when account id is set AND charges are enabled)
+ */
 export type PreorderPaymentPolicy = 'pickup_only' | 'stripe_only' | 'pickup_or_stripe';
 
 export const PREORDER_PAYMENT_POLICY_OPTIONS: Array<{
