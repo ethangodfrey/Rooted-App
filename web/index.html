@@ -8,7 +8,19 @@
       name="description"
       content="Your local food marketplace — private chefs, home cooks, and farmers markets in one place. Discover, book, order, and pick up from makers near you."
     />
-    <meta name="theme-color" content="#0B1228" />
+    <meta name="theme-color" content="#F7F8FC" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('vendorly-theme');
+          var theme = stored === 'night' || stored === 'day' ? stored : 'day';
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.colorScheme = theme === 'night' ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'day');
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
