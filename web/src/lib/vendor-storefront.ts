@@ -1,3 +1,4 @@
+import { parseFlashSale, type FlashSaleState } from '@/lib/flash-sale';
 import type { Vendor } from '@/types/database';
 
 export const PAYMENT_METHOD_OPTIONS = [
@@ -25,6 +26,7 @@ export interface VendorThemeSettings {
   pickup_info?: string | null;
   payment_methods?: PaymentMethod[];
   featured_highlight?: string | null;
+  flash_sale?: FlashSaleState | null;
 }
 
 export function parseThemeSettings(raw: Record<string, unknown> | null | undefined): VendorThemeSettings {
@@ -48,6 +50,7 @@ export function parseThemeSettings(raw: Record<string, unknown> | null | undefin
     payment_methods,
     featured_highlight:
       typeof raw.featured_highlight === 'string' ? raw.featured_highlight : null,
+    flash_sale: parseFlashSale(raw),
   };
 }
 

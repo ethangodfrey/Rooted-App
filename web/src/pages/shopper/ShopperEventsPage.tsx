@@ -21,6 +21,7 @@ import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
+import { parseFlashSale } from '@/lib/flash-sale';
 import { marketPath } from '@/lib/market-routes';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -282,7 +283,16 @@ export function ShopperEventsPage() {
                       ) : preview.vendors.length === 0 ? (
                         <p className="ft-subhead">No approved vendors listed for this market yet.</p>
                       ) : (
-                        preview.vendors.slice(0, 8).map((vendor) => (
+                        preview.vendors.slice(0, 8).map((vendor) => {
+                          const flash = parseFlashSale(vendor.theme_settings ?? null);
+                          const highlight =
+                            typeof vendor.theme_settings?.featured_highlight === 'string'
+                              ? vendor.theme_settings.featured_highlight
+                              : null;
+                          const badge =
+                            highlight?.trim() ||
+                            (flash ? `⚡ ONLY ${flash.unitsLeft} LEFT - Flash Sale Active` : null);
+                          return (
                           <div key={vendor.id} className="markets-preview__vendor-row">
                             <div>
                               <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
@@ -291,10 +301,16 @@ export function ShopperEventsPage() {
                               <p className="ft-subhead">
                                 {vendor.category ?? vendor.product_summary ?? 'Local maker'}
                               </p>
+                              {badge ? (
+                                <span className="mt-1 inline-flex max-w-full items-center rounded-md border border-amber-400/40 bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#0B1228]">
+                                  <span className="truncate">{badge}</span>
+                                </span>
+                              ) : null}
                             </div>
                             <span className="markets-split__distance">On site</span>
                           </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
 

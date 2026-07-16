@@ -6,6 +6,7 @@ import { usePosLedger } from '@/hooks/use-pos-ledger';
 import { PENDING_PICKUP_STATUSES } from '@/lib/order-fulfillment';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
+import { LowStockFlashPromo } from '@/components/vendor/low-stock-flash-promo';
 import {
   VendorActionGrid,
   VendorActionTile,
@@ -125,6 +126,8 @@ export function VendorDashboardPage() {
           </Link>
         </div>
       </div>
+
+      <LowStockFlashPromo vendorId={vendor?.id} />
 
       <VendorSection title="POS sales">
         <div className="mb-4">

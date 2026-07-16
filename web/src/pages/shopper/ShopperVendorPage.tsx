@@ -14,6 +14,7 @@ import { formatEventDisplayDate } from '@/lib/format';
 import { vendorPath } from '@/lib/market-routes';
 import type { MenuProduct } from '@/lib/product-menu';
 import type { PresaleCartMarket } from '@/lib/presale-cart';
+import { flashSaleBadgeText } from '@/lib/flash-sale';
 import {
   parseThemeSettings,
   resolveAccentColor,
@@ -30,11 +31,20 @@ export function ShopperVendorPage() {
   const { vendor, products, upcomingMarkets, distanceLabel, loading, error } =
     useVendorStorefront(id);
 
+  const theme = useMemo(
+    () => (vendor ? parseThemeSettings(vendor.theme_settings) : {}),
+    [vendor],
+  );
+
   const accent = useMemo(() => {
     if (!vendor) return '#228B22';
-    const theme = parseThemeSettings(vendor.theme_settings);
     return resolveAccentColor(theme.accent_color);
-  }, [vendor]);
+  }, [vendor, theme.accent_color]);
+
+  const flashSale = theme.flash_sale ?? null;
+  const flashBadge =
+    theme.featured_highlight?.trim() ||
+    (flashSale ? flashSaleBadgeText(flashSale.unitsLeft) : null);
 
   const bannerUrl = vendor?.banner_url ?? vendor?.logo_url ?? null;
 
@@ -176,12 +186,26 @@ export function ShopperVendorPage() {
                 {vendor.category}
               </p>
             ) : null}
+            {flashBadge ? (
+              <span className="mt-2 inline-flex max-w-full items-center rounded-md border border-amber-300/50 bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#0B1228] shadow-sm">
+                <span className="truncate">{flashBadge}</span>
+              </span>
+            ) : null}
             <TrustBadges userId={vendor.user_id} />
           </div>
         </div>
       </div>
 
       <div className="px-4 py-5">
+        {flashBadge ? (
+          <p
+            className="mb-3 inline-flex items-center rounded-lg border border-orange-500/35 bg-orange-500/10 px-3 py-1.5 text-xs font-bold tracking-wide text-orange-700"
+            role="status"
+          >
+            {flashBadge}
+            {flashSale ? ` · ${flashSale.discountPercent}% off ${flashSale.productName}` : ''}
+          </p>
+        ) : null}
         {distanceLabel ? (
           <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500 tabular-nums">
             {distanceLabel} away
@@ -252,6 +276,7 @@ export function ShopperVendorPage() {
         <VendorProductMenu
           products={products}
           accentColor={accent}
+          flashSale={flashSale}
           onAddToCart={(product) => void handleAddToCart(product)}
         />
 

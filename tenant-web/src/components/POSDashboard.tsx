@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -13,6 +13,7 @@ import {
 
 import { centsToDollars, formatUsd, parseCents } from '@/lib/analytics/money';
 import type { PosAnalyticsTransactionRow } from '@/lib/analytics/types';
+import type { LowStockProduct } from '@/lib/flash-sale';
 
 export interface POSDashboardProps {
   /** Vendor UUID used to query /api/analytics */
@@ -22,6 +23,9 @@ export interface POSDashboardProps {
   /** Override API base (defaults to same origin). */
   apiBaseUrl?: string;
 }
+
+const TACTILE_BTN =
+  'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg transition-all duration-200 hover:bg-orange-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55';
 
 interface DayPoint {
   day: string;
@@ -84,6 +88,40 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
   const [rows, setRows] = useState<PosAnalyticsTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [promoMessage, setPromoMessage] = useState<string | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  const authHeaders = useCallback((): HeadersInit => {
+    const headers: HeadersInit = { Accept: 'application/json' };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    return headers;
+  }, [accessToken]);
+
+  const loadLowStock = useCallback(async () => {
+    if (!vendorId || !accessToken) {
+      setLowStock([]);
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/vendor/low-stock?vendorId=${encodeURIComponent(vendorId)}`,
+        { headers: authHeaders() },
+      );
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        lowStock?: LowStockProduct[];
+      } | null;
+      if (!res.ok) {
+        setLowStock([]);
+        return;
+      }
+      setLowStock(Array.isArray(body?.lowStock) ? body.lowStock : []);
+    } catch {
+      setLowStock([]);
+    }
+  }, [vendorId, accessToken, apiBaseUrl, authHeaders]);
 
   useEffect(() => {
     if (!vendorId) {
@@ -97,13 +135,9 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
       setLoading(true);
       setError(null);
       try {
-        const headers: HeadersInit = { Accept: 'application/json' };
-        if (accessToken) {
-          headers.Authorization = `Bearer ${accessToken}`;
-        }
         const res = await fetch(
           `${apiBaseUrl}/api/analytics?vendorId=${encodeURIComponent(vendorId)}`,
-          { headers },
+          { headers: authHeaders() },
         );
         if (!res.ok) {
           const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -124,10 +158,45 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
     }
 
     void load();
+    void loadLowStock();
     return () => {
       cancelled = true;
     };
-  }, [vendorId, accessToken, apiBaseUrl]);
+  }, [vendorId, accessToken, apiBaseUrl, authHeaders, loadLowStock]);
+
+  async function promoteFlashSale(item: LowStockProduct) {
+    setPromotingId(item.productId);
+    setPromoError(null);
+    setPromoMessage(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/vendor/flash-promo`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vendorId,
+          productId: item.productId,
+          productName: item.productName,
+          unitsLeft: item.walkUpStock,
+        }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        badge?: string;
+      } | null;
+      if (!res.ok) throw new Error(body?.error || `Promo failed (${res.status})`);
+      setPromoMessage(body?.badge ?? 'Flash Sale Active');
+      setLowStock((prev) =>
+        prev.map((row) => ({
+          ...row,
+          flashActive: row.productId === item.productId,
+        })),
+      );
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : 'Unable to activate flash promo');
+    } finally {
+      setPromotingId(null);
+    }
+  }
 
   const kpis = useMemo(() => {
     let grossCents = 0;
@@ -182,6 +251,49 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
           Last 30 days from Square, Toast, and Clover — unified via phase47 analytics ingest.
         </p>
       </header>
+
+      {lowStock.length > 0 ? (
+        <div className="mb-6 space-y-3">
+          {lowStock.map((item) => (
+            <div
+              key={item.productId}
+              className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-4"
+            >
+              <p className="m-0 text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-90">
+                Low walk-up stock
+              </p>
+              <p className="m-0 mt-1 text-sm font-semibold text-zinc-50">
+                {item.productName} · {item.walkUpStock} left for in-person sales
+              </p>
+              <p className="m-0 mt-1 text-xs font-medium text-white/65">
+                Trigger a flash sale on the shopper directory before the table runs empty.
+              </p>
+              <button
+                type="button"
+                className={`${TACTILE_BTN} mt-3`}
+                disabled={promotingId === item.productId || item.flashActive}
+                onClick={() => void promoteFlashSale(item)}
+              >
+                {item.flashActive
+                  ? 'Flash Sale Active'
+                  : promotingId === item.productId
+                    ? 'Promoting…'
+                    : 'Promote Last 3 Items'}
+              </button>
+            </div>
+          ))}
+          {promoMessage ? (
+            <p className="m-0 text-sm font-semibold text-orange-400" role="status">
+              Live on shopper directory: {promoMessage}
+            </p>
+          ) : null}
+          {promoError ? (
+            <p className="m-0 rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+              {promoError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-[2fr_1fr] md:grid-rows-[auto]">
         <article className="flex min-h-[280px] flex-col justify-end rounded-xl border border-orange-500/35 bg-[radial-gradient(ellipse_80%_70%_at_100%_0%,rgba(249,115,22,0.28),transparent_55%),#121a36] px-6 py-7 md:row-span-2">

@@ -15,6 +15,7 @@ export interface MarketAttendingVendor {
   sell_state: string | null;
   latitude: number | null;
   longitude: number | null;
+  theme_settings?: Record<string, unknown> | null;
 }
 
 export interface UseMarketDetailResult {
@@ -59,6 +60,7 @@ export function useMarketDetail(marketId: string | undefined): UseMarketDetailRe
               sell_state,
               latitude,
               longitude,
+              theme_settings,
               approval_status
             )`,
           )

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import type { MarketAttendingVendor } from '@/hooks/use-market-detail';
+import { flashSaleBadgeText, parseFlashSale } from '@/lib/flash-sale';
 import { vendorPath } from '@/lib/market-routes';
 import { coordsFrom, distanceMiles, formatDistance, isValidCoords, type Coords } from '@/lib/geo';
 
@@ -33,6 +34,12 @@ export function AttendingVendorGrid({ vendors, userCoords, marketId }: Attending
         const distance = isValidCoords(userCoords)
           ? vendorDistanceLabel(vendor, userCoords)
           : null;
+        const flash = parseFlashSale(vendor.theme_settings ?? null);
+        const highlight =
+          typeof vendor.theme_settings?.featured_highlight === 'string'
+            ? vendor.theme_settings.featured_highlight.trim()
+            : '';
+        const badge = highlight || (flash ? flashSaleBadgeText(flash.unitsLeft) : null);
 
         return (
           <Link
@@ -52,6 +59,11 @@ export function AttendingVendorGrid({ vendors, userCoords, marketId }: Attending
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 truncate">
                   {vendor.category}
                 </p>
+              ) : null}
+              {badge ? (
+                <span className="mt-1 inline-flex max-w-full items-center rounded-md border border-amber-400/40 bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#0B1228]">
+                  <span className="truncate">{badge}</span>
+                </span>
               ) : null}
               {vendor.product_summary ? (
                 <p className="mt-0.5 line-clamp-2 text-xs font-medium text-zinc-500">
