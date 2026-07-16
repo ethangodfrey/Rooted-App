@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
@@ -8,23 +8,26 @@ import { TabIcon } from '@/components/navigation/TabIcon';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
-import { useNearbyOpenMarkets } from '@/hooks/use-nearby-open-markets';
 
 import '@/components/ui/ui.css';
 
 const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
-  shopper: '/shopper/home',
-  vendor: '/vendor/dashboard',
+  shopper: '/explore',
+  vendor: '/creator',
   chef: '/chef/dashboard',
   admin: '/admin/vendors',
 };
 
 const SHOPPER_SCREEN_TITLES: Record<string, string> = {
+  '/explore': 'Explore',
+  '/inbox': 'Inbox',
+  '/orders': 'Orders',
+  '/shopper/profile': 'You',
   '/shopper/search': 'Search',
   '/shopper/events': 'Markets',
-  '/shopper/profile': 'You',
   '/shopper/feed': 'Updates',
   '/shopper/map': 'Map',
+  '/shopper/home': 'Home',
 };
 
 function vendorAvatarLabel(businessName?: string | null, email?: string | null): string {
@@ -76,93 +79,135 @@ function TabBarLink({ tab, pathname }: { tab: AppTab; pathname: string }) {
   );
 }
 
+function ShopperProfileMenu() {
+  const { user, signOut } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="app-btn app-btn--ghost app-btn--small"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((value) => !value)}
+      >
+        Profile
+      </button>
+      {open ? (
+        <div
+          className="absolute right-0 z-50 mt-2 min-w-[14rem] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-lg"
+          role="menu"
+        >
+          <p className="truncate px-3 py-2 text-xs text-[var(--color-muted)]">{user?.email}</p>
+          <Link
+            to="/shopper/profile"
+            className="block rounded-lg px-3 py-2 text-sm hover:bg-[var(--color-muted-bg,rgba(0,0,0,0.04))]"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            Account & saved
+          </Link>
+          <Link
+            to="/creator"
+            className="mt-1 block rounded-lg bg-[var(--color-primary)] px-3 py-2.5 text-sm font-semibold text-[var(--color-surface)]"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            🔄 Switch to Creator Mode
+          </Link>
+          <button
+            type="button"
+            className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--color-muted)] hover:bg-[var(--color-muted-bg,rgba(0,0,0,0.04))]"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              void signOut();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function AppShell({
   role,
   tabs,
   mobileTabs,
-  mapFabHref,
 }: {
   role: 'shopper' | 'vendor' | 'chef' | 'admin';
   tabs: AppTab[];
   /** When set, mobile tab bar uses this subset (e.g. vendor 4-tab bar). */
   mobileTabs?: AppTab[];
+  /** @deprecated Map is part of Explore — kept for call-site compatibility. */
   mapFabHref?: string;
 }) {
   const { user, vendor, signOut } = useAuth();
   const { itemCount, openDrawer } = useCart();
   const location = useLocation();
   const homeTo = ROLE_HOME[role];
-  const nearbyMarketsOpen = useNearbyOpenMarkets();
-  const [fabCompact, setFabCompact] = useState(false);
 
   const tabbarTabs = mobileTabs ?? tabs;
-  const isShopperHome = role === 'shopper' && location.pathname === '/shopper/home';
+  const isShopperExplore = role === 'shopper' && location.pathname === '/explore';
   const shopperScreenTitle =
     role === 'shopper' ? SHOPPER_SCREEN_TITLES[location.pathname] : undefined;
 
-  useEffect(() => {
-    if (role !== 'shopper' || !mapFabHref) return;
-
-    const onScroll = () => {
-      setFabCompact(window.scrollY > 48);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [role, mapFabHref, location.pathname]);
-
   return (
     <div className="app-shell">
-      <header className={`app-topbar${shopperScreenTitle ? ' app-topbar--compact' : ''}`}>
-        {isShopperHome ? (
+      <header className={`app-topbar${shopperScreenTitle && !isShopperExplore ? ' app-topbar--compact' : ''}`}>
+        {isShopperExplore || !shopperScreenTitle ? (
           <NavLink to={homeTo} className="app-topbar__brand" aria-label="Vendorly home">
             <Logo size="small" />
           </NavLink>
-        ) : shopperScreenTitle ? (
+        ) : (
           <div>
             <p className="app-eyebrow" style={{ marginBottom: 0 }}>
-              {role === 'shopper' ? 'Marketplace' : role}
+              Marketplace
             </p>
             <h1 className="app-topbar__screen-title">{shopperScreenTitle}</h1>
           </div>
-        ) : (
-          <NavLink to={homeTo} className="app-topbar__brand" aria-label="Vendorly home">
-            <Logo size="small" />
-          </NavLink>
         )}
 
         <div className="app-topbar__actions">
           <ThemeToggle />
 
           {role === 'shopper' ? (
-            <button
-              type="button"
-              className="app-btn app-btn--ghost app-btn--small cart-fab"
-              aria-label={`Open presale cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
-              onClick={() => openDrawer()}
-            >
-              Cart
-              {itemCount > 0 ? <span className="cart-fab__badge">{itemCount}</span> : null}
-            </button>
+            <>
+              <button
+                type="button"
+                className="app-btn app-btn--ghost app-btn--small cart-fab"
+                aria-label={`Open presale cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
+                onClick={() => openDrawer()}
+              >
+                Cart
+                {itemCount > 0 ? <span className="cart-fab__badge">{itemCount}</span> : null}
+              </button>
+              <ShopperProfileMenu />
+            </>
           ) : null}
 
           {role === 'vendor' ? (
             <Link
-              to="/vendor/profile"
+              to="/creator/settings"
               className="app-topbar__avatar"
-              aria-label="Vendor profile"
+              aria-label="Creator settings"
               title={vendor?.business_name ?? user?.email ?? 'Profile'}
             >
               {vendorAvatarLabel(vendor?.business_name, user?.email)}
             </Link>
-          ) : (
-            <span className="app-topbar__email">{user?.email}</span>
-          )}
+          ) : null}
 
-          <button type="button" className="app-btn app-btn--ghost app-btn--small" onClick={signOut}>
-            Sign out
-          </button>
+          {role !== 'shopper' ? (
+            <>
+              <span className="app-topbar__email">{user?.email}</span>
+              <button type="button" className="app-btn app-btn--ghost app-btn--small" onClick={signOut}>
+                Sign out
+              </button>
+            </>
+          ) : null}
         </div>
       </header>
 
@@ -175,17 +220,18 @@ export function AppShell({
               key={tab.to}
               to={tab.to}
               end={!tab.matchPaths?.length}
-              className={isTabActive(tab, location.pathname) ? 'app-sidebar__link active' : 'app-sidebar__link'}
+              className={
+                isTabActive(tab, location.pathname) ? 'app-sidebar__link active' : 'app-sidebar__link'
+              }
             >
               <TabIcon name={tab.icon} size={18} />
               <span>{tab.label}</span>
             </NavLink>
           ))}
 
-          {mapFabHref ? (
-            <NavLink to={mapFabHref} className="app-sidebar__link app-sidebar__link--map">
-              <TabIcon name="map" size={18} />
-              <span>Map</span>
+          {role === 'shopper' ? (
+            <NavLink to="/creator" className="app-sidebar__link app-sidebar__link--map">
+              <span>🔄 Switch to Creator Mode</span>
             </NavLink>
           ) : null}
         </nav>
@@ -200,16 +246,6 @@ export function AppShell({
           <TabBarLink key={tab.to} tab={tab} pathname={location.pathname} />
         ))}
       </nav>
-
-      {mapFabHref ? (
-        <NavLink
-          to={mapFabHref}
-          className={`app-map-fab fixed bottom-24 right-4 z-40 md:hidden${fabCompact ? ' app-map-fab--compact' : ''}${nearbyMarketsOpen ? ' app-map-fab--pulse' : ''}`}
-          aria-label="Open map"
-        >
-          <TabIcon name="map" size={22} color="var(--color-surface)" />
-        </NavLink>
-      ) : null}
     </div>
   );
 }

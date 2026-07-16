@@ -51,6 +51,7 @@ import { ShopperFeedPage } from '@/pages/shopper/ShopperFeedPage';
 import { ShopperHomePage } from '@/pages/shopper/ShopperHomePage';
 import { ShopperLeftoverDetailPage } from '@/pages/shopper/ShopperLeftoverDetailPage';
 import { ShopperLeftoversPage } from '@/pages/shopper/ShopperLeftoversPage';
+import { ShopperInboxPage } from '@/pages/shopper/ShopperInboxPage';
 import { ShopperLayout } from '@/pages/shopper/ShopperLayout';
 import { ShopperMapPage } from '@/pages/shopper/ShopperMapPage';
 import { ShopperOrderDetailPage } from '@/pages/shopper/ShopperOrderDetailPage';
@@ -62,6 +63,10 @@ import { ShopperReservePage } from '@/pages/shopper/ShopperReservePage';
 import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
+import { CreatorHandoffsPage } from '@/pages/creator/CreatorHandoffsPage';
+import { CreatorLayout } from '@/pages/creator/CreatorLayout';
+import { CreatorListingsPage } from '@/pages/creator/CreatorListingsPage';
+import { CreatorSettingsPage } from '@/pages/creator/CreatorSettingsPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
@@ -116,16 +121,24 @@ export default function App() {
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
 
-        <Route path="/shopper" element={<ShopperLayout />}>
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<ShopperHomePage />} />
-          <Route path="search" element={<ShopperSearchPage />} />
-          <Route path="explore" element={<ShopperExplorePage />} />
-          <Route path="events" element={<ShopperEventsPage />} />
-          <Route path="map" element={<ShopperMapPage />} />
-          <Route path="feed" element={<ShopperFeedPage />} />
-          <Route path="profile" element={<ShopperProfilePage />} />
+        {/* Unified shopper shell: Explore / Inbox / Orders */}
+        <Route element={<ShopperLayout />}>
+          <Route path="/explore" element={<ShopperMapPage />} />
+          <Route path="/inbox" element={<ShopperInboxPage />} />
+          <Route path="/orders" element={<ShopperOrdersPage />} />
+          <Route path="/orders/:id" element={<ShopperOrderDetailPage />} />
+          <Route path="/shopper/profile" element={<ShopperProfilePage />} />
+          {/* Legacy shopper tabs — kept routable inside the new shell */}
+          <Route path="/shopper/home" element={<ShopperHomePage />} />
+          <Route path="/shopper/search" element={<ShopperSearchPage />} />
+          <Route path="/shopper/explore" element={<ShopperExplorePage />} />
+          <Route path="/shopper/events" element={<ShopperEventsPage />} />
+          <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
+          <Route path="/shopper/feed" element={<ShopperFeedPage />} />
+          <Route path="/shopper/messages" element={<Navigate to="/inbox" replace />} />
         </Route>
+
+        <Route path="/shopper" element={<Navigate to="/explore" replace />} />
 
         <Route path="/markets/:id" element={<ShopperEventDetailPage />} />
         <Route path="/vendors/:id" element={<ShopperVendorPage />} />
@@ -142,12 +155,19 @@ export default function App() {
         <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/shopper/profile/edit" element={<ShopperProfileEditPage />} />
         <Route path="/shopper/saved" element={<ShopperSavedPage />} />
-        <Route path="/shopper/orders" element={<ShopperOrdersPage />} />
+        <Route path="/shopper/orders" element={<Navigate to="/orders" replace />} />
         <Route path="/shopper/orders/:id" element={<ShopperOrderDetailPage />} />
-        <Route path="/profile/orders" element={<ShopperOrdersPage />} />
+        <Route path="/profile/orders" element={<Navigate to="/orders" replace />} />
         <Route path="/profile/orders/:id" element={<ShopperOrderDetailPage />} />
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
+
+        {/* Unified creator shell: Listings / Hand-offs / Settings */}
+        <Route path="/creator" element={<CreatorLayout />}>
+          <Route index element={<CreatorListingsPage />} />
+          <Route path="handoffs" element={<CreatorHandoffsPage />} />
+          <Route path="settings" element={<CreatorSettingsPage />} />
+        </Route>
 
         <Route path="/vendor" element={<VendorLayout />}>
           <Route path="setup" element={<VendorSetupPage />} />
@@ -159,7 +179,10 @@ export default function App() {
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
+          <Route path="messages" element={<Navigate to="/inbox" replace />} />
         </Route>
+
+        <Route path="/dashboard/fulfillment" element={<Navigate to="/creator/handoffs" replace />} />
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
         <Route path="/vendor/products/new" element={<VendorProductFormPage />} />
@@ -182,8 +205,6 @@ export default function App() {
         <Route path="/vendor/explore" element={<VendorExplorePage />} />
         <Route path="/vendor/compliance" element={<VendorCompliancePage />} />
         <Route path="/vendor/credentials" element={<VendorCredentialsPage />} />
-
-        <Route path="/dashboard/fulfillment" element={<Navigate to="/vendor/fulfillment" replace />} />
 
         <Route path="/chef" element={<ChefLayout />}>
           <Route path="setup" element={<ChefSetupPage />} />

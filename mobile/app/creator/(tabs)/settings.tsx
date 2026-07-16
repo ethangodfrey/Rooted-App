@@ -3,23 +3,23 @@ import { View } from 'react-native';
 
 import { ActionRow } from '@/src/components/ui/action-row';
 import { DeleteAccountButton } from '@/src/components/account/delete-account-button';
+import { LegalLinks } from '@/src/components/account/legal-links';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
-import { LegalLinks } from '@/src/components/account/legal-links';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
 
-export default function VendorMoreScreen() {
+export default function CreatorSettingsScreen() {
   const { user, vendor, signOut } = useAuth();
 
   return (
     <Screen scroll>
       <Text variant="eyebrow" className="mb-2">
-        Account
+        Creator
       </Text>
       <Text variant="title" className="mb-6">
-        Profile
+        Settings
       </Text>
 
       <Card className="mb-4">
@@ -37,55 +37,41 @@ export default function VendorMoreScreen() {
 
       <View className="mb-4 gap-3">
         <ActionRow
+          icon="credit-card"
+          title="Stripe payouts & SNAP / EBT"
+          subtitle="Connect payouts and toggle SNAP discovery (web settings for full Connect flow)."
+          onPress={() => router.push('/(vendor)/profile/storefront')}
+        />
+        <ActionRow
+          icon="map-marker"
+          title="Meetup & delivery rules"
+          subtitle="Pickup notes, location, and shipping on your storefront."
+          onPress={() => router.push('/(vendor)/profile/storefront')}
+        />
+        <ActionRow
           icon="shield"
           title="Compliance & credentials"
           subtitle="Cottage food requirements, permits, and trust badges."
           onPress={() => router.push('/(vendor)/compliance')}
         />
         <ActionRow
-          icon="th-large"
-          title="Explore showcase"
-          subtitle="Post photos and promotions to the customer Explore feed."
-          onPress={() => router.push('/(vendor)/explore')}
-        />
-        <ActionRow
           icon="paint-brush"
           title="Edit storefront"
-          subtitle="Banner, logo, about section, links, and shopper details."
+          subtitle="Banner, logo, about section, and shopper details."
           onPress={() => router.push('/(vendor)/profile/storefront')}
-        />
-        {vendor ? (
-          <ActionRow
-            icon="eye"
-            title="Preview shop page"
-            subtitle="See how shoppers will view your storefront."
-            onPress={() => router.push('/(vendor)/profile/preview')}
-          />
-        ) : null}
-        <ActionRow
-          icon="file-text-o"
-          title="Application details"
-          subtitle="Update business info from your original application."
-          onPress={() => router.push('/(vendor)/profile/setup')}
         />
       </View>
 
       <View className="mt-2 gap-3">
+        <Button
+          label="🔄 Back to Shopping"
+          onPress={() => router.push('/(shopper)/(tabs)/')}
+        />
         <Button label="Sign out" variant="secondary" onPress={signOut} />
         <DeleteAccountButton />
       </View>
 
       <LegalLinks />
-
-      <View className="mt-8">
-        <Text variant="eyebrow" className="mb-2">
-          Danger zone
-        </Text>
-        <Text variant="caption" className="mb-3">
-          Permanently delete your account and associated data.
-        </Text>
-        <DeleteAccountButton />
-      </View>
     </Screen>
   );
 }

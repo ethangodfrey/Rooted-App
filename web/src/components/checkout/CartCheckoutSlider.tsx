@@ -126,7 +126,7 @@ export function CartCheckoutSlider({ cart, open, onClose, onCartChange }: CartCh
         return;
       }
 
-      navigate(`/shopper/orders/${result.orderId}`);
+      navigate(`/orders/${result.orderId}`);
     } catch (err) {
       setError((err as Error).message);
     } finally {

@@ -135,7 +135,7 @@ export function VendorSetupPage() {
     }
 
     await refreshUser();
-    navigate('/vendor/dashboard');
+    navigate('/creator');
   }
 
   async function handleBack() {

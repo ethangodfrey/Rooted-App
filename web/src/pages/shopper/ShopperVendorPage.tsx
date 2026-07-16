@@ -94,7 +94,7 @@ export function ShopperVendorPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
         <p className="text-sm text-red-600">{error ?? 'Vendor not found.'}</p>
-        <Link to="/shopper/home" className="mt-4 inline-block text-sm text-emerald-700 hover:underline">
+        <Link to="/explore" className="mt-4 inline-block text-sm text-emerald-700 hover:underline">
           Back to home
         </Link>
       </div>
@@ -107,7 +107,7 @@ export function ShopperVendorPage() {
     <div className="mx-auto max-w-3xl pb-24 sm:px-6">
       <div className="flex items-center justify-between px-4 pt-4">
         <Link
-          to="/shopper/home"
+          to="/explore"
           className="inline-flex items-center gap-1 text-sm font-medium text-emerald-800 hover:underline"
         >
           ← Back

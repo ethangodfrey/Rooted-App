@@ -56,7 +56,7 @@ export function ShopperLeftoverDetailPage() {
       setError(rpcError.message);
       return;
     }
-    navigate(`/shopper/orders/${data as string}`);
+    navigate(`/orders/${data as string}`);
   }
 
   if (loading) {

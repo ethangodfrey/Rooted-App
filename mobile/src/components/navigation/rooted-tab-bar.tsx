@@ -31,9 +31,18 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 
 
-/** Primary tab routes — map/explore/feed stay routable but hidden from bar. */
+/** Primary tab routes — legacy screens stay routable but hidden from the bar. */
+const SHOPPER_VISIBLE = new Set(['index', 'inbox', 'orders']);
+const CREATOR_VISIBLE = new Set(['index', 'handoffs', 'settings']);
+const VENDOR_VISIBLE = new Set(['dashboard', 'orders', 'products', 'feed', 'more']);
+const DEFAULT_VISIBLE = new Set(['home', 'search', 'events', 'profile', 'dashboard']);
 
-const VISIBLE_TAB_ROUTES = new Set(['home', 'search', 'events', 'profile']);
+function resolveVisibleRoutes(routeNames: string[]): Set<string> {
+  if (routeNames.includes('inbox') && routeNames.includes('orders')) return SHOPPER_VISIBLE;
+  if (routeNames.includes('handoffs') && routeNames.includes('settings')) return CREATOR_VISIBLE;
+  if (routeNames.includes('dashboard') && routeNames.includes('products')) return VENDOR_VISIBLE;
+  return DEFAULT_VISIBLE;
+}
 
 
 
@@ -173,13 +182,16 @@ function MapFab({ compact, pulse }: { compact?: boolean; pulse?: boolean }) {
 export function RootedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const nearbyMarketsOpen = useNearbyOpenMarkets();
-  const visibleRoutes = state.routes.filter((route) => VISIBLE_TAB_ROUTES.has(route.name));
+  const routeNames = state.routes.map((route) => route.name);
+  const visibleSet = resolveVisibleRoutes(routeNames);
+  const visibleRoutes = state.routes.filter((route) => visibleSet.has(route.name));
   const activeRoute = state.routes[state.index]?.name;
-  const fabCompact = activeRoute !== 'home';
+  const showMapFab = visibleSet === SHOPPER_VISIBLE && activeRoute !== 'index';
+  const fabCompact = activeRoute !== 'index' && activeRoute !== 'home';
 
   return (
     <View style={styles.wrapper}>
-      <MapFab compact={fabCompact} pulse={nearbyMarketsOpen} />
+      {showMapFab ? <MapFab compact={fabCompact} pulse={nearbyMarketsOpen} /> : null}
 
       <View
 

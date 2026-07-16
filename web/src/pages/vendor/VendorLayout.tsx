@@ -1,25 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
-import { AppShell } from '@/components/layout/AppShell';
-import {
-  buildVendorMobileTabs,
-  VENDOR_SIDEBAR_TABS,
-} from '@/components/navigation/vendor-tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
 
+/**
+ * Legacy `/vendor/*` shell — gates role/setup, then defers primary chrome to `/creator`.
+ * Nested vendor tool routes still render via Outlet without the old segmented tab bar.
+ */
 export function VendorLayout() {
   const { user, vendor, session, isProfileLoading } = useAuth();
   const location = useLocation();
   const onSetup = location.pathname.startsWith('/vendor/setup');
   const [routeCache, setRouteCache] = useState<AuthRouteCache | null | undefined>(undefined);
-
-  const mobileTabs = useMemo(
-    () => (vendor?.id ? buildVendorMobileTabs(vendor.id) : []),
-    [vendor?.id],
-  );
 
   useEffect(() => {
     void readAuthRouteCache().then(setRouteCache);
@@ -59,7 +53,32 @@ export function VendorLayout() {
     return <Outlet />;
   }
 
+  // Primary vendor home moved to unified creator shell.
+  if (
+    location.pathname === '/vendor' ||
+    location.pathname === '/vendor/dashboard' ||
+    location.pathname === '/vendor/products' ||
+    location.pathname === '/vendor/fulfillment' ||
+    location.pathname === '/vendor/orders' ||
+    location.pathname === '/vendor/posts' ||
+    location.pathname === '/vendor/profile'
+  ) {
+    const target =
+      location.pathname === '/vendor/fulfillment' || location.pathname === '/vendor/orders'
+        ? '/creator/handoffs'
+        : location.pathname === '/vendor/profile'
+          ? '/creator/settings'
+          : location.pathname === '/vendor/posts'
+            ? '/inbox'
+            : '/creator';
+    return <Navigate to={target} replace />;
+  }
+
   return (
-    <AppShell role="vendor" tabs={VENDOR_SIDEBAR_TABS} mobileTabs={mobileTabs} />
+    <div className="app-shell">
+      <main className="app-main min-w-0 w-full">
+        <Outlet />
+      </main>
+    </div>
   );
 }

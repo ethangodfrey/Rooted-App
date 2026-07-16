@@ -3,7 +3,10 @@ import { Redirect, Stack } from 'expo-router';
 import { AuthLoadingShell } from '@/src/components/ui/auth-loading-shell';
 import { useAuth } from '@/src/hooks/use-auth';
 
-/** Session gate only. Role + onboarding routing lives in `app/index.tsx`. */
+/**
+ * Shopper base layout — session gate.
+ * Bottom tabs (Explore / Inbox / Orders) live in `(tabs)/_layout`.
+ */
 export default function ShopperLayout() {
   const { session, isLoading } = useAuth();
 

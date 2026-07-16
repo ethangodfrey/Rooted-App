@@ -1,19 +1,13 @@
-import { Redirect, Stack, useSegments } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 
 import { AuthLoadingShell } from '@/src/components/ui/auth-loading-shell';
 import { useAuth } from '@/src/hooks/use-auth';
 import { isVendorApplicationComplete } from '@/src/lib/vendor-application';
 
-/**
- * Legacy vendor group — keeps setup + deep tool routes.
- * Primary chrome moved to `/creator`.
- */
-export default function VendorLayout() {
+/** Session + role gate for the unified creator shell. */
+export default function CreatorLayout() {
   const { session, user, vendor, isLoading, isProfileLoading, cacheReady, trustedCache } =
     useAuth();
-  const segments = useSegments();
-  const onSetupRoute = segments.includes('profile' as never) && segments.includes('setup' as never);
-  const onTabs = segments.includes('(tabs)' as never);
 
   if (isLoading && !session) {
     return <AuthLoadingShell />;
@@ -29,6 +23,10 @@ export default function VendorLayout() {
     return <AuthLoadingShell />;
   }
 
+  if (role === 'customer' || role === 'shopper') {
+    return <Redirect href="/(onboarding)/role-select" />;
+  }
+
   if (role !== 'vendor') {
     return <Redirect href="/" />;
   }
@@ -37,13 +35,8 @@ export default function VendorLayout() {
     ? isVendorApplicationComplete(vendor)
     : (trustedCache?.vendorComplete ?? false);
 
-  if (!vendorComplete && !onSetupRoute) {
+  if (!vendorComplete) {
     return <Redirect href="/(vendor)/profile/setup" />;
-  }
-
-  // Completed vendors use the unified creator shell for primary tabs.
-  if (vendorComplete && onTabs) {
-    return <Redirect href="/creator/(tabs)" />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;

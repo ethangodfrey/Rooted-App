@@ -12,9 +12,10 @@ export type AuthRedirectHref =
   | '/auth/reset-password'
   | '/(onboarding)/role-select'
   | '/(onboarding)/interests'
-  | '/(shopper)/(tabs)/home'
+  | '/(shopper)/(tabs)/'
+  | '/(shopper)/(tabs)/index'
   | '/(vendor)/profile/setup'
-  | '/(vendor)/(tabs)/dashboard'
+  | '/creator/(tabs)'
   | '/(chef)/profile/setup'
   | '/(chef)/(tabs)/dashboard'
   | '/(admin)/(tabs)/vendors'
@@ -60,14 +61,14 @@ export function resolveAuthRedirect(
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);
-    return hasInterests ? '/(shopper)/(tabs)/home' : '/(onboarding)/interests';
+    return hasInterests ? '/(shopper)/(tabs)/' : '/(onboarding)/interests';
   }
 
   if (role === 'vendor') {
     const complete = user
       ? isVendorApplicationComplete(vendor)
       : (trustedCache?.vendorComplete ?? false);
-    return complete ? '/(vendor)/(tabs)/dashboard' : '/(vendor)/profile/setup';
+    return complete ? '/creator/(tabs)' : '/(vendor)/profile/setup';
   }
 
   if (role === 'chef') {

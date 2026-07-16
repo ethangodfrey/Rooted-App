@@ -7,9 +7,9 @@ export type AuthRedirectPath =
   | '/login'
   | '/onboarding/role-select'
   | '/onboarding/interests'
-  | '/shopper/home'
+  | '/explore'
   | '/vendor/setup'
-  | '/vendor/dashboard'
+  | '/creator'
   | '/chef/setup'
   | '/chef/dashboard'
   | '/admin/vendors';
@@ -63,14 +63,14 @@ export function resolveAuthRedirect(
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);
-    return hasInterests ? '/shopper/home' : '/onboarding/interests';
+    return hasInterests ? '/explore' : '/onboarding/interests';
   }
 
   if (role === 'vendor') {
     const complete = user
       ? isVendorApplicationComplete(vendor)
       : (trustedCache?.vendorComplete ?? false);
-    return complete ? '/vendor/dashboard' : '/vendor/setup';
+    return complete ? '/creator' : '/vendor/setup';
   }
 
   if (role === 'chef') {

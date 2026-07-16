@@ -131,7 +131,7 @@ export function CheckoutSuccessPage() {
         })}
       </div>
 
-      <Link to="/profile/orders" className="app-btn app-btn--primary" style={{ marginTop: '1rem' }}>
+      <Link to="/orders" className="app-btn app-btn--primary" style={{ marginTop: '1rem' }}>
         View all orders
       </Link>
     </div>

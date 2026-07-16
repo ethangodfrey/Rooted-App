@@ -81,10 +81,16 @@ export default function ShopperProfileScreen() {
 
       <View className="gap-3">
         <BigCard
-          icon="📋"
-          title="Reservations"
-          subtitle="Track reserve-for-pickup orders"
-          onPress={() => router.push('/(shopper)/orders')}
+          icon="🔄"
+          title="Switch to Creator Mode"
+          subtitle="Manage listings, hand-offs, and payouts"
+          onPress={() => router.push('/creator')}
+        />
+        <BigCard
+          icon="📦"
+          title="Orders"
+          subtitle="Pickup codes and receipts"
+          onPress={() => router.push('/(shopper)/(tabs)/orders')}
         />
         <BigCard
           icon="♥"

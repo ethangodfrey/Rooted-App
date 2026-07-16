@@ -2,12 +2,24 @@ import type { AppTab } from '@/components/navigation/app-tabs';
 
 export type { AppTab };
 
-/** Primary shopper tab bar — Map lives on the floating FAB. */
+/** Unified shopper shell — Explore / Inbox / Orders. */
 export const SHOPPER_TABS: AppTab[] = [
-  { to: '/shopper/home', label: 'Home', icon: 'home' },
-  { to: '/shopper/search', label: 'Discover', icon: 'search' },
-  { to: '/shopper/events', label: 'Markets', icon: 'markets' },
-  { to: '/shopper/profile', label: 'You', icon: 'profile' },
+  {
+    to: '/explore',
+    label: 'Explore',
+    icon: 'explore',
+    matchPaths: ['/shopper/home', '/shopper/map', '/shopper/explore', '/shopper/search', '/shopper/events'],
+  },
+  {
+    to: '/inbox',
+    label: 'Inbox',
+    icon: 'messages',
+    matchPaths: ['/shopper/messages', '/shopper/feed'],
+  },
+  {
+    to: '/orders',
+    label: 'Orders',
+    icon: 'orders',
+    matchPaths: ['/shopper/orders', '/profile/orders'],
+  },
 ];
-
-export const SHOPPER_MAP_HREF = '/shopper/map';

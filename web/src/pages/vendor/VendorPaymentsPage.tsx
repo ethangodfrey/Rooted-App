@@ -144,8 +144,8 @@ export function VendorPaymentsPage() {
 
   return (
     <VendorScreen>
-      <Link to="/vendor/dashboard" className="app-back-link">
-        ← Dashboard
+      <Link to="/creator/settings" className="app-back-link">
+        ← Settings
       </Link>
       <VendorHero
         eyebrow="Payouts"

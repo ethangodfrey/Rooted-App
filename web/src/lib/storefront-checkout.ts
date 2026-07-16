@@ -65,7 +65,7 @@ export async function initiateStorefrontCheckout(
   const token = sessionData.session?.access_token;
   if (!token) throw new Error('Sign in to checkout');
 
-  const successUrl = `${window.location.origin}/shopper/orders`;
+  const successUrl = `${window.location.origin}/orders`;
   const cancelUrl = window.location.href;
 
   const res = await fetch(checkoutApiUrl(), {

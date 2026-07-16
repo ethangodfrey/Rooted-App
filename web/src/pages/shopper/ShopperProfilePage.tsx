@@ -41,19 +41,39 @@ export function ShopperProfilePage() {
 
       <div className="app-profile-big-cards">
 
-        <Link to="/profile/orders" className="app-profile-big-card">
+        <Link to="/creator" className="app-profile-big-card" style={{ borderColor: 'var(--color-primary)', borderWidth: 2 }}>
 
           <span className="app-profile-big-card__icon" aria-hidden="true">
 
-            📋
+            🔄
 
           </span>
 
           <div>
 
-            <p className="app-profile-big-card__title">Reservations</p>
+            <p className="app-profile-big-card__title">Switch to Creator Mode</p>
 
-            <p className="app-profile-big-card__meta">Track reserve-for-pickup orders</p>
+            <p className="app-profile-big-card__meta">Manage listings, hand-offs, and payouts</p>
+
+          </div>
+
+        </Link>
+
+
+
+        <Link to="/orders" className="app-profile-big-card">
+
+          <span className="app-profile-big-card__icon" aria-hidden="true">
+
+            📦
+
+          </span>
+
+          <div>
+
+            <p className="app-profile-big-card__title">Orders</p>
+
+            <p className="app-profile-big-card__meta">Pickup codes and receipts</p>
 
           </div>
 
