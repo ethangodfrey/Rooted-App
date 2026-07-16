@@ -35,7 +35,9 @@ export function VendorOnboardingPage() {
       return;
     }
     if (!persona) {
-      setError('Choose how you sell — Market Vendor, Home Chef, or Private Chef.');
+                    setError(
+                      'Choose how you sell — Market Vendor, Home Chef, Private Chef, or Micro-Brand.',
+                    );
       return;
     }
 
@@ -71,14 +73,14 @@ export function VendorOnboardingPage() {
       <VendorHero
         eyebrow="Onboarding"
         title="How do you sell?"
-        subtitle="Pick the model that matches your booth, kitchen, or private dining service. You can change this later in settings."
+        subtitle="Pick the model that matches your booth, kitchen, private dining, or maker brand. You can change this later in settings."
         pill={persona ? VENDOR_PERSONA_OPTIONS.find((o) => o.value === persona)?.title : 'Choose one'}
       />
 
       {error ? <p className="app-error mb-4">{error}</p> : null}
 
       <VendorSection title="Vendor type">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {VENDOR_PERSONA_OPTIONS.map((option) => {
             const selected = persona === option.value;
             return (

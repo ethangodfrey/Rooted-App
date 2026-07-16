@@ -15,8 +15,8 @@ export default function VendorFulfillmentSettingsPage() {
       </p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight">Service settings</h1>
       <p className="mt-3 text-sm font-medium leading-relaxed text-white/70">
-        Home Chefs configure pickup, delivery radius, and cottage-food disclosures. Private Chefs set
-        travel radius, base rate, and minimum guests.
+        Home Chefs configure pickup, delivery, and cottage-food disclosures. Private Chefs set travel
+        radius and rates. Micro-Brands enable flat-rate nationwide shipping.
       </p>
       {target ? (
         <a

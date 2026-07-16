@@ -23,6 +23,7 @@ import '@/components/ui/ui.css';
  * Dynamic fulfillment / service settings — `/vendor/settings/fulfillment`.
  * Home Chef: pickup + delivery radius + cottage food disclosure.
  * Private Chef: travel radius, base rate, minimum guests.
+ * Micro-Brand: nationwide flat-rate shipping.
  */
 export function VendorFulfillmentSettingsPage() {
   const { vendor, refreshUser } = useAuth();
@@ -46,6 +47,17 @@ export function VendorFulfillmentSettingsPage() {
   const [minGuests, setMinGuests] = useState(
     vendor?.minimum_guest_count != null ? String(vendor.minimum_guest_count) : '',
   );
+  const [shippingEnabled, setShippingEnabled] = useState(Boolean(vendor?.shipping_enabled));
+  const [flatShipping, setFlatShipping] = useState(
+    vendor?.flat_rate_shipping_fee_cents != null
+      ? (vendor.flat_rate_shipping_fee_cents / 100).toFixed(2)
+      : '',
+  );
+  const [freeShipMin, setFreeShipMin] = useState(
+    vendor?.free_shipping_minimum_cents != null
+      ? (vendor.free_shipping_minimum_cents / 100).toFixed(2)
+      : '',
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +72,8 @@ export function VendorFulfillmentSettingsPage() {
       .from('vendors')
       .select(
         `vendor_type, street_address, serves_delivery, delivery_radius_miles, minimum_order_amount,
-         cottage_food_disclosure, base_service_rate_cents, minimum_guest_count`,
+         cottage_food_disclosure, base_service_rate_cents, minimum_guest_count,
+         shipping_enabled, flat_rate_shipping_fee_cents, free_shipping_minimum_cents`,
       )
       .eq('id', vendor.id)
       .maybeSingle();
@@ -92,6 +105,17 @@ export function VendorFulfillmentSettingsPage() {
       setMinGuests(
         data.minimum_guest_count != null ? String(data.minimum_guest_count as number) : '',
       );
+      setShippingEnabled(Boolean(data.shipping_enabled));
+      setFlatShipping(
+        data.flat_rate_shipping_fee_cents != null
+          ? ((data.flat_rate_shipping_fee_cents as number) / 100).toFixed(2)
+          : '',
+      );
+      setFreeShipMin(
+        data.free_shipping_minimum_cents != null
+          ? ((data.free_shipping_minimum_cents as number) / 100).toFixed(2)
+          : '',
+      );
     }
     setLoading(false);
   }, [vendor?.id]);
@@ -121,6 +145,8 @@ export function VendorFulfillmentSettingsPage() {
     const minOrderDollars = minimumOrder.trim() ? Number(minimumOrder) : null;
     const rateDollars = baseRate.trim() ? Number(baseRate) : null;
     const guests = minGuests.trim() ? Number(minGuests) : null;
+    const flatShipDollars = flatShipping.trim() ? Number(flatShipping) : null;
+    const freeMinDollars = freeShipMin.trim() ? Number(freeShipMin) : null;
 
     if (deliveryRadius.trim() && (!Number.isFinite(radius) || (radius as number) < 0)) {
       setSaving(false);
@@ -142,6 +168,16 @@ export function VendorFulfillmentSettingsPage() {
       setError('Minimum guest count must be at least 1.');
       return;
     }
+    if (flatShipping.trim() && (!Number.isFinite(flatShipDollars) || (flatShipDollars as number) < 0)) {
+      setSaving(false);
+      setError('Flat rate shipping fee must be a valid dollar amount.');
+      return;
+    }
+    if (freeShipMin.trim() && (!Number.isFinite(freeMinDollars) || (freeMinDollars as number) < 0)) {
+      setSaving(false);
+      setError('Free shipping minimum must be a valid dollar amount.');
+      return;
+    }
 
     const payload: Record<string, unknown> = {
       street_address: streetAddress.trim() || null,
@@ -153,6 +189,11 @@ export function VendorFulfillmentSettingsPage() {
       base_service_rate_cents:
         rateDollars != null ? Math.round((rateDollars as number) * 100) : null,
       minimum_guest_count: guests,
+      shipping_enabled: shippingEnabled,
+      flat_rate_shipping_fee_cents:
+        flatShipDollars != null ? Math.round((flatShipDollars as number) * 100) : null,
+      free_shipping_minimum_cents:
+        freeMinDollars != null ? Math.round((freeMinDollars as number) * 100) : null,
       updated_at: new Date().toISOString(),
     };
 
@@ -197,7 +238,7 @@ export function VendorFulfillmentSettingsPage() {
       ) : null}
 
       <VendorSection title="Vendor type">
-        <div className="grid gap-2 md:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           {VENDOR_PERSONA_OPTIONS.map((option) => {
             const selected = persona === option.value;
             return (
@@ -367,6 +408,61 @@ export function VendorFulfillmentSettingsPage() {
               }}
             >
               {saving ? 'Saving…' : 'Save service settings'}
+            </VendorPrimaryButton>
+          </VendorFormPanel>
+        </VendorSection>
+      ) : null}
+
+      {persona === 'micro_brand' ? (
+        <VendorSection title="Nationwide shipping settings">
+          <VendorFormPanel className="!bg-[#121A36] !text-zinc-50">
+            <label className="mb-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <span>
+                <span className="block text-sm font-bold text-white">Enable shipping</span>
+                <span className="mt-0.5 block text-xs text-white/55">
+                  Shoppers enter a shipping address at checkout instead of market pickup.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-checked={shippingEnabled}
+                className="h-5 w-5 accent-orange-500"
+                checked={shippingEnabled}
+                onChange={(e) => setShippingEnabled(e.target.checked)}
+              />
+            </label>
+
+            {shippingEnabled ? (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="app-input-group">
+                  <label className="!text-white/80">Flat rate shipping fee ($)</label>
+                  <input
+                    className="app-input"
+                    inputMode="decimal"
+                    value={flatShipping}
+                    onChange={(e) => setFlatShipping(e.target.value)}
+                    placeholder="8.00"
+                  />
+                </div>
+                <div className="app-input-group">
+                  <label className="!text-white/80">Free shipping minimum ($)</label>
+                  <input
+                    className="app-input"
+                    inputMode="decimal"
+                    value={freeShipMin}
+                    onChange={(e) => setFreeShipMin(e.target.value)}
+                    placeholder="75.00"
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <p className="mb-4 text-xs text-white/45">
+              Products can use the variant builder (Size / Color + stock) on the product form.
+            </p>
+            <VendorPrimaryButton disabled={saving} onClick={() => void handleSave()}>
+              {saving ? 'Saving…' : 'Save shipping settings'}
             </VendorPrimaryButton>
           </VendorFormPanel>
         </VendorSection>

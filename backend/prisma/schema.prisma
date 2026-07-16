@@ -74,6 +74,10 @@ model Vendor {
   baseServiceRateCents  Int?     @map("base_service_rate_cents")
   /// Phase 50 — Private Chef minimum guests
   minimumGuestCount     Int?     @map("minimum_guest_count")
+  /// Phase 50 — Micro-Brand nationwide shipping
+  shippingEnabled           Boolean @default(false) @map("shipping_enabled")
+  flatRateShippingFeeCents  Int?    @map("flat_rate_shipping_fee_cents")
+  freeShippingMinimumCents  Int?    @map("free_shipping_minimum_cents")
 
   posts                Post[]
   certifications       VendorCertification[]
@@ -96,6 +100,9 @@ model Product {
 
   /// Phase 49 — SNAP/EBT eligible SKU
   isSnapEligible Boolean @default(false) @map("is_snap_eligible")
+  /// Phase 50 — variant matrix JSON
+  hasVariants    Boolean @default(false) @map("has_variants")
+  variants       Json    @default("{}") @map("variants")
 
   availability       ProductEventAvailability[]
   orderItems         OrderItem[]

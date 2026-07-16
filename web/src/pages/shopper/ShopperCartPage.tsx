@@ -6,7 +6,7 @@ import { formatPrice } from '@/lib/format';
 
 /**
  * Full-page cart entry (`/shopper/cart`) — opens the shared CartDrawer review flow
- * so pay-now vs pay-at-pickup policy UI stays in one place.
+ * so pay-now vs pay-at-pickup, SNAP pickup notes, and micro-brand shipping address stay in one place.
  */
 export function ShopperCartPage() {
   const { cart, totals, openDrawer, itemCount } = useCart();
@@ -22,8 +22,8 @@ export function ShopperCartPage() {
       </p>
       <h1 className="app-title">Your bag</h1>
       <p className="app-subtitle">
-        Choose Pay Now (card) or Pay at Pickup when vendors allow it — including SNAP/EBT at the
-        booth terminal.
+        Choose Pay Now or Pay at Pickup when vendors allow it. Maker brands with shipping enabled
+        collect a delivery address and flat-rate fee at review.
       </p>
 
       {cart && cart.lines.length > 0 ? (

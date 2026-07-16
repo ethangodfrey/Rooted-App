@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExploreMenuDrawer } from '@/components/ExploreMenuDrawer';
 import { fetchSnapEligibleVendorIds, SNAP_EBT_BADGE_CLASS } from '@/lib/snap-ebt';
-import { HOME_KITCHEN_BADGE_CLASS, PRIVATE_CHEF_BADGE_CLASS } from '@/lib/vendor-types';
+import {
+  HOME_KITCHEN_BADGE_CLASS,
+  MICRO_BRAND_BADGE_CLASS,
+  PRIVATE_CHEF_BADGE_CLASS,
+} from '@/lib/vendor-types';
 
 export interface ExploreSwipeFeedProps {
   initialLat?: number | null;
@@ -284,7 +288,9 @@ export function ExploreSwipeFeed({
               ? { label: 'Private Chef', className: PRIVATE_CHEF_BADGE_CLASS }
               : vendorType === 'home_kitchen'
                 ? { label: 'Home Kitchen', className: HOME_KITCHEN_BADGE_CLASS }
-                : null;
+                : vendorType === 'micro_brand'
+                  ? { label: 'Micro-Brand', className: MICRO_BRAND_BADGE_CLASS }
+                  : null;
           const ctaLabel = privateChef
             ? 'Inquire / Book Date'
             : item.creator_type === 'chef'

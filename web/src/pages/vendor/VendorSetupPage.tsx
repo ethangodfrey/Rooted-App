@@ -177,7 +177,7 @@ export function VendorSetupPage() {
         <p className="m-0 mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">
           Vendor type
         </p>
-        <div className="mb-4 grid gap-2 md:grid-cols-3">
+        <div className="mb-4 grid gap-2 sm:grid-cols-2">
           {VENDOR_PERSONA_OPTIONS.map((option) => {
             const selected = vendorType === option.value;
             return (

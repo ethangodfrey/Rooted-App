@@ -9,6 +9,7 @@ export const VENDOR_TYPES = [
   { value: 'farmers_market', label: 'Market Vendor' },
   { value: 'home_kitchen', label: 'Home Kitchen' },
   { value: 'private_chef', label: 'Private Chef' },
+  { value: 'micro_brand', label: 'Micro-Brand / Maker' },
   { value: 'food_business', label: 'Food Business' },
   { value: 'caterer', label: 'Caterer' },
   { value: 'meal_prep', label: 'Meal Prep' },

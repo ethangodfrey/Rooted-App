@@ -8,6 +8,11 @@ import { useNow } from '@/hooks/use-now';
 import { useCart } from '@/hooks/use-cart';
 import { stageCheckoutPreview, submitStagedCheckout } from '@/lib/cart-checkout-staging';
 import { isApiConfigured } from '@/lib/api';
+import {
+  computeShippingFeeCents,
+  formatShippingAddressBlock,
+  type VendorShippingSettings,
+} from '@/lib/cart-shipping';
 import { formatPrice } from '@/lib/format';
 import { pickupSummaryFromCart } from '@/lib/pickup-schedule';
 import type { StagedCheckoutPreview } from '@/lib/cart-checkout-staging';
@@ -97,11 +102,34 @@ export function CartDrawer() {
   const [paymentChoice, setPaymentChoice] = useState<'pickup' | 'stripe'>('pickup');
   const [vendorPolicy, setVendorPolicy] = useState<PreorderPaymentPolicy>('pickup_or_stripe');
   const [stripeReady, setStripeReady] = useState(false);
+  const [shippingSettings, setShippingSettings] = useState<VendorShippingSettings[]>([]);
+  const [shipName, setShipName] = useState('');
+  const [shipLine1, setShipLine1] = useState('');
+  const [shipLine2, setShipLine2] = useState('');
+  const [shipCity, setShipCity] = useState('');
+  const [shipState, setShipState] = useState('');
+  const [shipPostal, setShipPostal] = useState('');
 
   const vendorIds = useMemo(
     () => [...new Set((cart?.lines ?? []).map((line) => line.vendorId))],
     [cart?.lines],
   );
+
+  const requiresShipping = useMemo(
+    () => shippingSettings.some((row) => row.shippingEnabled),
+    [shippingSettings],
+  );
+
+  const shippingFeeCents = useMemo(() => {
+    if (!cart || !requiresShipping) return 0;
+    const subtotals = new Map<string, number>();
+    for (const group of totals.vendorGroups) {
+      subtotals.set(group.vendorId, group.subtotal);
+    }
+    return computeShippingFeeCents(shippingSettings, subtotals);
+  }, [cart, requiresShipping, shippingSettings, totals.vendorGroups]);
+
+  const payableTotal = totals.grandTotal + shippingFeeCents;
 
   useEffect(() => {
     if (!drawerOpen || vendorIds.length === 0) return;
@@ -109,7 +137,10 @@ export function CartDrawer() {
     void (async () => {
       const { data } = await supabase
         .from('vendors')
-        .select('id, preorder_payment_policy, stripe_charges_enabled, stripe_account_id')
+        .select(
+          `id, preorder_payment_policy, stripe_charges_enabled, stripe_account_id,
+           shipping_enabled, flat_rate_shipping_fee_cents, free_shipping_minimum_cents`,
+        )
         .in('id', vendorIds);
       if (!active) return;
       const policies = (data ?? []).map(
@@ -124,6 +155,18 @@ export function CartDrawer() {
       setStripeReady(ready);
       if (policy === 'stripe_only' && ready) setPaymentChoice('stripe');
       else if (policy === 'pickup_only' || !ready) setPaymentChoice('pickup');
+
+      setShippingSettings(
+        (data ?? []).map((row) => ({
+          vendorId: row.id as string,
+          shippingEnabled: Boolean(row.shipping_enabled),
+          flatRateShippingFeeCents: Number(row.flat_rate_shipping_fee_cents ?? 0) || 0,
+          freeShippingMinimumCents:
+            row.free_shipping_minimum_cents != null
+              ? Number(row.free_shipping_minimum_cents)
+              : null,
+        })),
+      );
     })();
     return () => {
       active = false;
@@ -166,10 +209,44 @@ export function CartDrawer() {
         return;
       }
 
+      if (requiresShipping) {
+        if (
+          !shipName.trim() ||
+          !shipLine1.trim() ||
+          !shipCity.trim() ||
+          !shipState.trim() ||
+          !shipPostal.trim()
+        ) {
+          setCheckoutError('Enter a complete shipping address to continue.');
+          return;
+        }
+      }
+
+      const checkoutNotes = [
+        notes.trim(),
+        requiresShipping
+          ? formatShippingAddressBlock({
+              name: shipName,
+              line1: shipLine1,
+              line2: shipLine2,
+              city: shipCity,
+              state: shipState,
+              postalCode: shipPostal,
+            })
+          : '',
+        requiresShipping && shippingFeeCents > 0
+          ? `Shipping fee: ${formatPrice(shippingFeeCents)}`
+          : requiresShipping
+            ? 'Shipping fee: FREE (threshold met)'
+            : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
       setSubmitting(true);
       setCheckoutError(null);
       try {
-        const result = await submitStagedCheckout(cart, notes, paymentMethod);
+        const result = await submitStagedCheckout(cart, checkoutNotes, paymentMethod);
 
         if (paymentMethod === 'stripe' && result.stripeSessions?.length) {
           const nextUrl = result.stripeSessions.find((session) => session.url)?.url;
@@ -189,7 +266,20 @@ export function CartDrawer() {
         setSubmitting(false);
       }
     },
-    [cart, closeDrawer, navigate, notes],
+    [
+      cart,
+      closeDrawer,
+      navigate,
+      notes,
+      requiresShipping,
+      shipCity,
+      shipLine1,
+      shipLine2,
+      shipName,
+      shipPostal,
+      shipState,
+      shippingFeeCents,
+    ],
   );
 
   const pickupLabel = cart ? pickupSummaryFromCart(cart, now) : null;
@@ -235,7 +325,16 @@ export function CartDrawer() {
               <p className="app-row-meta">Your presale cart is empty. Browse vendors at a market to add items.</p>
             ) : (
               <>
-                {pickupLabel ? (
+                {requiresShipping ? (
+                  <div className="cart-pickup-banner">
+                    <span className="block text-[10px] font-bold uppercase tracking-widest opacity-70">
+                      Nationwide shipping
+                    </span>
+                    <span className="mt-0.5 block">
+                      This bag includes shippable maker goods — enter your address at review.
+                    </span>
+                  </div>
+                ) : pickupLabel ? (
                   <div className="cart-pickup-banner">
                     <span className="block text-[10px] font-bold uppercase tracking-widest opacity-70">
                       Pickup market date
@@ -314,18 +413,82 @@ export function CartDrawer() {
                           </section>
                         ))}
 
-                        <label className="mt-4 block">
-                          <span className="mb-1 block text-sm font-medium text-slate-700">
-                            Pickup notes (optional)
-                          </span>
-                          <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            rows={2}
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                            placeholder="Allergies, booth preferences, etc."
-                          />
-                        </label>
+                        {requiresShipping ? (
+                          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                              Shipping address
+                            </p>
+                            <div className="grid gap-2">
+                              <input
+                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                placeholder="Full name"
+                                value={shipName}
+                                onChange={(e) => setShipName(e.target.value)}
+                              />
+                              <input
+                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                placeholder="Address line 1"
+                                value={shipLine1}
+                                onChange={(e) => setShipLine1(e.target.value)}
+                              />
+                              <input
+                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                placeholder="Address line 2 (optional)"
+                                value={shipLine2}
+                                onChange={(e) => setShipLine2(e.target.value)}
+                              />
+                              <div className="grid grid-cols-3 gap-2">
+                                <input
+                                  className="col-span-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                  placeholder="City"
+                                  value={shipCity}
+                                  onChange={(e) => setShipCity(e.target.value)}
+                                />
+                                <input
+                                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                  placeholder="ST"
+                                  maxLength={2}
+                                  value={shipState}
+                                  onChange={(e) => setShipState(e.target.value.toUpperCase())}
+                                />
+                                <input
+                                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                  placeholder="ZIP"
+                                  value={shipPostal}
+                                  onChange={(e) => setShipPostal(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="mt-4 block">
+                            <span className="mb-1 block text-sm font-medium text-slate-700">
+                              Pickup notes (optional)
+                            </span>
+                            <textarea
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              rows={2}
+                              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                              placeholder="Allergies, booth preferences, etc."
+                            />
+                          </label>
+                        )}
+
+                        {requiresShipping ? (
+                          <label className="mt-3 block">
+                            <span className="mb-1 block text-sm font-medium text-slate-700">
+                              Order notes (optional)
+                            </span>
+                            <textarea
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              rows={2}
+                              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                              placeholder="Gift message, delivery instructions…"
+                            />
+                          </label>
+                        ) : null}
 
                         {vendorPolicy === 'pickup_or_stripe' ||
                         (vendorPolicy === 'stripe_only' && !stripeReady) ? (
@@ -413,9 +576,17 @@ export function CartDrawer() {
                 <span>Platform fulfillment</span>
                 <span>{formatPrice(totals.platformFee)}</span>
               </div>
+              {requiresShipping ? (
+                <div className="cart-summary-row">
+                  <span>Shipping</span>
+                  <span>
+                    {shippingFeeCents > 0 ? formatPrice(shippingFeeCents) : 'FREE'}
+                  </span>
+                </div>
+              ) : null}
               <div className="cart-summary-row cart-summary-row--total">
                 <span>Total</span>
-                <span>{formatPrice(totals.grandTotal)}</span>
+                <span>{formatPrice(payableTotal)}</span>
               </div>
 
               {checkoutError ? (

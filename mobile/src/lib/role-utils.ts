@@ -27,6 +27,7 @@ export function vendorTypeLabel(type: string | null | undefined): string | null 
     farmers_market: 'Market Vendor',
     home_kitchen: 'Home Kitchen',
     private_chef: 'Private Chef',
+    micro_brand: 'Micro-Brand / Maker',
     food_business: 'Food Business',
     caterer: 'Caterer',
     meal_prep: 'Meal Prep',

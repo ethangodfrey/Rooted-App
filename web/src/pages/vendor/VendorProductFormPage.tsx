@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { ProductForm } from '@/components/vendor/ProductForm';
+import { ProductForm, type ProductFormValues } from '@/components/vendor/ProductForm';
 import {
   VendorHero,
   VendorListPanel,
@@ -9,7 +9,9 @@ import {
   VendorScreen,
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
+import { emptyVariantsPayload, parseVariants } from '@/lib/product-variants';
 import { supabase } from '@/lib/supabase';
+import { isMicroBrandVendor } from '@/lib/vendor-types';
 import '@/components/ui/ui.css';
 
 export function VendorProductFormPage() {
@@ -17,17 +19,7 @@ export function VendorProductFormPage() {
   const navigate = useNavigate();
   const { vendor } = useAuth();
   const isEdit = Boolean(id);
-  const [initial, setInitial] = useState<Partial<{
-    name: string;
-    description: string | null;
-    price: number;
-    category: string | null;
-    reserve_enabled: boolean;
-    reserve_limit_total: number | null;
-    reserve_limit_per_shopper: number | null;
-    media_urls: string[];
-    is_snap_eligible: boolean;
-  }> | null>(null);
+  const [initial, setInitial] = useState<Partial<ProductFormValues> | null>(null);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,24 +39,16 @@ export function VendorProductFormPage() {
           reserve_limit_per_shopper: data.reserve_limit_per_shopper,
           media_urls: data.media_urls ?? [],
           is_snap_eligible: Boolean(data.is_snap_eligible),
+          has_variants: Boolean(data.has_variants),
+          variants: parseVariants(data.variants),
         });
       }
       setLoading(false);
     }
-    load();
+    void load();
   }, [id]);
 
-  async function handleSave(values: {
-    name: string;
-    description: string | null;
-    price: number;
-    category: string | null;
-    reserve_enabled: boolean;
-    reserve_limit_total: number | null;
-    reserve_limit_per_shopper: number | null;
-    media_urls: string[];
-    is_snap_eligible: boolean;
-  }) {
+  async function handleSave(values: ProductFormValues) {
     if (!vendor) return;
     setSaving(true);
     setError(null);
@@ -80,6 +64,8 @@ export function VendorProductFormPage() {
       reserve_limit_per_shopper: values.reserve_limit_per_shopper,
       media_urls: values.media_urls,
       is_snap_eligible: values.is_snap_eligible,
+      has_variants: values.has_variants,
+      variants: values.has_variants ? values.variants : emptyVariantsPayload(),
       status: 'active' as const,
       updated_at: new Date().toISOString(),
     };
@@ -106,11 +92,19 @@ export function VendorProductFormPage() {
     }
   }
 
-  if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="app-spinner" />
+      </div>
+    );
+  }
 
   return (
     <VendorScreen>
-      <Link to="/vendor/products" className="app-back-link">← Products</Link>
+      <Link to="/vendor/products" className="app-back-link">
+        ← Products
+      </Link>
       <VendorHero eyebrow="Manage" title={isEdit ? 'Edit product' : 'New product'} />
 
       {isEdit ? (
@@ -133,6 +127,7 @@ export function VendorProductFormPage() {
         initial={initial ?? undefined}
         submitLabel={isEdit ? 'Save product' : 'Create product'}
         loading={saving}
+        microBrand={isMicroBrandVendor(vendor?.vendor_type)}
         onSubmit={handleSave}
       />
     </VendorScreen>

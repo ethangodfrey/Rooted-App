@@ -3,7 +3,17 @@ import { useRef, useState } from 'react';
 import { FieldError } from '@/components/ui/FieldError';
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  combinationLabel,
+  emptyVariantsPayload,
+  parseVariants,
+  regenerateCombinations,
+  type ProductVariantsPayload,
+  type VariantAttribute,
+  type VariantCombination,
+} from '@/lib/product-variants';
 import { uploadProductImage } from '@/lib/upload';
+import { isMicroBrandVendor } from '@/lib/vendor-types';
 import '@/components/ui/ui.css';
 
 export interface ProductFormValues {
@@ -16,6 +26,8 @@ export interface ProductFormValues {
   reserve_limit_per_shopper: number | null;
   media_urls: string[];
   is_snap_eligible: boolean;
+  has_variants: boolean;
+  variants: ProductVariantsPayload;
 }
 
 interface ProductFormProps {
@@ -23,6 +35,8 @@ interface ProductFormProps {
   submitLabel: string;
   onSubmit: (values: ProductFormValues) => Promise<void> | void;
   loading?: boolean;
+  /** When true (micro_brand vendor), variants UI defaults on. */
+  microBrand?: boolean;
 }
 
 type ProductField = 'name' | 'price' | 'limitTotal' | 'limitPerShopper';
@@ -35,8 +49,15 @@ function parseOptionalLimit(text: string): number | null | 'invalid' {
   return value;
 }
 
-export function ProductForm({ initial, submitLabel, onSubmit, loading = false }: ProductFormProps) {
-  const { user } = useAuth();
+export function ProductForm({
+  initial,
+  submitLabel,
+  onSubmit,
+  loading = false,
+  microBrand = false,
+}: ProductFormProps) {
+  const { user, vendor } = useAuth();
+  const isMicro = microBrand || isMicroBrandVendor(vendor?.vendor_type);
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
@@ -53,6 +74,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
   );
   const [mediaUrls, setMediaUrls] = useState<string[]>(initial?.media_urls ?? []);
   const [snapEligible, setSnapEligible] = useState(initial?.is_snap_eligible ?? false);
+  const [hasVariants, setHasVariants] = useState(
+    initial?.has_variants ?? (isMicro && Boolean(initial?.variants?.combinations?.length)),
+  );
+  const [variants, setVariants] = useState<ProductVariantsPayload>(
+    initial?.variants ? parseVariants(initial.variants) : emptyVariantsPayload(),
+  );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProductField, string>>>({});
@@ -64,6 +91,29 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       delete next[field];
       return next;
     });
+  }
+
+  function updateAttribute(index: number, patch: Partial<VariantAttribute>) {
+    setVariants((prev) => {
+      const attributes = prev.attributes.map((attr, i) =>
+        i === index ? { ...attr, ...patch } : attr,
+      );
+      return { ...prev, attributes };
+    });
+  }
+
+  function rebuildCombos(nextAttrs: VariantAttribute[], priceCents: number) {
+    setVariants((prev) => ({
+      attributes: nextAttrs,
+      combinations: regenerateCombinations(nextAttrs, prev.combinations, priceCents),
+    }));
+  }
+
+  function updateCombo(id: string, patch: Partial<VariantCombination>) {
+    setVariants((prev) => ({
+      ...prev,
+      combinations: prev.combinations.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -121,6 +171,12 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       }
     }
 
+    if (hasVariants && variants.combinations.length === 0) {
+      setError('Add at least one attribute with values, then generate variant combinations.');
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
       setError(null);
@@ -129,18 +185,23 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
 
     setFieldErrors({});
     setError(null);
+    const priceCents = Math.round(priceValue * 100);
     await onSubmit({
       name: name.trim(),
       description: description.trim() || null,
-      price: Math.round(priceValue * 100),
+      price: priceCents,
       category: category.trim() || null,
       reserve_enabled: reserveEnabled,
       reserve_limit_total: limitTotalValue,
       reserve_limit_per_shopper: limitPerShopperValue,
       media_urls: mediaUrls,
       is_snap_eligible: snapEligible,
+      has_variants: hasVariants,
+      variants: hasVariants ? variants : emptyVariantsPayload(),
     });
   }
+
+  const defaultPriceCents = Math.round((Number.parseFloat(priceText) || 0) * 100);
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)}>
@@ -169,7 +230,8 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
                   background: '#1a1a1a',
                   color: '#fff',
                   cursor: 'pointer',
-                }}>
+                }}
+              >
                 ×
               </button>
             </div>
@@ -197,10 +259,15 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       </div>
       <div className="app-input-group">
         <label>Category</label>
-        <input className="app-input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Produce, Baked goods" />
+        <input
+          className="app-input"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          placeholder="e.g. Apparel, Crafts, Produce"
+        />
       </div>
       <div className="app-input-group">
-        <label>Price (USD)</label>
+        <label>Base price (USD)</label>
         <input
           className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
           type="number"
@@ -220,9 +287,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
         <span>Enable reservations</span>
       </label>
 
-      <label
-        className="mb-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-800/50 bg-emerald-950/30 px-4 py-3"
-      >
+      <label className="mb-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-800/50 bg-emerald-950/30 px-4 py-3">
         <span>
           <span className="block text-sm font-bold text-emerald-800">SNAP / EBT Eligible Product</span>
           <span className="mt-0.5 block text-xs font-medium text-emerald-900/70">
@@ -238,6 +303,140 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
           onChange={(e) => setSnapEligible(e.target.checked)}
         />
       </label>
+
+      <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <label className="mb-3 flex cursor-pointer items-center justify-between gap-4">
+            <span>
+              <span className="block text-sm font-bold text-slate-900">Product variants</span>
+              <span className="mt-0.5 block text-xs font-medium text-slate-600">
+                {isMicro
+                  ? 'Recommended for Micro-Brands — Size / Color with price and stock per combo.'
+                  : 'Optional — add Size / Color attributes and set price/stock per combination.'}
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              aria-checked={hasVariants}
+              className="h-5 w-5 accent-orange-600"
+              checked={hasVariants}
+              onChange={(e) => setHasVariants(e.target.checked)}
+            />
+          </label>
+
+          {hasVariants ? (
+            <>
+              <div className="mb-3 flex flex-col gap-3">
+                {variants.attributes.map((attr, index) => (
+                  <div key={index} className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <input
+                        className="app-input"
+                        value={attr.name}
+                        placeholder="Attribute (e.g. Size)"
+                        onChange={(e) => updateAttribute(index, { name: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        className="app-btn app-btn--secondary shrink-0"
+                        onClick={() => {
+                          const next = variants.attributes.filter((_, i) => i !== index);
+                          rebuildCombos(next, defaultPriceCents);
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <input
+                      className="app-input"
+                      value={attr.values.join(', ')}
+                      placeholder="Values comma-separated (e.g. S, M, L)"
+                      onChange={(e) =>
+                        updateAttribute(index, {
+                          values: e.target.value.split(',').map((v) => v.trim()).filter(Boolean),
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="app-btn app-btn--secondary"
+                  onClick={() =>
+                    setVariants((prev) => ({
+                      ...prev,
+                      attributes: [...prev.attributes, { name: '', values: [] }],
+                    }))
+                  }
+                >
+                  Add attribute
+                </button>
+                <button
+                  type="button"
+                  className="app-btn app-btn--primary"
+                  onClick={() => rebuildCombos(variants.attributes, defaultPriceCents)}
+                >
+                  Generate combinations
+                </button>
+              </div>
+
+              {variants.combinations.length > 0 ? (
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {variants.combinations.map((combo) => (
+                    <li
+                      key={combo.id}
+                      className="grid gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 md:grid-cols-[1fr_7rem_5rem]"
+                    >
+                      <p className="m-0 self-center text-sm font-semibold text-slate-800">
+                        {combinationLabel(combo)}
+                      </p>
+                      <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                        Price ($)
+                        <input
+                          className="app-input mt-1"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={(combo.price_cents / 100).toFixed(2)}
+                          onChange={(e) => {
+                            const dollars = Number.parseFloat(e.target.value);
+                            updateCombo(combo.id, {
+                              price_cents: Number.isFinite(dollars)
+                                ? Math.round(dollars * 100)
+                                : combo.price_cents,
+                            });
+                          }}
+                        />
+                      </label>
+                      <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                        Stock
+                        <input
+                          className="app-input mt-1"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={combo.stock}
+                          onChange={(e) =>
+                            updateCombo(combo.id, {
+                              stock: Math.max(0, Number.parseInt(e.target.value, 10) || 0),
+                            })
+                          }
+                        />
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="m-0 text-xs text-slate-500">
+                  Add attributes, then tap Generate combinations (e.g. Size: M, Color: Black, Stock: 10).
+                </p>
+              )}
+            </>
+          ) : null}
+      </div>
 
       {reserveEnabled ? (
         <>

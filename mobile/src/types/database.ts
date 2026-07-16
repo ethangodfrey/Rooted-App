@@ -6,7 +6,8 @@ export type VendorType =
   | 'food_business'
   | 'caterer'
   | 'meal_prep'
-  | 'private_chef';
+  | 'private_chef'
+  | 'micro_brand';
 
 export type ProductAvailabilityType = 'always' | 'event_only' | 'preorder_only' | 'seasonal';
 
@@ -119,6 +120,10 @@ export interface Vendor {
   base_service_rate_cents?: number | null;
   /** Phase 50 — Private Chef minimum guests */
   minimum_guest_count?: number | null;
+  /** Phase 50 — Micro-Brand nationwide shipping */
+  shipping_enabled?: boolean;
+  flat_rate_shipping_fee_cents?: number | null;
+  free_shipping_minimum_cents?: number | null;
   portfolio_gallery: string[];
   payouts_enabled: boolean;
   /**
@@ -336,6 +341,9 @@ export interface Product {
   availability_type: ProductAvailabilityType;
   /** Phase 49 — SNAP/EBT eligible SKU */
   is_snap_eligible?: boolean;
+  /** Phase 50 — variant matrix */
+  has_variants?: boolean;
+  variants?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

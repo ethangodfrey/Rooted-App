@@ -21,7 +21,7 @@ export default function VendorOnboardingPage() {
         <code className="rounded bg-white/10 px-1">vendor_type</code>.
       </p>
 
-      <div className="mt-8 grid gap-3 md:grid-cols-3">
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
         {VENDOR_PERSONA_OPTIONS.map((option) => (
           <div
             key={option.value}
