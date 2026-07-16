@@ -20,6 +20,10 @@ export interface PosTransactionInsert {
   currency: string;
   soldAt: string;
   rawPayload: Record<string, unknown>;
+  /** Phase 47 ledger columns (integer cents). */
+  taxAmount?: number;
+  tipAmount?: number;
+  paymentStatus?: LedgerTransactionState | string;
 }
 
 export interface PosSalesIngestJobData {
@@ -40,6 +44,8 @@ export interface PosSalesIngestJobData {
     grossAmountCents: number;
     platformFeeCents: number;
     taxCents?: number;
+    /** Tip in integer cents (phase47 ledger + analytics). */
+    tipCents?: number;
     processingFeeCents?: number;
     tenderType?: LedgerTenderType;
     cardBrand?: string | null;

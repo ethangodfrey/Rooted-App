@@ -1,5 +1,6 @@
 /**
- * Consumes pos-sales-ingest queue → pos_transactions ledger writes + rollup scheduling.
+ * Consumes pos-sales-ingest queue →
+ * pos_transactions ledger + analytics_sales + phase47 analytics upserts + rollups.
  */
 
 import { Processor, WorkerHost } from '@nestjs/bullmq';
@@ -31,7 +32,7 @@ export class PosSalesIngestProcessor extends WorkerHost {
     }
 
     this.logger.log(
-      `pos-sales-ingest ${job.data.provider} event=${job.data.providerEventId} ledger=${result.written} analytics=${result.analyticsWritten} rollups=${result.rollups.length}`,
+      `processor: phase47=${result.analyticsTxnWritten} provider=${job.data.provider} event=${job.data.providerEventId} ledger=${result.written} analytics=${result.analyticsWritten} rollups=${result.rollups.length}`,
     );
   }
 }

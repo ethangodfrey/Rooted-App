@@ -1,19 +1,36 @@
 /**
  * Core sales webhook ingest — shared by BullMQ processor and inline fallback.
- * Writes pos_transactions (ledger) + analytics_sales (Phase 45) + schedules rollups.
+ * Writes:
+ *   1. pos_transactions (ledger)
+ *   2. analytics_sales (Phase 45)
+ *   3. pos_analytics_transactions (+ items) via PosAnalyticsIngestService.upsertTransaction (Phase 47)
+ *   4. schedules market snapshot rollups
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { mapSquarePayloadToTransaction } from '../mappers/square-analytics.mapper';
 import { buildSnapshotRollupJobs } from '../utils/tender-aggregation';
+import type {
+  AnalyticsPaymentStatus,
+  Transaction,
+} from '../types/analytics-transaction';
+import type {
+  LedgerProvider,
+  PosSalesIngestJobData,
+  PosSnapshotRollupJobData,
+  ResolvedPosConnection,
+} from '../types/ledger-transaction';
+import { PosAnalyticsIngestService } from './pos-analytics-ingest.service';
 import { PosAnalyticsSalesService } from './pos-analytics-sales.service';
 import { PosLedgerWriterService } from './pos-ledger-writer.service';
 import { PosMarketResolverService } from './pos-market-resolver.service';
-import type { PosSalesIngestJobData, PosSnapshotRollupJobData } from '../types/ledger-transaction';
 
 export interface PosSalesIngestResult {
   written: number;
   analyticsWritten: number;
+  /** Phase 47 unified analytics transaction upserts. */
+  analyticsTxnWritten: number;
   rollups: PosSnapshotRollupJobData[];
 }
 
@@ -24,6 +41,7 @@ export class PosSalesIngestService {
   constructor(
     private readonly ledger: PosLedgerWriterService,
     private readonly analytics: PosAnalyticsSalesService,
+    private readonly analyticsIngest: PosAnalyticsIngestService,
     private readonly marketResolver: PosMarketResolverService,
   ) {}
 
@@ -43,8 +61,11 @@ export class PosSalesIngestService {
 
     let written = 0;
     let analyticsWritten = 0;
+    let analyticsTxnWritten = 0;
 
     for (const txn of data.transactions) {
+      const tipCents = txn.tipCents ?? 0;
+
       const result = await this.ledger.upsertTransaction({
         vendorId: connection.vendorId,
         connectionId: connection.id,
@@ -52,6 +73,9 @@ export class PosSalesIngestService {
         externalTransactionId: txn.externalTransactionId,
         grossAmount: txn.grossAmountCents,
         platformFee: txn.platformFeeCents,
+        taxAmount: txn.taxCents ?? 0,
+        tipAmount: tipCents,
+        paymentStatus: txn.state,
         currency: txn.currency,
         soldAt: txn.soldAt,
         rawPayload: txn.rawPayload,
@@ -81,6 +105,12 @@ export class PosSalesIngestService {
         },
       });
       if (sale?.id) analyticsWritten += 1;
+
+      // Phase 47: invoke upsertTransaction ONLY after a successful ledger write.
+      if (result?.id) {
+        const ok = await this.writePhase47Analytics(connection, data.provider, txn, tipCents);
+        if (ok) analyticsTxnWritten += 1;
+      }
     }
 
     const market = await this.marketResolver.resolveMarketForVendor(
@@ -90,9 +120,9 @@ export class PosSalesIngestService {
 
     if (!market) {
       this.logger.debug(
-        `Sales ingest wrote ledger=${written} analytics=${analyticsWritten} vendor=${connection.vendorId} (no approved market)`,
+        `Sales ingest wrote ledger=${written} analytics=${analyticsWritten} phase47=${analyticsTxnWritten} vendor=${connection.vendorId} (no approved market)`,
       );
-      return { written, analyticsWritten, rollups: [] };
+      return { written, analyticsWritten, analyticsTxnWritten, rollups: [] };
     }
 
     const rollups = buildSnapshotRollupJobs({
@@ -104,9 +134,65 @@ export class PosSalesIngestService {
     });
 
     this.logger.debug(
-      `Sales ingest vendor=${connection.vendorId} market=${market.marketId} ledger=${written} analytics=${analyticsWritten} rollups=${rollups.length}`,
+      `Sales ingest vendor=${connection.vendorId} market=${market.marketId} ledger=${written} analytics=${analyticsWritten} phase47=${analyticsTxnWritten} rollups=${rollups.length}`,
     );
 
-    return { written, analyticsWritten, rollups };
+    return { written, analyticsWritten, analyticsTxnWritten, rollups };
+  }
+
+  /**
+   * Build a unified Transaction, then call PosAnalyticsIngestService.upsertTransaction().
+   * Non-fatal on failure so ledger / analytics_sales success is preserved.
+   */
+  private async writePhase47Analytics(
+    connection: ResolvedPosConnection,
+    provider: LedgerProvider,
+    txn: PosSalesIngestJobData['transactions'][number],
+    tipCents: number,
+  ): Promise<boolean> {
+    try {
+      let unified: Transaction | null = null;
+
+      if (provider === 'square') {
+        unified = mapSquarePayloadToTransaction(txn.rawPayload, {
+          vendorId: connection.vendorId,
+          posConnectionId: connection.id,
+          provider: 'square',
+        });
+      }
+
+      const payload: Transaction = unified ?? {
+        externalTransactionId: txn.externalTransactionId,
+        vendorId: connection.vendorId,
+        posConnectionId: connection.id,
+        provider,
+        totalAmountCents: txn.grossAmountCents,
+        taxAmountCents: txn.taxCents ?? 0,
+        tipAmountCents: tipCents,
+        currency: txn.currency,
+        paymentStatus: txn.state as AnalyticsPaymentStatus,
+        transactionCreatedAt: txn.soldAt,
+        providerLocationId: txn.providerLocationId ?? null,
+        items: [],
+        rawPayload: txn.rawPayload,
+      };
+
+      // Prefer job external id when the mapper used a nested order id.
+      if (
+        unified &&
+        unified.externalTransactionId !== txn.externalTransactionId &&
+        txn.externalTransactionId
+      ) {
+        payload.externalTransactionId = txn.externalTransactionId;
+      }
+
+      await this.analyticsIngest.upsertTransaction(payload);
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `phase47 analytics ingest skipped for ${txn.externalTransactionId}: ${(err as Error).message}`,
+      );
+      return false;
+    }
   }
 }
