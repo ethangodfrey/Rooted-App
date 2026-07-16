@@ -68,6 +68,7 @@ import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
 import { VendorDashboardPage } from '@/pages/vendor/VendorDashboardPage';
 import { VendorEventsPage } from '@/pages/vendor/VendorEventsPage';
 import { VendorExplorePage } from '@/pages/vendor/VendorExplorePage';
+import { VendorInventoryPage } from '@/pages/vendor/VendorInventoryPage';
 import { VendorLeftoverFormPage } from '@/pages/vendor/VendorLeftoverFormPage';
 import { VendorLeftoversPage } from '@/pages/vendor/VendorLeftoversPage';
 import { VendorLayout } from '@/pages/vendor/VendorLayout';
@@ -148,6 +149,7 @@ export default function App() {
         <Route path="/vendor" element={<VendorLayout />}>
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="dashboard" element={<VendorDashboardPage />} />
+          <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />

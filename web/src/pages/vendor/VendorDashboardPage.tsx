@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -116,13 +117,23 @@ export function VendorDashboardPage() {
               {pendingPickup} awaiting · {fulfilledToday} fulfilled today
             </p>
           </Link>
-          <Link to="/vendor/products" className="vendor-asym__stat">
-            <p className="ft-label">Active period</p>
-            <p className="ft-metric">{activeProducts}</p>
-            <p className="ft-subhead" style={{ marginTop: '0.35rem' }}>
-              Active catalog SKUs this period
+          <div className="vendor-asym__stat vendor-asym__action">
+            <p className="ft-label">Quick actions</p>
+            <p className="ft-subhead" style={{ marginTop: '0.35rem', marginBottom: '0.85rem' }}>
+              {activeProducts} active SKUs in your catalog
             </p>
-          </Link>
+            <Link
+              to={
+                vendor?.id
+                  ? `/vendor/inventory?vendorId=${encodeURIComponent(vendor.id)}`
+                  : '/vendor/inventory'
+              }
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg transition-all duration-200 hover:bg-orange-500 active:scale-[0.98] no-underline"
+            >
+              <Package className="h-4 w-4 shrink-0" aria-hidden />
+              Manage Inventory
+            </Link>
+          </div>
         </div>
       </div>
 

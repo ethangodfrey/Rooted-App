@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
@@ -13,6 +14,25 @@ import {
 
 import { centsToDollars, formatUsd, parseCents } from '@/lib/analytics/money';
 import type { PosAnalyticsTransactionRow } from '@/lib/analytics/types';
+
+function PackageIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+      <path d="m3.3 7 8.7 5 8.7-5" />
+      <path d="M12 22V12" />
+    </svg>
+  );
+}
 
 export interface POSDashboardProps {
   /** Vendor UUID used to query /api/analytics */
@@ -204,16 +224,24 @@ export function POSDashboard({ vendorId, accessToken, apiBaseUrl = '' }: POSDash
             <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums md:text-4xl">
               {kpis.count}
             </p>
-            <p className="mt-1 text-sm font-medium leading-relaxed text-white/65">Transaction count</p>
+            <p className="mt-1 text-sm font-medium leading-relaxed text-white/65">
+              Transaction count · {formatUsd(kpis.tipDollars)} tips
+            </p>
           </article>
-          <article className="flex min-h-[8.5rem] flex-1 flex-col justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-5">
+          <article className="flex min-h-[8.5rem] flex-1 flex-col justify-center rounded-xl border border-orange-500/25 bg-white/[0.04] px-5 py-5">
             <p className="text-[11px] font-bold uppercase tracking-widest text-orange-400 opacity-85">
-              Active period
+              Quick actions
             </p>
-            <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums md:text-4xl">
-              {formatUsd(kpis.tipDollars)}
+            <p className="mt-2 text-sm font-medium leading-relaxed text-white/65">
+              Edit and manage your product catalog
             </p>
-            <p className="mt-1 text-sm font-medium leading-relaxed text-white/65">Tips collected</p>
+            <Link
+              href={`/vendor/inventory?vendorId=${encodeURIComponent(vendorId)}`}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg transition-all duration-200 hover:bg-orange-500 active:scale-[0.98]"
+            >
+              <PackageIcon className="h-4 w-4 shrink-0" />
+              Manage Inventory
+            </Link>
           </article>
         </div>
       </div>

@@ -1,0 +1,309 @@
+/* Immersive vertical snap explore feed */
+
+.explore-swipe {
+  position: relative;
+  margin: -1rem -1rem 0;
+  width: calc(100% + 2rem);
+  max-width: none;
+  background: #0b1228;
+  color: #f8fafc;
+}
+
+@media (min-width: 768px) {
+  .explore-swipe {
+    margin: -1.25rem -1.5rem 0;
+    width: calc(100% + 3rem);
+  }
+}
+
+.explore-swipe__scroller {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  height: 100dvh;
+  width: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  background: #0b1228;
+}
+
+.explore-swipe__scroller::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.explore-swipe__header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(11, 18, 40, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+}
+
+.explore-swipe__header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.explore-swipe__brand {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fb923c;
+  white-space: nowrap;
+}
+
+.explore-swipe__filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.explore-swipe__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.explore-swipe__chip {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(248, 250, 252, 0.75);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+  cursor: pointer;
+}
+
+.explore-swipe__chip:hover {
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #fff;
+}
+
+.explore-swipe__chip:active {
+  transform: scale(0.98);
+}
+
+.explore-swipe__chip--active {
+  border-color: rgba(249, 115, 22, 0.55);
+  background: rgba(249, 115, 22, 0.18);
+  color: #fb923c;
+}
+
+.explore-swipe__slide {
+  background: #0b1228;
+}
+
+.explore-swipe__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.explore-swipe__media-img,
+.explore-swipe__media-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 62%;
+  object-fit: cover;
+}
+
+.explore-swipe__media-fallback {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(249, 115, 22, 0.35), transparent 60%),
+    linear-gradient(160deg, #1a2448 0%, #0b1228 70%);
+}
+
+.explore-swipe__media-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 18, 40, 0.15) 0%,
+    rgba(11, 18, 40, 0.2) 35%,
+    rgba(11, 18, 40, 0.75) 58%,
+    #0b1228 78%,
+    #0b1228 100%
+  );
+}
+
+.explore-swipe__index-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.75);
+}
+
+.explore-swipe__pulse {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #f97316;
+  box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.45);
+  animation: explore-swipe-pulse 1.8s ease-out infinite;
+}
+
+@keyframes explore-swipe-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.explore-swipe__desc {
+  margin: 0.75rem 0 0;
+  max-width: 28rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: rgba(248, 250, 252, 0.72);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.explore-swipe__secondary {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.explore-swipe__icon-btn {
+  flex: 1;
+  min-height: 52px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(248, 250, 252, 0.85);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 0.75rem;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+  cursor: pointer;
+  padding: 0.45rem 0.25rem;
+}
+
+.explore-swipe__icon-btn:hover {
+  color: #fb923c;
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.explore-swipe__icon-btn:active {
+  transform: scale(0.97);
+}
+
+.explore-swipe__icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.explore-swipe__icon-btn--active {
+  color: #fb923c;
+}
+
+.explore-swipe__state {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 6rem 1.5rem 8rem;
+  text-align: center;
+  background: #0b1228;
+  color: rgba(248, 250, 252, 0.75);
+}
+
+.explore-swipe__state h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.explore-swipe__state p {
+  margin: 0;
+  max-width: 22rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.explore-swipe__load-more {
+  position: sticky;
+  bottom: 5.5rem;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 1rem 1rem;
+  pointer-events: none;
+}
+
+.explore-swipe__load-more button {
+  pointer-events: auto;
+  border-radius: 999px;
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  background: rgba(11, 18, 40, 0.85);
+  color: #fb923c;
+  padding: 0.7rem 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.explore-swipe__load-more button:hover {
+  background: rgba(249, 115, 22, 0.15);
+}
+
+.explore-swipe__load-more button:active {
+  transform: scale(0.98);
+}
+
+.explore-swipe__load-more button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
