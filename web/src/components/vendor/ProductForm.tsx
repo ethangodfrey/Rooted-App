@@ -192,24 +192,26 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
         <label>Description</label>
         <textarea className="app-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
-      <div className="app-input-group">
-        <label>Category</label>
-        <input className="app-input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Produce, Baked goods" />
-      </div>
-      <div className="app-input-group">
-        <label>Price (USD)</label>
-        <input
-          className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
-          type="number"
-          step="0.01"
-          min="0"
-          value={priceText}
-          onChange={(e) => {
-            setPriceText(e.target.value);
-            clearFieldError('price');
-          }}
-        />
-        <FieldError message={fieldErrors.price} />
+      <div className="app-form-grid">
+        <div className="app-input-group">
+          <label>Category</label>
+          <input className="app-input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Produce, Baked goods" />
+        </div>
+        <div className="app-input-group">
+          <label>Price (USD)</label>
+          <input
+            className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
+            type="number"
+            step="0.01"
+            min="0"
+            value={priceText}
+            onChange={(e) => {
+              setPriceText(e.target.value);
+              clearFieldError('price');
+            }}
+          />
+          <FieldError message={fieldErrors.price} />
+        </div>
       </div>
 
       <label style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>

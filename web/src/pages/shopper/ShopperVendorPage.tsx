@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { VendorProductMenu } from '@/components/vendor/VendorProductMenu';
 import { VendorStorefrontSkeleton } from '@/components/vendor/VendorStorefrontSkeleton';
 import { useAuth } from '@/hooks/use-auth';
@@ -133,40 +134,21 @@ export function ShopperVendorPage() {
         </div>
       </div>
 
-      <div
-        className="relative h-36 w-full overflow-hidden sm:h-44"
-        style={{
-          background: bannerUrl
-            ? `url(${bannerUrl}) center/cover no-repeat`
-            : '#09090b',
-        }}
-      >
-        {bannerUrl ? (
-          <img
-            src={bannerUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        ) : null}
+      <div className="relative h-36 w-full overflow-hidden sm:h-44">
+        <FallbackImage
+          src={bannerUrl}
+          variant="banner"
+          category={vendor.category}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3 px-4">
-          {vendor.logo_url ? (
-            <img
-              src={vendor.logo_url}
-              alt=""
-              className="h-14 w-14 rounded-lg border border-white/20 object-cover sm:h-16 sm:w-16"
-            />
-          ) : (
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-lg border border-white/20 text-lg font-bold text-white sm:h-16 sm:w-16"
-              style={{ backgroundColor: accent || '#18181b' }}
-            >
-              {(vendor.business_name ?? 'V').charAt(0)}
-            </div>
-          )}
+          <FallbackImage
+            src={vendor.logo_url}
+            variant="vendor-logo"
+            label={vendor.business_name ?? undefined}
+            className="h-14 w-14 shrink-0 rounded-lg border border-white/20 object-cover sm:h-16 sm:w-16"
+          />
           <div className="min-w-0 flex-1 text-white">
             <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
               {vendor.business_name}

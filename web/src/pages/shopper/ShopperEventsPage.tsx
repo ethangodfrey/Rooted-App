@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { EventThumb } from '@/components/events/EventThumb';
 import { WeekStrip } from '@/components/events/WeekStrip';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useMarketDetail } from '@/hooks/use-market-detail';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -251,11 +252,12 @@ export function ShopperEventsPage() {
               {selectedEvent ? (
                 <article className="markets-preview">
                   <div className="markets-preview__hero">
-                    {previewImage ? (
-                      <img src={previewImage} alt="" />
-                    ) : (
-                      <div className="markets-preview__hero-fallback">Market preview</div>
-                    )}
+                    <FallbackImage
+                      src={previewImage}
+                      alt=""
+                      variant="banner"
+                      className="h-full w-full min-h-[220px] object-cover"
+                    />
                   </div>
                   <div className="markets-preview__body">
                     <p className="ft-label" style={{ marginBottom: 0 }}>

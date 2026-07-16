@@ -18,6 +18,8 @@ import { formatEventDisplayDate } from '@/lib/format';
 import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
 import { fetchPublicEvents } from '@/lib/events-query';
 import type { Event } from '@/types/database';
+import { MapListSkeleton } from '@/components/map/MapListSkeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import '@/components/ui/ui.css';
 import '@/components/map/events-map.css';
 
@@ -226,9 +228,7 @@ export function ShopperMapPage() {
       />
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
-        </div>
+        <MapListSkeleton />
       ) : error ? (
         <div className="app-empty">Couldn&apos;t load events: {error}</div>
       ) : (
@@ -242,10 +242,8 @@ export function ShopperMapPage() {
 
             <Suspense
               fallback={
-                <div className="events-map-panel">
-                  <div className="events-map-frame app-loading">
-                    <div className="app-spinner" />
-                  </div>
+                <div className="events-map-panel min-w-0">
+                  <Skeleton className="events-map-frame h-[min(45vh,320px)] w-full rounded-2xl md:h-[min(68vh,520px)] md:min-h-[360px]" />
                 </div>
               }
             >

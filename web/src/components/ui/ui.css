@@ -593,10 +593,18 @@
   border: 1px solid var(--color-border);
 }
 
-.app-image-fallback--vendor {
+.app-image-fallback--vendor,
+.app-image-fallback--vendor-logo {
   background: #f4f4f5;
   font-size: 1.5rem;
   border: 1px solid var(--color-border);
+}
+
+.app-image-fallback--avatar {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
 }
 
 .app-image-fallback--banner {
@@ -2053,7 +2061,7 @@
 }
 
 /* Mobile: horizontal card tray in the thumb zone */
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .markets-split__list {
     order: 2;
     position: sticky;
@@ -2095,7 +2103,7 @@
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .markets-split {
     display: grid;
     grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
@@ -2187,7 +2195,8 @@
   overflow: hidden;
 }
 
-.markets-preview__hero img {
+.markets-preview__hero img,
+.markets-preview__hero .app-image-fallback--banner {
   width: 100%;
   height: 100%;
   min-height: 220px;
