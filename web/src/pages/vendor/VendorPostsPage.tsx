@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { IconBadge } from '@/components/vendor/dashboard-icons';
 import {
   VendorActionGrid,
@@ -106,7 +107,12 @@ export function VendorPostsPage() {
                     className="mt-2 max-h-60 w-full rounded-xl"
                   />
                 ) : post.media_url ? (
-                  <img src={post.media_url} alt="" className="mt-2 w-full rounded-xl" />
+                  <FallbackImage
+                    src={post.media_url}
+                    variant="banner"
+                    alt=""
+                    className="mt-2 w-full rounded-xl"
+                  />
                 ) : null}
                 <p className="m-0 mt-2 text-xs text-stone-500">{formatRelativeTime(post.publish_at)}</p>
               </article>

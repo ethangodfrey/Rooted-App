@@ -103,6 +103,10 @@
   flex-shrink: 0;
 }
 
+.cart-line__media.app-image-fallback--product {
+  font-size: 1.125rem;
+}
+
 .cart-line__meta {
   min-width: 0;
   flex: 1;

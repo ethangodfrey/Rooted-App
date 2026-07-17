@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { CartMarketConflictModal } from '@/components/cart/CartMarketConflictModal';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useNow } from '@/hooks/use-now';
 import { useCart } from '@/hooks/use-cart';
 import { stageCheckoutPreview, submitStagedCheckout } from '@/lib/cart-checkout-staging';
@@ -38,11 +39,13 @@ function CartLineRow({
 }) {
   return (
     <div className="cart-line">
-      {mediaUrl ? (
-        <img src={mediaUrl} alt="" className="cart-line__media" />
-      ) : (
-        <div className="cart-line__media" aria-hidden />
-      )}
+      <FallbackImage
+        src={mediaUrl}
+        variant="product"
+        label={name}
+        className="cart-line__media"
+        style={{ width: '3rem', height: '3rem', borderRadius: '0.75rem' }}
+      />
       <div className="cart-line__meta">
         <p className="cart-line__name">{name}</p>
         <p className="cart-line__price">
