@@ -25,6 +25,15 @@ describe('formatPrice', () => {
   it('handles large totals', () => {
     expect(formatPrice(1_234_567)).toBe('$12345.67');
   });
+
+  it('rounds half-up for fractional cent inputs', () => {
+    expect(formatPrice(1000.4)).toBe('$10.00');
+    expect(formatPrice(1000.5)).toBe('$10.01');
+  });
+
+  it('handles negative amounts', () => {
+    expect(formatPrice(-500)).toBe('$-5.00');
+  });
 });
 
 describe('formatEventDate', () => {
