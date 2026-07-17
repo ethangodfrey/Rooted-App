@@ -399,12 +399,17 @@ export function VendorEventsPage() {
 
               {formError ? <p className="app-error m-0">{formError}</p> : null}
 
+              <p className="m-0 text-xs text-stone-500">
+                Submissions stay PENDING until an admin verifies them. Approved events appear as
+                orange pins on the shopper map.
+              </p>
+
               <button
                 type="submit"
                 className={`app-btn app-btn--primary ${VENDOR_PRESSABLE}`}
                 disabled={publishing}
               >
-                {publishing ? 'PUBLISHING…' : '[ PUBLISH EVENT ]'}
+                {publishing ? 'SUBMITTING…' : '[ SUBMIT FOR REVIEW ]'}
               </button>
             </form>
           ) : null}
@@ -428,7 +433,8 @@ export function VendorEventsPage() {
                       <IconBadge name="map-pin" tone="amber" />
                       <div className="min-w-0 flex-1">
                         <p className="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-orange-700">
-                          {event.event_type.replace(/_/g, ' ')}
+                          {event.event_type.replace(/_/g, ' ')} ·{' '}
+                          {event.verification_status.toUpperCase()}
                         </p>
                         <p className="m-0 mt-1 truncate text-sm font-semibold text-stone-800">
                           {event.title}
@@ -439,7 +445,13 @@ export function VendorEventsPage() {
                         </p>
                         <p className="m-0 mt-0.5 text-xs text-stone-400">
                           {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
-                          {active ? ' · ACTIVE' : ' · ENDED'}
+                          {active ? ' · SCHEDULED' : ' · ENDED'}
+                          {event.verification_status === 'pending'
+                            ? ' · AWAITING ADMIN'
+                            : ''}
+                          {event.rejection_reason
+                            ? ` · ${event.rejection_reason}`
+                            : ''}
                         </p>
                       </div>
                     </div>

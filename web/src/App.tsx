@@ -6,6 +6,7 @@ import { ShopperCartHost } from '@/components/cart/ShopperCartHost';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
+import { AdminCommunityEventsPage } from '@/pages/admin/AdminCommunityEventsPage';
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
@@ -232,6 +233,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="posts" element={<AdminPostsPage />} />
           <Route path="credentials" element={<AdminCredentialsPage />} />
+          <Route path="community-events" element={<AdminCommunityEventsPage />} />
           <Route path="more" element={<AdminMorePage />} />
         </Route>
 

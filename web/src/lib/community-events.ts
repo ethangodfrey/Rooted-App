@@ -1,3 +1,4 @@
+import { api, isApiConfigured } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 
 export const COMMUNITY_EVENT_TYPES = [
@@ -8,6 +9,10 @@ export const COMMUNITY_EVENT_TYPES = [
 ] as const;
 
 export type CommunityEventType = (typeof COMMUNITY_EVENT_TYPES)[number];
+
+export type CommunityEventVerificationStatus = 'pending' | 'approved' | 'rejected';
+
+export type CommunityAiRecommendation = 'approve' | 'reject' | 'needs_review';
 
 export type CommunityEvent = {
   id: string;
@@ -20,6 +25,15 @@ export type CommunityEvent = {
   start_time: string;
   end_time: string;
   is_ai_ingested: boolean;
+  verification_status: CommunityEventVerificationStatus;
+  verified_at: string | null;
+  verified_by: string | null;
+  rejection_reason: string | null;
+  ai_recommendation: CommunityAiRecommendation | null;
+  ai_confidence: number | null;
+  ai_summary: string | null;
+  ai_flags: string[];
+  ai_reviewed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -45,6 +59,16 @@ export type CreateCommunityEventInput = {
   endTime: string;
 };
 
+export type CommunityEventAiVerifyResult = {
+  eventId: string;
+  recommendation: CommunityAiRecommendation;
+  confidence: number;
+  summary: string;
+  flags: string[];
+  reasons: string[];
+  source: 'rules' | 'openai';
+};
+
 const TABLE = 'community_events';
 const PARTICIPANTS = 'community_event_participants';
 
@@ -56,6 +80,7 @@ export async function fetchActiveCommunityEvents(): Promise<CommunityEvent[]> {
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
+    .eq('verification_status', 'approved')
     .gt('end_time', new Date().toISOString())
     .order('start_time', { ascending: true })
     .limit(200);
@@ -74,6 +99,24 @@ export async function fetchCommunityEventsForCreator(
     .order('start_time', { ascending: false })
     .limit(100);
 
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as CommunityEvent[]).map(normalizeCommunityEvent);
+}
+
+export async function fetchCommunityEventsForAdmin(
+  filter: 'pending' | 'all' = 'pending',
+): Promise<CommunityEvent[]> {
+  let query = supabase
+    .from(TABLE)
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (filter === 'pending') {
+    query = query.eq('verification_status', 'pending');
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return ((data ?? []) as CommunityEvent[]).map(normalizeCommunityEvent);
 }
@@ -102,12 +145,59 @@ export async function publishCommunityEvent(
       start_time: input.startTime,
       end_time: input.endTime,
       is_ai_ingested: false,
+      verification_status: 'pending',
     })
     .select('*')
     .single();
 
   if (error) throw new Error(error.message);
   return normalizeCommunityEvent(data as CommunityEvent);
+}
+
+export async function approveCommunityEvent(
+  eventId: string,
+  adminUserId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from(TABLE)
+    .update({
+      verification_status: 'approved',
+      verified_at: new Date().toISOString(),
+      verified_by: adminUserId,
+      rejection_reason: null,
+    })
+    .eq('id', eventId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function rejectCommunityEvent(
+  eventId: string,
+  adminUserId: string,
+  reason?: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from(TABLE)
+    .update({
+      verification_status: 'rejected',
+      verified_at: new Date().toISOString(),
+      verified_by: adminUserId,
+      rejection_reason: reason?.trim() || null,
+    })
+    .eq('id', eventId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function runCommunityEventAiVerify(
+  eventId: string,
+): Promise<CommunityEventAiVerifyResult> {
+  if (!isApiConfigured) {
+    throw new Error('Backend API is not configured for AI verification.');
+  }
+  return api.post<CommunityEventAiVerifyResult>(
+    `/admin/community-events/${eventId}/verify`,
+  );
 }
 
 export async function fetchParticipantsForEvents(
@@ -186,5 +276,15 @@ function normalizeCommunityEvent(row: CommunityEvent): CommunityEvent {
     longitude: Number(row.longitude),
     description: row.description ?? '',
     is_ai_ingested: Boolean(row.is_ai_ingested),
+    verification_status: row.verification_status ?? 'pending',
+    verified_at: row.verified_at ?? null,
+    verified_by: row.verified_by ?? null,
+    rejection_reason: row.rejection_reason ?? null,
+    ai_recommendation: row.ai_recommendation ?? null,
+    ai_confidence:
+      row.ai_confidence == null ? null : Number(row.ai_confidence),
+    ai_summary: row.ai_summary ?? null,
+    ai_flags: row.ai_flags ?? [],
+    ai_reviewed_at: row.ai_reviewed_at ?? null,
   };
 }
