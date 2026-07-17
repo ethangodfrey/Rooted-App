@@ -1,7 +1,7 @@
 import type { AppTab } from '@/components/navigation/app-tabs';
 
 /**
- * Vendor workspace — role-gated (no shopper/creator toggle).
+ * Vendor workspace — role-gated (no shopper/vendor toggle).
  * Storefront · Hand-offs · Inbox · Network (+ Map via FAB / sidebar Map link)
  */
 export const VENDOR_SIDEBAR_TABS: AppTab[] = [

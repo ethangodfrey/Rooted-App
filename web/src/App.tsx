@@ -94,7 +94,6 @@ import { VendorProfilePage } from '@/pages/vendor/VendorProfilePage';
 import { VendorSetupPage } from '@/pages/vendor/VendorSetupPage';
 import { VendorPreviewPage } from '@/pages/vendor/VendorPreviewPage';
 import { VendorStorefrontPage } from '@/pages/vendor/VendorStorefrontPage';
-import { CreatorLayout } from '@/pages/creator/CreatorLayout';
 
 export default function App() {
   return (
@@ -160,9 +159,6 @@ export default function App() {
         <Route path="/profile/orders/:id" element={<ShopperOrderDetailPage />} />
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
-
-        {/* Creator workspace scaffold — aliases into /vendor/* (see agent-os roles.md) */}
-        <Route path="/creator/*" element={<CreatorLayout />} />
 
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
         <Route path="/vendor" element={<VendorLayout />}>
