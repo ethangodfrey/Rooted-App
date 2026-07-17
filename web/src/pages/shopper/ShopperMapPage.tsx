@@ -26,6 +26,7 @@ import { fetchSnapEligibleEventIds } from '@/lib/snap-ebt';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 import '@/components/map/events-map.css';
+import { MapListSkeleton } from '@/components/map/MapListSkeleton';
 
 const EventsMap = lazy(() =>
   import('@/components/map/EventsMap').then((module) => ({ default: module.EventsMap })),
@@ -300,9 +301,7 @@ export function ShopperMapPage() {
       </div>
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
-        </div>
+        <MapListSkeleton />
       ) : error ? (
         <div className="app-empty">Couldn&apos;t load events: {error}</div>
       ) : (
