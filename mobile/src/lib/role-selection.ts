@@ -1,7 +1,11 @@
 import { supabase } from '@/src/lib/supabase';
-import type { UserRole } from '@/src/types/database';
+import type { ProfileRole } from '@/src/types/profiles';
 
-export type OnboardingRole = 'customer' | 'vendor' | 'chef';
+/** Permanent sticker roles selected during onboarding. */
+export type StickerOnboardingRole = ProfileRole;
+
+/** @deprecated Prefer StickerOnboardingRole — chef retained for legacy ops paths. */
+export type OnboardingRole = StickerOnboardingRole | 'chef';
 
 /** Ensures the correct extension row exists when onboarding picks a role. */
 export async function ensureRoleExtension(
@@ -10,15 +14,17 @@ export async function ensureRoleExtension(
 ): Promise<{ error: string | null }> {
   await supabase.from('shoppers').delete().eq('user_id', userId);
   await supabase.from('vendors').delete().eq('user_id', userId);
+  await supabase.from('farmers').delete().eq('user_id', userId);
   await supabase.from('chefs').delete().eq('user_id', userId);
 
-  if (role === 'customer') {
-    const { data: existing } = await supabase
+  if (role === 'shopper') {
+    const { data: existing, error: readError } = await supabase
       .from('shoppers')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (readError) return { error: readError.message };
     if (existing) return { error: null };
 
     const { error } = await supabase.from('shoppers').insert({ user_id: userId });
@@ -26,12 +32,13 @@ export async function ensureRoleExtension(
   }
 
   if (role === 'vendor') {
-    const { data: existing } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from('vendors')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (readError) return { error: readError.message };
     if (existing) return { error: null };
 
     const { error } = await supabase.from('vendors').insert({
@@ -41,12 +48,30 @@ export async function ensureRoleExtension(
     return { error: error?.message ?? null };
   }
 
-  const { data: existingChef } = await supabase
+  if (role === 'farmer') {
+    const { data: existing, error: readError } = await supabase
+      .from('farmers')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (readError) return { error: readError.message };
+    if (existing) return { error: null };
+
+    const { error } = await supabase.from('farmers').insert({
+      user_id: userId,
+      approval_status: 'pending',
+    });
+    return { error: error?.message ?? null };
+  }
+
+  const { data: existingChef, error: chefReadError } = await supabase
     .from('chefs')
     .select('id')
     .eq('user_id', userId)
     .maybeSingle();
 
+  if (chefReadError) return { error: chefReadError.message };
   if (existingChef) return { error: null };
 
   const { data: userRow } = await supabase
@@ -55,10 +80,7 @@ export async function ensureRoleExtension(
     .eq('id', userId)
     .maybeSingle();
 
-  const displayName =
-    userRow?.name?.trim() ||
-    userRow?.email?.split('@')[0] ||
-    'Chef';
+  const displayName = userRow?.name?.trim() || userRow?.email?.split('@')[0] || 'Chef';
 
   const { error } = await supabase.from('chefs').insert({
     user_id: userId,
@@ -67,10 +89,4 @@ export async function ensureRoleExtension(
   });
 
   return { error: error?.message ?? null };
-}
-
-/** Maps DB role to storage/API — normalizes legacy shopper. */
-export function normalizeUserRole(role: UserRole | null): UserRole | null {
-  if (role === 'shopper') return 'customer';
-  return role;
 }

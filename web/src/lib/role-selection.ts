@@ -1,6 +1,11 @@
 import { supabase } from '@/lib/supabase';
+import type { ProfileRole } from '@/types/profiles';
 
-export type OnboardingRole = 'shopper' | 'vendor' | 'chef';
+/** Permanent sticker roles selected during onboarding. */
+export type StickerOnboardingRole = ProfileRole;
+
+/** @deprecated Prefer StickerOnboardingRole — chef retained for legacy ops paths. */
+export type OnboardingRole = StickerOnboardingRole | 'chef';
 
 /** Ensures the correct extension row exists when onboarding picks a role. */
 export async function ensureRoleExtension(
@@ -9,6 +14,7 @@ export async function ensureRoleExtension(
 ): Promise<{ error: string | null }> {
   await supabase.from('shoppers').delete().eq('user_id', userId);
   await supabase.from('vendors').delete().eq('user_id', userId);
+  await supabase.from('farmers').delete().eq('user_id', userId);
   await supabase.from('chefs').delete().eq('user_id', userId);
 
   if (role === 'shopper') {
@@ -36,6 +42,23 @@ export async function ensureRoleExtension(
     if (existing) return { error: null };
 
     const { error } = await supabase.from('vendors').insert({
+      user_id: userId,
+      approval_status: 'pending',
+    });
+    return { error: error?.message ?? null };
+  }
+
+  if (role === 'farmer') {
+    const { data: existing, error: readError } = await supabase
+      .from('farmers')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (readError) return { error: readError.message };
+    if (existing) return { error: null };
+
+    const { error } = await supabase.from('farmers').insert({
       user_id: userId,
       approval_status: 'pending',
     });

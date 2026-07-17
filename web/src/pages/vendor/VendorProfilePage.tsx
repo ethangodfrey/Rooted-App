@@ -1,5 +1,6 @@
 import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
 import { LegalLinks } from '@/components/account/LegalLinks';
+import { UserSticker } from '@/components/ui/UserSticker';
 import {
   VendorFormPanel,
   VendorHero,
@@ -11,6 +12,7 @@ import {
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
+import '@/components/ui/user-sticker.css';
 
 export function VendorProfilePage() {
   const { user, vendor, signOut } = useAuth();
@@ -26,6 +28,12 @@ export function VendorProfilePage() {
 
       <VendorSection title="Account">
         <VendorFormPanel>
+          <div className="user-sticker-row mb-3">
+            <p className="m-0 text-sm font-semibold text-stone-800">
+              {user?.name?.trim() || vendor?.business_name || 'Vendor'}
+            </p>
+            <UserSticker role="vendor" />
+          </div>
           <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">Email</p>
           <p className="m-0 mt-1 text-sm font-semibold text-stone-800">{user?.email}</p>
         </VendorFormPanel>

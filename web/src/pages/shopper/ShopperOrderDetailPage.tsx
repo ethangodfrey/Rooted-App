@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import type { OrderStatus } from '@/types/database';
 import '@/components/ui/ui.css';
 
-const ORDERS_BASE = '/profile/orders';
+const ORDERS_BASE = '/orders';
 
 export function ShopperOrderDetailPage() {
   const { id } = useParams<{ id: string }>();

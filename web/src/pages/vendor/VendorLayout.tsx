@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import {
   buildVendorMobileTabs,
+  VENDOR_MAP_HREF,
   VENDOR_SIDEBAR_TABS,
 } from '@/components/navigation/vendor-tabs';
 import { useAuth } from '@/hooks/use-auth';
@@ -43,7 +44,7 @@ export function VendorLayout() {
     return <Navigate to="/onboarding/role-select" replace />;
   }
 
-  if (role !== 'vendor') {
+  if (role !== 'vendor' && role !== 'farmer') {
     return <Navigate to="/app" replace />;
   }
 
@@ -51,7 +52,8 @@ export function VendorLayout() {
     ? isVendorApplicationComplete(vendor)
     : (trustedCache?.vendorComplete ?? false);
 
-  if (!vendorComplete && !onSetup) {
+  // Farmers may use the vendor shell network without a vendors-row application.
+  if (role === 'vendor' && !vendorComplete && !onSetup) {
     return <Navigate to="/vendor/setup" replace />;
   }
 
@@ -60,6 +62,11 @@ export function VendorLayout() {
   }
 
   return (
-    <AppShell role="vendor" tabs={VENDOR_SIDEBAR_TABS} mobileTabs={mobileTabs} />
+    <AppShell
+      role="vendor"
+      tabs={VENDOR_SIDEBAR_TABS}
+      mobileTabs={mobileTabs}
+      mapFabHref={VENDOR_MAP_HREF}
+    />
   );
 }

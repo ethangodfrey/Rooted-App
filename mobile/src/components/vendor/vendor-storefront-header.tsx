@@ -2,6 +2,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Image, Linking, Pressable, View } from 'react-native';
 
+import { UserSticker } from '@/src/components/ui/UserSticker';
 import { Text } from '@/src/components/ui/text';
 import {
   parseThemeSettings,
@@ -86,9 +87,12 @@ export function VendorStorefrontHeader({
         )}
       </View>
 
-      <Text variant="title" className="mb-1">
-        {vendor.business_name ?? 'Vendor'}
-      </Text>
+      <View className="mb-1 flex-row flex-wrap items-center gap-2">
+        <Text variant="title" className="mb-0">
+          {vendor.business_name ?? 'Vendor'}
+        </Text>
+        <UserSticker role="vendor" />
+      </View>
 
       {vendor.category ? (
         <Text variant="eyebrow" style={{ color: accent, marginBottom: 8 }}>

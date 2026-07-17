@@ -31,9 +31,26 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 
 
-/** Primary tab routes — map/explore/feed stay routable but hidden from bar. */
+/** Primary tab routes — map/explore/feed stay routable but hidden from the bar. */
+const SHOPPER_VISIBLE = new Set(['home', 'search', 'events', 'profile', 'index', 'inbox', 'orders']);
+const VENDOR_VISIBLE = new Set(['dashboard', 'orders', 'products', 'feed', 'more']);
+const DEFAULT_VISIBLE = new Set([
+  'home',
+  'search',
+  'events',
+  'profile',
+  'dashboard',
+  'orders',
+  'products',
+  'feed',
+  'more',
+]);
 
-const VISIBLE_TAB_ROUTES = new Set(['home', 'search', 'events', 'profile']);
+function resolveVisibleRoutes(routeNames: string[]): Set<string> {
+  if (routeNames.includes('dashboard') && routeNames.includes('products')) return VENDOR_VISIBLE;
+  if (routeNames.includes('home') || routeNames.includes('search')) return SHOPPER_VISIBLE;
+  return DEFAULT_VISIBLE;
+}
 
 
 
@@ -132,7 +149,15 @@ function TabItem({
 /** Clearance between FAB bottom edge and tab bar top (matches web 1.75rem). */
 const FAB_TAB_CLEARANCE = 28;
 
-function MapFab({ compact, pulse }: { compact?: boolean; pulse?: boolean }) {
+function MapFab({
+  compact,
+  pulse,
+  href,
+}: {
+  compact?: boolean;
+  pulse?: boolean;
+  href: string;
+}) {
   const scale = useSharedValue(1);
   const bounce = useSharedValue(1);
 
@@ -146,8 +171,8 @@ function MapFab({ compact, pulse }: { compact?: boolean; pulse?: boolean }) {
   return (
     <AnimatedPressable
       accessibilityRole="button"
-      accessibilityLabel="Open map"
-      onPress={() => router.push('/(shopper)/(tabs)/map')}
+      accessibilityLabel="Open farmers market map"
+      onPress={() => router.push(href as never)}
       onPressIn={() => {
         scale.value = withTiming(0.94, { duration: 120 });
       }}
@@ -173,13 +198,20 @@ function MapFab({ compact, pulse }: { compact?: boolean; pulse?: boolean }) {
 export function RootedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const nearbyMarketsOpen = useNearbyOpenMarkets();
-  const visibleRoutes = state.routes.filter((route) => VISIBLE_TAB_ROUTES.has(route.name));
+  const routeNames = state.routes.map((route) => route.name);
+  const visibleSet = resolveVisibleRoutes(routeNames);
+  const visibleRoutes = state.routes.filter((route) => visibleSet.has(route.name));
   const activeRoute = state.routes[state.index]?.name;
-  const fabCompact = activeRoute !== 'home';
+  const isVendorBar = visibleSet === VENDOR_VISIBLE;
+  const mapHref = isVendorBar ? '/(vendor)/map' : '/(shopper)/(tabs)/map';
+  const fabCompact = activeRoute !== 'home' && activeRoute !== 'dashboard' && activeRoute !== 'map';
+  const showMapFab = activeRoute !== 'map';
 
   return (
     <View style={styles.wrapper}>
-      <MapFab compact={fabCompact} pulse={nearbyMarketsOpen} />
+      {showMapFab ? (
+        <MapFab compact={fabCompact} pulse={nearbyMarketsOpen} href={mapHref} />
+      ) : null}
 
       <View
 

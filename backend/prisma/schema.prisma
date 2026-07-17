@@ -22,11 +22,14 @@ datasource db {
 // Existing Rooted tables (abbreviated; managed by the mobile/Supabase layer).
 // ===========================================================================
 
-/// Maps to auth-backed users table; `role` drives app authorization.
+/// Legacy auth/ops row. Marketplace sticker role syncs from `profiles`.
+/// Ops roles chef/admin remain here only.
 model User {
-  id    String  @id @db.Uuid
-  role  String
-  email String?
+  id               String   @id @db.Uuid
+  role             String
+  email            String?
+  shopperInterests String[] @default([]) @map("shopper_interests")
+  shopperZipCode   String?  @map("shopper_zip_code")
 
   shopper      Shopper?
   transactions Transaction[]
@@ -34,11 +37,76 @@ model User {
   @@map("users")
 }
 
+/// Vision profiles table — permanent sticker enum shopper|vendor|farmer.
+model Profile {
+  id               String   @id @db.Uuid
+  role             String? // profile_role enum: shopper | vendor | farmer
+  shopperInterests String[] @default([]) @map("shopper_interests")
+  shopperZipCode   String?  @map("shopper_zip_code")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  followsAsShopper  Follow[] @relation("FollowShopper")
+  followsAsFollowed Follow[] @relation("FollowTarget")
+  connectionsSent     NetworkConnection[] @relation("NetworkSender")
+  connectionsReceived NetworkConnection[] @relation("NetworkReceiver")
+
+  @@map("profiles")
+}
+
+model Follow {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId         String  @map("shopper_id") @db.Uuid
+  shopper           Profile @relation("FollowShopper", fields: [shopperId], references: [id], onDelete: Cascade)
+  followedProfileId String  @map("followed_profile_id") @db.Uuid
+  followed          Profile @relation("FollowTarget", fields: [followedProfileId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([shopperId, followedProfileId])
+  @@index([shopperId])
+  @@index([followedProfileId])
+  @@map("follows")
+}
+
+model NetworkConnection {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId   String   @map("sender_id") @db.Uuid
+  sender     Profile  @relation("NetworkSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String   @map("receiver_id") @db.Uuid
+  receiver   Profile  @relation("NetworkReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("pending") // pending | connected
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([senderId, status])
+  @@index([receiverId, status])
+  @@map("network_connections")
+}
+
+model Farmer {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  farmName        String?  @map("farm_name")
+  farmDescription String?  @map("farm_description")
+  logoUrl         String?  @map("logo_url")
+  bannerUrl       String?  @map("banner_url")
+  sellCity        String?  @map("sell_city")
+  sellState       String?  @map("sell_state")
+  postalCode      String?  @map("postal_code")
+  approvalStatus  String   @default("pending") @map("approval_status")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("farmers")
+}
+
 model Shopper {
   id              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String  @unique @map("user_id") @db.Uuid
   user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   interests       String[] @default([])
+  /// Phase 51 — localize USDA / nearby market feeds
+  zipCode         String? @map("zip_code")
   savedVendors    String[] @default([]) @map("saved_vendors") @db.Uuid
   savedEvents     String[] @default([]) @map("saved_events") @db.Uuid
   defaultLocation String? @map("default_location")

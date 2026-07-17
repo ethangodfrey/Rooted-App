@@ -38,7 +38,7 @@ export function ShopperEventDetailPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
         <p className="text-sm text-red-600">{error ?? 'Market not found.'}</p>
-        <Link to="/shopper/home" className="mt-4 inline-block text-sm text-emerald-700 hover:underline">
+        <Link to="/explore" className="mt-4 inline-block text-sm text-emerald-700 hover:underline">
           Back to home
         </Link>
       </div>
@@ -51,7 +51,7 @@ export function ShopperEventDetailPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       <Link
-        to="/shopper/home"
+        to="/explore"
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-800 hover:underline"
       >
         ← Back to map
