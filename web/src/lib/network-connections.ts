@@ -36,8 +36,11 @@ export function toConnectionView(
       uiState: row.sender_id === currentProfileId ? 'pending_sent' : 'pending_received',
     };
   }
+  // ignored → treat as none so a fresh request can be sent (upsert updates row)
   return { row, uiState: 'none' };
 }
+
+const CONNECTIONS_TABLE = 'vendor_connections';
 
 /** Fetch B2B connection between two marketplace profiles (vendor/farmer). */
 export async function fetchNetworkConnection(
@@ -47,7 +50,7 @@ export async function fetchNetworkConnection(
   if (!currentProfileId || !peerProfileId || currentProfileId === peerProfileId) return empty();
 
   const { data, error } = await supabase
-    .from('network_connections')
+    .from(CONNECTIONS_TABLE)
     .select('*')
     .or(
       `and(sender_id.eq.${currentProfileId},receiver_id.eq.${peerProfileId}),and(sender_id.eq.${peerProfileId},receiver_id.eq.${currentProfileId})`,
@@ -65,10 +68,28 @@ export async function sendNetworkConnectionRequest(
   if (currentProfileId === peerProfileId) throw new Error('Cannot connect with yourself');
 
   const existing = await fetchNetworkConnection(currentProfileId, peerProfileId);
-  if (existing.row) return existing;
+  if (existing.row?.status === 'pending' || existing.row?.status === 'connected') {
+    return existing;
+  }
+
+  if (existing.row?.status === 'ignored') {
+    const { data, error } = await supabase
+      .from(CONNECTIONS_TABLE)
+      .update({
+        sender_id: currentProfileId,
+        receiver_id: peerProfileId,
+        status: 'pending',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.row.id)
+      .select('*')
+      .single();
+    if (error) throw new Error(error.message);
+    return toConnectionView(data as NetworkConnectionRow, currentProfileId);
+  }
 
   const { data, error } = await supabase
-    .from('network_connections')
+    .from(CONNECTIONS_TABLE)
     .insert({
       sender_id: currentProfileId,
       receiver_id: peerProfileId,
@@ -92,8 +113,33 @@ export async function acceptNetworkConnection(
   }
 
   const { data, error } = await supabase
-    .from('network_connections')
+    .from(CONNECTIONS_TABLE)
     .update({ status: 'connected', updated_at: new Date().toISOString() })
+    .eq('id', existing.row.id)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  // Thread is also created by DB trigger; ensure client has the id
+  await ensureB2bThread(existing.row.id);
+
+  return toConnectionView(data as NetworkConnectionRow, currentProfileId);
+}
+
+export async function ignoreNetworkConnection(
+  currentProfileId: string,
+  peerProfileId: string,
+): Promise<NetworkConnectionView> {
+  const existing = await fetchNetworkConnection(currentProfileId, peerProfileId);
+  if (!existing.row || existing.row.status !== 'pending') return existing;
+  if (existing.row.receiver_id !== currentProfileId) {
+    throw new Error('Only the receiver can ignore this connection');
+  }
+
+  const { data, error } = await supabase
+    .from(CONNECTIONS_TABLE)
+    .update({ status: 'ignored', updated_at: new Date().toISOString() })
     .eq('id', existing.row.id)
     .select('*')
     .single();
@@ -112,13 +158,69 @@ export async function cancelNetworkConnection(
     throw new Error('Only the sender can cancel this request');
   }
 
-  const { error } = await supabase
-    .from('network_connections')
-    .delete()
-    .eq('id', existing.row.id);
+  const { error } = await supabase.from(CONNECTIONS_TABLE).delete().eq('id', existing.row.id);
 
   if (error) throw new Error(error.message);
   return empty();
+}
+
+/** Pending inbound B2B requests for the NETWORK REQUESTS inbox tab. */
+export async function fetchPendingNetworkRequests(
+  currentProfileId: string,
+): Promise<NetworkConnectionRow[]> {
+  const { data, error } = await supabase
+    .from(CONNECTIONS_TABLE)
+    .select('*')
+    .eq('receiver_id', currentProfileId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data as NetworkConnectionRow[]) ?? [];
+}
+
+/** Connected peers for CHATS tab (B2B). */
+export async function fetchConnectedNetworkRows(
+  currentProfileId: string,
+): Promise<NetworkConnectionRow[]> {
+  const { data, error } = await supabase
+    .from(CONNECTIONS_TABLE)
+    .select('*')
+    .eq('status', 'connected')
+    .or(`sender_id.eq.${currentProfileId},receiver_id.eq.${currentProfileId}`)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data as NetworkConnectionRow[]) ?? [];
+}
+
+export async function ensureB2bThread(connectionId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('ensure_b2b_conversation_thread', {
+    p_connection_id: connectionId,
+  });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+export async function fetchThreadIdForConnection(connectionId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('conversation_threads')
+    .select('id')
+    .eq('vendor_connection_id', connectionId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data?.id as string | undefined) ?? null;
+}
+
+export async function resolveMessageThreadForPeer(
+  currentProfileId: string,
+  peerProfileId: string,
+): Promise<string | null> {
+  const view = await fetchNetworkConnection(currentProfileId, peerProfileId);
+  if (!view.row || view.row.status !== 'connected') return null;
+  const existing = await fetchThreadIdForConnection(view.row.id);
+  if (existing) return existing;
+  return ensureB2bThread(view.row.id);
 }
 
 /* ---- Legacy aliases (vendor_connections API shape) ---- */

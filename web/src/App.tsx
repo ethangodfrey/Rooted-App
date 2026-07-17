@@ -66,6 +66,7 @@ import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
+import { VendorB2bChatPage } from '@/pages/vendor/VendorB2bChatPage';
 import { VendorNetworkPage } from '@/pages/vendor/VendorNetworkPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
@@ -165,6 +166,7 @@ export default function App() {
         {/* Spec aliases: /creator → vendor workspace (shell stays /vendor) */}
         <Route path="/creator" element={<Navigate to="/vendor/storefront" replace />} />
         <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
+        <Route path="/creator/inbox" element={<Navigate to="/vendor/inbox" replace />} />
         <Route path="/creator/*" element={<Navigate to="/vendor/storefront" replace />} />
 
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
@@ -178,6 +180,7 @@ export default function App() {
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
           <Route path="inbox" element={<VendorInboxPage />} />
+          <Route path="inbox/chat/:peerId" element={<VendorB2bChatPage />} />
           <Route path="network" element={<VendorNetworkPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />

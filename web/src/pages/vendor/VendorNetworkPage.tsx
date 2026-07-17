@@ -11,7 +11,6 @@ import {
   type SpecialtyTag,
 } from '@/lib/specialties';
 import {
-  acceptNetworkConnection,
   fetchLocalNetworkPeers,
   fetchNetworkConnection,
   sendNetworkConnectionRequest,
@@ -88,19 +87,6 @@ export function VendorNetworkPage() {
       setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to send request');
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function accept(peerProfileId: string) {
-    if (!profileId) return;
-    setBusyId(peerProfileId);
-    try {
-      const view = await acceptNetworkConnection(profileId, peerProfileId);
-      setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to accept');
     } finally {
       setBusyId(null);
     }
@@ -226,32 +212,37 @@ export function VendorNetworkPage() {
                     {ui === 'none' ? (
                       <button
                         type="button"
-                        className="app-btn app-btn--primary app-btn--small"
+                        className="rounded-md border border-zinc-600 bg-transparent px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-200 transition hover:border-indigo-400 hover:text-indigo-200"
                         disabled={busyId === peer.profileId}
                         onClick={() => void connect(peer.profileId)}
                       >
-                        {busyId === peer.profileId ? 'Sending…' : 'Send Connection Request'}
+                        {busyId === peer.profileId ? '…' : '[ CONNECT ]'}
                       </button>
                     ) : null}
                     {ui === 'pending_sent' ? (
-                      <span className="app-btn app-btn--ghost app-btn--small" aria-disabled>
-                        Requested
-                      </span>
-                    ) : null}
-                    {ui === 'pending_received' ? (
                       <button
                         type="button"
-                        className="app-btn app-btn--primary app-btn--small"
-                        disabled={busyId === peer.profileId}
-                        onClick={() => void accept(peer.profileId)}
+                        disabled
+                        className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500"
                       >
-                        Accept
+                        [ REQUEST PENDING ]
                       </button>
                     ) : null}
+                    {ui === 'pending_received' ? (
+                      <Link
+                        to="/vendor/inbox?tab=requests"
+                        className="rounded-md border border-indigo-500/50 bg-indigo-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-200 no-underline"
+                      >
+                        [ REVIEW REQUEST ]
+                      </Link>
+                    ) : null}
                     {ui === 'connected' ? (
-                      <span className="app-btn app-btn--secondary app-btn--small" aria-disabled>
-                        Connected
-                      </span>
+                      <Link
+                        to={`/vendor/inbox/chat/${peer.profileId}`}
+                        className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200 no-underline"
+                      >
+                        [ MESSAGE ]
+                      </Link>
                     ) : null}
                   </div>
                 </div>

@@ -7,6 +7,8 @@ export {
   fetchLocalNetworkPeers,
   fetchLocalNetworkVendors,
   fetchNetworkConnection as fetchVendorConnection,
+  fetchPendingNetworkRequests,
+  ignoreNetworkConnection as ignoreVendorConnection,
   sendNetworkConnectionRequest as sendVendorConnectionRequest,
   toConnectionView,
   type NetworkConnectionRow as VendorConnectionRow,

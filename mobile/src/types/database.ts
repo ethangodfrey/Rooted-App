@@ -4,7 +4,7 @@ export type {
   NetworkConnectionStatus,
   Profile,
   ProfileRole,
-  VendorConnection,
+  VendorConnectionRow as VendorConnection,
   VendorConnectionStatus,
 } from '@/src/types/profiles';
 

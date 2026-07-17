@@ -28,27 +28,18 @@ export interface Follow {
   created_at: string;
 }
 
-export type NetworkConnectionStatus = 'pending' | 'connected';
+export type NetworkConnectionStatus = 'pending' | 'connected' | 'ignored';
 
-/** B2B V2V / F2V connection between vendor and farmer profiles. */
+/** B2B V2V / F2V connection between vendor and farmer profiles (`vendor_connections`). */
 export interface NetworkConnection {
   id: string;
   sender_id: string;
   receiver_id: string;
   status: NetworkConnectionStatus;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
-/** @deprecated Prefer NetworkConnection — legacy vendor_connections shape. */
+/** Alias matching the SQL table name. */
+export type VendorConnectionRow = NetworkConnection;
 export type VendorConnectionStatus = NetworkConnectionStatus;
-
-/** @deprecated Prefer NetworkConnection. */
-export interface VendorConnection {
-  id: string;
-  sender_vendor_id: string;
-  receiver_vendor_id: string;
-  status: VendorConnectionStatus;
-  created_at: string;
-  updated_at: string;
-}
