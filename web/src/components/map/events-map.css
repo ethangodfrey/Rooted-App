@@ -97,6 +97,44 @@
   background: #18181b;
 }
 
+/* Community events (festivals, pop-ups, city markets) — high-contrast orange */
+.rooted-map-marker--community .rooted-map-marker__dot {
+  background: #ea580c;
+  box-shadow: 0 0 0 1px rgba(154, 52, 18, 0.35);
+}
+
+.rooted-map-marker--community.rooted-map-marker--selected .rooted-map-marker__dot {
+  background: #c2410c;
+  box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.45);
+}
+
+.events-map-popup__sticker {
+  display: inline-flex;
+  margin: 0 0 0.4rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgba(234, 88, 12, 0.45);
+  border-radius: 4px;
+  background: rgba(255, 247, 237, 0.95);
+  color: #c2410c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.events-map-popup__participants {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.events-map-popup__participants li {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
 .events-map-frame .leaflet-popup-content-wrapper {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);

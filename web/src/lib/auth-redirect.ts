@@ -8,9 +8,11 @@ export type AuthRedirectPath =
   | '/onboarding/role-select'
   | '/onboarding/role'
   | '/onboarding/interests'
+  | '/onboarding/specialties'
   | '/explore'
   | '/vendor/setup'
   | '/vendor/storefront'
+  | '/vendor/network'
   | '/chef/setup'
   | '/chef/dashboard'
   | '/admin/vendors';
@@ -68,11 +70,15 @@ export function resolveAuthRedirect(
   }
 
   if (role === 'farmer') {
+    const farmerSpecs = user?.farmer_specialties ?? [];
+    if (user && farmerSpecs.length === 0) return '/onboarding/specialties';
     // Farmer extension is provisioned at onboarding; dedicated setup comes later.
     return '/vendor/network';
   }
 
   if (role === 'vendor') {
+    const vendorSpecs = user?.vendor_specialties ?? [];
+    if (user && vendorSpecs.length === 0) return '/onboarding/specialties';
     const complete = user
       ? isVendorApplicationComplete(vendor)
       : (trustedCache?.vendorComplete ?? false);

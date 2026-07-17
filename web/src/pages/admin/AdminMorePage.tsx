@@ -93,6 +93,9 @@ export function AdminMorePage() {
           <Link to="/admin/credentials" className="app-btn app-btn--primary">
             Credential review
           </Link>
+          <Link to="/admin/community-events" className="app-btn app-btn--secondary">
+            Community event review
+          </Link>
           <Link to="/admin/vendors" className="app-btn app-btn--secondary">
             Vendor queue
           </Link>

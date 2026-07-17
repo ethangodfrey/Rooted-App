@@ -43,7 +43,7 @@ export function RoleSelectPage() {
   const [loading, setLoading] = useState<StickerOnboardingRole | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (user?.role) {
+  if (user?.role && loading === null) {
     return <Navigate to="/app" replace />;
   }
 
@@ -91,6 +91,10 @@ export function RoleSelectPage() {
 
     await refreshUser();
     setLoading(null);
+    if (role === 'vendor' || role === 'farmer') {
+      navigate('/onboarding/specialties');
+      return;
+    }
     navigate('/app');
   }
 

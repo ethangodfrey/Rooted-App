@@ -1,13 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import {
+  ConnectionButton,
+  connectionUiToButtonProps,
+} from '@/components/ui/ConnectionButton';
+import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
 import {
-  acceptNetworkConnection,
+  FARMER_SPECIALTIES,
+  SPECIALTY_FILTER_LABELS,
+  VENDOR_SPECIALTIES,
+  type SpecialtyTag,
+} from '@/lib/specialties';
+import {
   fetchLocalNetworkPeers,
   fetchNetworkConnection,
-  sendNetworkConnectionRequest,
   type NetworkConnectionUi,
   type NetworkPeer,
 } from '@/lib/network-connections';
@@ -23,7 +32,8 @@ export function VendorNetworkPage() {
   const [states, setStates] = useState<PeerState>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [specialtyFilter, setSpecialtyFilter] = useState<SpecialtyTag | null>(null);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'vendor' | 'farmer'>('all');
 
   useEffect(() => {
     let active = true;
@@ -38,10 +48,13 @@ export function VendorNetworkPage() {
         const rows = await fetchLocalNetworkPeers({
           currentProfileId: profileId,
           postalCode: vendor?.postal_code,
+          roleFilter,
+          specialtyFilters: specialtyFilter ? [specialtyFilter] : [],
         });
         if (!active) return;
         setPeers(rows);
 
+        // Prefetch vendor_connections state so ConnectionButton can render immediately.
         const entries = await Promise.all(
           rows.map(async (row) => {
             const view = await fetchNetworkConnection(profileId, row.profileId);
@@ -61,50 +74,86 @@ export function VendorNetworkPage() {
     return () => {
       active = false;
     };
-  }, [profileId, vendor?.postal_code]);
+  }, [profileId, vendor?.postal_code, roleFilter, specialtyFilter]);
 
-  async function connect(peerProfileId: string) {
-    if (!profileId) return;
-    setBusyId(peerProfileId);
-    try {
-      const view = await sendNetworkConnectionRequest(profileId, peerProfileId);
-      setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to send request');
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function accept(peerProfileId: string) {
-    if (!profileId) return;
-    setBusyId(peerProfileId);
-    try {
-      const view = await acceptNetworkConnection(profileId, peerProfileId);
-      setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to accept');
-    } finally {
-      setBusyId(null);
-    }
-  }
+  const filterOptions = useMemo(() => {
+    if (roleFilter === 'farmer') return [...FARMER_SPECIALTIES];
+    if (roleFilter === 'vendor') return [...VENDOR_SPECIALTIES];
+    return [...VENDOR_SPECIALTIES, ...FARMER_SPECIALTIES];
+  }, [roleFilter]);
 
   return (
     <div className="app-screen app-screen--narrow">
-      <h1 className="app-title">Vendor Network</h1>
+      <h1 className="app-title">Business Network</h1>
       <p className="app-subtitle">
-        Local vendors and farmers near {vendor?.postal_code?.trim() || 'your area'} — connect for
-        sourcing and collaboration.
+        Local vendors and farmers near {vendor?.postal_code?.trim() || 'your area'} — filter by
+        specialty for sourcing.
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <Link to="/vendor/map" className="app-btn app-btn--primary app-btn--small">
           Markets map
         </Link>
-        <Link to="/explore/feed" className="app-btn app-btn--secondary app-btn--small">
-          Shop the Explore feed
+        <Link to="/onboarding/specialties" className="app-btn app-btn--secondary app-btn--small">
+          Edit specialties
         </Link>
       </div>
+
+      <section className="mb-4">
+        <p className="app-eyebrow" style={{ marginBottom: '0.5rem' }}>
+          Directory filters
+        </p>
+        <div className="mb-2 flex flex-wrap gap-2">
+          {(['all', 'vendor', 'farmer'] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              className="app-btn app-btn--small"
+              style={{
+                borderColor: roleFilter === r ? 'rgba(129,140,248,0.7)' : undefined,
+                background: roleFilter === r ? 'rgba(99,102,241,0.2)' : undefined,
+              }}
+              onClick={() => {
+                setRoleFilter(r);
+                setSpecialtyFilter(null);
+              }}
+            >
+              {r === 'all' ? 'ALL' : r.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400"
+            style={{
+              borderColor: !specialtyFilter ? 'rgba(129,140,248,0.7)' : '#27272a',
+              color: !specialtyFilter ? '#c7d2fe' : '#a1a1aa',
+            }}
+            onClick={() => setSpecialtyFilter(null)}
+          >
+            Any specialty
+          </button>
+          {filterOptions.map((tag) => {
+            const active = specialtyFilter === tag;
+            return (
+              <button
+                key={tag}
+                type="button"
+                className="rounded-md border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400"
+                style={{
+                  borderColor: active ? 'rgba(129,140,248,0.7)' : '#27272a',
+                  color: active ? '#c7d2fe' : '#a1a1aa',
+                  background: active ? 'rgba(99,102,241,0.2)' : 'rgba(9, 9, 11, 0.8)',
+                }}
+                onClick={() => setSpecialtyFilter(active ? null : tag)}
+              >
+                {SPECIALTY_FILTER_LABELS[tag]}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {loading ? (
         <div className="app-loading">
@@ -113,7 +162,7 @@ export function VendorNetworkPage() {
       ) : error ? (
         <div className="app-empty">{error}</div>
       ) : peers.length === 0 ? (
-        <div className="app-empty">No nearby approved vendors or farmers found yet.</div>
+        <div className="app-empty">No nearby matches for this specialty filter.</div>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {peers.map((peer) => {
@@ -142,6 +191,7 @@ export function VendorNetworkPage() {
                       )}
                       <UserSticker role={peer.role} />
                     </div>
+                    <SpecialtyPills specialties={peer.specialties} style={{ marginBottom: '0.35rem' }} />
                     <p className="app-row-meta">
                       {[peer.category, place].filter(Boolean).join(' · ') ||
                         peer.productSummary ||
@@ -149,36 +199,13 @@ export function VendorNetworkPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    {ui === 'none' ? (
-                      <button
-                        type="button"
-                        className="app-btn app-btn--primary app-btn--small"
-                        disabled={busyId === peer.profileId}
-                        onClick={() => void connect(peer.profileId)}
-                      >
-                        {busyId === peer.profileId ? 'Sending…' : 'Send Connection Request'}
-                      </button>
-                    ) : null}
-                    {ui === 'pending_sent' ? (
-                      <span className="app-btn app-btn--ghost app-btn--small" aria-disabled>
-                        Requested
-                      </span>
-                    ) : null}
-                    {ui === 'pending_received' ? (
-                      <button
-                        type="button"
-                        className="app-btn app-btn--primary app-btn--small"
-                        disabled={busyId === peer.profileId}
-                        onClick={() => void accept(peer.profileId)}
-                      >
-                        Accept
-                      </button>
-                    ) : null}
-                    {ui === 'connected' ? (
-                      <span className="app-btn app-btn--secondary app-btn--small" aria-disabled>
-                        Connected
-                      </span>
-                    ) : null}
+                    <ConnectionButton
+                      targetProfileId={peer.profileId}
+                      {...connectionUiToButtonProps(ui)}
+                      onStatusChange={(next) => {
+                        setStates((prev) => ({ ...prev, [peer.profileId]: next }));
+                      }}
+                    />
                   </div>
                 </div>
               </li>

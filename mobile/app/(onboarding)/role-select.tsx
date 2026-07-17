@@ -46,7 +46,7 @@ export default function RoleSelectScreen() {
     [session?.user?.email, user?.email],
   );
 
-  if (user?.role) {
+  if (user?.role && loading === null) {
     return <Redirect href="/" />;
   }
 
@@ -91,8 +91,12 @@ export default function RoleSelectScreen() {
     }
 
     await refreshUser();
+    if (role === 'vendor' || role === 'farmer') {
+      router.replace('/(onboarding)/specialties');
+    } else {
+      router.replace('/');
+    }
     setLoading(null);
-    router.replace('/');
   }
 
   async function handleAdminLogin() {

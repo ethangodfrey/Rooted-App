@@ -6,6 +6,7 @@ import { ShopperCartHost } from '@/components/cart/ShopperCartHost';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
+import { AdminCommunityEventsPage } from '@/pages/admin/AdminCommunityEventsPage';
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
@@ -37,6 +38,7 @@ import { LandingPage } from '@/pages/marketing/LandingPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
+import { SpecialtiesPage } from '@/pages/onboarding/SpecialtiesPage';
 import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
 import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
 import { ShopperCartPage } from '@/pages/shopper/ShopperCartPage';
@@ -65,6 +67,7 @@ import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
+import { VendorB2bChatPage } from '@/pages/vendor/VendorB2bChatPage';
 import { VendorNetworkPage } from '@/pages/vendor/VendorNetworkPage';
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
@@ -118,6 +121,7 @@ export default function App() {
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/role" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
+        <Route path="/onboarding/specialties" element={<SpecialtiesPage />} />
 
         {/* Shopper workspace — Explore / Inbox / Following / Orders */}
         <Route element={<ShopperLayout />}>
@@ -160,6 +164,13 @@ export default function App() {
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
 
+        {/* Spec aliases: /creator → vendor workspace (shell stays /vendor) */}
+        <Route path="/creator" element={<Navigate to="/vendor/storefront" replace />} />
+        <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
+        <Route path="/creator/inbox" element={<Navigate to="/vendor/inbox" replace />} />
+        <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />
+        <Route path="/creator/*" element={<Navigate to="/vendor/storefront" replace />} />
+
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
         <Route path="/vendor" element={<VendorLayout />}>
           <Route index element={<Navigate to="storefront" replace />} />
@@ -171,6 +182,7 @@ export default function App() {
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
           <Route path="inbox" element={<VendorInboxPage />} />
+          <Route path="inbox/chat/:peerId" element={<VendorB2bChatPage />} />
           <Route path="network" element={<VendorNetworkPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
@@ -221,6 +233,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="posts" element={<AdminPostsPage />} />
           <Route path="credentials" element={<AdminCredentialsPage />} />
+          <Route path="community-events" element={<AdminCommunityEventsPage />} />
           <Route path="more" element={<AdminMorePage />} />
         </Route>
 

@@ -4,7 +4,7 @@ export type {
   NetworkConnectionStatus,
   Profile,
   ProfileRole,
-  VendorConnection,
+  VendorConnectionRow as VendorConnection,
   VendorConnectionStatus,
 } from '@/src/types/profiles';
 
@@ -80,6 +80,8 @@ export interface User {
   zip_code: string | null;
   shopper_interests?: string[] | null;
   shopper_zip_code?: string | null;
+  vendor_specialties?: string[] | null;
+  farmer_specialties?: string[] | null;
   notification_preferences: Record<string, unknown>;
   created_at: string;
   updated_at: string;

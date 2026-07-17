@@ -30,6 +30,8 @@ model User {
   email            String?
   shopperInterests String[] @default([]) @map("shopper_interests")
   shopperZipCode   String?  @map("shopper_zip_code")
+  vendorSpecialties String[] @default([]) @map("vendor_specialties")
+  farmerSpecialties String[] @default([]) @map("farmer_specialties")
 
   shopper      Shopper?
   transactions Transaction[]
@@ -43,6 +45,8 @@ model Profile {
   role             String? // profile_role enum: shopper | vendor | farmer
   shopperInterests String[] @default([]) @map("shopper_interests")
   shopperZipCode   String?  @map("shopper_zip_code")
+  vendorSpecialties String[] @default([]) @map("vendor_specialties")
+  farmerSpecialties String[] @default([]) @map("farmer_specialties")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -68,19 +72,19 @@ model Follow {
   @@map("follows")
 }
 
-model NetworkConnection {
+model VendorConnection {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   senderId   String   @map("sender_id") @db.Uuid
   sender     Profile  @relation("NetworkSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId String   @map("receiver_id") @db.Uuid
   receiver   Profile  @relation("NetworkReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  status     String   @default("pending") // pending | connected
+  status     String   @default("pending") // pending | connected | ignored
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([senderId, status])
   @@index([receiverId, status])
-  @@map("network_connections")
+  @@map("vendor_connections")
 }
 
 model Farmer {

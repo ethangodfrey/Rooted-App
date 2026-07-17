@@ -33,6 +33,10 @@ async function fetchUserProfileSequential(userId: string) {
   } else if (user.role === 'vendor') {
     const { data } = await supabase.from('vendors').select('*').eq('user_id', userId).maybeSingle();
     vendor = data;
+  } else if (user.role === 'farmer') {
+    // Farmers reuse vendor shell; optional vendors row may be absent.
+    const { data } = await supabase.from('vendors').select('*').eq('user_id', userId).maybeSingle();
+    vendor = data;
   } else if (user.role === 'chef') {
     const { data } = await supabase.from('chefs').select('*').eq('user_id', userId).maybeSingle();
     chef = data;
