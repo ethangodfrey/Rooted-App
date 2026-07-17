@@ -4,12 +4,20 @@
 
 | Rooted role | DB value (`profile_role`) | Extension | Notes |
 |-------------|---------------------------|-----------|-------|
-| Shopper | `shopper` | `shoppers` | Explore, follow, orders, chat |
-| Vendor | `vendor` | `vendors` | Storefront, hand-offs, network, POS |
+| Shopper | `shopper` | `shoppers` | Explore, follow vendors/farmers, checkout |
+| Vendor | `vendor` | `vendors` | Finished goods, pre-orders, B2B network |
+| Farmer | `farmer` | `farmers` | Raw/bulk harvest, F2V supply connections |
 
-`public.profiles.role` is a **strict** Postgres enum (`shopper` | `vendor`) — permanent text stickers. Ops roles (`chef`, `admin`) stay on legacy `public.users.role` only.
+`public.profiles.role` is a **strict** Postgres enum (`shopper` | `vendor` | `farmer`) — permanent text stickers (`SHOPPER` / `VENDOR` / `FARMER`, no emojis). Ops roles (`chef`, `admin`) stay on legacy `public.users.role` only.
 
 Legacy aliases still accepted on `users.role`: `customer` → treat as shopper.
+
+## Social graph
+
+| Table | Edges |
+|-------|--------|
+| `follows` | `shopper_id` → `followed_profile_id` (both `profiles.id`) |
+| `network_connections` | `sender_id` ↔ `receiver_id` (vendor/farmer profiles; `pending` \| `connected`) |
 
 ## Web route prefixes
 
@@ -17,7 +25,7 @@ Legacy aliases still accepted on `users.role`: `customer` → treat as shopper.
 |--------|----------|--------|
 | `/shopper/*` | Shopper workspace | Active |
 | `/explore`, `/orders`, `/following`, `/inbox` | Shopper shared roots | Active |
-| `/vendor/*` | Vendor workspace | Active |
+| `/vendor/*` | Vendor workspace (farmers may enter network) | Active |
 | `/chef/*`, `/admin/*` | Ops portals | Active |
 | `/onboarding/role`, `/onboarding/role-select` | Sticker role selection | Active |
 
@@ -30,24 +38,10 @@ Legacy aliases still accepted on `users.role`: `customer` → treat as shopper.
 | `app/(chef)/`, `app/(admin)/` | Ops | Active |
 | `app/(onboarding)/` | Role select, interests | Active |
 
-### Shopper boundary inventory (`app/(shopper)`)
-
-Keep shopper discovery, cart/checkout, orders, saved, and profile here:
-
-- Tabs: `home`, `explore`, `feed`, `events`, `map`, `search`, `profile`
-- Stack: `vendors/[id]`, `products/[id]`, `events/[id]`, `orders/*`, `checkout/*`, `saved`, `chefs/*`, `bookings/*`, `leftovers/*`, `profile/edit`
-
-### Vendor boundary inventory (`app/(vendor)`)
-
-Keep storefront, inventory, hand-offs, network, POS, and media here:
-
-- Tabs: `dashboard`, `products`, `orders`, `feed`, `more`
-- Stack: `profile/*`, `products/*`, `posts/*`, `pos/*`, `analytics/*`, `compliance/*`, `map`, `explore/*`, `leftovers/*`, `events`, `sales/*`, `media/*`
-
 Never nest shopper cart/order flows inside vendor layouts.
 
 ## Auth redirect logic
 
-Both platforms resolve destination from: session → `profiles`/`users` role → role extension completeness (vendor application, chef profile, shopper interests). Check `auth-redirect` / `auth-profile` libs before changing routing.
+Both platforms resolve destination from: session → `profiles`/`users` role → role extension completeness. Check `auth-redirect` / `auth-profile` libs before changing routing.
 
-Sticker onboarding writes `profiles.role` first (phase51); sync trigger mirrors into `users.role` for existing clients.
+Sticker onboarding writes `profiles.role` first (phase51); sync trigger mirrors into `users.role` for existing clients. Farmers land on the vendor network surface until a dedicated farmer shell is added.

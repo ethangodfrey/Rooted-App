@@ -11,21 +11,30 @@ const ROLE_CARDS: {
   role: StickerOnboardingRole;
   title: string;
   meta: string;
+  accent: 'shopper' | 'vendor' | 'farmer';
 }[] = [
   {
     role: 'shopper',
     title: 'Shopper',
-    meta: 'I want to browse local markets and buy from creators.',
+    meta: 'Explore local listings, follow vendors and farmers, and check out.',
+    accent: 'shopper',
   },
   {
     role: 'vendor',
     title: 'Vendor',
-    meta: 'I am a creator looking to sell items, share updates, and connect.',
+    meta: 'List prepared products, post updates, run pre-orders, and connect B2B.',
+    accent: 'vendor',
+  },
+  {
+    role: 'farmer',
+    title: 'Farmer',
+    meta: 'List raw or bulk harvest goods, share daily updates, and supply vendors.',
+    accent: 'farmer',
   },
 ];
 
 /**
- * Dark split-card onboarding — permanent sticker role: shopper | vendor.
+ * Dark split-card onboarding — permanent sticker role: shopper | vendor | farmer.
  * Route aliases: /onboarding/role-select · /onboarding/role
  */
 export function RoleSelectPage() {
@@ -49,7 +58,7 @@ export function RoleSelectPage() {
 
     const userId = session.user.id;
 
-    // Canonical sticker role lives on profiles (enum shopper|vendor); syncs to users.
+    // Canonical sticker role lives on profiles (enum shopper|vendor|farmer); syncs to users.
     const { error: profileError } = await supabase.from('profiles').upsert(
       {
         id: userId,
@@ -117,10 +126,27 @@ export function RoleSelectPage() {
           chats.
         </p>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {ROLE_CARDS.map((card) => {
             const active = loading === card.role;
-            const isShopper = card.role === 'shopper';
+            const tone =
+              card.accent === 'shopper'
+                ? {
+                    bg: 'linear-gradient(160deg, rgba(99,102,241,0.18), rgba(15,23,42,0.55))',
+                    border: 'rgba(129, 140, 248, 0.35)',
+                    label: '#a5b4fc',
+                  }
+                : card.accent === 'vendor'
+                  ? {
+                      bg: 'linear-gradient(160deg, rgba(249,115,22,0.18), rgba(15,23,42,0.55))',
+                      border: 'rgba(251, 146, 60, 0.4)',
+                      label: '#fdba74',
+                    }
+                  : {
+                      bg: 'linear-gradient(160deg, rgba(34,197,94,0.18), rgba(15,23,42,0.55))',
+                      border: 'rgba(74, 222, 128, 0.4)',
+                      label: '#86efac',
+                    };
             return (
               <button
                 key={card.role}
@@ -129,12 +155,8 @@ export function RoleSelectPage() {
                 onClick={() => void selectRole(card.role)}
                 className="group relative flex min-h-[220px] flex-col items-start rounded-2xl border p-6 text-left transition disabled:opacity-60"
                 style={{
-                  background: isShopper
-                    ? 'linear-gradient(160deg, rgba(99,102,241,0.18), rgba(15,23,42,0.55))'
-                    : 'linear-gradient(160deg, rgba(249,115,22,0.18), rgba(15,23,42,0.55))',
-                  borderColor: isShopper
-                    ? 'rgba(129, 140, 248, 0.35)'
-                    : 'rgba(251, 146, 60, 0.4)',
+                  background: tone.bg,
+                  borderColor: tone.border,
                   boxShadow: active
                     ? '0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px rgba(0,0,0,0.35)'
                     : '0 12px 32px rgba(0,0,0,0.25)',
@@ -145,7 +167,7 @@ export function RoleSelectPage() {
                 <p className="mt-2 m-0 flex-1 text-sm leading-relaxed text-slate-300">{card.meta}</p>
                 <span
                   className="mt-6 inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em]"
-                  style={{ color: isShopper ? '#a5b4fc' : '#fdba74' }}
+                  style={{ color: tone.label }}
                 >
                   {active ? 'Saving…' : 'Select'}
                 </span>

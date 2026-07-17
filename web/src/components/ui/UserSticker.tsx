@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react';
 
 import type { UserRole } from '@/types/database';
+import type { ProfileRole } from '@/types/profiles';
 
-export type StickerRole = 'shopper' | 'vendor';
+export type StickerRole = ProfileRole;
 
 type UserStickerProps = {
   role: UserRole | StickerRole | null | undefined;
@@ -15,6 +16,7 @@ export function resolveStickerRole(
   role: UserRole | StickerRole | null | undefined,
 ): StickerRole | null {
   if (role === 'vendor') return 'vendor';
+  if (role === 'farmer') return 'farmer';
   if (role === 'shopper' || role === 'customer') return 'shopper';
   return null;
 }
@@ -30,17 +32,28 @@ const STYLES: Record<StickerRole, CSSProperties> = {
     background: 'rgba(249, 115, 22, 0.16)',
     borderColor: 'rgba(251, 146, 60, 0.5)',
   },
+  farmer: {
+    color: '#86efac',
+    background: 'rgba(34, 197, 94, 0.16)',
+    borderColor: 'rgba(74, 222, 128, 0.5)',
+  },
+};
+
+const LABELS: Record<StickerRole, string> = {
+  shopper: 'SHOPPER',
+  vendor: 'VENDOR',
+  farmer: 'FARMER',
 };
 
 /**
  * Minimalist role sticker — uppercase text only, no emojis.
- * SHOPPER (indigo) · VENDOR (amber/orange)
+ * SHOPPER (indigo) · VENDOR (amber) · FARMER (green)
  */
 export function UserSticker({ role, className, style }: UserStickerProps) {
   const sticker = resolveStickerRole(role);
   if (!sticker) return null;
 
-  const label = sticker === 'vendor' ? 'VENDOR' : 'SHOPPER';
+  const label = LABELS[sticker];
   const tone = STYLES[sticker];
 
   return (

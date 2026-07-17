@@ -67,6 +67,11 @@ export function resolveAuthRedirect(
     return hasInterests ? '/explore' : '/onboarding/interests';
   }
 
+  if (role === 'farmer') {
+    // Farmer extension is provisioned at onboarding; dedicated setup comes later.
+    return '/vendor/network';
+  }
+
   if (role === 'vendor') {
     const complete = user
       ? isVendorApplicationComplete(vendor)

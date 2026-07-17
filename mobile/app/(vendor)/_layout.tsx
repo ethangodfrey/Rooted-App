@@ -24,7 +24,7 @@ export default function VendorLayout() {
     return <AuthLoadingShell />;
   }
 
-  if (role !== 'vendor') {
+  if (role !== 'vendor' && role !== 'farmer') {
     return <Redirect href="/" />;
   }
 
@@ -32,7 +32,7 @@ export default function VendorLayout() {
     ? isVendorApplicationComplete(vendor)
     : (trustedCache?.vendorComplete ?? false);
 
-  if (!vendorComplete && !onSetupRoute) {
+  if (role === 'vendor' && !vendorComplete && !onSetupRoute) {
     return <Redirect href="/(vendor)/profile/setup" />;
   }
 

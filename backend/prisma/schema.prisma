@@ -37,44 +37,67 @@ model User {
   @@map("users")
 }
 
-/// Vision profiles table — permanent sticker enum shopper|vendor only.
+/// Vision profiles table — permanent sticker enum shopper|vendor|farmer.
 model Profile {
   id               String   @id @db.Uuid
-  role             String? // profile_role enum in Postgres: shopper | vendor
+  role             String? // profile_role enum: shopper | vendor | farmer
   shopperInterests String[] @default([]) @map("shopper_interests")
   shopperZipCode   String?  @map("shopper_zip_code")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  follows Follow[]
+  followsAsShopper  Follow[] @relation("FollowShopper")
+  followsAsFollowed Follow[] @relation("FollowTarget")
+  connectionsSent     NetworkConnection[] @relation("NetworkSender")
+  connectionsReceived NetworkConnection[] @relation("NetworkReceiver")
 
   @@map("profiles")
 }
 
 model Follow {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  shopperId String   @map("shopper_id") @db.Uuid
-  shopper   Profile  @relation(fields: [shopperId], references: [id], onDelete: Cascade)
-  vendorId  String   @map("vendor_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId         String  @map("shopper_id") @db.Uuid
+  shopper           Profile @relation("FollowShopper", fields: [shopperId], references: [id], onDelete: Cascade)
+  followedProfileId String  @map("followed_profile_id") @db.Uuid
+  followed          Profile @relation("FollowTarget", fields: [followedProfileId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@unique([shopperId, vendorId])
+  @@unique([shopperId, followedProfileId])
   @@index([shopperId])
-  @@index([vendorId])
+  @@index([followedProfileId])
   @@map("follows")
 }
 
-model VendorConnection {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  senderVendorId   String   @map("sender_vendor_id") @db.Uuid
-  receiverVendorId String   @map("receiver_vendor_id") @db.Uuid
-  status           String   @default("pending") // pending | connected
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+model NetworkConnection {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId   String   @map("sender_id") @db.Uuid
+  sender     Profile  @relation("NetworkSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String   @map("receiver_id") @db.Uuid
+  receiver   Profile  @relation("NetworkReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("pending") // pending | connected
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@index([senderVendorId, status])
-  @@index([receiverVendorId, status])
-  @@map("vendor_connections")
+  @@index([senderId, status])
+  @@index([receiverId, status])
+  @@map("network_connections")
+}
+
+model Farmer {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  farmName        String?  @map("farm_name")
+  farmDescription String?  @map("farm_description")
+  logoUrl         String?  @map("logo_url")
+  bannerUrl       String?  @map("banner_url")
+  sellCity        String?  @map("sell_city")
+  sellState       String?  @map("sell_state")
+  postalCode      String?  @map("postal_code")
+  approvalStatus  String   @default("pending") @map("approval_status")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("farmers")
 }
 
 model Shopper {

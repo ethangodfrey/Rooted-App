@@ -39,12 +39,12 @@ export function ShopperFollowingPage() {
     };
   }, [profileId]);
 
-  async function handleUnfollow(vendorId: string) {
+  async function handleUnfollow(followedProfileId: string) {
     if (!profileId) return;
-    setBusyId(vendorId);
+    setBusyId(followedProfileId);
     try {
-      await unfollowVendor(profileId, vendorId);
-      setVendors((prev) => prev.filter((v) => v.vendorId !== vendorId));
+      await unfollowVendor(profileId, followedProfileId);
+      setVendors((prev) => prev.filter((v) => v.profileId !== followedProfileId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to unfollow');
     } finally {
@@ -92,13 +92,19 @@ export function ShopperFollowingPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <Link
-                      to={`/vendors/${vendor.vendorId}`}
-                      className="app-row-title"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      {vendor.businessName ?? 'Vendor'}
-                    </Link>
+                    {vendor.vendorId ? (
+                      <Link
+                        to={`/vendors/${vendor.vendorId}`}
+                        className="app-row-title"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        {vendor.displayName ?? vendor.businessName ?? 'Vendor'}
+                      </Link>
+                    ) : (
+                      <p className="app-row-title" style={{ margin: 0 }}>
+                        {vendor.displayName ?? vendor.businessName ?? 'Farmer'}
+                      </p>
+                    )}
                     <p className="app-row-meta">
                       {[vendor.category, place].filter(Boolean).join(' · ') || 'Local maker'}
                     </p>
@@ -106,8 +112,8 @@ export function ShopperFollowingPage() {
                   <button
                     type="button"
                     className="app-btn app-btn--ghost app-btn--small"
-                    disabled={busyId === vendor.vendorId}
-                    onClick={() => void handleUnfollow(vendor.vendorId)}
+                    disabled={busyId === vendor.profileId}
+                    onClick={() => void handleUnfollow(vendor.profileId)}
                   >
                     Unfollow
                   </button>

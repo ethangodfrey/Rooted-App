@@ -89,9 +89,15 @@ export function ShopperProfilePage() {
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {followed.slice(0, 5).map((v) => (
               <li key={v.followId} style={{ marginBottom: '0.5rem' }}>
-                <Link to={`/vendors/${v.vendorId}`} className="app-row-title">
-                  {v.businessName ?? 'Vendor'}
-                </Link>
+                {v.vendorId ? (
+                  <Link to={`/vendors/${v.vendorId}`} className="app-row-title">
+                    {v.displayName ?? v.businessName ?? 'Vendor'}
+                  </Link>
+                ) : (
+                  <span className="app-row-title">
+                    {v.displayName ?? v.businessName ?? 'Farmer'}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

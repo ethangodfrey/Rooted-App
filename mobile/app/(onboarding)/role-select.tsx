@@ -13,16 +13,25 @@ const ROLE_CARDS: {
   role: StickerOnboardingRole;
   title: string;
   meta: string;
+  accent: 'shopper' | 'vendor' | 'farmer';
 }[] = [
   {
     role: 'shopper',
     title: 'Shopper',
-    meta: 'I want to browse local markets and buy from creators.',
+    meta: 'Explore local listings, follow vendors and farmers, and check out.',
+    accent: 'shopper',
   },
   {
     role: 'vendor',
     title: 'Vendor',
-    meta: 'I am a creator looking to sell items, share updates, and connect.',
+    meta: 'List prepared products, post updates, run pre-orders, and connect B2B.',
+    accent: 'vendor',
+  },
+  {
+    role: 'farmer',
+    title: 'Farmer',
+    meta: 'List raw or bulk harvest goods, share daily updates, and supply vendors.',
+    accent: 'farmer',
   },
 ];
 
@@ -123,7 +132,7 @@ export default function RoleSelectScreen() {
       </Pressable>
 
       <Text className="mb-2 text-[11px] font-semibold uppercase tracking-[2px] text-orange-400">
-        Vendorly
+        Rooted
       </Text>
       <Text className="text-3xl font-semibold tracking-tight text-white">Who are you here as?</Text>
       <Text className="mt-3 text-sm leading-5 text-slate-400">
@@ -134,7 +143,12 @@ export default function RoleSelectScreen() {
       <View className="mt-8 gap-4">
         {ROLE_CARDS.map((card) => {
           const active = loading === card.role;
-          const isShopper = card.role === 'shopper';
+          const tone =
+            card.accent === 'shopper'
+              ? { bg: 'rgba(99,102,241,0.16)', border: 'rgba(129,140,248,0.35)', label: '#a5b4fc' }
+              : card.accent === 'vendor'
+                ? { bg: 'rgba(249,115,22,0.16)', border: 'rgba(251,146,60,0.4)', label: '#fdba74' }
+                : { bg: 'rgba(34,197,94,0.16)', border: 'rgba(74,222,128,0.4)', label: '#86efac' };
           return (
             <Pressable
               key={card.role}
@@ -142,12 +156,8 @@ export default function RoleSelectScreen() {
               onPress={() => void selectRole(card.role)}
               className="min-h-[180px] rounded-2xl border p-5 active:opacity-90"
               style={{
-                backgroundColor: isShopper
-                  ? 'rgba(99,102,241,0.16)'
-                  : 'rgba(249,115,22,0.16)',
-                borderColor: isShopper
-                  ? 'rgba(129,140,248,0.35)'
-                  : 'rgba(251,146,60,0.4)',
+                backgroundColor: tone.bg,
+                borderColor: tone.border,
                 opacity: loading !== null && !active ? 0.55 : 1,
               }}
             >
@@ -156,7 +166,7 @@ export default function RoleSelectScreen() {
               <Text className="mt-2 flex-1 text-sm leading-5 text-slate-300">{card.meta}</Text>
               <Text
                 className="mt-5 text-xs font-semibold uppercase tracking-[1.5px]"
-                style={{ color: isShopper ? '#a5b4fc' : '#fdba74' }}
+                style={{ color: tone.label }}
               >
                 {active ? 'Saving…' : 'Select'}
               </Text>

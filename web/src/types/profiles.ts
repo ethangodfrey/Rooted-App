@@ -1,10 +1,10 @@
 /**
  * Rooted marketplace profile + social graph types (phase51).
- * `profiles.role` is the permanent sticker enum — shopper | vendor only.
+ * `profiles.role` is the permanent sticker enum — shopper | vendor | farmer.
  */
 
 /** Permanent sticker / workspace role on `public.profiles`. */
-export type ProfileRole = 'shopper' | 'vendor';
+export type ProfileRole = 'shopper' | 'vendor' | 'farmer';
 
 /** Vision profiles table — auth user id is the primary key. */
 export interface Profile {
@@ -16,17 +16,30 @@ export interface Profile {
   updated_at: string;
 }
 
-/** Shopper profile → vendor follow edge. `shopper_id` = `profiles.id`. */
+/** Shopper → vendor/farmer follow edge. Both ids reference `profiles.id`. */
 export interface Follow {
   id: string;
   shopper_id: string;
-  vendor_id: string;
+  followed_profile_id: string;
   created_at: string;
 }
 
-export type VendorConnectionStatus = 'pending' | 'connected';
+export type NetworkConnectionStatus = 'pending' | 'connected';
 
-/** Vendor-to-vendor connection request / accepted link. */
+/** B2B V2V / F2V connection between vendor and farmer profiles. */
+export interface NetworkConnection {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: NetworkConnectionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+/** @deprecated Prefer NetworkConnection — legacy vendor_connections shape. */
+export type VendorConnectionStatus = NetworkConnectionStatus;
+
+/** @deprecated Prefer NetworkConnection. */
 export interface VendorConnection {
   id: string;
   sender_vendor_id: string;

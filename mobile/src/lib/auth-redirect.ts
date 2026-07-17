@@ -65,6 +65,10 @@ export function resolveAuthRedirect(
     return hasInterests ? '/(shopper)/(tabs)/map' : '/(onboarding)/interests';
   }
 
+  if (role === 'farmer') {
+    return '/(vendor)/(tabs)/more';
+  }
+
   if (role === 'vendor') {
     const complete = user
       ? isVendorApplicationComplete(vendor)

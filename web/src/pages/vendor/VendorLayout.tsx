@@ -44,7 +44,7 @@ export function VendorLayout() {
     return <Navigate to="/onboarding/role-select" replace />;
   }
 
-  if (role !== 'vendor') {
+  if (role !== 'vendor' && role !== 'farmer') {
     return <Navigate to="/app" replace />;
   }
 
@@ -52,7 +52,8 @@ export function VendorLayout() {
     ? isVendorApplicationComplete(vendor)
     : (trustedCache?.vendorComplete ?? false);
 
-  if (!vendorComplete && !onSetup) {
+  // Farmers may use the vendor shell network without a vendors-row application.
+  if (role === 'vendor' && !vendorComplete && !onSetup) {
     return <Navigate to="/vendor/setup" replace />;
   }
 

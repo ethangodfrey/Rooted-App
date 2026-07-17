@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
 import {
-  acceptVendorConnection,
-  fetchLocalNetworkVendors,
-  fetchVendorConnection,
-  sendVendorConnectionRequest,
-  type NetworkVendor,
-  type VendorConnectionUi,
-} from '@/lib/vendor-connections';
+  acceptNetworkConnection,
+  fetchLocalNetworkPeers,
+  fetchNetworkConnection,
+  sendNetworkConnectionRequest,
+  type NetworkConnectionUi,
+  type NetworkPeer,
+} from '@/lib/network-connections';
 import '@/components/ui/ui.css';
+import '@/components/ui/user-sticker.css';
 
-type PeerState = Record<string, VendorConnectionUi>;
+type PeerState = Record<string, NetworkConnectionUi>;
 
 export function VendorNetworkPage() {
-  const { vendor } = useAuth();
-  const [vendors, setVendors] = useState<NetworkVendor[]>([]);
+  const { user, vendor } = useAuth();
+  const profileId = user?.id ?? null;
+  const [peers, setPeers] = useState<NetworkPeer[]>([]);
   const [states, setStates] = useState<PeerState>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +27,7 @@ export function VendorNetworkPage() {
 
   useEffect(() => {
     let active = true;
-    if (!vendor?.id) {
+    if (!profileId) {
       setLoading(false);
       return;
     }
@@ -32,17 +35,17 @@ export function VendorNetworkPage() {
     setLoading(true);
     void (async () => {
       try {
-        const rows = await fetchLocalNetworkVendors({
-          currentVendorId: vendor.id,
-          postalCode: vendor.postal_code,
+        const rows = await fetchLocalNetworkPeers({
+          currentProfileId: profileId,
+          postalCode: vendor?.postal_code,
         });
         if (!active) return;
-        setVendors(rows);
+        setPeers(rows);
 
         const entries = await Promise.all(
           rows.map(async (row) => {
-            const view = await fetchVendorConnection(vendor.id, row.id);
-            return [row.id, view.uiState] as const;
+            const view = await fetchNetworkConnection(profileId, row.profileId);
+            return [row.profileId, view.uiState] as const;
           }),
         );
         if (!active) return;
@@ -58,14 +61,14 @@ export function VendorNetworkPage() {
     return () => {
       active = false;
     };
-  }, [vendor?.id, vendor?.postal_code]);
+  }, [profileId, vendor?.postal_code]);
 
-  async function connect(peerId: string) {
-    if (!vendor?.id) return;
-    setBusyId(peerId);
+  async function connect(peerProfileId: string) {
+    if (!profileId) return;
+    setBusyId(peerProfileId);
     try {
-      const view = await sendVendorConnectionRequest(vendor.id, peerId);
-      setStates((prev) => ({ ...prev, [peerId]: view.uiState }));
+      const view = await sendNetworkConnectionRequest(profileId, peerProfileId);
+      setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to send request');
     } finally {
@@ -73,12 +76,12 @@ export function VendorNetworkPage() {
     }
   }
 
-  async function accept(peerId: string) {
-    if (!vendor?.id) return;
-    setBusyId(peerId);
+  async function accept(peerProfileId: string) {
+    if (!profileId) return;
+    setBusyId(peerProfileId);
     try {
-      const view = await acceptVendorConnection(vendor.id, peerId);
-      setStates((prev) => ({ ...prev, [peerId]: view.uiState }));
+      const view = await acceptNetworkConnection(profileId, peerProfileId);
+      setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to accept');
     } finally {
@@ -90,8 +93,8 @@ export function VendorNetworkPage() {
     <div className="app-screen app-screen--narrow">
       <h1 className="app-title">Vendor Network</h1>
       <p className="app-subtitle">
-        Local makers near {vendor?.postal_code?.trim() || 'your area'} — connect for sourcing and
-        collaboration.
+        Local vendors and farmers near {vendor?.postal_code?.trim() || 'your area'} — connect for
+        sourcing and collaboration.
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -109,30 +112,40 @@ export function VendorNetworkPage() {
         </div>
       ) : error ? (
         <div className="app-empty">{error}</div>
-      ) : vendors.length === 0 ? (
-        <div className="app-empty">No nearby approved vendors found yet.</div>
+      ) : peers.length === 0 ? (
+        <div className="app-empty">No nearby approved vendors or farmers found yet.</div>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {vendors.map((peer) => {
-            const ui = states[peer.id] ?? 'none';
-            const place = [peer.sell_city, peer.sell_state, peer.postal_code]
+          {peers.map((peer) => {
+            const ui = states[peer.profileId] ?? 'none';
+            const place = [peer.sellCity, peer.sellState, peer.postalCode]
               .filter(Boolean)
               .join(', ');
+            const href = peer.vendorId ? `/vendors/${peer.vendorId}` : '/vendor/network';
             return (
-              <li key={peer.id} className="app-card" style={{ marginBottom: '0.75rem' }}>
+              <li key={peer.profileId} className="app-card" style={{ marginBottom: '0.75rem' }}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1">
-                    <Link
-                      to={`/vendors/${peer.id}`}
-                      className="app-row-title"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      {peer.business_name ?? 'Vendor'}
-                    </Link>
+                    <div className="user-sticker-row" style={{ marginBottom: '0.25rem' }}>
+                      {peer.vendorId ? (
+                        <Link
+                          to={href}
+                          className="app-row-title"
+                          style={{ textDecoration: 'none', margin: 0 }}
+                        >
+                          {peer.displayName ?? 'Peer'}
+                        </Link>
+                      ) : (
+                        <p className="app-row-title" style={{ margin: 0 }}>
+                          {peer.displayName ?? 'Farmer'}
+                        </p>
+                      )}
+                      <UserSticker role={peer.role} />
+                    </div>
                     <p className="app-row-meta">
                       {[peer.category, place].filter(Boolean).join(' · ') ||
-                        peer.product_summary ||
-                        'Local vendor'}
+                        peer.productSummary ||
+                        'Local network peer'}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -140,10 +153,10 @@ export function VendorNetworkPage() {
                       <button
                         type="button"
                         className="app-btn app-btn--primary app-btn--small"
-                        disabled={busyId === peer.id}
-                        onClick={() => void connect(peer.id)}
+                        disabled={busyId === peer.profileId}
+                        onClick={() => void connect(peer.profileId)}
                       >
-                        {busyId === peer.id ? 'Sending…' : 'Send Connection Request'}
+                        {busyId === peer.profileId ? 'Sending…' : 'Send Connection Request'}
                       </button>
                     ) : null}
                     {ui === 'pending_sent' ? (
@@ -155,15 +168,15 @@ export function VendorNetworkPage() {
                       <button
                         type="button"
                         className="app-btn app-btn--primary app-btn--small"
-                        disabled={busyId === peer.id}
-                        onClick={() => void accept(peer.id)}
+                        disabled={busyId === peer.profileId}
+                        onClick={() => void accept(peer.profileId)}
                       >
                         Accept
                       </button>
                     ) : null}
                     {ui === 'connected' ? (
                       <span className="app-btn app-btn--secondary app-btn--small" aria-disabled>
-                        Connected ✓
+                        Connected
                       </span>
                     ) : null}
                   </div>
