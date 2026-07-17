@@ -75,19 +75,26 @@ export default function ShopperMapScreen() {
 
     const task = InteractionManager.runAfterInteractions(() => {
       async function init() {
-        const { data, error: queryError } = await fetchPublicEvents({
-          forMap: true,
-        });
+        try {
+          const { data, error: queryError } = await fetchPublicEvents({
+            forMap: true,
+          });
 
-        if (!active) return;
+          if (!active) return;
 
-        if (queryError) {
-          setError(queryError);
-        } else {
-          setEvents(data);
+          if (queryError) {
+            setError(queryError);
+            setEvents([]);
+          } else {
+            setEvents(data);
+          }
+        } catch {
+          if (!active) return;
+          setError('Failed to load events');
+          setEvents([]);
+        } finally {
+          if (active) setLoading(false);
         }
-
-        setLoading(false);
       }
 
       void init();

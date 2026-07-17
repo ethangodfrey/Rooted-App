@@ -16,7 +16,7 @@ import {
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
 import { formatEventDisplayDate } from '@/lib/format';
-import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
+import { distanceMiles, formatDistance, parseCoords, type Coords } from '@/lib/geo';
 import {
   fetchActiveCommunityEventsWithParticipants,
   type CommunityEventWithParticipants,
@@ -123,24 +123,34 @@ export function ShopperMapPage() {
     async function load() {
       setLoading(true);
       setError(null);
-      const [usda, community] = await Promise.all([
-        fetchPublicEvents({
-          forMap: true,
-          near: eventFetchOrigin,
-        }),
-        fetchActiveCommunityEventsWithParticipants().catch(() => [] as CommunityEventWithParticipants[]),
-      ]);
+      try {
+        const [usda, community] = await Promise.all([
+          fetchPublicEvents({
+            forMap: true,
+            near: eventFetchOrigin,
+          }),
+          fetchActiveCommunityEventsWithParticipants().catch(
+            () => [] as CommunityEventWithParticipants[],
+          ),
+        ]);
 
-      if (!active) return;
+        if (!active) return;
 
-      if (usda.error) {
-        setError(usda.error);
+        if (usda.error) {
+          setError(usda.error);
+          setEvents([]);
+        } else {
+          setEvents(usda.data);
+        }
+        setCommunityEvents(community);
+      } catch {
+        if (!active) return;
+        setError('Failed to load events');
         setEvents([]);
-      } else {
-        setEvents(usda.data);
+        setCommunityEvents([]);
+      } finally {
+        if (active) setLoading(false);
       }
-      setCommunityEvents(community);
-      setLoading(false);
     }
 
     void load();
@@ -192,10 +202,10 @@ export function ShopperMapPage() {
     return [...runtimeSorted].sort((a, b) => {
       const phaseDiff = phaseRank(a) - phaseRank(b);
       if (phaseDiff !== 0) return phaseDiff;
-      return (
-        distanceMiles(sortOrigin, { latitude: a.latitude, longitude: a.longitude }) -
-        distanceMiles(sortOrigin, { latitude: b.latitude, longitude: b.longitude })
-      );
+      const aCoords = parseCoords(a.latitude, a.longitude);
+      const bCoords = parseCoords(b.latitude, b.longitude);
+      if (!aCoords || !bCoords) return 0;
+      return distanceMiles(sortOrigin, aCoords) - distanceMiles(sortOrigin, bCoords);
     });
   }, [filteredEvents, sortOrigin, now]);
 
@@ -204,10 +214,9 @@ export function ShopperMapPage() {
   const distanceFor = useCallback(
     (event: Event): string | null => {
       const origin = searchCenter ?? coords;
-      if (!origin) return null;
-      return formatDistance(
-        distanceMiles(origin, { latitude: event.latitude, longitude: event.longitude }),
-      );
+      const eventCoords = parseCoords(event.latitude, event.longitude);
+      if (!origin || !eventCoords) return null;
+      return formatDistance(distanceMiles(origin, eventCoords));
     },
     [coords, searchCenter],
   );
@@ -217,9 +226,10 @@ export function ShopperMapPage() {
       const event =
         mapEvents.find((item) => item.id === id) ??
         sortedEvents.find((item) => item.id === id);
-      if (!event) return;
+      const eventCoords = event ? parseCoords(event.latitude, event.longitude) : null;
+      if (!eventCoords) return;
       setSelectedEventId(id);
-      setFocusTarget({ latitude: event.latitude, longitude: event.longitude });
+      setFocusTarget(eventCoords);
     },
     [mapEvents, sortedEvents],
   );
@@ -227,9 +237,10 @@ export function ShopperMapPage() {
   const previewCommunityEvent = useCallback(
     (id: string) => {
       const event = communityEvents.find((item) => item.id === id);
-      if (!event) return;
+      const eventCoords = event ? parseCoords(event.latitude, event.longitude) : null;
+      if (!eventCoords) return;
       setSelectedEventId(id);
-      setFocusTarget({ latitude: event.latitude, longitude: event.longitude });
+      setFocusTarget(eventCoords);
     },
     [communityEvents],
   );
