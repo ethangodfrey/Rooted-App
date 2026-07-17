@@ -66,6 +66,7 @@ import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
+import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
 import { VendorB2bChatPage } from '@/pages/vendor/VendorB2bChatPage';
 import { VendorNetworkPage } from '@/pages/vendor/VendorNetworkPage';
@@ -169,6 +170,7 @@ export default function App() {
         <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
         <Route path="/creator/inbox" element={<Navigate to="/vendor/inbox" replace />} />
         <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />
+        <Route path="/creator/handoffs" element={<Navigate to="/vendor/handoffs" replace />} />
         <Route path="/creator/*" element={<Navigate to="/vendor/storefront" replace />} />
 
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
@@ -181,6 +183,7 @@ export default function App() {
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
+          <Route path="handoffs" element={<VendorHandoffsPage />} />
           <Route path="inbox" element={<VendorInboxPage />} />
           <Route path="inbox/chat/:peerId" element={<VendorB2bChatPage />} />
           <Route path="network" element={<VendorNetworkPage />} />
