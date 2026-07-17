@@ -6,6 +6,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { useNow } from '@/hooks/use-now';
+import type { CommunityEventWithParticipants } from '@/lib/community-events';
 import { centroidOfEvents } from '@/lib/event-map-search';
 import { marketPath } from '@/lib/market-routes';
 import { extractMarketLinks } from '@/lib/market-links';
@@ -23,6 +24,15 @@ const FOCUS_ZOOM = 11;
 function markerIcon(selected: boolean, phase: EventRuntimePhase) {
   return L.divIcon({
     className: `rooted-map-marker rooted-map-marker--${phase}${selected ? ' rooted-map-marker--selected' : ''}`,
+    html: '<div class="rooted-map-marker__dot"></div>',
+    iconSize: selected ? [22, 22] : [18, 18],
+    iconAnchor: selected ? [11, 11] : [9, 9],
+  });
+}
+
+function communityMarkerIcon(selected: boolean) {
+  return L.divIcon({
+    className: `rooted-map-marker rooted-map-marker--community${selected ? ' rooted-map-marker--selected' : ''}`,
     html: '<div class="rooted-map-marker__dot"></div>',
     iconSize: selected ? [22, 22] : [18, 18],
     iconAnchor: selected ? [11, 11] : [9, 9],
@@ -140,11 +150,14 @@ function InitialMapView({
 
 interface EventsMapProps {
   events: Event[];
+  /** Vendor/farmer hosted community events — orange pins. */
+  communityEvents?: CommunityEventWithParticipants[];
   selectedEventId: string | null;
   userCoords: Coords | null;
   focusTarget: Coords | null;
   focusZoom?: number;
   onPreviewEvent: (eventId: string) => void;
+  onPreviewCommunityEvent?: (eventId: string) => void;
   onRecenter?: () => void;
   getDistanceLabel?: (event: Event) => string | null;
   now?: Date;
@@ -152,11 +165,13 @@ interface EventsMapProps {
 
 export function EventsMap({
   events,
+  communityEvents = [],
   selectedEventId,
   userCoords,
   focusTarget,
   focusZoom = FOCUS_ZOOM,
   onPreviewEvent,
+  onPreviewCommunityEvent,
   onRecenter,
   getDistanceLabel,
   now: nowProp,
@@ -166,6 +181,13 @@ export function EventsMap({
   const mappableEvents = useMemo(
     () => events.filter((event) => isValidCoords(event)),
     [events],
+  );
+  const mappableCommunity = useMemo(
+    () =>
+      communityEvents.filter((event) =>
+        isValidCoords({ latitude: event.latitude, longitude: event.longitude }),
+      ),
+    [communityEvents],
   );
   const eventCenter = centroidOfEvents(events);
   const initialCenter: [number, number] = userCoords
@@ -268,6 +290,47 @@ export function EventsMap({
               </Marker>
             );
           })}
+
+          {mappableCommunity.map((event) => (
+            <Marker
+              key={`community-${event.id}`}
+              position={[event.latitude, event.longitude]}
+              icon={communityMarkerIcon(event.id === selectedEventId)}
+              eventHandlers={{
+                click: () => onPreviewCommunityEvent?.(event.id),
+              }}
+            >
+              <Popup>
+                <div className="events-map-popup">
+                  <p className="events-map-popup__label">Community event</p>
+                  <span className="events-map-popup__sticker">
+                    {event.event_type.replace(/_/g, ' ')}
+                  </span>
+                  <strong>{event.title}</strong>
+                  <p>
+                    {new Date(event.start_time).toLocaleString()} —{' '}
+                    {new Date(event.end_time).toLocaleString()}
+                  </p>
+                  {event.description ? <p>{event.description}</p> : null}
+                  <p className="events-map-popup__label" style={{ marginTop: '0.5rem' }}>
+                    Participating businesses
+                  </p>
+                  {event.participants.length > 0 ? (
+                    <ul className="events-map-popup__participants">
+                      {event.participants.map((peer) => (
+                        <li key={peer.profile_id}>
+                          {peer.display_name}
+                          {peer.role ? ` · ${peer.role.toUpperCase()}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No platform businesses listed yet.</p>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
       </div>
 

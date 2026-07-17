@@ -17,6 +17,10 @@ import {
 } from '@/lib/event-map-search';
 import { formatEventDisplayDate } from '@/lib/format';
 import { distanceMiles, formatDistance, type Coords } from '@/lib/geo';
+import {
+  fetchActiveCommunityEventsWithParticipants,
+  type CommunityEventWithParticipants,
+} from '@/lib/community-events';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { fetchSnapEligibleEventIds } from '@/lib/snap-ebt';
 import type { Event } from '@/types/database';
@@ -35,6 +39,9 @@ export function ShopperMapPage() {
   const fetchOrigin = useMapFetchOrigin(coords);
   const now = useNow(LIST_NOW_MS);
   const [events, setEvents] = useState<Event[]>([]);
+  const [communityEvents, setCommunityEvents] = useState<CommunityEventWithParticipants[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -116,19 +123,23 @@ export function ShopperMapPage() {
     async function load() {
       setLoading(true);
       setError(null);
-      const { data, error: queryError } = await fetchPublicEvents({
-        forMap: true,
-        near: eventFetchOrigin,
-      });
+      const [usda, community] = await Promise.all([
+        fetchPublicEvents({
+          forMap: true,
+          near: eventFetchOrigin,
+        }),
+        fetchActiveCommunityEventsWithParticipants().catch(() => [] as CommunityEventWithParticipants[]),
+      ]);
 
       if (!active) return;
 
-      if (queryError) {
-        setError(queryError);
+      if (usda.error) {
+        setError(usda.error);
         setEvents([]);
       } else {
-        setEvents(data);
+        setEvents(usda.data);
       }
+      setCommunityEvents(community);
       setLoading(false);
     }
 
@@ -213,6 +224,27 @@ export function ShopperMapPage() {
     [mapEvents, sortedEvents],
   );
 
+  const previewCommunityEvent = useCallback(
+    (id: string) => {
+      const event = communityEvents.find((item) => item.id === id);
+      if (!event) return;
+      setSelectedEventId(id);
+      setFocusTarget({ latitude: event.latitude, longitude: event.longitude });
+    },
+    [communityEvents],
+  );
+
+  const communityForMap = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return communityEvents;
+    return communityEvents.filter(
+      (event) =>
+        event.title.toLowerCase().includes(q) ||
+        event.event_type.toLowerCase().includes(q) ||
+        event.description.toLowerCase().includes(q),
+    );
+  }, [communityEvents, query]);
+
   function recenterOnUser() {
     if (!coords) return;
     setSelectedEventId(null);
@@ -263,7 +295,7 @@ export function ShopperMapPage() {
               : 'border-emerald-800 bg-emerald-950/50 text-emerald-300/90'
           }`}
         >
-          🌾 Accepts SNAP / EBT
+          ACCEPTS SNAP / EBT
         </button>
       </div>
 
@@ -293,12 +325,14 @@ export function ShopperMapPage() {
             >
               <EventsMap
                 events={mapEvents}
+                communityEvents={communityForMap}
                 now={now}
                 selectedEventId={selectedEventId}
                 userCoords={coords}
                 focusTarget={focusTarget ?? searchCenter}
                 focusZoom={FOCUS_ZOOM}
                 onPreviewEvent={previewEvent}
+                onPreviewCommunityEvent={previewCommunityEvent}
                 onRecenter={() => (coords ? recenterOnUser() : requestUserLocation())}
                 getDistanceLabel={distanceFor}
               />

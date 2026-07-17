@@ -167,6 +167,7 @@ export default function App() {
         <Route path="/creator" element={<Navigate to="/vendor/storefront" replace />} />
         <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
         <Route path="/creator/inbox" element={<Navigate to="/vendor/inbox" replace />} />
+        <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />
         <Route path="/creator/*" element={<Navigate to="/vendor/storefront" replace />} />
 
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
