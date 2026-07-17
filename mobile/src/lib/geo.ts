@@ -27,6 +27,14 @@ export function coordsFrom(
   return isValidCoords(value) ? { latitude: value.latitude, longitude: value.longitude } : null;
 }
 
+/** Parse separate latitude/longitude fields into validated Coords, or null. */
+export function parseCoords(
+  latitude?: number | null,
+  longitude?: number | null,
+): Coords | null {
+  return coordsFrom({ latitude, longitude });
+}
+
 /** Great-circle distance between two points in miles (haversine). */
 export function distanceMiles(a: Coords, b: Coords): number {
   if (!isValidCoords(a) || !isValidCoords(b)) return Number.POSITIVE_INFINITY;
