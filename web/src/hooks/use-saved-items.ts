@@ -59,18 +59,23 @@ export function useSavedItems() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('saved_items')
-      .select('*')
-      .eq('customer_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('saved_items')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) {
+        setItems([]);
+      } else {
+        setItems((data ?? []) as SavedItem[]);
+      }
+    } catch {
       setItems([]);
-    } else {
-      setItems((data ?? []) as SavedItem[]);
+    } finally {
+      setLoaded(true);
     }
-    setLoaded(true);
   }, [user?.id]);
 
   useEffect(() => {
