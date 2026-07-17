@@ -162,6 +162,11 @@ export default function App() {
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
 
+        {/* Spec aliases: /creator → vendor workspace (shell stays /vendor) */}
+        <Route path="/creator" element={<Navigate to="/vendor/storefront" replace />} />
+        <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
+        <Route path="/creator/*" element={<Navigate to="/vendor/storefront" replace />} />
+
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
         <Route path="/vendor" element={<VendorLayout />}>
           <Route index element={<Navigate to="storefront" replace />} />

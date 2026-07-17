@@ -6,6 +6,7 @@ import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
 import {
   FARMER_SPECIALTIES,
+  SPECIALTY_FILTER_LABELS,
   VENDOR_SPECIALTIES,
   type SpecialtyTag,
 } from '@/lib/specialties';
@@ -46,6 +47,8 @@ export function VendorNetworkPage() {
         const rows = await fetchLocalNetworkPeers({
           currentProfileId: profileId,
           postalCode: vendor?.postal_code,
+          roleFilter,
+          specialtyFilters: specialtyFilter ? [specialtyFilter] : [],
         });
         if (!active) return;
         setPeers(rows);
@@ -69,21 +72,13 @@ export function VendorNetworkPage() {
     return () => {
       active = false;
     };
-  }, [profileId, vendor?.postal_code]);
+  }, [profileId, vendor?.postal_code, roleFilter, specialtyFilter]);
 
   const filterOptions = useMemo(() => {
     if (roleFilter === 'farmer') return [...FARMER_SPECIALTIES];
     if (roleFilter === 'vendor') return [...VENDOR_SPECIALTIES];
     return [...VENDOR_SPECIALTIES, ...FARMER_SPECIALTIES];
   }, [roleFilter]);
-
-  const visiblePeers = useMemo(() => {
-    return peers.filter((peer) => {
-      if (roleFilter !== 'all' && peer.role !== roleFilter) return false;
-      if (!specialtyFilter) return true;
-      return peer.specialties.map((s) => s.toUpperCase()).includes(specialtyFilter);
-    });
-  }, [peers, roleFilter, specialtyFilter]);
 
   async function connect(peerProfileId: string) {
     if (!profileId) return;
@@ -113,7 +108,7 @@ export function VendorNetworkPage() {
 
   return (
     <div className="app-screen app-screen--narrow">
-      <h1 className="app-title">Vendor Network</h1>
+      <h1 className="app-title">Business Network</h1>
       <p className="app-subtitle">
         Local vendors and farmers near {vendor?.postal_code?.trim() || 'your area'} — filter by
         specialty for sourcing.
@@ -154,14 +149,14 @@ export function VendorNetworkPage() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-400"
+            className="rounded-md border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400"
             style={{
               borderColor: !specialtyFilter ? 'rgba(129,140,248,0.7)' : '#27272a',
               color: !specialtyFilter ? '#c7d2fe' : '#a1a1aa',
             }}
             onClick={() => setSpecialtyFilter(null)}
           >
-            ANY SPECIALTY
+            Any specialty
           </button>
           {filterOptions.map((tag) => {
             const active = specialtyFilter === tag;
@@ -169,15 +164,15 @@ export function VendorNetworkPage() {
               <button
                 key={tag}
                 type="button"
-                className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-400"
+                className="rounded-md border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400"
                 style={{
                   borderColor: active ? 'rgba(129,140,248,0.7)' : '#27272a',
                   color: active ? '#c7d2fe' : '#a1a1aa',
-                  background: active ? 'rgba(99,102,241,0.2)' : '#09090b',
+                  background: active ? 'rgba(99,102,241,0.2)' : 'rgba(9, 9, 11, 0.8)',
                 }}
                 onClick={() => setSpecialtyFilter(active ? null : tag)}
               >
-                {tag}
+                {SPECIALTY_FILTER_LABELS[tag]}
               </button>
             );
           })}
@@ -190,11 +185,11 @@ export function VendorNetworkPage() {
         </div>
       ) : error ? (
         <div className="app-empty">{error}</div>
-      ) : visiblePeers.length === 0 ? (
+      ) : peers.length === 0 ? (
         <div className="app-empty">No nearby matches for this specialty filter.</div>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {visiblePeers.map((peer) => {
+          {peers.map((peer) => {
             const ui = states[peer.profileId] ?? 'none';
             const place = [peer.sellCity, peer.sellState, peer.postalCode]
               .filter(Boolean)

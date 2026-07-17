@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import {
   normalizeSpecialtySelection,
   specialtiesForRole,
+  specialtyLabel,
   type SpecialtyTag,
 } from '@/lib/specialties';
 import { supabase } from '@/lib/supabase';
@@ -14,7 +15,7 @@ import '@/components/ui/ui.css';
 
 /**
  * Post-role specialty picker for vendor | farmer.
- * Routes: /onboarding/specialties
+ * Route: /onboarding/specialties
  */
 export function SpecialtiesPage() {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export function SpecialtiesPage() {
     );
   }
 
-  async function handleContinue() {
+  async function handleSave() {
     if (selected.length === 0) {
       setError('Pick at least one specialty.');
       return;
@@ -94,7 +95,8 @@ export function SpecialtiesPage() {
 
     await refreshUser();
     setLoading(false);
-    navigate('/app');
+    // Spec path `/creator` aliases into the vendor workspace.
+    navigate('/creator');
   }
 
   return (
@@ -120,12 +122,18 @@ export function SpecialtiesPage() {
           <SpecialtyPills specialties={selected} />
         </div>
 
-        <h1 className="m-0 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Your specialties
+        <p
+          className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]"
+          style={{ color: 'rgba(165, 180, 252, 0.9)' }}
+        >
+          Select your specialties
+        </p>
+        <h1 className="mt-2 m-0 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          SELECT YOUR SPECIALTIES
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-          Select the categories that describe what you offer. These appear as text tags on your
-          profile and help nearby businesses find you.
+          Choose what you offer. Tags appear on your profile and power local B2B discovery
+          filters.
         </p>
 
         <div className="mt-8 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -136,26 +144,22 @@ export function SpecialtiesPage() {
                 key={tag}
                 type="button"
                 onClick={() => toggle(tag)}
-                className="flex items-center justify-between rounded-xl border px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.12em] transition"
+                className="flex min-h-[72px] flex-col items-start justify-center rounded-xl border px-4 py-3 text-left transition"
                 style={{
-                  borderColor: active ? 'rgba(129, 140, 248, 0.85)' : 'rgba(71, 85, 105, 0.7)',
-                  background: active ? 'rgba(99, 102, 241, 0.28)' : 'rgba(15, 23, 42, 0.55)',
+                  borderColor: active ? 'rgba(129, 140, 248, 0.9)' : 'rgba(71, 85, 105, 0.85)',
+                  borderWidth: active ? 2 : 1,
+                  background: active ? 'rgba(99, 102, 241, 0.28)' : 'rgba(15, 23, 42, 0.65)',
                   color: active ? '#e0e7ff' : '#94a3b8',
-                  boxShadow: active ? 'inset 0 0 0 1px rgba(165, 180, 252, 0.35)' : undefined,
+                  boxShadow: active ? '0 0 0 1px rgba(165, 180, 252, 0.25)' : undefined,
                 }}
                 aria-pressed={active}
               >
-                <span>{tag}</span>
-                <span
-                  aria-hidden
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: 3,
-                    border: active ? 'none' : '1px solid rgba(148,163,184,0.5)',
-                    background: active ? '#818cf8' : 'transparent',
-                  }}
-                />
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em]">
+                  {specialtyLabel(tag)}
+                </span>
+                <span className="mt-1 text-[10px] font-medium tracking-wide text-slate-500">
+                  {tag}
+                </span>
               </button>
             );
           })}
@@ -170,10 +174,10 @@ export function SpecialtiesPage() {
         <button
           type="button"
           disabled={loading}
-          onClick={() => void handleContinue()}
+          onClick={() => void handleSave()}
           className="mt-8 w-full rounded-xl border border-orange-500/40 bg-orange-500/15 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-orange-200 transition hover:bg-orange-500/25 disabled:opacity-60"
         >
-          {loading ? 'Saving…' : 'Continue'}
+          {loading ? 'Saving…' : 'Save & Continue'}
         </button>
       </div>
     </div>

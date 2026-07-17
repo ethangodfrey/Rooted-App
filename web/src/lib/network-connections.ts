@@ -1,3 +1,7 @@
+import {
+  isFarmerSpecialty,
+  isVendorSpecialty,
+} from '@/lib/specialties';
 import { supabase } from '@/lib/supabase';
 import type { NetworkConnection, NetworkConnectionStatus } from '@/types/profiles';
 
@@ -166,86 +170,134 @@ export async function fetchLocalNetworkPeers(options: {
   currentProfileId: string;
   postalCode?: string | null;
   limit?: number;
+  roleFilter?: 'all' | 'vendor' | 'farmer';
+  /** Specialty tokens — profiles must overlap these arrays (Postgres `&&`). */
+  specialtyFilters?: string[];
 }): Promise<NetworkPeer[]> {
   const limit = options.limit ?? 40;
   const zip = options.postalCode?.trim();
+  const roleFilter = options.roleFilter ?? 'all';
+  const specialtyFilters = (options.specialtyFilters ?? [])
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+
+  let allowedProfileIds: Set<string> | null = null;
+
+  if (specialtyFilters.length > 0) {
+    const vendorTags = specialtyFilters.filter(isVendorSpecialty);
+    const farmerTags = specialtyFilters.filter(isFarmerSpecialty);
+    const orParts: string[] = [];
+    if (vendorTags.length > 0 && roleFilter !== 'farmer') {
+      orParts.push(`and(role.eq.vendor,vendor_specialties.ov.{${vendorTags.join(',')}})`);
+    }
+    if (farmerTags.length > 0 && roleFilter !== 'vendor') {
+      orParts.push(`and(role.eq.farmer,farmer_specialties.ov.{${farmerTags.join(',')}})`);
+    }
+
+    if (orParts.length === 0) {
+      return [];
+    }
+
+    const { data: matched, error: matchError } = await supabase
+      .from('profiles')
+      .select('id')
+      .neq('id', options.currentProfileId)
+      .or(orParts.join(','));
+
+    if (matchError) throw new Error(matchError.message);
+    allowedProfileIds = new Set((matched ?? []).map((row) => row.id as string));
+    if (allowedProfileIds.size === 0) return [];
+  }
+
   const peers: NetworkPeer[] = [];
+  const includeVendors = roleFilter === 'all' || roleFilter === 'vendor';
+  const includeFarmers = roleFilter === 'all' || roleFilter === 'farmer';
 
-  let vendorQuery = supabase
-    .from('vendors')
-    .select(
-      'id, user_id, business_name, logo_url, category, sell_city, sell_state, postal_code, product_summary',
-    )
-    .eq('approval_status', 'approved')
-    .neq('user_id', options.currentProfileId)
-    .order('business_name', { ascending: true })
-    .limit(limit);
+  if (includeVendors) {
+    let vendorQuery = supabase
+      .from('vendors')
+      .select(
+        'id, user_id, business_name, logo_url, category, sell_city, sell_state, postal_code, product_summary',
+      )
+      .eq('approval_status', 'approved')
+      .neq('user_id', options.currentProfileId)
+      .order('business_name', { ascending: true })
+      .limit(limit);
 
-  if (zip && zip.length >= 3) {
-    vendorQuery = vendorQuery.ilike('postal_code', `${zip.slice(0, 3)}%`);
-  }
+    if (allowedProfileIds) {
+      vendorQuery = vendorQuery.in('user_id', [...allowedProfileIds]);
+    }
+    if (zip && zip.length >= 3) {
+      vendorQuery = vendorQuery.ilike('postal_code', `${zip.slice(0, 3)}%`);
+    }
 
-  const { data: vendors, error: vendorError } = await vendorQuery;
-  if (vendorError) throw new Error(vendorError.message);
+    const { data: vendors, error: vendorError } = await vendorQuery;
+    if (vendorError) throw new Error(vendorError.message);
 
-  for (const v of vendors ?? []) {
-    peers.push({
-      profileId: v.user_id,
-      role: 'vendor',
-      vendorId: v.id,
-      displayName: v.business_name,
-      logoUrl: v.logo_url,
-      category: v.category,
-      sellCity: v.sell_city,
-      sellState: v.sell_state,
-      postalCode: v.postal_code,
-      productSummary: v.product_summary,
-      specialties: [],
-      id: v.user_id,
-      business_name: v.business_name,
-      logo_url: v.logo_url,
-      sell_city: v.sell_city,
-      sell_state: v.sell_state,
-      postal_code: v.postal_code,
-      product_summary: v.product_summary,
-    });
-  }
-
-  let farmerQuery = supabase
-    .from('farmers')
-    .select('id, user_id, farm_name, logo_url, sell_city, sell_state, postal_code')
-    .eq('approval_status', 'approved')
-    .neq('user_id', options.currentProfileId)
-    .order('farm_name', { ascending: true })
-    .limit(limit);
-
-  if (zip && zip.length >= 3) {
-    farmerQuery = farmerQuery.ilike('postal_code', `${zip.slice(0, 3)}%`);
-  }
-
-  const { data: farmers, error: farmerError } = await farmerQuery;
-  if (!farmerError) {
-    for (const f of farmers ?? []) {
+    for (const v of vendors ?? []) {
       peers.push({
-        profileId: f.user_id,
-        role: 'farmer',
-        vendorId: null,
-        displayName: f.farm_name,
-        logoUrl: f.logo_url,
-        category: 'Farm / harvest',
-        sellCity: f.sell_city,
-        sellState: f.sell_state,
-        postalCode: f.postal_code,
-        productSummary: null,
+        profileId: v.user_id,
+        role: 'vendor',
+        vendorId: v.id,
+        displayName: v.business_name,
+        logoUrl: v.logo_url,
+        category: v.category,
+        sellCity: v.sell_city,
+        sellState: v.sell_state,
+        postalCode: v.postal_code,
+        productSummary: v.product_summary,
         specialties: [],
-        id: f.user_id,
-        business_name: f.farm_name,
-        logo_url: f.logo_url,
-        sell_city: f.sell_city,
-        sell_state: f.sell_state,
-        postal_code: f.postal_code,
-        product_summary: null,
+        id: v.user_id,
+        business_name: v.business_name,
+        logo_url: v.logo_url,
+        sell_city: v.sell_city,
+        sell_state: v.sell_state,
+        postal_code: v.postal_code,
+        product_summary: v.product_summary,
       });
+    }
+  }
+
+  if (includeFarmers) {
+    let farmerQuery = supabase
+      .from('farmers')
+      .select('id, user_id, farm_name, logo_url, sell_city, sell_state, postal_code')
+      .eq('approval_status', 'approved')
+      .neq('user_id', options.currentProfileId)
+      .order('farm_name', { ascending: true })
+      .limit(limit);
+
+    if (allowedProfileIds) {
+      farmerQuery = farmerQuery.in('user_id', [...allowedProfileIds]);
+    }
+    if (zip && zip.length >= 3) {
+      farmerQuery = farmerQuery.ilike('postal_code', `${zip.slice(0, 3)}%`);
+    }
+
+    const { data: farmers, error: farmerError } = await farmerQuery;
+    if (!farmerError) {
+      for (const f of farmers ?? []) {
+        peers.push({
+          profileId: f.user_id,
+          role: 'farmer',
+          vendorId: null,
+          displayName: f.farm_name,
+          logoUrl: f.logo_url,
+          category: 'Farm / harvest',
+          sellCity: f.sell_city,
+          sellState: f.sell_state,
+          postalCode: f.postal_code,
+          productSummary: null,
+          specialties: [],
+          id: f.user_id,
+          business_name: f.farm_name,
+          logo_url: f.logo_url,
+          sell_city: f.sell_city,
+          sell_state: f.sell_state,
+          postal_code: f.postal_code,
+          product_summary: null,
+        });
+      }
     }
   }
 
@@ -260,7 +312,6 @@ export async function fetchLocalNetworkPeers(options: {
       (profiles ?? []).map((p) => [
         p.id as string,
         {
-          role: p.role as string | null,
           vendor_specialties: (p.vendor_specialties as string[] | null) ?? [],
           farmer_specialties: (p.farmer_specialties as string[] | null) ?? [],
         },

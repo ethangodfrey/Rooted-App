@@ -9,6 +9,7 @@ import { useAuth } from '@/src/hooks/use-auth';
 import {
   normalizeSpecialtySelection,
   specialtiesForRole,
+  specialtyLabel,
   type SpecialtyTag,
 } from '@/src/lib/specialties';
 import { supabase } from '@/src/lib/supabase';
@@ -82,7 +83,8 @@ export default function SpecialtiesScreen() {
 
     await refreshUser();
     setLoading(false);
-    router.replace('/');
+    // Spec `/creator` alias → vendor workspace
+    router.replace('/(vendor)/(tabs)/dashboard');
   }
 
   return (
@@ -96,9 +98,14 @@ export default function SpecialtiesScreen() {
         <SpecialtyPills specialties={selected} />
       </View>
 
-      <Text className="text-3xl font-semibold tracking-tight text-white">Your specialties</Text>
+      <Text className="text-[11px] font-bold uppercase tracking-[2px] text-indigo-300">
+        Select your specialties
+      </Text>
+      <Text className="mt-2 text-3xl font-semibold tracking-tight text-white">
+        SELECT YOUR SPECIALTIES
+      </Text>
       <Text className="mt-3 text-sm leading-5 text-slate-400">
-        Select categories that describe what you offer. Shown as text tags on your profile.
+        Choose what you offer. Tags appear on your profile and power local B2B discovery filters.
       </Text>
 
       <View className="mt-8 gap-2 pb-10">
@@ -108,28 +115,20 @@ export default function SpecialtiesScreen() {
             <Pressable
               key={tag}
               onPress={() => toggle(tag)}
-              className="flex-row items-center justify-between rounded-xl border px-4 py-3"
+              className="rounded-xl border px-4 py-3"
               style={{
-                borderColor: active ? 'rgba(129,140,248,0.85)' : 'rgba(71,85,105,0.7)',
-                backgroundColor: active ? 'rgba(99,102,241,0.28)' : 'rgba(15,23,42,0.55)',
+                borderColor: active ? 'rgba(129,140,248,0.9)' : 'rgba(71,85,105,0.85)',
+                borderWidth: active ? 2 : 1,
+                backgroundColor: active ? 'rgba(99,102,241,0.28)' : 'rgba(15,23,42,0.65)',
               }}
             >
               <Text
-                className="text-xs font-bold uppercase tracking-[1.5px]"
+                className="text-[10px] font-bold uppercase tracking-[1.5px]"
                 style={{ color: active ? '#e0e7ff' : '#94a3b8' }}
               >
-                {tag}
+                {specialtyLabel(tag)}
               </Text>
-              <View
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: 3,
-                  borderWidth: active ? 0 : 1,
-                  borderColor: 'rgba(148,163,184,0.5)',
-                  backgroundColor: active ? '#818cf8' : 'transparent',
-                }}
-              />
+              <Text className="mt-1 text-[10px] font-medium tracking-wide text-slate-500">{tag}</Text>
             </Pressable>
           );
         })}
@@ -143,7 +142,7 @@ export default function SpecialtiesScreen() {
           style={{ backgroundColor: 'rgba(249,115,22,0.15)', opacity: loading ? 0.6 : 1 }}
         >
           <Text className="text-sm font-semibold uppercase tracking-[1.5px] text-orange-200">
-            {loading ? 'Saving…' : 'Continue'}
+            {loading ? 'Saving…' : 'Save & Continue'}
           </Text>
         </Pressable>
       </View>
