@@ -308,9 +308,9 @@ export function ShopperMapPage() {
       ) : (
         <div className="shopper-map-layout">
           <div className="relative z-0 min-w-0">
-            {filteredEvents.length === 0 ? (
+            {filteredEvents.length === 0 && communityForMap.length === 0 ? (
               <p className="app-empty" style={{ marginBottom: '0.75rem' }}>
-                No mapped events match your search.
+                No mapped markets or community events match your search.
               </p>
             ) : null}
 
