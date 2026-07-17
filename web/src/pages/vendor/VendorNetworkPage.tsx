@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import {
+  ConnectionButton,
+  connectionUiToButtonProps,
+} from '@/components/ui/ConnectionButton';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
@@ -13,7 +17,6 @@ import {
 import {
   fetchLocalNetworkPeers,
   fetchNetworkConnection,
-  sendNetworkConnectionRequest,
   type NetworkConnectionUi,
   type NetworkPeer,
 } from '@/lib/network-connections';
@@ -29,7 +32,6 @@ export function VendorNetworkPage() {
   const [states, setStates] = useState<PeerState>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [specialtyFilter, setSpecialtyFilter] = useState<SpecialtyTag | null>(null);
   const [roleFilter, setRoleFilter] = useState<'all' | 'vendor' | 'farmer'>('all');
 
@@ -52,6 +54,7 @@ export function VendorNetworkPage() {
         if (!active) return;
         setPeers(rows);
 
+        // Prefetch vendor_connections state so ConnectionButton can render immediately.
         const entries = await Promise.all(
           rows.map(async (row) => {
             const view = await fetchNetworkConnection(profileId, row.profileId);
@@ -78,19 +81,6 @@ export function VendorNetworkPage() {
     if (roleFilter === 'vendor') return [...VENDOR_SPECIALTIES];
     return [...VENDOR_SPECIALTIES, ...FARMER_SPECIALTIES];
   }, [roleFilter]);
-
-  async function connect(peerProfileId: string) {
-    if (!profileId) return;
-    setBusyId(peerProfileId);
-    try {
-      const view = await sendNetworkConnectionRequest(profileId, peerProfileId);
-      setStates((prev) => ({ ...prev, [peerProfileId]: view.uiState }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to send request');
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   return (
     <div className="app-screen app-screen--narrow">
@@ -209,41 +199,13 @@ export function VendorNetworkPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    {ui === 'none' ? (
-                      <button
-                        type="button"
-                        className="rounded-md border border-zinc-600 bg-transparent px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-200 transition hover:border-indigo-400 hover:text-indigo-200"
-                        disabled={busyId === peer.profileId}
-                        onClick={() => void connect(peer.profileId)}
-                      >
-                        {busyId === peer.profileId ? '…' : '[ CONNECT ]'}
-                      </button>
-                    ) : null}
-                    {ui === 'pending_sent' ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500"
-                      >
-                        [ REQUEST PENDING ]
-                      </button>
-                    ) : null}
-                    {ui === 'pending_received' ? (
-                      <Link
-                        to="/vendor/inbox?tab=requests"
-                        className="rounded-md border border-indigo-500/50 bg-indigo-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-200 no-underline"
-                      >
-                        [ REVIEW REQUEST ]
-                      </Link>
-                    ) : null}
-                    {ui === 'connected' ? (
-                      <Link
-                        to={`/vendor/inbox/chat/${peer.profileId}`}
-                        className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200 no-underline"
-                      >
-                        [ MESSAGE ]
-                      </Link>
-                    ) : null}
+                    <ConnectionButton
+                      targetProfileId={peer.profileId}
+                      {...connectionUiToButtonProps(ui)}
+                      onStatusChange={(next) => {
+                        setStates((prev) => ({ ...prev, [peer.profileId]: next }));
+                      }}
+                    />
                   </div>
                 </div>
               </li>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -21,6 +22,7 @@ type PeerMeta = {
   profileId: string;
   displayName: string;
   role: ProfileRole | null;
+  specialties: string[];
 };
 
 async function loadPeerMeta(profileIds: string[]): Promise<Record<string, PeerMeta>> {
@@ -29,7 +31,7 @@ async function loadPeerMeta(profileIds: string[]): Promise<Record<string, PeerMe
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, role')
+    .select('id, role, vendor_specialties, farmer_specialties')
     .in('id', unique);
 
   const { data: vendors } = await supabase
@@ -53,6 +55,8 @@ async function loadPeerMeta(profileIds: string[]): Promise<Record<string, PeerMe
   for (const p of profiles ?? []) {
     const id = p.id as string;
     const role = (p.role as ProfileRole | null) ?? null;
+    const vendorSpecs = (p.vendor_specialties as string[] | null) ?? [];
+    const farmerSpecs = (p.farmer_specialties as string[] | null) ?? [];
     out[id] = {
       profileId: id,
       role,
@@ -60,6 +64,7 @@ async function loadPeerMeta(profileIds: string[]): Promise<Record<string, PeerMe
         vendorName.get(id) ||
         farmerName.get(id) ||
         (role === 'farmer' ? 'Farmer' : 'Vendor'),
+      specialties: role === 'farmer' ? farmerSpecs : vendorSpecs,
     };
   }
   return out;
@@ -175,7 +180,7 @@ export function VendorInboxPage() {
             background: tab === 'chats' ? 'rgba(99,102,241,0.15)' : 'transparent',
           }}
         >
-          Chats
+          CHATS
         </button>
         <button
           type="button"
@@ -187,7 +192,7 @@ export function VendorInboxPage() {
             background: tab === 'requests' ? 'rgba(99,102,241,0.15)' : 'transparent',
           }}
         >
-          Network Requests
+          NETWORK REQUESTS
           {pending.length > 0 ? ` (${pending.length})` : ''}
         </button>
       </div>
@@ -251,7 +256,11 @@ export function VendorInboxPage() {
                       </p>
                       <UserSticker role={meta?.role} />
                     </div>
-                    <p className="app-row-meta">Wants to connect for B2B sourcing</p>
+                    <SpecialtyPills
+                      specialties={meta?.specialties}
+                      style={{ marginTop: '0.35rem', marginBottom: '0.25rem' }}
+                    />
+                    <p className="app-row-meta">PENDING network request</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button
