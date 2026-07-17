@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { VendorProductMenu } from '@/components/vendor/VendorProductMenu';
 import { VendorStorefrontSkeleton } from '@/components/vendor/VendorStorefrontSkeleton';
@@ -17,6 +18,7 @@ import { formatEventDisplayDate } from '@/lib/format';
 import { vendorPath } from '@/lib/market-routes';
 import type { MenuProduct } from '@/lib/product-menu';
 import type { PresaleCartMarket } from '@/lib/presale-cart';
+import { supabase } from '@/lib/supabase';
 import {
   parseThemeSettings,
   resolveAccentColor,
@@ -31,6 +33,7 @@ export function ShopperVendorPage() {
   const { isSaved, toggle, pending } = useSavedVendors();
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [specialties, setSpecialties] = useState<string[]>([]);
   const { cart, addToCart, openDrawer, itemCount, inventoryError, clearInventoryError } = useCart();
   const { vendor, products, upcomingMarkets, distanceLabel, loading, error } =
     useVendorStorefront(id);
@@ -47,6 +50,29 @@ export function ShopperVendorPage() {
       .then(setFollowing)
       .catch(() => setFollowing(false));
   }, [profileId, followedProfileId]);
+
+  useEffect(() => {
+    if (!vendor?.user_id) {
+      setSpecialties([]);
+      return;
+    }
+    void supabase
+      .from('profiles')
+      .select('role, vendor_specialties, farmer_specialties')
+      .eq('id', vendor.user_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) {
+          setSpecialties([]);
+          return;
+        }
+        const list =
+          data.role === 'farmer'
+            ? ((data.farmer_specialties as string[] | null) ?? [])
+            : ((data.vendor_specialties as string[] | null) ?? []);
+        setSpecialties(list);
+      });
+  }, [vendor?.user_id]);
 
   const accent = useMemo(() => {
     if (!vendor) return '#228B22';
@@ -217,8 +243,9 @@ export function ShopperVendorPage() {
               </h1>
               <UserSticker role="vendor" />
             </div>
+            <SpecialtyPills specialties={specialties} style={{ marginTop: '0.35rem' }} />
             {vendor.category ? (
-              <p className="truncate text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+              <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-widest text-zinc-300">
                 {vendor.category}
               </p>
             ) : null}

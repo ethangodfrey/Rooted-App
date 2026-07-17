@@ -42,7 +42,8 @@ docs/supabase/phase48_pickup_codes_storefront.sql
 docs/supabase/phase49_stripe_policy_snap_ebt.sql
 docs/supabase/phase49_seed_snap_stripe_test_vendor.sql # optional smoke-test UPDATE for Connect + SNAP
 docs/supabase/phase50_user_role_stickers.sql # shopper|vendor sticker roles; null until onboarding
-docs/supabase/phase51_network_and_stickers.sql # profiles enum, follows, vendor_connections
+docs/supabase/phase51_network_and_stickers.sql # profiles enum, follows, network_connections
+docs/supabase/phase52_profile_specialties.sql # vendor_specialties + farmer_specialties
 docs/supabase/farmers_markets_directory.sql
 ```
 
@@ -69,6 +70,7 @@ Phase48 updates `create_storefront_checkout` to mint 6-char `pickup_code`s (Nest
 Phase49 adds `vendors.preorder_payment_policy`, `vendors.accepts_snap_ebt`, and `products.is_snap_eligible` for Stripe pay-at-preorder UX and SNAP/EBT discovery filters.
 Phase50 leaves `users.role` NULL until onboarding sticker selection (`shopper`|`vendor`).
 Phase51 creates `profiles` (`profile_role` enum shopper|vendor|farmer), `farmers`, `follows` (`followed_profile_id`), and `network_connections` (`pending`|`connected`); syncs sticker fields into `users`.
+Phase52 adds `vendor_specialties` / `farmer_specialties` text arrays on `profiles` (mirrored to `users`) for B2B discovery filters.
 `farmers_markets_directory.sql` adds `public.farmers_markets` (PostGIS directory + GiST) for seedable national directory rows; complements `national_farmers_markets`. Seed with `npm run markets:seed-directory`.
 
 ## Key RPCs

@@ -146,6 +146,7 @@ export interface NetworkPeer {
   sellState: string | null;
   postalCode: string | null;
   productSummary: string | null;
+  specialties: string[];
   /** @deprecated Prefer profileId */
   id: string;
   /** @deprecated Prefer displayName */
@@ -199,6 +200,7 @@ export async function fetchLocalNetworkPeers(options: {
       sellState: v.sell_state,
       postalCode: v.postal_code,
       productSummary: v.product_summary,
+      specialties: [],
       id: v.user_id,
       business_name: v.business_name,
       logo_url: v.logo_url,
@@ -235,6 +237,7 @@ export async function fetchLocalNetworkPeers(options: {
         sellState: f.sell_state,
         postalCode: f.postal_code,
         productSummary: null,
+        specialties: [],
         id: f.user_id,
         business_name: f.farm_name,
         logo_url: f.logo_url,
@@ -243,6 +246,32 @@ export async function fetchLocalNetworkPeers(options: {
         postal_code: f.postal_code,
         product_summary: null,
       });
+    }
+  }
+
+  const ids = peers.map((p) => p.profileId);
+  if (ids.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, role, vendor_specialties, farmer_specialties')
+      .in('id', ids);
+
+    const byId = new Map(
+      (profiles ?? []).map((p) => [
+        p.id as string,
+        {
+          role: p.role as string | null,
+          vendor_specialties: (p.vendor_specialties as string[] | null) ?? [],
+          farmer_specialties: (p.farmer_specialties as string[] | null) ?? [],
+        },
+      ]),
+    );
+
+    for (const peer of peers) {
+      const row = byId.get(peer.profileId);
+      if (!row) continue;
+      peer.specialties =
+        peer.role === 'farmer' ? row.farmer_specialties : row.vendor_specialties;
     }
   }
 

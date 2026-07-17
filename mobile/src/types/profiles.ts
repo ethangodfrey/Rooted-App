@@ -12,6 +12,8 @@ export interface Profile {
   role: ProfileRole | null;
   shopper_interests: string[];
   shopper_zip_code: string | null;
+  vendor_specialties: string[];
+  farmer_specialties: string[];
   created_at: string;
   updated_at: string;
 }

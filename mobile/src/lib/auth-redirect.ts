@@ -12,6 +12,7 @@ export type AuthRedirectHref =
   | '/auth/reset-password'
   | '/(onboarding)/role-select'
   | '/(onboarding)/interests'
+  | '/(onboarding)/specialties'
   | '/(shopper)/(tabs)/home'
   | '/(shopper)/(tabs)/map'
   | '/(vendor)/profile/setup'
@@ -66,10 +67,14 @@ export function resolveAuthRedirect(
   }
 
   if (role === 'farmer') {
+    const farmerSpecs = user?.farmer_specialties ?? [];
+    if (user && farmerSpecs.length === 0) return '/(onboarding)/specialties';
     return '/(vendor)/(tabs)/more';
   }
 
   if (role === 'vendor') {
+    const vendorSpecs = user?.vendor_specialties ?? [];
+    if (user && vendorSpecs.length === 0) return '/(onboarding)/specialties';
     const complete = user
       ? isVendorApplicationComplete(vendor)
       : (trustedCache?.vendorComplete ?? false);

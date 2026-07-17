@@ -12,6 +12,10 @@ export interface Profile {
   role: ProfileRole | null;
   shopper_interests: string[];
   shopper_zip_code: string | null;
+  /** Phase 52 — vendor specialty tokens (uppercase) */
+  vendor_specialties: string[];
+  /** Phase 52 — farmer specialty tokens (uppercase) */
+  farmer_specialties: string[];
   created_at: string;
   updated_at: string;
 }

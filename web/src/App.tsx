@@ -37,6 +37,7 @@ import { LandingPage } from '@/pages/marketing/LandingPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { InterestsPage } from '@/pages/onboarding/InterestsPage';
 import { RoleSelectPage } from '@/pages/onboarding/RoleSelectPage';
+import { SpecialtiesPage } from '@/pages/onboarding/SpecialtiesPage';
 import { ShopperBookingDetailPage } from '@/pages/shopper/ShopperBookingDetailPage';
 import { ShopperBookingsPage } from '@/pages/shopper/ShopperBookingsPage';
 import { ShopperCartPage } from '@/pages/shopper/ShopperCartPage';
@@ -118,6 +119,7 @@ export default function App() {
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/role" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
+        <Route path="/onboarding/specialties" element={<SpecialtiesPage />} />
 
         {/* Shopper workspace — Explore / Inbox / Following / Orders */}
         <Route element={<ShopperLayout />}>

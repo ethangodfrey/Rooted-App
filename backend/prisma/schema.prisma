@@ -30,6 +30,8 @@ model User {
   email            String?
   shopperInterests String[] @default([]) @map("shopper_interests")
   shopperZipCode   String?  @map("shopper_zip_code")
+  vendorSpecialties String[] @default([]) @map("vendor_specialties")
+  farmerSpecialties String[] @default([]) @map("farmer_specialties")
 
   shopper      Shopper?
   transactions Transaction[]
@@ -43,6 +45,8 @@ model Profile {
   role             String? // profile_role enum: shopper | vendor | farmer
   shopperInterests String[] @default([]) @map("shopper_interests")
   shopperZipCode   String?  @map("shopper_zip_code")
+  vendorSpecialties String[] @default([]) @map("vendor_specialties")
+  farmerSpecialties String[] @default([]) @map("farmer_specialties")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

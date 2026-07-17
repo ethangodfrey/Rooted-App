@@ -1,5 +1,6 @@
 import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
 import { LegalLinks } from '@/components/account/LegalLinks';
+import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import {
   VendorFormPanel,
@@ -16,6 +17,9 @@ import '@/components/ui/user-sticker.css';
 
 export function VendorProfilePage() {
   const { user, vendor, signOut } = useAuth();
+  const stickerRole = user?.role === 'farmer' ? 'farmer' : 'vendor';
+  const specialties =
+    stickerRole === 'farmer' ? (user?.farmer_specialties ?? []) : (user?.vendor_specialties ?? []);
 
   return (
     <VendorScreen>
@@ -28,12 +32,13 @@ export function VendorProfilePage() {
 
       <VendorSection title="Account">
         <VendorFormPanel>
-          <div className="user-sticker-row mb-3">
+          <div className="user-sticker-row mb-2">
             <p className="m-0 text-sm font-semibold text-stone-800">
               {user?.name?.trim() || vendor?.business_name || 'Vendor'}
             </p>
-            <UserSticker role="vendor" />
+            <UserSticker role={stickerRole} />
           </div>
+          <SpecialtyPills specialties={specialties} style={{ marginBottom: '0.75rem' }} />
           <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">Email</p>
           <p className="m-0 mt-1 text-sm font-semibold text-stone-800">{user?.email}</p>
         </VendorFormPanel>
@@ -41,6 +46,7 @@ export function VendorProfilePage() {
 
       <VendorSection title="Settings">
         <VendorListPanel>
+          <VendorListRow to="/onboarding/specialties" title="Edit specialties" icon="grid" tone="amber" />
           <VendorListRow to="/vendor/storefront" title="Edit storefront" icon="store" tone="orange" />
           <VendorListRow to="/vendor/preview" title="Preview shop" icon="grid" tone="stone" />
           <VendorListRow to="/vendor/setup" title="Application details" icon="clipboard" tone="stone" />

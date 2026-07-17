@@ -152,6 +152,10 @@ export interface User {
   shopper_interests?: string[] | null;
   /** Vision profiles.shopper_zip_code — local explore personalization */
   shopper_zip_code?: string | null;
+  /** Phase 52 — mirrored from profiles.vendor_specialties */
+  vendor_specialties?: string[] | null;
+  /** Phase 52 — mirrored from profiles.farmer_specialties */
+  farmer_specialties?: string[] | null;
   notification_preferences: Record<string, unknown>;
   created_at: string;
   updated_at: string;
