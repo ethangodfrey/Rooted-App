@@ -1,5 +1,5 @@
 -- Rooted — Pre-Order & Pick-Up Orders Engine (2026-07-17)
--- Apply after phase9_orders.sql (+ phase7 products).
+-- Apply after phase9_orders.sql (+ phase7 products + phase51 profiles).
 --
 -- NOTE: public.orders / public.order_items already exist (phase9 marketplace
 -- pipeline with Nest/Stripe checkout). This migration adds the PR #130
@@ -7,8 +7,7 @@
 --   public.preorder_orders      ↔ product "orders" table
 --   public.preorder_order_items ↔ product "order_items" table
 --
--- shopper_id / vendor_id are marketplace user ids (public.users.id), matching
--- the profiles.id identity used elsewhere once phase51 is applied.
+-- shopper_id / vendor_id reference public.profiles (id) — vendor|farmer hosts.
 
 -- ---------------------------------------------------------------------------
 -- 1. Enums
@@ -97,8 +96,8 @@ $$;
 
 create table if not exists public.preorder_orders (
   id uuid primary key default gen_random_uuid(),
-  shopper_id uuid not null references public.users (id) on delete cascade,
-  vendor_id uuid not null references public.users (id) on delete cascade,
+  shopper_id uuid not null references public.profiles (id) on delete cascade,
+  vendor_id uuid not null references public.profiles (id) on delete cascade,
   event_id uuid references public.events (id) on delete set null,
   status public.preorder_status not null default 'PENDING_PICKUP',
   payment_method public.preorder_payment_method not null,
@@ -296,6 +295,18 @@ begin
   if v_product_vendor is distinct from p_vendor_user_id then
     raise exception 'Vendor mismatch for product';
   end if;
+
+  if not exists (
+    select 1 from public.profiles
+    where id = p_vendor_user_id and role in ('vendor', 'farmer')
+  ) then
+    raise exception 'Vendor profile must be vendor or farmer';
+  end if;
+
+  -- Ensure shopper profile row exists for FK (auth.uid = profiles.id)
+  insert into public.profiles (id, role)
+  values (v_shopper, 'shopper')
+  on conflict (id) do nothing;
 
   v_pay_status := case
     when p_payment_method = 'STRIPE_ONLINE' then 'PAID'::public.preorder_payment_status
