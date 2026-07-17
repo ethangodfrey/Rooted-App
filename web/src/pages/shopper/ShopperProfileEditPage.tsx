@@ -27,7 +27,7 @@ export function ShopperProfileEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'email', string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'email', string>>>({});
 
   useEffect(() => {
     setName(user?.name ?? '');
@@ -71,7 +71,11 @@ export function ShopperProfileEditPage() {
     setError(null);
     setMessage(null);
 
-    const nextFieldErrors: Partial<Record<'email', string>> = {};
+    const nextFieldErrors: Partial<Record<'name' | 'email', string>> = {};
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      nextFieldErrors.name = 'Name is required.';
+    }
     const trimmedEmail = email.trim();
     if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       nextFieldErrors.email = 'Enter a valid email address.';
@@ -86,7 +90,7 @@ export function ShopperProfileEditPage() {
     setFieldErrors({});
 
     const profileResult = await updateShopperProfile(user.id, {
-      name,
+      name: trimmedName,
       phone,
       profile_photo: photoUrl || null,
     });
@@ -171,7 +175,21 @@ export function ShopperProfileEditPage() {
 
       <div className="app-input-group">
         <label htmlFor="name">Name</label>
-        <input id="name" className="app-input" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          id="name"
+          className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setFieldErrors((prev) => {
+              if (!prev.name) return prev;
+              const next = { ...prev };
+              delete next.name;
+              return next;
+            });
+          }}
+        />
+        <FieldError message={fieldErrors.name} />
       </div>
       <div className="app-input-group">
         <label htmlFor="email">Email</label>
