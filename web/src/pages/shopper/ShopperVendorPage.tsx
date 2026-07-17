@@ -35,15 +35,17 @@ export function ShopperVendorPage() {
   const { vendor, products, upcomingMarkets, distanceLabel, loading, error } =
     useVendorStorefront(id);
 
+  const profileId = user?.id ?? null;
+
   useEffect(() => {
-    if (!shopper?.id || !id) {
+    if (!profileId || !id) {
       setFollowing(false);
       return;
     }
-    void isFollowingVendor(shopper.id, id)
+    void isFollowingVendor(profileId, id)
       .then(setFollowing)
       .catch(() => setFollowing(false));
-  }, [shopper?.id, id]);
+  }, [profileId, id]);
 
   const accent = useMemo(() => {
     if (!vendor) return '#228B22';
@@ -137,7 +139,7 @@ export function ShopperVendorPage() {
               Cart ({itemCount})
             </button>
           ) : null}
-          {shopper?.id ? (
+          {profileId ? (
             <button
               type="button"
               className="app-btn app-btn--primary app-btn--small"
@@ -147,10 +149,10 @@ export function ShopperVendorPage() {
                   setFollowBusy(true);
                   try {
                     if (following) {
-                      await unfollowVendor(shopper.id, id);
+                      await unfollowVendor(profileId, id);
                       setFollowing(false);
                     } else {
-                      await followVendor(shopper.id, id);
+                      await followVendor(profileId, id);
                       setFollowing(true);
                     }
                   } finally {

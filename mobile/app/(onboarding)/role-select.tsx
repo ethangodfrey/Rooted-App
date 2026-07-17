@@ -52,15 +52,25 @@ export default function RoleSelectScreen() {
 
     const userId = session.user.id;
 
-    const { error: roleError } = await supabase
-      .from('users')
-      .update({ role, updated_at: new Date().toISOString() })
-      .eq('id', userId);
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: userId,
+        role,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
 
-    if (roleError) {
-      setLoading(null);
-      setError(roleError.message);
-      return;
+    if (profileError) {
+      const { error: roleError } = await supabase
+        .from('users')
+        .update({ role, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (roleError) {
+        setLoading(null);
+        setError(profileError.message || roleError.message);
+        return;
+      }
     }
 
     const { error: extensionError } = await ensureRoleExtension(userId, role);

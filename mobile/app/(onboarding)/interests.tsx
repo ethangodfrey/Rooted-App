@@ -66,6 +66,17 @@ export default function InterestsScreen() {
 
     const zipValue = trimmedZip || null;
 
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: userId,
+        role: 'shopper',
+        shopper_interests: selected,
+        shopper_zip_code: zipValue,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
+
     const { error: userError } = await supabase
       .from('users')
       .update({
@@ -77,7 +88,13 @@ export default function InterestsScreen() {
       })
       .eq('id', userId);
 
-    if (userError) {
+    if (profileError && userError) {
+      setLoading(false);
+      setError(profileError.message || userError.message);
+      return;
+    }
+
+    if (userError && !profileError) {
       setLoading(false);
       setError(userError.message);
       return;

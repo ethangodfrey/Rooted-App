@@ -1,3 +1,11 @@
+export type {
+  Follow,
+  Profile,
+  ProfileRole,
+  VendorConnection,
+  VendorConnectionStatus,
+} from '@/types/profiles';
+
 /** Sticker roles: shopper | vendor. customer = legacy alias; chef/admin = ops. */
 export type UserRole = 'customer' | 'shopper' | 'vendor' | 'chef' | 'admin';
 
@@ -156,24 +164,6 @@ export interface Shopper {
   default_location: string | null;
   /** Phase 51 — localize USDA / nearby market feeds (mirrors users.shopper_zip_code) */
   zip_code?: string | null;
-}
-
-export interface Follow {
-  id: string;
-  shopper_id: string;
-  vendor_id: string;
-  created_at: string;
-}
-
-export type VendorConnectionStatus = 'pending' | 'connected';
-
-export interface VendorConnection {
-  id: string;
-  sender_vendor_id: string;
-  receiver_vendor_id: string;
-  status: VendorConnectionStatus;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface Vendor {

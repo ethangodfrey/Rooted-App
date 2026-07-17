@@ -49,15 +49,27 @@ export function RoleSelectPage() {
 
     const userId = session.user.id;
 
-    const { error: roleError } = await supabase
-      .from('users')
-      .update({ role, updated_at: new Date().toISOString() })
-      .eq('id', userId);
+    // Canonical sticker role lives on profiles (enum shopper|vendor); syncs to users.
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: userId,
+        role,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
 
-    if (roleError) {
-      setLoading(null);
-      setError(roleError.message);
-      return;
+    if (profileError) {
+      // Fallback for environments that have not applied phase51 yet.
+      const { error: roleError } = await supabase
+        .from('users')
+        .update({ role, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (roleError) {
+        setLoading(null);
+        setError(profileError.message || roleError.message);
+        return;
+      }
     }
 
     const { error: extensionError } = await ensureRoleExtension(userId, role);

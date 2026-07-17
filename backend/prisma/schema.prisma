@@ -22,8 +22,8 @@ datasource db {
 // Existing Rooted tables (abbreviated; managed by the mobile/Supabase layer).
 // ===========================================================================
 
-/// Vision "profiles" = public.users. `role` drives sticker + workspace.
-/// Marketplace roles: shopper | vendor (chef/admin retained for ops).
+/// Legacy auth/ops row. Marketplace sticker role syncs from `profiles`.
+/// Ops roles chef/admin remain here only.
 model User {
   id               String   @id @db.Uuid
   role             String
@@ -35,6 +35,46 @@ model User {
   transactions Transaction[]
 
   @@map("users")
+}
+
+/// Vision profiles table — permanent sticker enum shopper|vendor only.
+model Profile {
+  id               String   @id @db.Uuid
+  role             String? // profile_role enum in Postgres: shopper | vendor
+  shopperInterests String[] @default([]) @map("shopper_interests")
+  shopperZipCode   String?  @map("shopper_zip_code")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  follows Follow[]
+
+  @@map("profiles")
+}
+
+model Follow {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId String   @map("shopper_id") @db.Uuid
+  shopper   Profile  @relation(fields: [shopperId], references: [id], onDelete: Cascade)
+  vendorId  String   @map("vendor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([shopperId, vendorId])
+  @@index([shopperId])
+  @@index([vendorId])
+  @@map("follows")
+}
+
+model VendorConnection {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderVendorId   String   @map("sender_vendor_id") @db.Uuid
+  receiverVendorId String   @map("receiver_vendor_id") @db.Uuid
+  status           String   @default("pending") // pending | connected
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([senderVendorId, status])
+  @@index([receiverVendorId, status])
+  @@map("vendor_connections")
 }
 
 model Shopper {

@@ -1,11 +1,8 @@
 import { supabase } from '@/lib/supabase';
+import type { Follow } from '@/types/profiles';
 
-export interface FollowRow {
-  id: string;
-  shopper_id: string;
-  vendor_id: string;
-  created_at: string;
-}
+/** @deprecated Prefer `Follow` from `@/types/profiles` (`shopper_id` = profiles.id). */
+export type FollowRow = Follow;
 
 export interface FollowedVendor {
   followId: string;
@@ -18,14 +15,17 @@ export interface FollowedVendor {
   followedAt: string;
 }
 
-/** List vendors the shopper follows. */
-export async function fetchFollowedVendors(shopperId: string): Promise<FollowedVendor[]> {
+/**
+ * List vendors the shopper follows.
+ * @param shopperProfileId `profiles.id` (same as auth user id)
+ */
+export async function fetchFollowedVendors(shopperProfileId: string): Promise<FollowedVendor[]> {
   const { data, error } = await supabase
     .from('follows')
     .select(
       'id, created_at, vendor_id, vendor:vendors(id, business_name, logo_url, category, sell_city, sell_state)',
     )
-    .eq('shopper_id', shopperId)
+    .eq('shopper_id', shopperProfileId)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -57,13 +57,13 @@ export async function fetchFollowedVendors(shopperId: string): Promise<FollowedV
 }
 
 export async function isFollowingVendor(
-  shopperId: string,
+  shopperProfileId: string,
   vendorId: string,
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from('follows')
     .select('id')
-    .eq('shopper_id', shopperId)
+    .eq('shopper_id', shopperProfileId)
     .eq('vendor_id', vendorId)
     .maybeSingle();
 
@@ -71,19 +71,19 @@ export async function isFollowingVendor(
   return Boolean(data);
 }
 
-export async function followVendor(shopperId: string, vendorId: string): Promise<void> {
+export async function followVendor(shopperProfileId: string, vendorId: string): Promise<void> {
   const { error } = await supabase.from('follows').upsert(
-    { shopper_id: shopperId, vendor_id: vendorId },
+    { shopper_id: shopperProfileId, vendor_id: vendorId },
     { onConflict: 'shopper_id,vendor_id', ignoreDuplicates: true },
   );
   if (error) throw new Error(error.message);
 }
 
-export async function unfollowVendor(shopperId: string, vendorId: string): Promise<void> {
+export async function unfollowVendor(shopperProfileId: string, vendorId: string): Promise<void> {
   const { error } = await supabase
     .from('follows')
     .delete()
-    .eq('shopper_id', shopperId)
+    .eq('shopper_id', shopperProfileId)
     .eq('vendor_id', vendorId);
   if (error) throw new Error(error.message);
 }

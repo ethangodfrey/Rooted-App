@@ -20,11 +20,12 @@ export function ShopperProfilePage() {
   const interests = shopper?.interests ?? user?.shopper_interests ?? [];
 
   useEffect(() => {
-    if (!shopper?.id) return;
-    void fetchFollowedVendors(shopper.id)
+    const profileId = user?.id ?? session?.user?.id;
+    if (!profileId) return;
+    void fetchFollowedVendors(profileId)
       .then(setFollowed)
       .catch(() => setFollowed([]));
-  }, [shopper?.id]);
+  }, [user?.id, session?.user?.id]);
 
   return (
     <div className="app-screen app-screen--narrow app-screen--titled">

@@ -1,3 +1,11 @@
+export type {
+  Follow,
+  Profile,
+  ProfileRole,
+  VendorConnection,
+  VendorConnectionStatus,
+} from '@/src/types/profiles';
+
 /** Sticker roles: shopper | vendor. customer = legacy alias; chef/admin = ops. */
 export type UserRole = 'customer' | 'shopper' | 'vendor' | 'chef' | 'admin';
 

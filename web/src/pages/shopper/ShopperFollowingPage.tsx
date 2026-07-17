@@ -6,7 +6,8 @@ import { fetchFollowedVendors, unfollowVendor, type FollowedVendor } from '@/lib
 import '@/components/ui/ui.css';
 
 export function ShopperFollowingPage() {
-  const { shopper } = useAuth();
+  const { user, session } = useAuth();
+  const profileId = user?.id ?? session?.user?.id ?? null;
   const [vendors, setVendors] = useState<FollowedVendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,12 +15,12 @@ export function ShopperFollowingPage() {
 
   useEffect(() => {
     let active = true;
-    if (!shopper?.id) {
+    if (!profileId) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    void fetchFollowedVendors(shopper.id)
+    void fetchFollowedVendors(profileId)
       .then((rows) => {
         if (active) {
           setVendors(rows);
@@ -36,13 +37,13 @@ export function ShopperFollowingPage() {
     return () => {
       active = false;
     };
-  }, [shopper?.id]);
+  }, [profileId]);
 
   async function handleUnfollow(vendorId: string) {
-    if (!shopper?.id) return;
+    if (!profileId) return;
     setBusyId(vendorId);
     try {
-      await unfollowVendor(shopper.id, vendorId);
+      await unfollowVendor(profileId, vendorId);
       setVendors((prev) => prev.filter((v) => v.vendorId !== vendorId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to unfollow');

@@ -63,6 +63,17 @@ export function InterestsPage() {
 
     const zipValue = zip.trim() || null;
 
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: userId,
+        role: 'shopper',
+        shopper_interests: selected,
+        shopper_zip_code: zipValue,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
+
     const { error: userError } = await supabase
       .from('users')
       .update({
@@ -74,7 +85,14 @@ export function InterestsPage() {
       })
       .eq('id', userId);
 
-    if (userError) {
+    if (profileError && userError) {
+      setLoading(false);
+      setError(profileError.message || userError.message);
+      return;
+    }
+
+    if (userError && !profileError) {
+      // profiles sync may cover interests/zip; city still needs users row
       setLoading(false);
       setError(userError.message);
       return;
