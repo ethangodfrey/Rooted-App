@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminCommunityEventAiService } from './admin-community-event-ai.service';
 import { AdminCommunityEventsController } from './admin-community-events.controller';
+import { AdminEventIngestService } from './admin-event-ingest.service';
+import { AdminIngestEventsController } from './admin-ingest-events.controller';
 import { AdminPostAgentService } from './admin-post-agent.service';
 import { AdminPostAiService } from './admin-post-ai.service';
 import { AdminPostFeedbackService } from './admin-post-feedback.service';
@@ -20,6 +22,7 @@ import { AdminVendorsController } from './admin-vendors.controller';
     AdminVendorsController,
     AdminPostsController,
     AdminCommunityEventsController,
+    AdminIngestEventsController,
   ],
   providers: [
     AdminVendorAiService,
@@ -31,6 +34,7 @@ import { AdminVendorsController } from './admin-vendors.controller';
     AdminPostAgentService,
     AdminPostSchedulerService,
     AdminCommunityEventAiService,
+    AdminEventIngestService,
   ],
   exports: [
     AdminVendorAgentService,
@@ -38,6 +42,7 @@ import { AdminVendorsController } from './admin-vendors.controller';
     AdminPostAgentService,
     AdminPostFeedbackService,
     AdminCommunityEventAiService,
+    AdminEventIngestService,
   ],
 })
 export class AdminAgentModule {}
