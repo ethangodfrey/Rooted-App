@@ -95,7 +95,7 @@ export function RoleSelectPage() {
           className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em]"
           style={{ color: 'rgba(251, 146, 60, 0.9)' }}
         >
-          Vendorly
+          Rooted
         </p>
         <h1 className="m-0 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Who are you here as?

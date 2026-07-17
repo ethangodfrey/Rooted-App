@@ -68,6 +68,8 @@ export interface User {
   city: string | null;
   state: string | null;
   zip_code: string | null;
+  shopper_interests?: string[] | null;
+  shopper_zip_code?: string | null;
   notification_preferences: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -80,6 +82,8 @@ export interface Shopper {
   saved_vendors: string[];
   saved_events: string[];
   default_location: string | null;
+  /** Phase 50 — localize USDA / nearby market feeds */
+  zip_code?: string | null;
 }
 
 export interface Vendor {

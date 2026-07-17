@@ -13,13 +13,17 @@ import { useNearbyOpenMarkets } from '@/hooks/use-nearby-open-markets';
 import '@/components/ui/ui.css';
 
 const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
-  shopper: '/shopper/home',
-  vendor: '/vendor/dashboard',
+  shopper: '/explore',
+  vendor: '/vendor/storefront',
   chef: '/chef/dashboard',
   admin: '/admin/vendors',
 };
 
 const SHOPPER_SCREEN_TITLES: Record<string, string> = {
+  '/explore': 'Explore',
+  '/inbox': 'Inbox',
+  '/following': 'Following',
+  '/orders': 'Orders',
   '/shopper/search': 'Search',
   '/shopper/events': 'Markets',
   '/shopper/profile': 'You',
@@ -96,12 +100,15 @@ export function AppShell({
   const [fabCompact, setFabCompact] = useState(false);
 
   const tabbarTabs = mobileTabs ?? tabs;
-  const isShopperHome = role === 'shopper' && location.pathname === '/shopper/home';
+  const isShopperHome = role === 'shopper' && location.pathname === '/explore';
   const shopperScreenTitle =
     role === 'shopper' ? SHOPPER_SCREEN_TITLES[location.pathname] : undefined;
 
+  const onMapRoute = Boolean(mapFabHref && location.pathname === mapFabHref);
+  const showMapFab = Boolean(mapFabHref) && !onMapRoute;
+
   useEffect(() => {
-    if (role !== 'shopper' || !mapFabHref) return;
+    if (!showMapFab) return;
 
     const onScroll = () => {
       setFabCompact(window.scrollY > 48);
@@ -110,7 +117,7 @@ export function AppShell({
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
-  }, [role, mapFabHref, location.pathname]);
+  }, [showMapFab, location.pathname]);
 
   return (
     <div className="app-shell">
@@ -135,7 +142,7 @@ export function AppShell({
         <div className="app-topbar__actions">
           <ThemeToggle />
 
-          {role === 'shopper' ? (
+          {role === 'shopper' || role === 'vendor' ? (
             <button
               type="button"
               className="app-btn app-btn--ghost app-btn--small cart-fab"
@@ -183,7 +190,14 @@ export function AppShell({
           ))}
 
           {mapFabHref ? (
-            <NavLink to={mapFabHref} className="app-sidebar__link app-sidebar__link--map">
+            <NavLink
+              to={mapFabHref}
+              className={
+                onMapRoute
+                  ? 'app-sidebar__link app-sidebar__link--map active'
+                  : 'app-sidebar__link app-sidebar__link--map'
+              }
+            >
               <TabIcon name="map" size={18} />
               <span>Map</span>
             </NavLink>
@@ -201,11 +215,11 @@ export function AppShell({
         ))}
       </nav>
 
-      {mapFabHref ? (
+      {showMapFab && mapFabHref ? (
         <NavLink
           to={mapFabHref}
           className={`app-map-fab fixed bottom-24 right-4 z-40 md:hidden${fabCompact ? ' app-map-fab--compact' : ''}${nearbyMarketsOpen ? ' app-map-fab--pulse' : ''}`}
-          aria-label="Open map"
+          aria-label="Open farmers market map"
         >
           <TabIcon name="map" size={22} color="var(--color-surface)" />
         </NavLink>

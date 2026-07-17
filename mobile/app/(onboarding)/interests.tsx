@@ -64,11 +64,15 @@ export default function InterestsScreen() {
     const trimmedCity = city.trim();
     const trimmedZip = zip.trim();
 
+    const zipValue = trimmedZip || null;
+
     const { error: userError } = await supabase
       .from('users')
       .update({
         city: trimmedCity || null,
-        zip_code: trimmedZip || null,
+        zip_code: zipValue,
+        shopper_zip_code: zipValue,
+        shopper_interests: selected,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
@@ -83,6 +87,7 @@ export default function InterestsScreen() {
       .from('shoppers')
       .update({
         interests: selected,
+        zip_code: zipValue,
         default_location: trimmedCity || trimmedZip || null,
       })
       .eq('user_id', userId);

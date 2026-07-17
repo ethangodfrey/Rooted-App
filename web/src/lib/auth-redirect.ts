@@ -8,9 +8,9 @@ export type AuthRedirectPath =
   | '/onboarding/role-select'
   | '/onboarding/role'
   | '/onboarding/interests'
-  | '/shopper/home'
+  | '/explore'
   | '/vendor/setup'
-  | '/vendor/dashboard'
+  | '/vendor/storefront'
   | '/chef/setup'
   | '/chef/dashboard'
   | '/admin/vendors';
@@ -64,14 +64,14 @@ export function resolveAuthRedirect(
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);
-    return hasInterests ? '/shopper/home' : '/onboarding/interests';
+    return hasInterests ? '/explore' : '/onboarding/interests';
   }
 
   if (role === 'vendor') {
     const complete = user
       ? isVendorApplicationComplete(vendor)
       : (trustedCache?.vendorComplete ?? false);
-    return complete ? '/vendor/dashboard' : '/vendor/setup';
+    return complete ? '/vendor/storefront' : '/vendor/setup';
   }
 
   if (role === 'chef') {

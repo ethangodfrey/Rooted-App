@@ -10,7 +10,7 @@ import { ORDER_STATUS_LABEL } from '@/lib/order-status';
 import type { OrderStatus } from '@/types/database';
 import '@/components/ui/ui.css';
 
-const ORDERS_BASE = '/profile/orders';
+const ORDERS_BASE = '/orders';
 
 export function ShopperOrdersPage() {
   const { shopper } = useAuth();
@@ -18,11 +18,8 @@ export function ShopperOrdersPage() {
 
   return (
     <div className="app-screen app-screen--narrow">
-      <Link to="/shopper/profile" className="app-back-link">
-        ← Profile
-      </Link>
-      <h1 className="app-title">My reservations</h1>
-      <p className="app-subtitle">Pickup passes for presale orders at your markets.</p>
+      <h1 className="app-title">Orders</h1>
+      <p className="app-subtitle">Active reservations, pickup codes, and receipts.</p>
 
       {loading ? (
         <OrdersListSkeleton count={3} />

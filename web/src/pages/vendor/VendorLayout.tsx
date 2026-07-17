@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import {
   buildVendorMobileTabs,
+  VENDOR_MAP_HREF,
   VENDOR_SIDEBAR_TABS,
 } from '@/components/navigation/vendor-tabs';
 import { useAuth } from '@/hooks/use-auth';
@@ -60,6 +61,11 @@ export function VendorLayout() {
   }
 
   return (
-    <AppShell role="vendor" tabs={VENDOR_SIDEBAR_TABS} mobileTabs={mobileTabs} />
+    <AppShell
+      role="vendor"
+      tabs={VENDOR_SIDEBAR_TABS}
+      mobileTabs={mobileTabs}
+      mapFabHref={VENDOR_MAP_HREF}
+    />
   );
 }

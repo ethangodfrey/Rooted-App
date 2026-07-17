@@ -37,7 +37,7 @@ export function InterestsPage() {
   }
 
   if (user?.role === 'shopper' && (shopper?.interests?.length ?? 0) > 0) {
-    return <Navigate to="/shopper/home" replace />;
+    return <Navigate to="/explore" replace />;
   }
 
   function toggle(option: string) {
@@ -61,11 +61,15 @@ export function InterestsPage() {
 
     const userId = session.user.id;
 
+    const zipValue = zip.trim() || null;
+
     const { error: userError } = await supabase
       .from('users')
       .update({
         city: city.trim() || null,
-        zip_code: zip.trim() || null,
+        zip_code: zipValue,
+        shopper_zip_code: zipValue,
+        shopper_interests: selected,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
@@ -80,6 +84,7 @@ export function InterestsPage() {
       .from('shoppers')
       .update({
         interests: selected,
+        zip_code: zipValue,
         default_location: city.trim() || zip.trim() || null,
       })
       .eq('user_id', userId);
