@@ -12,6 +12,7 @@ export type AuthRedirectPath =
   | '/explore'
   | '/vendor/setup'
   | '/vendor/storefront'
+  | '/vendor/network'
   | '/chef/setup'
   | '/chef/dashboard'
   | '/admin/vendors';

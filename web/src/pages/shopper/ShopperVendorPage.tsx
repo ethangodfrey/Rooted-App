@@ -29,7 +29,7 @@ export function ShopperVendorPage() {
   const [searchParams] = useSearchParams();
   const marketQueryId = searchParams.get('market');
   const now = useNow(60_000);
-  const { user, shopper } = useAuth();
+  const { user } = useAuth();
   const { isSaved, toggle, pending } = useSavedVendors();
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
