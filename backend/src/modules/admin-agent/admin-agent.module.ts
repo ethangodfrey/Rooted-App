@@ -10,6 +10,8 @@ import { AdminPostAiService } from './admin-post-ai.service';
 import { AdminPostFeedbackService } from './admin-post-feedback.service';
 import { AdminPostSchedulerService } from './admin-post-scheduler.service';
 import { AdminPostsController } from './admin-posts.controller';
+import { AdminSeedNetworkController } from './admin-seed-network.controller';
+import { AdminSeedNetworkService } from './admin-seed-network.service';
 import { AdminVendorAgentService } from './admin-vendor-agent.service';
 import { AdminVendorAiService } from './admin-vendor-ai.service';
 import { AdminVendorFeedbackService } from './admin-vendor-feedback.service';
@@ -23,6 +25,7 @@ import { AdminVendorsController } from './admin-vendors.controller';
     AdminPostsController,
     AdminCommunityEventsController,
     AdminIngestEventsController,
+    AdminSeedNetworkController,
   ],
   providers: [
     AdminVendorAiService,
@@ -35,6 +38,7 @@ import { AdminVendorsController } from './admin-vendors.controller';
     AdminPostSchedulerService,
     AdminCommunityEventAiService,
     AdminEventIngestService,
+    AdminSeedNetworkService,
   ],
   exports: [
     AdminVendorAgentService,
@@ -43,6 +47,7 @@ import { AdminVendorsController } from './admin-vendors.controller';
     AdminPostFeedbackService,
     AdminCommunityEventAiService,
     AdminEventIngestService,
+    AdminSeedNetworkService,
   ],
 })
 export class AdminAgentModule {}

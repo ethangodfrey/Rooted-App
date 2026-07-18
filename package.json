@@ -47,7 +47,9 @@
     "test:web": "npm run test --prefix web",
     "build:web": "npm run build --prefix web",
     "build:tenant-web": "NODE_ENV=production npm run build --prefix tenant-web",
-    "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
+    "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts",
+    "db:seed:network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts",
+    "seed:local-network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
@@ -58,7 +60,9 @@
   "devDependencies": {
     "@types/luxon": "^3.7.2",
     "@types/react": "~19.2.14",
+    "dotenv": "^16.6.1",
     "luxon": "^3.6.1",
+    "ts-node": "^10.9.2",
     "typescript": "~6.0.3"
   }
 }
