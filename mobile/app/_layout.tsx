@@ -16,6 +16,7 @@ import '../global.css';
 import { useColorScheme } from '@/components/useColorScheme';
 import { rootedStackScreenOptions } from '@/src/components/navigation/rooted-stack-options';
 import { AuthProvider } from '@/src/providers/auth-provider';
+import { SyncWorkerHost } from '@/src/workers/SyncWorkerHost';
 
 export {
   ErrorBoundary,
@@ -47,6 +48,7 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
+      <SyncWorkerHost />
       <RootLayoutNav />
     </AuthProvider>
   );
