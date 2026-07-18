@@ -178,64 +178,147 @@ async function ensureAuthUser(db: SeedDb, userId: string, email: string): Promis
   `;
 }
 
+async function tryDelete(db: SeedDb, label: string, run: () => Promise<unknown>): Promise<void> {
+  try {
+    await run();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    // Missing tables (older local DBs) are skipped; real failures still surface later.
+    if (/does not exist|relation .* does not exist/i.test(message)) {
+      console.log(`NETWORK SEED CLEAN SKIP: ${label}`);
+      return;
+    }
+    throw err;
+  }
+}
+
 async function cleanNetworkSeed(db: SeedDb): Promise<void> {
   const like = `%@${SEED_EMAIL_DOMAIN}`;
+  console.log('NETWORK SEED: CLEAN PRIOR MOCK ROWS');
 
-  await db.$executeRaw`
+  // Dependents first (respect FK order; products are RESTRICT from preorder items).
+  await tryDelete(db, 'PREORDER_ORDER_ITEMS', () => db.$executeRaw`
+    delete from public.preorder_order_items
+    where order_id in (
+      select o.id from public.preorder_orders o
+      join public.users u on u.id in (o.shopper_id, o.vendor_id)
+      where u.email like ${like}
+    )
+    or product_id in (
+      select p.id from public.products p
+      join public.vendors v on v.id = p.vendor_id
+      join public.users u on u.id = v.user_id
+      where u.email like ${like}
+    )
+  `);
+
+  await tryDelete(db, 'PREORDER_ORDERS', () => db.$executeRaw`
+    delete from public.preorder_orders
+    where shopper_id in (select id from public.users where email like ${like})
+       or vendor_id in (select id from public.users where email like ${like})
+  `);
+
+  await tryDelete(db, 'FOLLOWS', () => db.$executeRaw`
     delete from public.follows
     where shopper_id in (select id from public.users where email like ${like})
        or followed_profile_id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'CONVERSATION_THREADS', () => db.$executeRaw`
+    delete from public.conversation_threads
+    where customer_user_id in (select id from public.users where email like ${like})
+       or b2b_peer_user_id in (select id from public.users where email like ${like})
+       or vendor_connection_id in (
+         select id from public.vendor_connections
+         where sender_id in (select id from public.users where email like ${like})
+            or receiver_id in (select id from public.users where email like ${like})
+       )
+  `);
+
+  await tryDelete(db, 'VENDOR_CONNECTIONS', () => db.$executeRaw`
     delete from public.vendor_connections
     where sender_id in (select id from public.users where email like ${like})
        or receiver_id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'NETWORK_CONNECTIONS', () => db.$executeRaw`
+    delete from public.network_connections
+    where sender_id in (select id from public.users where email like ${like})
+       or receiver_id in (select id from public.users where email like ${like})
+  `);
+
+  await tryDelete(db, 'COMMUNITY_EVENT_PARTICIPANTS', () => db.$executeRaw`
+    delete from public.community_event_participants
+    where profile_id in (select id from public.users where email like ${like})
+       or community_event_id in (
+         select id from public.community_events
+         where creator_id in (select id from public.users where email like ${like})
+       )
+  `);
+
+  await tryDelete(db, 'COMMUNITY_EVENTS', () => db.$executeRaw`
+    delete from public.community_events
+    where creator_id in (select id from public.users where email like ${like})
+  `);
+
+  await tryDelete(db, 'HISTORICAL_SALES_METRICS', () => db.$executeRaw`
+    delete from public.historical_sales_metrics
+    where vendor_id in (select id from public.users where email like ${like})
+  `);
+
+  await tryDelete(db, 'POS_INTEGRATIONS', () => db.$executeRaw`
     delete from public.pos_integrations
     where vendor_id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'PRODUCT_EVENT_AVAILABILITY', () => db.$executeRaw`
+    delete from public.product_event_availability
+    where product_id in (
+      select p.id from public.products p
+      join public.vendors v on v.id = p.vendor_id
+      join public.users u on u.id = v.user_id
+      where u.email like ${like}
+    )
+  `);
+
+  await tryDelete(db, 'PRODUCTS', () => db.$executeRaw`
     delete from public.products
     where vendor_id in (
       select v.id from public.vendors v
       join public.users u on u.id = v.user_id
       where u.email like ${like}
     )
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'VENDORS', () => db.$executeRaw`
     delete from public.vendors
     where user_id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'FARMERS', () => db.$executeRaw`
     delete from public.farmers
     where user_id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'SHOPPERS', () => db.$executeRaw`
     delete from public.shoppers
     where user_id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'PROFILES', () => db.$executeRaw`
     delete from public.profiles
     where id in (select id from public.users where email like ${like})
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'USERS', () => db.$executeRaw`
     delete from public.users
     where email like ${like}
-  `;
+  `);
 
-  await db.$executeRaw`
+  await tryDelete(db, 'AUTH_USERS', () => db.$executeRaw`
     delete from auth.users
     where email like ${like}
-  `;
+  `);
 }
 
 export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedResult> {
@@ -500,76 +583,71 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
   }
 
   // ---- B2B connections (10 pairs, mix pending/connected) ----
+  // Disable thread-open trigger: live DBs may lack a compatible
+  // conversation_threads.b2b_peer_user_id insert path during bulk seed.
+  await tryDelete(db, 'DISABLE_CONN_THREAD_TRIGGER', () =>
+    db.$executeRawUnsafe(
+      'alter table public.vendor_connections disable trigger vendor_connections_open_thread',
+    ),
+  );
+
   const b2bPool = [...vendorProfileIds, ...farmerProfileIds];
   let connections = 0;
   const usedPairs = new Set<string>();
-  for (let i = 1; i <= CONNECTION_COUNT; i += 1) {
-    const sender = b2bPool[(i * 3) % b2bPool.length]!;
-    let receiver = b2bPool[(i * 7 + 1) % b2bPool.length]!;
-    if (receiver === sender) {
-      receiver = b2bPool[(i * 7 + 2) % b2bPool.length]!;
+  let connSlot = 1;
+  for (let s = 0; s < b2bPool.length && connections < CONNECTION_COUNT; s += 1) {
+    for (let r = s + 1; r < b2bPool.length && connections < CONNECTION_COUNT; r += 1) {
+      const sender = b2bPool[s]!;
+      const receiver = b2bPool[r]!;
+      const pairKey = `${sender}:${receiver}`;
+      if (usedPairs.has(pairKey)) continue;
+      usedPairs.add(pairKey);
+      const status = connections % 2 === 0 ? 'pending' : 'connected';
+      const connId = seedEntityId('conn', connSlot);
+      connSlot += 1;
+      await db.$executeRaw`
+        insert into public.vendor_connections (
+          id, sender_id, receiver_id, status
+        ) values (
+          ${connId}::uuid,
+          ${sender}::uuid,
+          ${receiver}::uuid,
+          ${status}::public.vendor_connection_status
+        )
+        on conflict do nothing
+      `;
+      connections += 1;
     }
-    const pairKey = [sender, receiver].sort().join(':');
-    if (usedPairs.has(pairKey) || sender === receiver) continue;
-    usedPairs.add(pairKey);
-    const status = i % 2 === 0 ? 'connected' : 'pending';
-    const connId = seedEntityId('conn', i);
-    await db.$executeRaw`
-      insert into public.vendor_connections (
-        id, sender_id, receiver_id, status
-      ) values (
-        ${connId}::uuid,
-        ${sender}::uuid,
-        ${receiver}::uuid,
-        ${status}::public.vendor_connection_status
-      )
-      on conflict do nothing
-    `;
-    connections += 1;
   }
 
-  // Fill to 10 if collisions skipped
-  let fill = CONNECTION_COUNT + 1;
-  while (connections < CONNECTION_COUNT && fill < CONNECTION_COUNT + 40) {
-    const sender = b2bPool[fill % b2bPool.length]!;
-    const receiver = b2bPool[(fill * 5 + 3) % b2bPool.length]!;
-    const pairKey = [sender, receiver].sort().join(':');
-    fill += 1;
-    if (sender === receiver || usedPairs.has(pairKey)) continue;
-    usedPairs.add(pairKey);
-    const status = connections % 2 === 0 ? 'connected' : 'pending';
-    const connId = seedEntityId('conn', fill);
-    await db.$executeRaw`
-      insert into public.vendor_connections (
-        id, sender_id, receiver_id, status
-      ) values (
-        ${connId}::uuid,
-        ${sender}::uuid,
-        ${receiver}::uuid,
-        ${status}::public.vendor_connection_status
-      )
-      on conflict do nothing
-    `;
-    connections += 1;
-  }
+  await tryDelete(db, 'ENABLE_CONN_THREAD_TRIGGER', () =>
+    db.$executeRawUnsafe(
+      'alter table public.vendor_connections enable trigger vendor_connections_open_thread',
+    ),
+  );
 
   // ---- Follows (30) ----
   const followTargets = [...vendorProfileIds, ...farmerProfileIds];
   let follows = 0;
   const usedFollows = new Set<string>();
-  for (let i = 1; i <= FOLLOW_COUNT + 20 && follows < FOLLOW_COUNT; i += 1) {
-    const shopper = shopperIds[(i - 1) % shopperIds.length]!;
-    const target = followTargets[(i * 3) % followTargets.length]!;
-    const key = `${shopper}:${target}`;
-    if (usedFollows.has(key)) continue;
-    usedFollows.add(key);
-    const followId = seedEntityId('follow', i);
-    await db.$executeRaw`
-      insert into public.follows (id, shopper_id, followed_profile_id)
-      values (${followId}::uuid, ${shopper}::uuid, ${target}::uuid)
-      on conflict (shopper_id, followed_profile_id) do nothing
-    `;
-    follows += 1;
+  let followSlot = 1;
+  for (let s = 0; s < shopperIds.length && follows < FOLLOW_COUNT; s += 1) {
+    for (let t = 0; t < followTargets.length && follows < FOLLOW_COUNT; t += 1) {
+      // Spread shoppers across vendors/farmers with a stride to avoid clustering.
+      const target = followTargets[(s * 3 + t) % followTargets.length]!;
+      const shopper = shopperIds[s]!;
+      const key = `${shopper}:${target}`;
+      if (usedFollows.has(key)) continue;
+      usedFollows.add(key);
+      const followId = seedEntityId('follow', followSlot);
+      followSlot += 1;
+      await db.$executeRaw`
+        insert into public.follows (id, shopper_id, followed_profile_id)
+        values (${followId}::uuid, ${shopper}::uuid, ${target}::uuid)
+        on conflict (shopper_id, followed_profile_id) do nothing
+      `;
+      follows += 1;
+    }
   }
 
   return {
