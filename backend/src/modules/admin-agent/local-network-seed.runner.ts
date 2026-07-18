@@ -466,7 +466,7 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
       const price = 500 + ((i * 17 + p * 41) % 4500);
       await db.$executeRaw`
         insert into public.products (
-          id, vendor_id, name, description, price, category, status, sku
+          id, vendor_id, name, description, price, category, status, sku, stock
         ) values (
           ${productId}::uuid,
           ${resolvedVendorId}::uuid,
@@ -475,13 +475,15 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
           ${price},
           ${specialty},
           'active',
-          ${`SEED-V-${i}-${p + 1}`}
+          ${`SEED-V-${i}-${p + 1}`},
+          25
         )
         on conflict (id) do update set
           name = excluded.name,
           description = excluded.description,
           price = excluded.price,
           status = 'active',
+          stock = greatest(public.products.stock, 25),
           updated_at = now()
       `;
       listings += 1;

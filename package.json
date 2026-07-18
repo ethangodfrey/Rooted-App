@@ -49,7 +49,8 @@
     "build:tenant-web": "NODE_ENV=production npm run build --prefix tenant-web",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts",
     "db:seed:network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts",
-    "seed:local-network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts"
+    "seed:local-network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts",
+    "pos:simulate-swipe": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/simulate-pos-swipe.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
