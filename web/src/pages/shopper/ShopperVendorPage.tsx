@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { VendorProductMenu } from '@/components/vendor/VendorProductMenu';
@@ -149,14 +150,14 @@ export function ShopperVendorPage() {
 
   return (
     <div className="mx-auto max-w-3xl pb-24 sm:px-6">
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <Link
           to="/explore"
-          className="inline-flex items-center gap-1 text-sm font-medium text-emerald-800 hover:underline"
+          className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-emerald-800 hover:underline"
         >
           ← Back
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           {itemCount > 0 ? (
             <button
               type="button"
@@ -202,40 +203,23 @@ export function ShopperVendorPage() {
         </div>
       </div>
 
-      <div
-        className="relative h-36 w-full overflow-hidden sm:h-44"
-        style={{
-          background: bannerUrl
-            ? `url(${bannerUrl}) center/cover no-repeat`
-            : '#09090b',
-        }}
-      >
-        {bannerUrl ? (
-          <img
-            src={bannerUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        ) : null}
+      <div className="relative h-36 w-full overflow-hidden sm:h-44">
+        <FallbackImage
+          src={bannerUrl}
+          variant="banner"
+          category={vendor.category}
+          label={vendor.business_name ?? undefined}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3 px-4">
-          {vendor.logo_url ? (
-            <img
-              src={vendor.logo_url}
-              alt=""
-              className="h-14 w-14 rounded-lg border border-white/20 object-cover sm:h-16 sm:w-16"
-            />
-          ) : (
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-lg border border-white/20 text-lg font-bold text-white sm:h-16 sm:w-16"
-              style={{ backgroundColor: accent || '#18181b' }}
-            >
-              {(vendor.business_name ?? 'V').charAt(0)}
-            </div>
-          )}
+          <FallbackImage
+            src={vendor.logo_url}
+            variant="vendor-logo"
+            label={vendor.business_name ?? undefined}
+            className="h-14 w-14 shrink-0 rounded-lg border border-white/20 object-cover sm:h-16 sm:w-16"
+            style={{ backgroundColor: accent || '#18181b' }}
+          />
           <div className="min-w-0 flex-1 text-white">
             <div className="user-sticker-row mb-1">
               <h1 className="m-0 truncate text-xl font-extrabold tracking-tight sm:text-2xl">

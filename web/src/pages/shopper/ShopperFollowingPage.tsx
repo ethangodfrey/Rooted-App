@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchFollowedVendors, unfollowVendor, type FollowedVendor } from '@/lib/follows';
 import '@/components/ui/ui.css';
@@ -58,8 +60,10 @@ export function ShopperFollowingPage() {
       <p className="app-subtitle">Creators you follow — updates and shortcuts live here.</p>
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
+        <div className="flex flex-col gap-3" aria-busy aria-label="Loading following">
+          {Array.from({ length: 4 }, (_, index) => (
+            <SkeletonCard key={index} height={72} />
+          ))}
         </div>
       ) : error ? (
         <div className="app-empty">{error}</div>
@@ -77,20 +81,13 @@ export function ShopperFollowingPage() {
             return (
               <li key={vendor.followId} className="app-card" style={{ marginBottom: '0.75rem' }}>
                 <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#121A36] text-sm font-bold text-orange-300"
+                  <FallbackImage
+                    src={vendor.logoUrl}
+                    variant="vendor-logo"
+                    label={vendor.businessName ?? undefined}
+                    className="h-12 w-12 shrink-0 rounded-xl object-cover"
                     style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                  >
-                    {vendor.logoUrl ? (
-                      <img
-                        src={vendor.logoUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      (vendor.businessName ?? '?').slice(0, 1).toUpperCase()
-                    )}
-                  </div>
+                  />
                   <div className="min-w-0 flex-1">
                     {vendor.vendorId ? (
                       <Link

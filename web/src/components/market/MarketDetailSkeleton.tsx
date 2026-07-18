@@ -2,8 +2,8 @@ import { Skeleton, SkeletonCard, SkeletonText } from '@/components/ui/Skeleton';
 
 export function MarketDetailSkeleton() {
   return (
-    <div className="app-screen app-screen--narrow flex flex-col gap-4">
-      <Skeleton className="h-48 w-full md:h-56" />
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
+      <Skeleton className="h-48 w-full rounded-2xl md:h-56 lg:h-64" />
       <SkeletonText width="70%" height={28} />
       <SkeletonText width="45%" height={16} />
       <SkeletonCard height={140} />

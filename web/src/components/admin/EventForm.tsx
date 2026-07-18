@@ -168,6 +168,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
         <input
           className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
           value={name}
+          aria-invalid={Boolean(fieldErrors.name)}
           onChange={(e) => {
             setName(e.target.value);
             clearFieldError('name');
@@ -191,6 +192,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
             className={`app-input${fieldErrors.startDate ? ' app-input--invalid' : ''}`}
             type="date"
             value={startDate}
+            aria-invalid={Boolean(fieldErrors.startDate)}
             onChange={(e) => {
               setStartDate(e.target.value);
               clearFieldError('startDate');
@@ -205,6 +207,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
             className={`app-input${fieldErrors.startTime ? ' app-input--invalid' : ''}`}
             type="time"
             value={startTime}
+            aria-invalid={Boolean(fieldErrors.startTime)}
             onChange={(e) => {
               setStartTime(e.target.value);
               clearFieldError('startTime');
@@ -219,6 +222,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
             className={`app-input${fieldErrors.endDate ? ' app-input--invalid' : ''}`}
             type="date"
             value={endDate}
+            aria-invalid={Boolean(fieldErrors.endDate)}
             onChange={(e) => {
               setEndDate(e.target.value);
               clearFieldError('endDate');
@@ -233,6 +237,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
             className={`app-input${fieldErrors.endTime ? ' app-input--invalid' : ''}`}
             type="time"
             value={endTime}
+            aria-invalid={Boolean(fieldErrors.endTime)}
             onChange={(e) => {
               setEndTime(e.target.value);
               clearFieldError('endTime');
@@ -263,6 +268,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
           <input
             className={`app-input${fieldErrors.latitude ? ' app-input--invalid' : ''}`}
             value={latitude}
+            aria-invalid={Boolean(fieldErrors.latitude)}
             onChange={(e) => {
               setLatitude(e.target.value);
               clearFieldError('latitude');
@@ -275,6 +281,7 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
           <input
             className={`app-input${fieldErrors.longitude ? ' app-input--invalid' : ''}`}
             value={longitude}
+            aria-invalid={Boolean(fieldErrors.longitude)}
             onChange={(e) => {
               setLongitude(e.target.value);
               clearFieldError('longitude');
