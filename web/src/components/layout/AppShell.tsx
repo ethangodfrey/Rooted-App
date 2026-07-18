@@ -143,9 +143,7 @@ export function AppShell({
         <div className="app-topbar__actions">
           <ThemeToggle />
 
-          {(role === 'shopper' || role === 'vendor') && user?.id ? (
-            <NotificationCenter userId={user.id} />
-          ) : null}
+          {role === 'shopper' || role === 'vendor' ? <NotificationCenter /> : null}
 
           {role === 'shopper' || role === 'vendor' ? (
             <button

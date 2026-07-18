@@ -6,14 +6,15 @@ import { SHOPPER_MAP_HREF, SHOPPER_TABS } from '@/components/navigation/shopper-
 import { useAuth } from '@/hooks/use-auth';
 import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isCustomerRole } from '@/lib/role-utils';
+import { NotificationProvider } from '@/providers/notification-provider';
 
 /**
  * Shopper workspace shell — Explore / Inbox / Following / Orders.
  * Vendors may enter shopping routes (Explore + checkout) without a mode toggle;
  * their default home remains the vendor dashboard via auth redirect.
  *
- * Real-time notification_logs binding (websocket + dropdown + live banner)
- * mounts via AppShell → NotificationCenter for authenticated shoppers.
+ * Real-time notification_logs websocket + live INSERT banner bind here via
+ * NotificationProvider; AppShell renders the NotificationDropdown feed.
  */
 export function ShopperLayout() {
   const { user, shopper, session, isProfileLoading } = useAuth();
@@ -57,5 +58,9 @@ export function ShopperLayout() {
     }
   }
 
-  return <AppShell role="shopper" tabs={SHOPPER_TABS} mapFabHref={SHOPPER_MAP_HREF} />;
+  return (
+    <NotificationProvider userId={user?.id ?? session?.user?.id}>
+      <AppShell role="shopper" tabs={SHOPPER_TABS} mapFabHref={SHOPPER_MAP_HREF} />
+    </NotificationProvider>
+  );
 }
