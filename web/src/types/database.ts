@@ -59,6 +59,11 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type EventStatus = 'upcoming' | 'live' | 'completed' | 'cancelled';
 export type VisibilityStatus = 'draft' | 'public';
 export type ProductStatus = 'active' | 'archived';
+
+/** PR #130 pre-order engine statuses (public.preorder_orders). */
+export type PreorderStatus = 'PENDING_PICKUP' | 'COMPLETED' | 'CANCELLED';
+export type PreorderPaymentMethod = 'STRIPE_ONLINE' | 'PAY_AT_HANDOFF';
+export type PreorderPaymentStatus = 'PAID' | 'PENDING';
 export type PostType =
   | 'update'
   | 'product'
