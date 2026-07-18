@@ -12,5 +12,16 @@
     "resolveJsonModule": true
   },
   "include": ["scripts/**/*.ts"],
-  "exclude": ["node_modules", "web", "mobile", "backend", "data", "docs"]
+  "exclude": [
+    "node_modules",
+    "web",
+    "mobile",
+    "backend",
+    "data",
+    "docs",
+    "scripts/autonomous-health-check.ts",
+    "scripts/e2e-phase-c-pipeline.ts",
+    "scripts/seed-markets.ts",
+    "scripts/test-checkout-pipeline.ts"
+  ]
 }
