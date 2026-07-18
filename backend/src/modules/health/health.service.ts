@@ -18,7 +18,21 @@ export interface ReadinessResult {
   dbError?: string | null;
 }
 
+export interface ProductionHealthProbe {
+  ok: boolean;
+  db: 'UP' | 'DOWN';
+  supabase: 'UP' | 'DOWN';
+  timestamp: number;
+  reason?: string;
+}
+
+export type ApiHealthPayload = {
+  STATUS: 'HEALTH_OK' | 'HEALTH_DEGRADED';
+  TIMESTAMP: number;
+};
+
 const DB_CHECK_TIMEOUT_MS = 10_000;
+const SUPABASE_CHECK_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class HealthService {
@@ -49,6 +63,48 @@ export class HealthService {
     };
   }
 
+  /**
+   * Production balancer probe: Postgres SELECT 1 + Supabase auth health.
+   * Returns uppercase STATUS payload for /api/health.
+   */
+  async productionProbe(): Promise<ProductionHealthProbe> {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const [dbResult, supabaseOk] = await Promise.all([
+      this.checkDb(),
+      this.checkSupabase(),
+    ]);
+
+    const ok = dbResult.ok && supabaseOk;
+    if (!ok) {
+      const reason = !dbResult.ok
+        ? 'DATABASE_UNREACHABLE'
+        : 'SUPABASE_UNREACHABLE';
+      this.logger.warn(`HEALTH_DEGRADED REASON=${reason}`);
+      return {
+        ok: false,
+        db: dbResult.ok ? 'UP' : 'DOWN',
+        supabase: supabaseOk ? 'UP' : 'DOWN',
+        timestamp,
+        reason,
+      };
+    }
+
+    this.logger.log('HEALTH_OK');
+    return {
+      ok: true,
+      db: 'UP',
+      supabase: 'UP',
+      timestamp,
+    };
+  }
+
+  toApiHealthPayload(probe: ProductionHealthProbe): ApiHealthPayload {
+    return {
+      STATUS: probe.ok ? 'HEALTH_OK' : 'HEALTH_DEGRADED',
+      TIMESTAMP: probe.timestamp,
+    };
+  }
+
   private async checkDb(): Promise<{ ok: boolean; error?: string }> {
     try {
       await this.withTimeout(async () => {
@@ -57,9 +113,35 @@ export class HealthService {
       }, DB_CHECK_TIMEOUT_MS);
       return { ok: true };
     } catch (err) {
-      const message = (err as Error).message || 'unknown_db_error';
-      this.logger.warn(`Health check 'db' failed: ${message}`);
+      const message = (err as Error).message || 'UNKNOWN_DB_ERROR';
+      this.logger.warn(`HEALTH_CHECK_DB_FAILED: ${sanitizeDbError(message)}`);
       return { ok: false, error: sanitizeDbError(message) };
+    }
+  }
+
+  private async checkSupabase(): Promise<boolean> {
+    const base = (this.config.get<string>('SUPABASE_URL') || '').trim().replace(/\/$/, '');
+    if (!base) {
+      this.logger.warn('HEALTH_CHECK_SUPABASE_FAILED: MISSING_SUPABASE_URL');
+      return false;
+    }
+
+    const endpoint = `${base}/auth/v1/health`;
+    try {
+      await this.withTimeout(async () => {
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP_${response.status}`);
+        }
+      }, SUPABASE_CHECK_TIMEOUT_MS);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'UNKNOWN';
+      this.logger.warn(`HEALTH_CHECK_SUPABASE_FAILED: ${message}`);
+      return false;
     }
   }
 
@@ -75,7 +157,9 @@ export class HealthService {
       }, 5_000);
       return 'up';
     } catch (err) {
-      this.logger.debug(`Health check 'redis' failed: ${(err as Error).message}`);
+      this.logger.debug(
+        `HEALTH_CHECK_REDIS_FAILED: ${(err as Error).message}`,
+      );
       return 'down';
     }
   }
