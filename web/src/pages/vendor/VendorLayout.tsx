@@ -10,7 +10,13 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
+import { NotificationProvider } from '@/providers/notification-provider';
 
+/**
+ * Vendor / creator workspace shell (`/vendor/*`, `/creator/*` aliases).
+ * Real-time notification_logs websocket + live INSERT banner bind here via
+ * NotificationProvider so order/B2B alerts reach the creator viewport.
+ */
 export function VendorLayout() {
   const { user, vendor, session, isProfileLoading } = useAuth();
   const location = useLocation();
@@ -62,11 +68,13 @@ export function VendorLayout() {
   }
 
   return (
-    <AppShell
-      role="vendor"
-      tabs={VENDOR_SIDEBAR_TABS}
-      mobileTabs={mobileTabs}
-      mapFabHref={VENDOR_MAP_HREF}
-    />
+    <NotificationProvider userId={user?.id ?? session?.user?.id}>
+      <AppShell
+        role="vendor"
+        tabs={VENDOR_SIDEBAR_TABS}
+        mobileTabs={mobileTabs}
+        mapFabHref={VENDOR_MAP_HREF}
+      />
+    </NotificationProvider>
   );
 }

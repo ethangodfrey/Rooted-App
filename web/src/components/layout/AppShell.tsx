@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { isTabActive, type AppTab } from '@/components/navigation/app-tabs';
 import { TabIcon } from '@/components/navigation/TabIcon';
@@ -141,6 +142,8 @@ export function AppShell({
 
         <div className="app-topbar__actions">
           <ThemeToggle />
+
+          {role === 'shopper' || role === 'vendor' ? <NotificationCenter /> : null}
 
           {role === 'shopper' || role === 'vendor' ? (
             <button
