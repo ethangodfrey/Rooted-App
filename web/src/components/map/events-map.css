@@ -245,6 +245,149 @@
   box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.2);
 }
 
+/* Business pins + viewport clusters */
+.rooted-map-marker--business .rooted-map-marker__dot {
+  background: #18181b;
+  border-color: #fafafa;
+}
+
+.rooted-map-marker--cluster {
+  background: transparent;
+  border: none;
+}
+
+.rooted-map-marker__cluster {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 1px solid #fafafa;
+  background: #09090b;
+  color: #fafafa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(24, 24, 27, 0.4);
+}
+
+.business-cluster-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .business-cluster-modal {
+    align-items: center;
+  }
+}
+
+.business-cluster-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(9, 9, 11, 0.55);
+  cursor: pointer;
+}
+
+.business-cluster-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  border: 1px solid #27272a;
+  background: #09090b;
+  color: #fafafa;
+  padding: 1rem 1.1rem 1.25rem;
+}
+
+.business-cluster-modal__header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.business-cluster-modal__eyebrow {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.business-cluster-modal__title {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.business-cluster-modal__close {
+  justify-self: start;
+  margin-top: 0.25rem;
+  border: 1px solid #3f3f46;
+  background: transparent;
+  color: #e4e4e7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+}
+
+.business-cluster-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.business-cluster-modal__row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid #27272a;
+  background: #0c0c0e;
+  text-decoration: none;
+  color: inherit;
+}
+
+.business-cluster-modal__row--static {
+  cursor: default;
+}
+
+.business-cluster-modal__name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.business-cluster-modal__meta {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
 @media (min-width: 768px) {
   .events-map-frame {
     height: min(68vh, 520px);

@@ -1,18 +1,31 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import {
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMap,
+  useMapEvents,
+} from 'react-leaflet';
 
+import { BusinessClusterModal } from '@/components/map/BusinessClusterModal';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { useNow } from '@/hooks/use-now';
 import type { CommunityEventWithParticipants } from '@/lib/community-events';
 import { centroidOfEvents } from '@/lib/event-map-search';
-import { marketPath } from '@/lib/market-routes';
+import { marketPath, vendorPath } from '@/lib/market-routes';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
 import { formatEventDisplayDate } from '@/lib/format';
 import { isValidCoords, type Coords } from '@/lib/geo';
+import {
+  clusterTrackedBusinesses,
+  type MapBounds,
+  type TrackedBusiness,
+} from '@/lib/spatial-businesses';
 import type { Event } from '@/types/database';
 
 import './events-map.css';
@@ -37,6 +50,70 @@ function communityMarkerIcon(selected: boolean) {
     iconSize: selected ? [22, 22] : [18, 18],
     iconAnchor: selected ? [11, 11] : [9, 9],
   });
+}
+
+function businessMarkerIcon() {
+  return L.divIcon({
+    className: 'rooted-map-marker rooted-map-marker--business',
+    html: '<div class="rooted-map-marker__dot"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+}
+
+function clusterMarkerIcon(count: number) {
+  const label = String(count);
+  return L.divIcon({
+    className: 'rooted-map-marker rooted-map-marker--cluster',
+    html: `<div class="rooted-map-marker__cluster">${label}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+}
+
+function BoundsChangeReporter({
+  onBoundsChange,
+}: {
+  onBoundsChange?: (bounds: MapBounds, zoom: number) => void;
+}) {
+  const map = useMap();
+  const lastKeyRef = useRef<string>('');
+  const callbackRef = useRef(onBoundsChange);
+  callbackRef.current = onBoundsChange;
+
+  const report = () => {
+    const callback = callbackRef.current;
+    if (!callback) return;
+    const b = map.getBounds();
+    const zoom = map.getZoom();
+    const next: MapBounds = {
+      minLat: b.getSouth(),
+      maxLat: b.getNorth(),
+      minLng: b.getWest(),
+      maxLng: b.getEast(),
+    };
+    const key = [
+      next.minLat.toFixed(5),
+      next.maxLat.toFixed(5),
+      next.minLng.toFixed(5),
+      next.maxLng.toFixed(5),
+      zoom.toFixed(2),
+    ].join(':');
+    if (key === lastKeyRef.current) return;
+    lastKeyRef.current = key;
+    callback(next, zoom);
+  };
+
+  useMapEvents({
+    moveend: report,
+    zoomend: report,
+  });
+
+  useEffect(() => {
+    report();
+  }, [map]);
+
+  return null;
 }
 
 function FitBounds({ events, active }: { events: Event[]; active: boolean }) {
@@ -166,12 +243,16 @@ interface EventsMapProps {
   events: Event[];
   /** Vendor/farmer hosted community events — orange pins. */
   communityEvents?: CommunityEventWithParticipants[];
+  /** Approved vendors/farmers loaded for the current viewport. */
+  businesses?: TrackedBusiness[];
   selectedEventId: string | null;
   userCoords: Coords | null;
   focusTarget: Coords | null;
   focusZoom?: number;
+  mapZoom?: number;
   onPreviewEvent: (eventId: string) => void;
   onPreviewCommunityEvent?: (eventId: string) => void;
+  onBoundsChange?: (bounds: MapBounds, zoom: number) => void;
   onRecenter?: () => void;
   getDistanceLabel?: (event: Event) => string | null;
   now?: Date;
@@ -180,18 +261,22 @@ interface EventsMapProps {
 export function EventsMap({
   events,
   communityEvents = [],
+  businesses = [],
   selectedEventId,
   userCoords,
   focusTarget,
   focusZoom = FOCUS_ZOOM,
+  mapZoom = 9,
   onPreviewEvent,
   onPreviewCommunityEvent,
+  onBoundsChange,
   onRecenter,
   getDistanceLabel,
   now: nowProp,
 }: EventsMapProps) {
   const liveNow = useNow(60_000);
   const now = nowProp ?? liveNow;
+  const [clusterModal, setClusterModal] = useState<TrackedBusiness[] | null>(null);
   const mappableEvents = useMemo(
     () => events.filter((event) => isValidCoords(event)),
     [events],
@@ -202,6 +287,10 @@ export function EventsMap({
         isValidCoords({ latitude: event.latitude, longitude: event.longitude }),
       ),
     [communityEvents],
+  );
+  const businessClusters = useMemo(
+    () => clusterTrackedBusinesses(businesses, mapZoom),
+    [businesses, mapZoom],
   );
   const eventCenter = centroidOfEvents(events);
   const initialCenter: [number, number] = userCoords
@@ -227,8 +316,9 @@ export function EventsMap({
           />
 
           <InitialMapView userCoords={userCoords} events={mappableEvents} />
+          <BoundsChangeReporter onBoundsChange={onBoundsChange} />
 
-          {mappableEvents.length > 0 && !focusTarget ? (
+          {mappableEvents.length > 0 && !focusTarget && !onBoundsChange ? (
             <FitBounds events={mappableEvents} active={!focusTarget} />
           ) : null}
           {focusTarget && isValidCoords(focusTarget) ? (
@@ -345,6 +435,51 @@ export function EventsMap({
               </Popup>
             </Marker>
           ))}
+
+          {businessClusters.map((cluster) => {
+            if (cluster.count === 1) {
+              const biz = cluster.businesses[0];
+              return (
+                <Marker
+                  key={cluster.id}
+                  position={[cluster.latitude, cluster.longitude]}
+                  icon={businessMarkerIcon()}
+                >
+                  <Popup>
+                    <div className="events-map-popup">
+                      <p className="events-map-popup__label">
+                        {(biz.entity_kind || 'BUSINESS').toUpperCase()}
+                      </p>
+                      <strong>{biz.display_name}</strong>
+                      <p>
+                        {[biz.sell_city, biz.sell_state].filter(Boolean).join(', ') ||
+                          'LOCAL PRODUCER'}
+                      </p>
+                      {biz.entity_kind === 'vendor' ? (
+                        <Link
+                          to={vendorPath(biz.business_row_id)}
+                          className="app-btn app-btn--primary app-btn--small"
+                        >
+                          View storefront
+                        </Link>
+                      ) : null}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            }
+
+            return (
+              <Marker
+                key={cluster.id}
+                position={[cluster.latitude, cluster.longitude]}
+                icon={clusterMarkerIcon(cluster.count)}
+                eventHandlers={{
+                  click: () => setClusterModal(cluster.businesses),
+                }}
+              />
+            );
+          })}
         </MapContainer>
       </div>
 
@@ -358,6 +493,13 @@ export function EventsMap({
         >
           ◎
         </button>
+      ) : null}
+
+      {clusterModal ? (
+        <BusinessClusterModal
+          businesses={clusterModal}
+          onClose={() => setClusterModal(null)}
+        />
       ) : null}
     </div>
   );
