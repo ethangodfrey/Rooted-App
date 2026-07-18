@@ -12,6 +12,8 @@
   box-shadow: none;
   z-index: 0;
   background: #fbfbfb;
+  height: min(52vh, 400px);
+  min-height: 280px;
 }
 
 .events-map-frame .leaflet-container {
@@ -225,7 +227,8 @@
 }
 
 .shopper-map-carousel-card {
-  flex: 0 0 min(85vw, 280px);
+  width: 100%;
+  max-width: 100%;
   text-align: left;
   border: 1px solid rgba(24, 24, 27, 0.08);
   cursor: pointer;
@@ -242,7 +245,7 @@
   box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.2);
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .events-map-frame {
     height: min(68vh, 520px);
     min-height: 360px;
@@ -250,7 +253,7 @@
 
   .shopper-map-layout {
     display: grid;
-    grid-template-columns: 1.4fr 1fr;
+    grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr);
     gap: 1.25rem;
     align-items: start;
   }

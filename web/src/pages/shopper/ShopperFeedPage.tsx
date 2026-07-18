@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
@@ -242,7 +243,12 @@ export function ShopperFeedPage() {
 
                 ) : (
 
-                  <img src={post.media_url} alt="" style={{ width: '100%', borderRadius: 'var(--radius-lg)', marginTop: '0.75rem' }} />
+                  <FallbackImage
+                    src={post.media_url}
+                    variant="banner"
+                    alt=""
+                    style={{ width: '100%', borderRadius: 'var(--radius-lg)', marginTop: '0.75rem' }}
+                  />
 
                 )
 

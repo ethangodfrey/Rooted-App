@@ -16,7 +16,7 @@ import {
   formatCalendarDayLabel,
   startOfDay,
 } from '@/lib/event-day-filter';
-import { resolveEventBannerUrl } from '@/lib/event-image';
+import { MarketHeroImage } from '@/components/market/MarketHeroImage';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
@@ -123,7 +123,6 @@ export function ShopperEventsPage() {
   );
 
   const preview = useMarketDetail(selectedEvent?.id);
-  const previewImage = selectedEvent ? resolveEventBannerUrl(selectedEvent) : null;
 
   return (
     <div className="app-screen app-screen--titled" style={{ maxWidth: 1100 }}>
@@ -251,8 +250,11 @@ export function ShopperEventsPage() {
               {selectedEvent ? (
                 <article className="markets-preview">
                   <div className="markets-preview__hero">
-                    {previewImage ? (
-                      <img src={previewImage} alt="" />
+                    {selectedEvent ? (
+                      <MarketHeroImage
+                        event={selectedEvent}
+                        className="!h-full !min-h-[220px] !rounded-none shadow-none"
+                      />
                     ) : (
                       <div className="markets-preview__hero-fallback">Market preview</div>
                     )}
