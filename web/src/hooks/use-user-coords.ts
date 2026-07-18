@@ -56,10 +56,14 @@ export function useUserCoords() {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
-        if (!gps) return;
-        setCoords(gps);
-        setSource('gps');
-        setCoordsReady(true);
+        if (gps) {
+          setCoords(gps);
+          setSource('gps');
+          setCoordsReady(true);
+          return;
+        }
+        console.log('GPS returned invalid coordinates, falling back to profile geocode.');
+        void resolveProfileCoords();
       },
       () => {
         console.log('Location access denied, falling back to profile geocode.');

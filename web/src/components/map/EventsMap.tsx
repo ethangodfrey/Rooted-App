@@ -151,7 +151,11 @@ function FlyToTarget({
 
   useEffect(() => {
     if (!target) return;
-    map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
+    try {
+      map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
+    } catch {
+      // Skip corrupt coordinates rather than crashing the map.
+    }
   }, [target, zoom, map]);
 
   return null;
@@ -171,8 +175,12 @@ function InitialMapView({
     if (resolvedRef.current) return;
 
     function centerOnCoords(center: Coords, zoom: number) {
-      map.setView([center.latitude, center.longitude], zoom);
-      resolvedRef.current = true;
+      try {
+        map.setView([center.latitude, center.longitude], zoom);
+        resolvedRef.current = true;
+      } catch {
+        // Skip corrupt coordinates rather than crashing the map.
+      }
     }
 
     function fallbackToEvents() {
