@@ -58,6 +58,9 @@ jobs:
         run: |
           echo "INSTALLING ROOT DEPENDENCIES"
           npm ci
+          echo "INSTALLING ENV CONFIG PACKAGE"
+          npm ci --prefix packages/env-config
+          npm run build --prefix packages/env-config
           echo "INSTALLING BACKEND DEPENDENCIES"
           npm ci --prefix backend
           echo "GENERATING PRISMA CLIENT"
@@ -78,6 +81,8 @@ jobs:
         run: |
           echo "RUNNING GLOBAL TYPECHECK BUILD"
           npx tsc --noEmit
+          echo "RUNNING ENV CONFIG TYPECHECK BUILD"
+          npm run typecheck --prefix packages/env-config
           echo "RUNNING BACKEND TYPECHECK BUILD"
           npm exec --prefix backend -- tsc --noEmit
           echo "PASS: GLOBAL TYPECHECK BUILD COMPLETE"
@@ -123,6 +128,9 @@ jobs:
         run: |
           echo "INSTALLING ROOT DEPENDENCIES"
           npm ci
+          echo "INSTALLING ENV CONFIG PACKAGE"
+          npm ci --prefix packages/env-config
+          npm run build --prefix packages/env-config
           echo "INSTALLING BACKEND DEPENDENCIES"
           npm ci --prefix backend
           echo "GENERATING PRISMA CLIENT"
@@ -145,6 +153,8 @@ jobs:
             exit 1
           fi
           echo "PASS: SIMULATION SECRETS PRESENT"
+          echo "RUNNING SERVER ENV SCHEMA VALIDATION"
+          node -e "require('./packages/env-config').validateServerEnv(process.env); console.log('PASS: SERVER ENV SCHEMA VALID')"
 
       - name: SEED DENVER NETWORK LAYOUT
         run: |

@@ -42,6 +42,7 @@
     "@nestjs/schedule": "^6.0.0",
     "@prisma/client": "^6.2.0",
     "@supabase/supabase-js": "^2.110.2",
+    "@vendorly/env-config": "file:../packages/env-config",
     "axios": "^1.7.9",
     "bullmq": "^5.34.0",
     "class-transformer": "^0.5.1",

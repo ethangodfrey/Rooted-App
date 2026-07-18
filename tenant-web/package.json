@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@upstash/redis": "^1.34.3",
+    "@vendorly/env-config": "file:../packages/env-config",
     "bullmq": "^5.34.0",
     "next": "^15.3.3",
     "react": "^19.1.0",

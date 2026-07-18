@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { nestConfigValidate } from '@vendorly/env-config';
 
 import { CryptoModule } from './common/crypto/crypto.module';
 import { ObservabilityModule } from './common/observability/observability.module';
@@ -23,7 +24,10 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: nestConfigValidate,
+    }),
     ScheduleModule.forRoot(),
     ...(posQueuesEnabled
       ? [
