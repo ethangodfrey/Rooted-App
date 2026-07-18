@@ -1,0 +1,59 @@
+.ace-admin__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ace-admin__toggle {
+  width: 100%;
+}
+
+.ace-admin__notice {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #3f4a40;
+}
+
+.ace-admin__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ace-admin__ai-sticker {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(24, 24, 27, 0.45);
+  border: 1px solid rgba(24, 24, 27, 0.18);
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+}
+
+.ace-admin__ai-sticker--vendor {
+  color: rgba(24, 24, 27, 0.55);
+  border-color: rgba(24, 24, 27, 0.22);
+}
+
+.ace-admin__source {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(24, 24, 27, 0.08);
+}
+
+.ace-admin__assist {
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: rgba(255, 247, 237, 0.7);
+}
+
+.ace-admin__card .app-row-title {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

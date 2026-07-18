@@ -14,9 +14,21 @@ export type CommunityEventVerificationStatus = 'pending' | 'approved' | 'rejecte
 
 export type CommunityAiRecommendation = 'approve' | 'reject' | 'needs_review';
 
+export type AiSourceMetadata = {
+  tracking_urls?: string[];
+  source_snippets?: string[];
+  scraping_confidence?: number;
+  worker_query?: string;
+  worker_region?: string;
+  ingested_at?: string;
+  ingest_source?: 'openai' | 'simulated' | string;
+  ingested_by_admin_id?: string;
+  [key: string]: unknown;
+};
+
 export type CommunityEvent = {
   id: string;
-  creator_id: string;
+  creator_id: string | null;
   title: string;
   description: string;
   event_type: CommunityEventType;
@@ -34,6 +46,7 @@ export type CommunityEvent = {
   ai_summary: string | null;
   ai_flags: string[];
   ai_reviewed_at: string | null;
+  ai_source_metadata: AiSourceMetadata;
   created_at: string;
   updated_at: string;
 };
@@ -67,6 +80,20 @@ export type CommunityEventAiVerifyResult = {
   flags: string[];
   reasons: string[];
   source: 'rules' | 'openai';
+};
+
+export type IngestEventsResult = {
+  ingested: number;
+  source: 'openai' | 'simulated';
+  query: string;
+  eventIds: string[];
+  events: Array<{
+    id: string;
+    title: string;
+    event_type: string;
+    verification_status: string;
+    is_ai_ingested: boolean;
+  }>;
 };
 
 const TABLE = 'community_events';
@@ -103,8 +130,11 @@ export async function fetchCommunityEventsForCreator(
   return ((data ?? []) as CommunityEvent[]).map(normalizeCommunityEvent);
 }
 
+export type AdminCommunitySourceFilter = 'vendor' | 'ai' | 'all';
+
 export async function fetchCommunityEventsForAdmin(
   filter: 'pending' | 'all' = 'pending',
+  source: AdminCommunitySourceFilter = 'all',
 ): Promise<CommunityEvent[]> {
   let query = supabase
     .from(TABLE)
@@ -114,6 +144,11 @@ export async function fetchCommunityEventsForAdmin(
 
   if (filter === 'pending') {
     query = query.eq('verification_status', 'pending');
+  }
+  if (source === 'vendor') {
+    query = query.eq('is_ai_ingested', false);
+  } else if (source === 'ai') {
+    query = query.eq('is_ai_ingested', true);
   }
 
   const { data, error } = await query;
@@ -200,6 +235,18 @@ export async function runCommunityEventAiVerify(
   );
 }
 
+export async function runLiveEventIngestSearch(input?: {
+  query?: string;
+  region?: string;
+  rawText?: string;
+  limit?: number;
+}): Promise<IngestEventsResult> {
+  if (!isApiConfigured) {
+    throw new Error('Backend API is not configured for AI ingestion.');
+  }
+  return api.post<IngestEventsResult>('/admin/ingest-events', input ?? {});
+}
+
 export async function fetchParticipantsForEvents(
   eventIds: string[],
 ): Promise<Record<string, CommunityEventParticipant[]>> {
@@ -270,8 +317,10 @@ export async function fetchActiveCommunityEventsWithParticipants(): Promise<
 }
 
 function normalizeCommunityEvent(row: CommunityEvent): CommunityEvent {
+  const meta = (row.ai_source_metadata ?? {}) as AiSourceMetadata;
   return {
     ...row,
+    creator_id: row.creator_id ?? null,
     latitude: Number(row.latitude),
     longitude: Number(row.longitude),
     description: row.description ?? '',
@@ -286,5 +335,6 @@ function normalizeCommunityEvent(row: CommunityEvent): CommunityEvent {
     ai_summary: row.ai_summary ?? null,
     ai_flags: row.ai_flags ?? [],
     ai_reviewed_at: row.ai_reviewed_at ?? null,
+    ai_source_metadata: meta && typeof meta === 'object' ? meta : {},
   };
 }
