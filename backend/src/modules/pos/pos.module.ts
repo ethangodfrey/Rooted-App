@@ -7,7 +7,9 @@ import { CloverAdapter } from './adapters/clover/clover.adapter';
 import { SquareAdapter } from './adapters/square/square.adapter';
 import { ToastAdapter } from './adapters/toast/toast.adapter';
 import { AdminPosController } from './controllers/admin-pos.controller';
+import { AdminSimulateSwipeController } from './controllers/admin-simulate-swipe.controller';
 import { PosActivityController } from './controllers/pos-activity.controller';
+import { PosAnalyticsWebhooksController } from './controllers/pos-analytics-webhooks.controller';
 import { PosConnectionsController } from './controllers/pos-connections.controller';
 import { PosMappingsController } from './controllers/pos-mappings.controller';
 import { PosOAuthController } from './controllers/pos-oauth.controller';
@@ -41,6 +43,8 @@ import { PosMarketResolverService } from './services/pos-market-resolver.service
 import { PosSalesIngestService } from './services/pos-sales-ingest.service';
 import { PosSnapshotRollupService } from './services/pos-snapshot-rollup.service';
 import { PosSyncService } from './services/pos-sync.service';
+import { AdminSimulateSwipeService } from './services/admin-simulate-swipe.service';
+import { PosAnalyticsWebhookService } from './services/pos-analytics-webhook.service';
 import { PosWebhookService } from './services/pos-webhook.service';
 import { ProviderRegistryService } from './services/provider-registry.service';
 
@@ -67,8 +71,10 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosMappingsController,
     PosOAuthController,
     PosWebhooksController,
+    PosAnalyticsWebhooksController,
     PosActivityController,
     AdminPosController,
+    AdminSimulateSwipeController,
   ],
   providers: [
     // Provider adapters
@@ -76,6 +82,8 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     ToastAdapter,
     CloverAdapter,
     ProviderRegistryService,
+    PosAnalyticsWebhookService,
+    AdminSimulateSwipeService,
     // Core services
     PosConnectionService,
     PosSyncService,
