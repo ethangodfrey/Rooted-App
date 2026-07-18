@@ -5,6 +5,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 
+import { ActionRow } from '@/src/components/ui/action-row';
 import { Card } from '@/src/components/ui/card';
 import { Screen } from '@/src/components/ui/screen';
 import { StatusPill } from '@/src/components/ui/status-pill';
@@ -68,14 +69,22 @@ export default function ShopperOrdersScreen() {
           <LoadingIndicator />
         </View>
       ) : orders.length === 0 ? (
-        <Screen centered>
-          <FontAwesome name="shopping-basket" size={28} color="#9CAF88" />
-          <Text variant="subtitle" className="mt-3 text-center">
-            No reservations yet
-          </Text>
-          <Text variant="caption" className="mt-1 text-center">
-            Reserve products from a vendor to pick up at an event.
-          </Text>
+        <Screen scroll>
+          <ActionRow
+            icon="ticket"
+            title="RECEIPT"
+            subtitle="Show PENDING_PICKUP pass with RT-XXX code."
+            onPress={() => router.push('/(shopper)/orders/receipt')}
+          />
+          <View className="mt-8 items-center">
+            <FontAwesome name="shopping-basket" size={28} color="#9CAF88" />
+            <Text variant="subtitle" className="mt-3 text-center">
+              No reservations yet
+            </Text>
+            <Text variant="caption" className="mt-1 text-center">
+              Reserve products from a vendor to pick up at an event.
+            </Text>
+          </View>
         </Screen>
       ) : (
         <Screen scroll={false}>
@@ -84,6 +93,16 @@ export default function ShopperOrdersScreen() {
             keyExtractor={(item) => item.id}
             style={{ flex: 1 }}
             contentContainerStyle={layoutStyles.stackListContent}
+            ListHeaderComponent={
+              <View className="mb-3">
+                <ActionRow
+                  icon="ticket"
+                  title="RECEIPT"
+                  subtitle="Show PENDING_PICKUP pass with RT-XXX code."
+                  onPress={() => router.push('/(shopper)/orders/receipt')}
+                />
+              </View>
+            }
             renderItem={({ item }) => (
             <Pressable onPress={() => router.push(`/(shopper)/orders/${item.id}`)}>
               <Card>

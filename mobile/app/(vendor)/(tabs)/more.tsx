@@ -41,6 +41,12 @@ export default function VendorMoreScreen() {
 
       <View className="mb-4 gap-3">
         <ActionRow
+          icon="check-square"
+          title="VERIFY TOKEN"
+          subtitle="Enter RT-XXX pickup code and complete handoff."
+          onPress={() => router.push('/(vendor)/handoffs')}
+        />
+        <ActionRow
           icon="shield"
           title="Compliance & credentials"
           subtitle="Cottage food requirements, permits, and trust badges."
