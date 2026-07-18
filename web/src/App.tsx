@@ -55,6 +55,7 @@ import { ShopperLeftoversPage } from '@/pages/shopper/ShopperLeftoversPage';
 import { ShopperFollowingPage } from '@/pages/shopper/ShopperFollowingPage';
 import { ShopperInboxPage } from '@/pages/shopper/ShopperInboxPage';
 import { ShopperLayout } from '@/pages/shopper/ShopperLayout';
+import { OrderContextThreadPage } from '@/pages/messaging/OrderContextThreadPage';
 import { ShopperMapPage } from '@/pages/shopper/ShopperMapPage';
 import { ShopperOrderDetailPage } from '@/pages/shopper/ShopperOrderDetailPage';
 import { ShopperOrdersPage } from '@/pages/shopper/ShopperOrdersPage';
@@ -130,6 +131,10 @@ export default function App() {
           <Route path="/explore" element={<ShopperMapPage />} />
           <Route path="/explore/feed" element={<ShopperExplorePage />} />
           <Route path="/inbox" element={<ShopperInboxPage />} />
+          <Route
+            path="/inbox/thread/:threadId"
+            element={<OrderContextThreadPage viewerRole="shopper" backTo="/inbox" />}
+          />
           <Route path="/following" element={<ShopperFollowingPage />} />
           <Route path="/orders" element={<ShopperOrdersPage />} />
           <Route path="/orders/:id" element={<ShopperOrderDetailPage />} />
@@ -192,6 +197,10 @@ export default function App() {
           <Route path="handoffs" element={<VendorHandoffsPage />} />
           <Route path="inbox" element={<VendorInboxPage />} />
           <Route path="inbox/chat/:peerId" element={<VendorB2bChatPage />} />
+          <Route
+            path="inbox/thread/:threadId"
+            element={<OrderContextThreadPage viewerRole="vendor" backTo="/vendor/inbox" />}
+          />
           <Route path="network" element={<VendorNetworkPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="analytics/integrations" element={<VendorAnalyticsIntegrationsPage />} />
