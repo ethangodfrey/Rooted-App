@@ -7,6 +7,7 @@ import { PosAnalyticsService } from '../src/modules/pos/services/pos-analytics.s
 import type { NormalizedTransaction } from '../src/modules/pos/types/normalized-transaction';
 import type { ConfigService } from '@nestjs/config';
 import { StripeService } from '../src/modules/stripe/stripe.service';
+import { createFakeOrderPrisma } from './fake-order-prisma';
 import { createFakePrisma } from './fake-prisma';
 
 const constructEvent = jest.fn();
@@ -141,6 +142,58 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       } as never);
 
       expect(finalizePaidOrder).not.toHaveBeenCalled();
+    });
+
+    it('compensates inventory when checkout.session.expired fires for a pending order', async () => {
+      const compensateStripeCheckout = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-expired',
+          total: 1200,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_expired',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-expired',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout,
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_expired',
+            metadata: {
+              order_id: 'order-expired',
+              customer_user_id: 'user-expired',
+            },
+          },
+        },
+      } as never);
+
+      expect(compensateStripeCheckout).toHaveBeenCalledWith(
+        expect.anything(),
+        'order-expired',
+        'user-expired',
+      );
     });
   });
 

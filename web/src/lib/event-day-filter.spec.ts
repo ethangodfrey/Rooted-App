@@ -70,6 +70,10 @@ describe('filterEventsByCalendarDay', () => {
     ];
     expect(filterEventsByCalendarDay(events, new Date('2026-07-12T08:00:00'))).toEqual([]);
   });
+
+  it('returns an empty array for empty event lists', () => {
+    expect(filterEventsByCalendarDay([], new Date('2026-07-12T08:00:00'))).toEqual([]);
+  });
 });
 
 describe('findNearestDayWithEvents', () => {
