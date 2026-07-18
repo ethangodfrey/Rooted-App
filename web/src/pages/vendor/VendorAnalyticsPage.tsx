@@ -1,402 +1,209 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import {
-  ChartCard,
-  DonutChart,
-  EmptyChart,
-  HorizontalBarChart,
-  LegendRow,
-  PieLegend,
-  StackedRevenueChart,
-  VerticalBarChart,
-} from '@/components/analytics/SimpleCharts';
-import { SettlementDashboard } from '@/components/vendor/SettlementDashboard';
-import {
-  VendorEmpty,
-  VendorFormPanel,
-  VendorHero,
-  VendorKpiGrid,
-  VendorKpiStat,
-  VendorListPanel,
-  VendorScreen,
-  VendorSecondaryButton,
-  VENDOR_PRESSABLE,
-} from '@/components/vendor/vendor-ui';
-import { IconBadge } from '@/components/vendor/dashboard-icons';
-import '@/components/analytics/analytics.css';
 import { useAuth } from '@/hooks/use-auth';
-import { usePosLedger } from '@/hooks/use-pos-ledger';
-import { useVendorSettlementOrders } from '@/hooks/use-vendor-settlement-orders';
-import { isApiConfigured } from '@/lib/api';
-import { formatDateTime, formatPrice } from '@/lib/format';
-import { ORDER_STATUS_LABEL } from '@/lib/order-status';
 import {
-  ANALYTICS_COLORS,
-  centsToChartValue,
-  loadVendorAnalytics,
-  maxChartValue,
-  type AnalyticsRange,
-  type VendorAnalyticsData,
-} from '@/lib/vendor-analytics';
-import type { OrderStatus } from '@/types/database';
-import type { PosImportedTransaction } from '@/types/pos';
-import { POS_PROVIDER_LABELS } from '@/types/pos-transactions';
-import '@/components/ui/ui.css';
+  formatUsd,
+  loadPosTelemetrySuite,
+  type PosTelemetrySuite,
+} from '@/lib/pos-analytics';
+import './pos-analytics.css';
 
-const RANGES: AnalyticsRange[] = [7, 30, 90, 365];
-
-const STATUS_COLORS: Partial<Record<OrderStatus, string>> = {
-  submitted: '#9CAF88',
-  pending_review: '#74c69d',
-  accepted: '#52b788',
-  preparing: '#50C878',
-  ready_for_pickup: '#228B22',
-  fulfilled: '#1b6b1b',
-  cancelled: '#b7e4c7',
-  declined: '#d4e8d4',
-};
-
-function formatTender(txn: PosImportedTransaction): string {
-  if (txn.cardBrand) return txn.cardBrand;
-  if (txn.tenderType) return txn.tenderType.replace(/_/g, ' ').toLowerCase();
-  return 'Card';
-}
-
-function downloadCsv(metrics: VendorAnalyticsData) {
-  const lines: string[] = ['Metric,Value'];
-  lines.push(`Reservation revenue,${(metrics.reservationRevenue / 100).toFixed(2)}`);
-  lines.push(`In-person revenue,${(metrics.inPersonRevenue / 100).toFixed(2)}`);
-  lines.push(`Card sales (POS) revenue,${(metrics.cardSalesRevenue / 100).toFixed(2)}`);
-  lines.push(`Card sales (POS) count,${metrics.cardSalesCount}`);
-  lines.push(`Units sold,${metrics.unitsSold}`);
-  lines.push('');
-  lines.push('Order status,Count');
-  for (const s of metrics.ordersByStatus) {
-    lines.push(`${ORDER_STATUS_LABEL[s.status]},${s.count}`);
-  }
-  lines.push('');
-  lines.push('Top product,Units,Revenue');
-  for (const p of metrics.topProducts) {
-    lines.push(`${p.name.replace(/,/g, ' ')},${p.units},${(p.revenue / 100).toFixed(2)}`);
-  }
-  if (metrics.recentPosSales.length > 0) {
-    lines.push('');
-    lines.push('POS sale,Date,Amount,Tender,Line items');
-    for (const txn of metrics.recentPosSales) {
-      const items = txn.lineItems
-        .map((li) => {
-          const label = li.product?.name ?? li.name;
-          return `${label} x${li.quantity}`;
-        })
-        .join('; ');
-      lines.push(
-        `${txn.id},${formatDateTime(txn.soldAt)},${(txn.netAmount / 100).toFixed(2)},${formatTender(txn)},"${items.replace(/"/g, '""')}"`,
-      );
-    }
-  }
-
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'vendorly-analytics.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+function barWidth(value: number, max: number): string {
+  if (max <= 0) return '0%';
+  return `${Math.max(4, Math.round((value / max) * 100))}%`;
 }
 
 export function VendorAnalyticsPage() {
-  const { vendor } = useAuth();
-  const [range, setRange] = useState<AnalyticsRange>(30);
-  const { hasActiveConnection, liveFeed, loading: posLedgerLoading, error: posLedgerError } = usePosLedger({
-    vendorId: vendor?.id,
-    range,
-  });
-  const {
-    orders: settlementOrders,
-    loading: settlementLoading,
-    error: settlementError,
-  } = useVendorSettlementOrders(vendor?.id);
-  const [data, setData] = useState<VendorAnalyticsData | null>(null);
+  const { user } = useAuth();
+  const vendorId = user?.id ?? null;
+  const [data, setData] = useState<PosTelemetrySuite | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!vendor) return;
-    const result = await loadVendorAnalytics(vendor.id, range);
-    setData(result);
-  }, [vendor, range]);
+    if (!vendorId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const suite = await loadPosTelemetrySuite(vendorId);
+      setData(suite);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load telemetry');
+    } finally {
+      setLoading(false);
+    }
+  }, [vendorId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  if (!data) {
+  if (loading && !data) {
     return (
-      <div className="app-loading">
-        <div className="app-spinner" />
+      <div className="pos-telemetry">
+        <p className="pos-telemetry__empty">LOADING TELEMETRY</p>
       </div>
     );
   }
 
-  const hasRevenue =
-    data.cardSalesRevenue > 0 || data.reservationRevenue > 0 || data.inPersonRevenue > 0;
+  if (!data) {
+    return (
+      <div className="pos-telemetry">
+        {error ? <p className="pos-telemetry__error">{error}</p> : null}
+        <p className="pos-telemetry__empty">SIGN IN AS A VENDOR TO VIEW ANALYTICS</p>
+      </div>
+    );
+  }
 
-  const maxRevenueCents = maxChartValue(data.dailyRevenue.map((d) => d.total));
-
-  const maxUnits = maxChartValue(data.dailyUnits.map((d) => d.units));
-
-  const topByUnits = data.topProducts.slice(0, 6).map((p) => ({
-    value: p.units,
-    label: p.name.length > 22 ? `${p.name.slice(0, 22)}…` : p.name,
-  }));
-
-  const topByRevenue = [...data.topProducts]
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 6)
-    .map((p) => ({
-      value: centsToChartValue(p.revenue),
-      label: p.name.length > 22 ? `${p.name.slice(0, 22)}…` : p.name,
-    }));
-
-  const statusSlices = data.ordersByStatus.map((s) => ({
-    label: ORDER_STATUS_LABEL[s.status],
-    value: s.count,
-    color: STATUS_COLORS[s.status] ?? ANALYTICS_COLORS.muted,
-  }));
+  const fulfillmentMax = Math.max(
+    data.fulfillment.completed,
+    data.fulfillment.cancelled,
+    data.fulfillment.pending,
+    1,
+  );
+  const sourceMax = Math.max(...data.sourceBreakdown.map((row) => row.amount), 1);
+  const connectedCount = data.integrations.filter((row) => row.credentials_connected).length;
 
   return (
-    <VendorScreen>
-      <VendorHero
-        eyebrow="Vendor"
-        title="Analytics"
-        subtitle={`${data.rangeLabel}${data.dailyRevenue.length < 14 ? ' · zoomed to active days' : ''}`}
-      />
-
-      <div className="analytics-actions mb-4 flex gap-2">
-        <VendorSecondaryButton onClick={() => downloadCsv(data)}>Export CSV</VendorSecondaryButton>
-        <VendorSecondaryButton onClick={() => void load()}>Refresh</VendorSecondaryButton>
-      </div>
-
-      {isApiConfigured && !data.posDataLoaded && !data.posLedgerLoaded ? (
-        <VendorFormPanel className="mb-4">
-          <p className="m-0 text-xs text-amber-800">
-            POS sales could not be loaded. Check your connection and refresh.
-          </p>
-        </VendorFormPanel>
-      ) : null}
-
-      {!posLedgerLoading && !hasActiveConnection ? (
-        <VendorFormPanel className="mb-4">
-          <p className="m-0 text-sm text-stone-600">
-            Connect a POS provider to unlock live card sales, platform fee splits, and realtime streaming.
-          </p>
-          <div className="mt-3">
-            <VendorSecondaryButton to="/vendor/pos">Connect POS</VendorSecondaryButton>
-          </div>
-        </VendorFormPanel>
-      ) : null}
-
-      {posLedgerError ? (
-        <VendorFormPanel className="mb-4">
-          <p className="m-0 text-xs text-amber-800">{posLedgerError}</p>
-        </VendorFormPanel>
-      ) : null}
-
-      <div className="analytics-range">
-        {RANGES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            className={`analytics-chip ${VENDOR_PRESSABLE}${range === r ? ' analytics-chip--active' : ''}`}
-            onClick={() => setRange(r)}>
-            {r === 365 ? '1Y' : `${r}D`}
-          </button>
-        ))}
-      </div>
-
-      <ChartCard title="Market settlement" subtitle="Fulfilled presale totals">
-        <SettlementDashboard
-          orders={settlementOrders}
-          loading={settlementLoading}
-          error={settlementError}
-        />
-      </ChartCard>
-
-      <div className="vendor-asym mb-5">
-        <VendorKpiStat
-          value={formatPrice(data.totalRevenue)}
-          label="Gross revenue"
-          emphasize
-        />
-        <div className="vendor-asym__stack">
-          <VendorKpiStat value={data.unitsSold} label="Total operations" />
-          <VendorKpiStat value={formatPrice(data.reservationRevenue)} label="Active period · reservations" />
+    <div className="pos-telemetry">
+      <header className="pos-telemetry__header">
+        <div>
+          <p className="pos-telemetry__kicker">REVENUE · VOLUME · POS SYNC</p>
+          <h1 className="pos-telemetry__title">Business Telemetry</h1>
         </div>
-      </div>
-      <VendorKpiGrid cols={2}>
-        <VendorKpiStat value={formatPrice(data.inPersonRevenue)} label="In-person" />
-        <VendorKpiStat
-          value={formatPrice(data.cardSalesRevenue)}
-          label={`Card (${data.cardSalesCount})`}
-        />
-      </VendorKpiGrid>
+        <div className="pos-telemetry__actions">
+          <Link to="/vendor/analytics/integrations" className="pos-telemetry__btn pos-telemetry__btn--solid">
+            [ POS SYNC ]
+          </Link>
+          <button type="button" className="pos-telemetry__btn" onClick={() => void load()}>
+            [ REFRESH ]
+          </button>
+        </div>
+      </header>
 
-      {data.posLedgerLoaded ? (
-        <ChartCard title="POS fee split" subtitle="Gross, platform fees, and net from pos_transactions">
-          {data.posGrossTotal === 0 && data.posNetTotal === 0 ? (
-            <VendorEmpty
-              message={
-                hasActiveConnection
-                  ? 'POS connected — waiting for your first card sale to sync.'
-                  : 'No POS transactions in this period yet.'
-              }
-            />
-          ) : (
-            <div className="vendor-asym">
-              <VendorKpiStat value={formatPrice(data.posGrossTotal)} label="Gross" emphasize />
-              <div className="vendor-asym__stack">
-                <VendorKpiStat value={formatPrice(data.posPlatformFees)} label="Platform fees" />
-                <VendorKpiStat value={formatPrice(data.posNetTotal)} label="Net to vendor" />
+      {error ? <p className="pos-telemetry__error">{error}</p> : null}
+
+      <section className="pos-telemetry__metrics" aria-label="Core metrics">
+        <article className="pos-telemetry__metric">
+          <p className="pos-telemetry__metric-label">TOTAL GROSS REVENUE</p>
+          <p className="pos-telemetry__metric-value">{formatUsd(data.totalGrossRevenue)}</p>
+        </article>
+        <article className="pos-telemetry__metric">
+          <p className="pos-telemetry__metric-label">ACTIVE PRE-ORDER VALUE</p>
+          <p className="pos-telemetry__metric-value">{formatUsd(data.activePreorderValue)}</p>
+        </article>
+        <article className="pos-telemetry__metric">
+          <p className="pos-telemetry__metric-label">TOTAL SALES VOLUME</p>
+          <p className="pos-telemetry__metric-value">{data.totalSalesVolume}</p>
+        </article>
+      </section>
+
+      <section className="pos-telemetry__section">
+        <h2 className="pos-telemetry__section-title">FULFILLMENT ANALYTICS</h2>
+        <p className="pos-telemetry__section-copy">
+          Completed pickups against cancellations, with pending hand-offs held out of the success rate.
+        </p>
+        <div className="pos-telemetry__fulfillment">
+          <div className="pos-telemetry__bars">
+            <div className="pos-telemetry__bar-row">
+              <p className="pos-telemetry__bar-label">COMPLETED</p>
+              <div className="pos-telemetry__bar-track">
+                <div
+                  className="pos-telemetry__bar-fill"
+                  style={{ width: barWidth(data.fulfillment.completed, fulfillmentMax) }}
+                />
               </div>
+              <p className="pos-telemetry__bar-value">{data.fulfillment.completed}</p>
             </div>
-          )}
-        </ChartCard>
-      ) : null}
-
-      <ChartCard title="Revenue over time" subtitle="Daily total by channel">
-        {!hasRevenue ? (
-          <EmptyChart message="No revenue in this period yet." />
-        ) : (
-          <StackedRevenueChart data={data.dailyRevenue} maxValue={maxRevenueCents} />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Revenue mix" subtitle="By channel">
-        {data.revenueBySource.length === 0 ? (
-          <EmptyChart message="No revenue yet." />
-        ) : (
-          <>
-            <DonutChart slices={data.revenueBySource} centerLabel={formatPrice(data.totalRevenue)} />
-            <div style={{ marginTop: '0.5rem' }}>
-              {data.revenueBySource.map((s) => (
-                <LegendRow key={s.label} color={s.color} label={s.label} value={formatPrice(s.value)} />
-              ))}
+            <div className="pos-telemetry__bar-row">
+              <p className="pos-telemetry__bar-label">CANCELLED</p>
+              <div className="pos-telemetry__bar-track">
+                <div
+                  className="pos-telemetry__bar-fill pos-telemetry__bar-fill--muted"
+                  style={{ width: barWidth(data.fulfillment.cancelled, fulfillmentMax) }}
+                />
+              </div>
+              <p className="pos-telemetry__bar-value">{data.fulfillment.cancelled}</p>
             </div>
-          </>
-        )}
-      </ChartCard>
+            <div className="pos-telemetry__bar-row">
+              <p className="pos-telemetry__bar-label">PENDING</p>
+              <div className="pos-telemetry__bar-track">
+                <div
+                  className="pos-telemetry__bar-fill"
+                  style={{
+                    width: barWidth(data.fulfillment.pending, fulfillmentMax),
+                    opacity: 0.45,
+                  }}
+                />
+              </div>
+              <p className="pos-telemetry__bar-value">{data.fulfillment.pending}</p>
+            </div>
+          </div>
+          <div className="pos-telemetry__rate">
+            <p className="pos-telemetry__rate-label">PICKUP SUCCESS RATE</p>
+            <p className="pos-telemetry__rate-value">{data.fulfillment.successRate}%</p>
+            <p className="pos-telemetry__section-copy" style={{ marginBottom: 0 }}>
+              {connectedCount} POS CHANNEL{connectedCount === 1 ? '' : 'S'} CONNECTED
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <ChartCard title="Units sold per day">
-        {data.unitsSold === 0 ? (
-          <EmptyChart message="No units sold in this period." />
+      <section className="pos-telemetry__section">
+        <h2 className="pos-telemetry__section-title">PRODUCT VELOCITY TRACKER</h2>
+        <p className="pos-telemetry__section-copy">
+          Highest-grossing products and specialties from platform pre-orders combined with synced
+          external inputs when available.
+        </p>
+        {data.productVelocity.length === 0 ? (
+          <p className="pos-telemetry__empty">NO PRODUCT VELOCITY YET</p>
         ) : (
-          <VerticalBarChart
-            data={data.dailyUnits.map((d) => ({ label: d.label, value: d.units }))}
-            color={ANALYTICS_COLORS.units}
-            maxValue={maxUnits}
-          />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Top items by units">
-        {topByUnits.length === 0 ? (
-          <EmptyChart message="No item sales yet." />
-        ) : (
-          <HorizontalBarChart
-            data={topByUnits}
-            color={ANALYTICS_COLORS.reservations}
-            formatValue={(v) => `${v} units`}
-          />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Top items by revenue">
-        {topByRevenue.length === 0 ? (
-          <EmptyChart message="No item revenue yet." />
-        ) : (
-          <HorizontalBarChart
-            data={topByRevenue}
-            color={ANALYTICS_COLORS.inPerson}
-            formatValue={(v) => `$${v.toFixed(2)}`}
-          />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Orders by status" subtitle="Reservation pipeline">
-        {statusSlices.length === 0 ? (
-          <EmptyChart message="No orders in this period." />
-        ) : (
-          <>
-            <DonutChart
-              slices={statusSlices}
-              centerLabel={`${data.ordersByStatus.reduce((s, x) => s + x.count, 0)}`}
-            />
-            <PieLegend slices={statusSlices} />
-          </>
-        )}
-      </ChartCard>
-
-      {data.topProducts.length > 0 ? (
-        <ChartCard title="Item breakdown">
-          <VendorListPanel>
-            {data.topProducts.map((p, index) => (
-              <div key={`${p.name}-${index}`} className="flex items-center justify-between gap-3 p-3.5">
-                <span className="flex min-w-0 items-center gap-3">
-                  <IconBadge name="package" tone="orange" />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-stone-800">{p.name}</span>
-                    <span className="mt-0.5 block text-xs text-stone-500">{p.units} units</span>
-                  </span>
-                </span>
-                <span className="shrink-0 text-sm font-semibold text-stone-700">{formatPrice(p.revenue)}</span>
+          <div className="pos-telemetry__list">
+            {data.productVelocity.map((row, index) => (
+              <div key={`${row.name}-${index}`} className="pos-telemetry__list-row">
+                <p className="pos-telemetry__rank">{String(index + 1).padStart(2, '0')}</p>
+                <div>
+                  <p className="pos-telemetry__list-name">{row.name}</p>
+                  <p className="pos-telemetry__list-meta">{row.units} UNITS</p>
+                </div>
+                <p className="pos-telemetry__list-value">{formatUsd(row.revenue)}</p>
               </div>
             ))}
-          </VendorListPanel>
-        </ChartCard>
-      ) : null}
+          </div>
+        )}
+      </section>
 
-      {liveFeed.length > 0 ? (
-        <ChartCard title="Live POS stream" subtitle="Realtime sales from webhooks">
-          <VendorListPanel>
-            {liveFeed.map((txn) => (
-              <div key={txn.id} className="flex items-center gap-3 p-3.5">
-                <IconBadge name="credit-card" tone="amber" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-stone-800">
-                    {formatPrice(txn.net_amount)}
-                    <span className="ml-2 text-xs font-normal text-stone-500">
-                      gross {formatPrice(txn.gross_amount)} · fee {formatPrice(txn.platform_fee)}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 block text-xs text-stone-500">
-                    {formatDateTime(txn.sold_at)} · {POS_PROVIDER_LABELS[txn.provider]}
-                  </span>
-                </span>
+      <section className="pos-telemetry__section">
+        <h2 className="pos-telemetry__section-title">SOURCE BREAKDOWN</h2>
+        <p className="pos-telemetry__section-copy">
+          Revenue contribution by channel across Square, Toast, Stripe Native, and cash hand-offs.
+        </p>
+        <div className="pos-telemetry__list">
+          {data.sourceBreakdown.map((row) => (
+            <div key={row.source} className="pos-telemetry__source-row">
+              <div>
+                <p className="pos-telemetry__source-label">
+                  {row.label}: {formatUsd(row.amount)}
+                </p>
+                <div className="pos-telemetry__bar-track" style={{ marginTop: '0.45rem' }}>
+                  <div
+                    className="pos-telemetry__bar-fill"
+                    style={{ width: barWidth(row.amount, sourceMax) }}
+                  />
+                </div>
               </div>
-            ))}
-          </VendorListPanel>
-        </ChartCard>
-      ) : hasActiveConnection && !posLedgerLoading ? (
-        <ChartCard title="Live POS stream">
-          <VendorEmpty message="Connected — sales will appear here as webhooks arrive." />
-        </ChartCard>
-      ) : null}
-
-      {data.recentPosSales.length > 0 ? (
-        <ChartCard title="Recent card sales">
-          <VendorListPanel>
-            {data.recentPosSales.map((txn) => (
-              <div key={txn.id} className="flex items-center gap-3 p-3.5">
-                <IconBadge name="credit-card" tone="amber" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-stone-800">{formatPrice(txn.netAmount)}</span>
-                  <span className="mt-0.5 block text-xs text-stone-500">
-                    {formatDateTime(txn.soldAt)} · {formatTender(txn)}
-                  </span>
-                </span>
-              </div>
-            ))}
-          </VendorListPanel>
-        </ChartCard>
-      ) : null}
-    </VendorScreen>
+              <p className="pos-telemetry__source-amount">
+                {sourceMax > 0 ? `${Math.round((row.amount / sourceMax) * 100)}%` : '0%'}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
