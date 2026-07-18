@@ -127,11 +127,23 @@ export class HealthService {
     }
 
     const endpoint = `${base}/auth/v1/health`;
+    const anonKey = (
+      this.config.get<string>('SUPABASE_ANON_KEY') ||
+      this.config.get<string>('VITE_SUPABASE_ANON_KEY') ||
+      ''
+    ).trim();
     try {
       await this.withTimeout(async () => {
+        const headers: Record<string, string> = {
+          Accept: 'application/json',
+        };
+        if (anonKey) {
+          headers.apikey = anonKey;
+          headers.Authorization = `Bearer ${anonKey}`;
+        }
         const response = await fetch(endpoint, {
           method: 'GET',
-          headers: { Accept: 'application/json' },
+          headers,
         });
         if (!response.ok) {
           throw new Error(`HTTP_${response.status}`);
