@@ -99,21 +99,28 @@ function InitialMapView({
     }
 
     function fallbackToEvents() {
-      if (resolvedRef.current || events.length === 0) return;
+      if (resolvedRef.current) return;
 
-      if (events.length === 1) {
-        centerOnCoords(
-          { latitude: events[0].latitude, longitude: events[0].longitude },
-          FOCUS_ZOOM,
+      const mappable = events.filter((event) => isValidCoords(event));
+      if (mappable.length === 0) return;
+
+      try {
+        if (mappable.length === 1) {
+          centerOnCoords(
+            { latitude: mappable[0].latitude, longitude: mappable[0].longitude },
+            FOCUS_ZOOM,
+          );
+          return;
+        }
+
+        const bounds = L.latLngBounds(
+          mappable.map((event) => [event.latitude, event.longitude] as [number, number]),
         );
-        return;
+        map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
+        resolvedRef.current = true;
+      } catch {
+        // Skip corrupt or degenerate coordinate sets rather than crashing the map.
       }
-
-      const bounds = L.latLngBounds(
-        events.map((event) => [event.latitude, event.longitude] as [number, number]),
-      );
-      map.fitBounds(bounds.pad(0.15), { maxZoom: 12 });
-      resolvedRef.current = true;
     }
 
     if (userCoords) {
@@ -129,13 +136,20 @@ function InitialMapView({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (resolvedRef.current) return;
-        centerOnCoords(
-          {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
-          9,
-        );
+        const gps = isValidCoords({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        })
+          ? {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }
+          : null;
+        if (!gps) {
+          fallbackToEvents();
+          return;
+        }
+        centerOnCoords(gps, 9);
       },
       () => {
         console.log('Location access denied, falling back to database bounds.');

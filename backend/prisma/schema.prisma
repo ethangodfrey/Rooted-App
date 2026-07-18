@@ -52,8 +52,8 @@ model Profile {
 
   followsAsShopper  Follow[] @relation("FollowShopper")
   followsAsFollowed Follow[] @relation("FollowTarget")
-  connectionsSent     NetworkConnection[] @relation("NetworkSender")
-  connectionsReceived NetworkConnection[] @relation("NetworkReceiver")
+  connectionsSent     VendorConnection[] @relation("NetworkSender")
+  connectionsReceived VendorConnection[] @relation("NetworkReceiver")
 
   @@map("profiles")
 }
