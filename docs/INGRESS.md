@@ -28,10 +28,19 @@ Multi-tenant middleware **must not** rewrite `/api/*`. The middleware matcher ex
 ```bash
 cp .env.live.example .env.live
 npm run verify:ingress
-# Expect: DNS_VERIFIED, ROUTING_ALIGNED, INGRESS_OK
+# Runs scripts/verify-ingress-cutover.ts
+# Expect (success):
+#   DNS_VERIFIED
+#   ROUTING_ALIGNED
+#   INGRESS_OK
+
+npm run verify:ingress:align
+# Legacy align probe (scripts/verify-ingress.ts)
 
 npm run test:deploy:resilience:live
 # With LIVE_SMOKE_BOOT_LOCAL_NEST=0 — fails closed if remote Nest/readiness are down
 ```
 
 Status vocabulary (text only, no emoji): `INGRESS_OK`, `DNS_VERIFIED`, `ROUTING_ALIGNED`.
+
+Cutover assertions reject localhost targets, HTML catch-all bodies, and JSON that does not match production schemas (`STATUS` + `TIMESTAMP` for Nest health; `STATUS` + `TIMESTAMP` + `CHECKS` for tenant-web readiness).

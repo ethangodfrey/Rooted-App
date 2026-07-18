@@ -5,7 +5,10 @@
  * and emits uppercase text-only status lines (no emoji).
  *
  * Usage:
- *   npm run verify:ingress
+ *   npm run verify:ingress:align
+ *
+ * Cutover gate (preferred):
+ *   npm run verify:ingress  -> scripts/verify-ingress-cutover.ts
  */
 
 import { existsSync, readFileSync } from 'node:fs';
