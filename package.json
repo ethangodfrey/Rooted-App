@@ -47,7 +47,9 @@
     "test:web": "npm run test --prefix web",
     "build:web": "npm run build --prefix web",
     "build:tenant-web": "NODE_ENV=production npm run build --prefix tenant-web",
-    "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts"
+    "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts",
+    "db:seed:network": "npx tsx scripts/seed-local-network.ts",
+    "seed:local-network": "npx tsx scripts/seed-local-network.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",

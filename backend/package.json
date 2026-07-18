@@ -29,7 +29,9 @@
     "admin:agent": "ts-node scripts/run-admin-agent.ts",
     "admin:posts": "ts-node scripts/run-admin-post-agent.ts",
     "pos:inventory-worker": "ts-node scripts/run-pos-inventory-worker.ts",
-    "seed:stress-transactions": "ts-node scripts/seed-stress-transactions.ts"
+    "seed:stress-transactions": "ts-node scripts/seed-stress-transactions.ts",
+    "seed:local-network": "npm run db:seed:network --prefix ..",
+    "db:seed:network": "npm run db:seed:network --prefix .."
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.0",
