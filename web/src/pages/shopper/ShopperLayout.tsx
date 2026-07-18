@@ -11,6 +11,9 @@ import { isCustomerRole } from '@/lib/role-utils';
  * Shopper workspace shell — Explore / Inbox / Following / Orders.
  * Vendors may enter shopping routes (Explore + checkout) without a mode toggle;
  * their default home remains the vendor dashboard via auth redirect.
+ *
+ * Real-time notification_logs binding (websocket + dropdown + live banner)
+ * mounts via AppShell → NotificationCenter for authenticated shoppers.
  */
 export function ShopperLayout() {
   const { user, shopper, session, isProfileLoading } = useAuth();

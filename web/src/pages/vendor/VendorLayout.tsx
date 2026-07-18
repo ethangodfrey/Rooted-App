@@ -11,6 +11,11 @@ import { useAuth } from '@/hooks/use-auth';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
 
+/**
+ * Vendor / creator workspace shell (`/vendor/*`, `/creator/*` aliases).
+ * Real-time notification_logs binding mounts via AppShell → NotificationCenter
+ * so order milestones and B2B connection alerts reach the creator viewport.
+ */
 export function VendorLayout() {
   const { user, vendor, session, isProfileLoading } = useAuth();
   const location = useLocation();

@@ -1,0 +1,235 @@
+.notification-dropdown {
+  position: relative;
+}
+
+.notification-dropdown__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #27272a;
+  background: #09090b;
+  color: #fafafa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+}
+
+.notification-dropdown__badge {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border: 1px solid #fafafa;
+  background: #fafafa;
+  color: #09090b;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15rem;
+  text-align: center;
+}
+
+.notification-dropdown__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 1200;
+  width: min(92vw, 360px);
+  max-height: min(70vh, 480px);
+  overflow: auto;
+  border: 1px solid #27272a;
+  background: #09090b;
+  color: #fafafa;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.notification-dropdown__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid #27272a;
+  position: sticky;
+  top: 0;
+  background: #09090b;
+}
+
+.notification-dropdown__eyebrow {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.notification-dropdown__mark-all,
+.notification-dropdown__mark-one,
+.notification-live-banner__dismiss {
+  border: 1px solid #3f3f46;
+  background: transparent;
+  color: #e4e4e7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+}
+
+.notification-dropdown__mark-all:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.notification-dropdown__empty {
+  margin: 0;
+  padding: 1.25rem 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.notification-dropdown__empty--error {
+  color: #f87171;
+}
+
+.notification-dropdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notification-dropdown__item {
+  padding: 0.8rem 0.85rem;
+  border-bottom: 1px solid #18181b;
+}
+
+.notification-dropdown__item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.notification-dropdown__type {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fafafa;
+}
+
+.notification-dropdown__unread {
+  display: inline-block;
+  border: 1px solid #fafafa;
+  background: #fafafa;
+  color: #09090b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.35rem;
+}
+
+.notification-dropdown__title {
+  margin: 0 0 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notification-dropdown__body {
+  margin: 0 0 0.45rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  line-height: 1.45;
+}
+
+.notification-dropdown__item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.notification-live-banner {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1400;
+  width: min(92vw, 420px);
+  pointer-events: none;
+}
+
+.notification-live-banner__inner {
+  pointer-events: auto;
+  border: 1px solid #fafafa;
+  background: #09090b;
+  color: #fafafa;
+  padding: 0.85rem 0.95rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.notification-live-banner__eyebrow,
+.notification-live-banner__type,
+.notification-live-banner__title,
+.notification-live-banner__body {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-transform: uppercase;
+}
+
+.notification-live-banner__eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #71717a;
+}
+
+.notification-live-banner__type {
+  margin-top: 0.2rem;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.notification-live-banner__title {
+  margin-top: 0.35rem;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.notification-live-banner__body {
+  margin-top: 0.35rem;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #d4d4d8;
+  line-height: 1.4;
+}
+
+.notification-live-banner__dismiss {
+  margin-top: 0.65rem;
+}
