@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useNow } from '@/hooks/use-now';
 import { formatEventDisplayDate, formatPrice } from '@/lib/format';
 import { vendorPath } from '@/lib/market-routes';
+import { openPreorderChatSession } from '@/lib/chat-order-context';
 import {
   createPreorderPickup,
   type PreorderPaymentMethod,
@@ -48,6 +49,7 @@ type FulfillmentChoice =
 export function ShopperProductPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const now = useNow(60_000);
   const [product, setProduct] = useState<ProductRow | null>(null);
   const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
@@ -60,6 +62,8 @@ export function ShopperProductPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successCode, setSuccessCode] = useState<string | null>(null);
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [openingChat, setOpeningChat] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -134,6 +138,7 @@ export function ShopperProductPage() {
         fulfillmentLabel: label,
       });
       setSuccessCode(order.pickup_code);
+      setSuccessOrderId(order.id);
       setProduct((prev) =>
         prev
           ? { ...prev, stock: Math.max(0, (prev.stock ?? 0) - quantity) }
@@ -143,6 +148,25 @@ export function ShopperProductPage() {
       setError(err instanceof Error ? err.message : 'Unable to place pre-order.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function onMessageVendor() {
+    if (!successOrderId || !user?.id) return;
+    setOpeningChat(true);
+    setError(null);
+    try {
+      const threadId = await openPreorderChatSession({
+        preorderId: successOrderId,
+        senderUserId: user.id,
+        initialBody: 'PRE-ORDER PLACED. ORDER_CONTEXT ATTACHED.',
+      });
+      setDrawerOpen(false);
+      navigate(`/inbox/thread/${threadId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to open chat.');
+    } finally {
+      setOpeningChat(false);
     }
   }
 
@@ -266,14 +290,24 @@ export function ShopperProductPage() {
                   Show this code at hand-off. Payment:{' '}
                   {paymentMethod === 'STRIPE_ONLINE' ? 'PAID' : 'PAY AT PICKUP'}.
                 </p>
-                <button
-                  type="button"
-                  className="app-btn app-btn--primary"
-                  style={{ marginTop: '1rem' }}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  DONE
-                </button>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="app-btn app-btn--primary"
+                    disabled={openingChat || !successOrderId}
+                    onClick={() => void onMessageVendor()}
+                  >
+                    {openingChat ? 'OPENING…' : '[ MESSAGE VENDOR ]'}
+                  </button>
+                  <button
+                    type="button"
+                    className="app-btn app-btn--secondary"
+                    onClick={() => setDrawerOpen(false)}
+                  >
+                    DONE
+                  </button>
+                </div>
+                {error ? <p className="app-error">{error}</p> : null}
               </div>
             ) : (
               <>

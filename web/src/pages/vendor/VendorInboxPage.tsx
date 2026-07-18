@@ -5,6 +5,10 @@ import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
 import {
+  listVendorShopperThreads,
+  type InboxThreadRow,
+} from '@/lib/chat-order-context';
+import {
   acceptNetworkConnection,
   fetchConnectedNetworkRows,
   fetchPendingNetworkRequests,
@@ -71,14 +75,17 @@ async function loadPeerMeta(profileIds: string[]): Promise<Record<string, PeerMe
 }
 
 export function VendorInboxPage() {
-  const { user } = useAuth();
+  const { user, vendor } = useAuth();
   const profileId = user?.id ?? null;
+  const authVendorId = vendor?.id ?? null;
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const tab: InboxTab = params.get('tab') === 'requests' ? 'requests' : 'chats';
 
   const [pending, setPending] = useState<NetworkConnectionRow[]>([]);
   const [connected, setConnected] = useState<NetworkConnectionRow[]>([]);
+  const [preorderThreads, setPreorderThreads] = useState<InboxThreadRow[]>([]);
+  const [shopperLabels, setShopperLabels] = useState<Record<string, string>>({});
   const [peerMeta, setPeerMeta] = useState<Record<string, PeerMeta>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,13 +105,25 @@ export function VendorInboxPage() {
     setLoading(true);
     void (async () => {
       try {
-        const [reqRows, connRows] = await Promise.all([
+        let rowId = authVendorId;
+        if (!rowId) {
+          const { data: vendorRow } = await supabase
+            .from('vendors')
+            .select('id')
+            .eq('user_id', profileId)
+            .maybeSingle();
+          rowId = (vendorRow?.id as string | null) ?? null;
+        }
+
+        const [reqRows, connRows, shopperThreads] = await Promise.all([
           fetchPendingNetworkRequests(profileId),
           fetchConnectedNetworkRows(profileId),
+          rowId ? listVendorShopperThreads(rowId) : Promise.resolve([] as InboxThreadRow[]),
         ]);
         if (!active) return;
         setPending(reqRows);
         setConnected(connRows);
+        setPreorderThreads(shopperThreads);
 
         const ids = [
           ...reqRows.map((r) => r.sender_id),
@@ -113,6 +132,22 @@ export function VendorInboxPage() {
         const meta = await loadPeerMeta(ids);
         if (!active) return;
         setPeerMeta(meta);
+
+        const shopperIds = [...new Set(shopperThreads.map((t) => t.customer_user_id))];
+        if (shopperIds.length > 0) {
+          const { data: users } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .in('id', shopperIds);
+          if (!active) return;
+          const labels: Record<string, string> = {};
+          for (const u of users ?? []) {
+            labels[u.id as string] =
+              (u.name as string | null) || (u.email as string | null) || 'Shopper';
+          }
+          setShopperLabels(labels);
+        }
+
         setError(null);
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : 'Unable to load inbox');
@@ -124,7 +159,7 @@ export function VendorInboxPage() {
     return () => {
       active = false;
     };
-  }, [profileId]);
+  }, [profileId, authVendorId]);
 
   const chatRows = useMemo(() => {
     if (!profileId) return [];
@@ -204,41 +239,78 @@ export function VendorInboxPage() {
       ) : error ? (
         <div className="app-empty">{error}</div>
       ) : tab === 'chats' ? (
-        chatRows.length === 0 ? (
+        chatRows.length === 0 && preorderThreads.length === 0 ? (
           <div className="app-empty" style={{ textAlign: 'left' }}>
             <p style={{ margin: '0 0 0.75rem' }}>No conversations yet.</p>
             <p className="app-row-meta" style={{ margin: 0 }}>
-              Connected vendors and farmers appear here after you accept a network request.
+              Pre-order shopper threads and B2B network chats appear here.
             </p>
             <Link to="/vendor/network" className="app-btn app-btn--primary mt-4 inline-flex">
               Open network directory
             </Link>
           </div>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {chatRows.map(({ peerId, meta }) => (
-              <li key={peerId} className="app-card" style={{ marginBottom: '0.75rem' }}>
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="user-sticker-row">
-                      <p className="app-row-title" style={{ margin: 0 }}>
-                        {meta?.displayName ?? 'Network peer'}
-                      </p>
-                      <UserSticker role={meta?.role} />
-                    </div>
-                    <p className="app-row-meta">B2B network chat</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200"
-                    onClick={() => navigate(`/vendor/inbox/chat/${peerId}`)}
-                  >
-                    [ MESSAGE ]
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div>
+            {preorderThreads.length > 0 ? (
+              <>
+                <p className="app-row-meta mb-2 font-mono tracking-wide">ORDER_CONTEXT THREADS</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.25rem' }}>
+                  {preorderThreads.map((thread) => (
+                    <li key={thread.id} className="app-card" style={{ marginBottom: '0.75rem' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="app-row-title" style={{ margin: 0 }}>
+                            {shopperLabels[thread.customer_user_id] ?? 'Shopper'}
+                          </p>
+                          <p className="app-row-meta" style={{ margin: '0.25rem 0 0', fontFamily: 'monospace' }}>
+                            {thread.associated_order_id ? 'ORDER_CONTEXT' : 'SHOPPER THREAD'}
+                            {thread.subject ? ` · ${thread.subject}` : ''}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="rounded-md border border-zinc-600 bg-zinc-900 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-100"
+                          onClick={() => navigate(`/vendor/inbox/thread/${thread.id}`)}
+                        >
+                          [ OPEN ]
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+
+            {chatRows.length > 0 ? (
+              <>
+                <p className="app-row-meta mb-2 font-mono tracking-wide">B2B NETWORK</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {chatRows.map(({ peerId, meta }) => (
+                    <li key={peerId} className="app-card" style={{ marginBottom: '0.75rem' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="user-sticker-row">
+                            <p className="app-row-title" style={{ margin: 0 }}>
+                              {meta?.displayName ?? 'Network peer'}
+                            </p>
+                            <UserSticker role={meta?.role} />
+                          </div>
+                          <p className="app-row-meta">B2B network chat</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200"
+                          onClick={() => navigate(`/vendor/inbox/chat/${peerId}`)}
+                        >
+                          [ MESSAGE ]
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </div>
         )
       ) : pending.length === 0 ? (
         <div className="app-empty">No pending network requests.</div>
