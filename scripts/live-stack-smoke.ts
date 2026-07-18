@@ -95,7 +95,7 @@ async function waitForUrl(url: string, attempts = 45): Promise<boolean> {
 
 async function bootLocalNest(): Promise<ChildProcess | null> {
   const enabled = /^(1|true|yes)$/i.test(
-    process.env.LIVE_SMOKE_BOOT_LOCAL_NEST?.trim() || '1',
+    process.env.LIVE_SMOKE_BOOT_LOCAL_NEST?.trim() || '0',
   );
   if (!enabled) return null;
 
@@ -189,6 +189,14 @@ async function main(): Promise<void> {
 
   let nestProc: ChildProcess | null = null;
   if (!healthUrl) {
+    const allowLocal = /^(1|true|yes)$/i.test(
+      process.env.LIVE_SMOKE_BOOT_LOCAL_NEST?.trim() || '0',
+    );
+    if (!allowLocal) {
+      log('INGRESS_FAIL REMOTE_NEST_UNAVAILABLE');
+      log('DNS_MISSING OR ROUTING_NOT_ALIGNED FOR api.vendorly.app');
+      fail('LIVE_STACK_SOAK FAIL NO_REMOTE_NEST_HEALTH (LOCAL_FALLBACK_DISABLED)');
+    }
     log('REMOTE_NEST_UNAVAILABLE ATTEMPTING_LOCAL_NEST_WITH_LIVE_DEPS');
     nestProc = await bootLocalNest();
     if (nestProc) {

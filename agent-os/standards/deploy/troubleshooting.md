@@ -12,8 +12,10 @@ NestJS API has no route at `/`. Expected response:
 
 | Path | Pass |
 |------|------|
+| `/api/health` | 200 + `{"STATUS":"HEALTH_OK"}` |
 | `/health/live` | 200 + `{"status":"ok"}` |
 | `/health/ready` | 200 + `"db":"up"` |
+| tenant-web `/api/health/readiness` | 200 + `{"STATUS":"HEALTH_OK"}` (not HTML 404) |
 
 Never use Railway root URL as a "website" smoke test.
 

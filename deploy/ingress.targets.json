@@ -1,0 +1,23 @@
+{
+  "BACKEND": {
+    "SERVICE_NAME": "backend",
+    "PUBLIC_HOST": "api.vendorly.app",
+    "PUBLIC_BASE_URL": "https://api.vendorly.app",
+    "HEALTH_PATH": "/api/health",
+    "CONTAINER_PORT": 4000,
+    "LISTEN_HOST": "0.0.0.0",
+    "RAILWAY_HEALTHCHECK_PATH": "/api/health",
+    "DNS_RECORD_TYPE": "CNAME",
+    "DNS_TARGET_HINT": "<railway-service>.up.railway.app"
+  },
+  "TENANT_WEB": {
+    "SERVICE_NAME": "tenant-web",
+    "PUBLIC_HOST": "tenant-web-psi.vercel.app",
+    "PUBLIC_BASE_URL": "https://tenant-web-psi.vercel.app",
+    "READINESS_PATH": "/api/health/readiness",
+    "CONTAINER_PORT": 3000,
+    "LISTEN_HOST": "0.0.0.0",
+    "HEALTHCHECK_PATH": "/api/health/readiness"
+  },
+  "RAILWAY_RESTART_COMMAND": "railway restart --service backend"
+}

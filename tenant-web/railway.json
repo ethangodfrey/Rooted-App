@@ -6,6 +6,7 @@
     "watchPatterns": [
       "tenant-web/**",
       "packages/env-config/**",
+      "deploy/ingress.targets.json",
       "tenant-web/railway.json"
     ]
   },
@@ -20,7 +21,11 @@
   },
   "environments": {
     "production": {
+      "variables": {
+        "PORT": "3000"
+      },
       "deploy": {
+        "startCommand": "npm run start --prefix tenant-web",
         "healthcheckPath": "/api/health/readiness",
         "healthcheckTimeout": 120,
         "overlapSeconds": 30,
