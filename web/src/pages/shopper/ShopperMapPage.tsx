@@ -23,6 +23,16 @@ import {
 } from '@/lib/community-events';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { fetchSnapEligibleEventIds } from '@/lib/snap-ebt';
+import {
+  fetchTrackedBusinessesInBounds,
+  type MapBounds,
+  type TrackedBusiness,
+} from '@/lib/spatial-businesses';
+import {
+  FARMER_SPECIALTIES,
+  VENDOR_SPECIALTIES,
+  type SpecialtyTag,
+} from '@/lib/specialties';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 import '@/components/map/events-map.css';
@@ -51,7 +61,14 @@ export function ShopperMapPage() {
   const [focusTarget, setFocusTarget] = useState<Coords | null>(null);
   const [snapOnly, setSnapOnly] = useState(false);
   const [snapEventIds, setSnapEventIds] = useState<Set<string> | null>(null);
+  const [specialtyFilter, setSpecialtyFilter] = useState<SpecialtyTag | null>(null);
+  const [businesses, setBusinesses] = useState<TrackedBusiness[]>([]);
+  const [mapZoom, setMapZoom] = useState(9);
+  const [businessError, setBusinessError] = useState<string | null>(null);
   const hasInitializedFocusRef = useRef(false);
+  const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestBoundsRef = useRef<MapBounds | null>(null);
+  const businessRequestIdRef = useRef(0);
 
   const eventFetchOrigin = searchCenter ?? fetchOrigin ?? coords;
 
@@ -177,6 +194,51 @@ export function ShopperMapPage() {
       active = false;
     };
   }, [events]);
+
+  const loadBusinessesForBounds = useCallback(
+    async (bounds: MapBounds) => {
+      latestBoundsRef.current = bounds;
+      const requestId = ++businessRequestIdRef.current;
+      setBusinessError(null);
+      try {
+        const rows = await fetchTrackedBusinessesInBounds(
+          bounds,
+          specialtyFilter ? [specialtyFilter] : null,
+        );
+        if (requestId === businessRequestIdRef.current) {
+          setBusinesses(rows);
+        }
+      } catch (err) {
+        if (requestId === businessRequestIdRef.current) {
+          setBusinesses([]);
+          setBusinessError(err instanceof Error ? err.message : 'BOUNDS_QUERY_FAILED');
+        }
+      }
+    },
+    [specialtyFilter],
+  );
+
+  const onBoundsChange = useCallback(
+    (bounds: MapBounds, zoom: number) => {
+      setMapZoom(zoom);
+      if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+      boundsTimerRef.current = setTimeout(() => {
+        void loadBusinessesForBounds(bounds);
+      }, 280);
+    },
+    [loadBusinessesForBounds],
+  );
+
+  useEffect(() => {
+    if (!latestBoundsRef.current) return;
+    void loadBusinessesForBounds(latestBoundsRef.current);
+  }, [loadBusinessesForBounds]);
+
+  useEffect(() => {
+    return () => {
+      if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+    };
+  }, []);
 
   const filteredEvents = useMemo(() => {
     const searched = filterEventsForMapSearch(events, query, searchCenter);
@@ -309,7 +371,46 @@ export function ShopperMapPage() {
         >
           ACCEPTS SNAP / EBT
         </button>
+        <button
+          type="button"
+          onClick={() => setSpecialtyFilter(null)}
+          aria-pressed={specialtyFilter === null}
+          className={`inline-flex items-center border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wide ${
+            specialtyFilter === null
+              ? 'border-zinc-700 bg-zinc-950 text-zinc-100'
+              : 'border-zinc-800 bg-transparent text-zinc-500'
+          }`}
+        >
+          ALL SPECIALTIES
+        </button>
+        {[...VENDOR_SPECIALTIES, ...FARMER_SPECIALTIES].slice(0, 6).map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() =>
+              setSpecialtyFilter((prev) => (prev === tag ? null : tag))
+            }
+            aria-pressed={specialtyFilter === tag}
+            className={`inline-flex items-center border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wide ${
+              specialtyFilter === tag
+                ? 'border-zinc-600 bg-zinc-950 text-zinc-100'
+                : 'border-zinc-800 bg-transparent text-zinc-500'
+            }`}
+          >
+            {tag.replace(/_/g, ' ')}
+          </button>
+        ))}
       </div>
+
+      {businessError ? (
+        <p className="app-row-meta mt-2 font-mono uppercase tracking-wide text-red-400">
+          BUSINESS BOUNDS · {businessError}
+        </p>
+      ) : businesses.length > 0 ? (
+        <p className="app-row-meta mt-2 font-mono uppercase tracking-wide">
+          VIEWPORT · {businesses.length} LOCAL PRODUCERS
+        </p>
+      ) : null}
 
       {loading ? (
         <MapListSkeleton />
@@ -336,11 +437,14 @@ export function ShopperMapPage() {
               <EventsMap
                 events={mapEvents}
                 communityEvents={communityForMap}
+                businesses={businesses}
                 now={now}
                 selectedEventId={selectedEventId}
                 userCoords={coords}
                 focusTarget={focusTarget ?? searchCenter}
                 focusZoom={FOCUS_ZOOM}
+                mapZoom={mapZoom}
+                onBoundsChange={onBoundsChange}
                 onPreviewEvent={previewEvent}
                 onPreviewCommunityEvent={previewCommunityEvent}
                 onRecenter={() => (coords ? recenterOnUser() : requestUserLocation())}

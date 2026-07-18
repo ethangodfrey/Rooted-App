@@ -24,6 +24,11 @@ import {
 import { distanceMiles, formatDistance, parseCoords, type Coords } from '@/src/lib/geo';
 import { capEventsNear, MAP_MARKER_LIMIT, MAP_SIDEBAR_LIMIT } from '@/src/lib/events-display-limits';
 import { fetchPublicEvents } from '@/src/lib/events-query';
+import {
+  boundsFromRegion,
+  fetchTrackedBusinessesInBounds,
+  type TrackedBusiness,
+} from '@/src/lib/spatial-businesses';
 import { pagePadding } from '@/src/theme/layout';
 import type { Event } from '@/src/types/database';
 
@@ -44,12 +49,15 @@ export default function ShopperMapScreen() {
   const now = useNow(MAP_NOW_MS);
 
   const [events, setEvents] = useState<Event[]>([]);
+  const [businesses, setBusinesses] = useState<TrackedBusiness[]>([]);
   const [region, setRegion] = useState<MapRegion>(FALLBACK_REGION);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [searchCenter, setSearchCenter] = useState<Coords | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const businessRequestIdRef = useRef(0);
+  const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const parsed = parseMapSearchQuery(query);
@@ -220,6 +228,38 @@ export default function ShopperMapScreen() {
     setSelectedEventId(null);
   }, []);
 
+  const loadBusinessesForRegion = useCallback(async (next: MapRegion) => {
+    const requestId = ++businessRequestIdRef.current;
+    try {
+      const rows = await fetchTrackedBusinessesInBounds(boundsFromRegion(next));
+      if (requestId === businessRequestIdRef.current) {
+        setBusinesses(rows);
+      }
+    } catch {
+      if (requestId === businessRequestIdRef.current) {
+        setBusinesses([]);
+      }
+    }
+  }, []);
+
+  const onRegionChangeComplete = useCallback(
+    (next: MapRegion) => {
+      setRegion(next);
+      if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+      boundsTimerRef.current = setTimeout(() => {
+        void loadBusinessesForRegion(next);
+      }, 280);
+    },
+    [loadBusinessesForRegion],
+  );
+
+  useEffect(() => {
+    void loadBusinessesForRegion(FALLBACK_REGION);
+    return () => {
+      if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+    };
+  }, [loadBusinessesForRegion]);
+
   const handleSelectEvent = useCallback(
     (id: string) => {
       openEventDetail(id);
@@ -266,12 +306,14 @@ export default function ShopperMapScreen() {
     <View style={{ flex: 1 }}>
       <EventMap
         events={mapEvents}
+        businesses={businesses}
         initialRegion={region}
         mapRef={mapRef}
         selectedEventId={selectedEventId}
         getDistanceLabel={distanceFor}
         onPreviewEvent={previewEvent}
         onOpenEvent={openEventDetail}
+        onRegionChangeComplete={onRegionChangeComplete}
       />
 
       <View

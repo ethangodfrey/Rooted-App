@@ -521,6 +521,7 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
     const email = seedEmail('farmer', i);
     const specialty = FARMER_SPECIALTIES[(i - 1) % FARMER_SPECIALTIES.length]!;
     const zip = DENVER_ZIPS[(i + 7) % DENVER_ZIPS.length]!;
+    const { lat, lng } = offsetCoord(i + 40);
     const name = `SEED ${specialty.replace(/_/g, ' ')} FARM ${String(i).padStart(2, '0')}`;
     const bulkCase = `${specialty.replace(/_/g, ' ')} BULK CASE`;
     const bulkPrice = (25 + ((i * 23) % 80)).toFixed(2);
@@ -562,7 +563,7 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
     await db.$executeRaw`
       insert into public.farmers (
         id, user_id, farm_name, farm_description,
-        sell_city, sell_state, postal_code, approval_status
+        sell_city, sell_state, postal_code, latitude, longitude, approval_status
       ) values (
         ${farmerRowId}::uuid,
         ${id}::uuid,
@@ -571,6 +572,8 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
         'Denver',
         'CO',
         ${zip},
+        ${lat},
+        ${lng},
         'approved'
       )
       on conflict (user_id) do update set
@@ -579,6 +582,8 @@ export async function runLocalNetworkSeed(db: SeedDb): Promise<LocalNetworkSeedR
         sell_city = excluded.sell_city,
         sell_state = excluded.sell_state,
         postal_code = excluded.postal_code,
+        latitude = excluded.latitude,
+        longitude = excluded.longitude,
         approval_status = 'approved',
         updated_at = now()
     `;
