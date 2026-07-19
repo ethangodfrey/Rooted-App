@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WholesaleProductStatus } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { ElasticsearchClientService } from './elasticsearch-client.service';
 import {
+  buildScoreCompositionLog,
+  CONNECTED_WHOLESALER_SCORE_MULTIPLIER,
   countBoostedHits,
   rankWholesaleHitsByConnectedVendors,
 } from './wholesale-ranking.util';
@@ -18,23 +21,47 @@ export type WholesaleDiscoveryHit = {
   unitPriceCents: number;
   availableQuantity: number;
   status: string;
+  /** Final hybrid score (base relevance * optional connected multiplier). */
   score: number;
+  baseScore: number;
+  boostApplied: number;
   CONNECTED_WHOLESALER: boolean;
 };
 
 /**
- * Wholesale discovery search with CONNECTED_WHOLESALERS boost.
- * Uses Elasticsearch when configured; otherwise Prisma ILIKE fallback.
- * Telemetry: RANKING_ALGORITHM_OPTIMIZED
+ * Wholesale discovery search with multiplicative CONNECTED_WHOLESALERS boost.
+ * Uses Elasticsearch when configured; otherwise Prisma ILIKE fallback (same boost).
+ * Telemetry: RANKING_ALGORITHM_REFINED, SEARCH_SCORE_CALCULATED
  */
 @Injectable()
-export class WholesaleDiscoverySearchService {
+export class WholesaleDiscoverySearchService implements OnModuleInit {
   private readonly logger = new Logger(WholesaleDiscoverySearchService.name);
+  private readonly debugRanking: boolean;
+  private readonly boostMultiplier: number;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly elastic: ElasticsearchClientService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    this.debugRanking =
+      (this.config.get<string>('DEBUG_SEARCH_RANKING') ?? '')
+        .trim()
+        .toLowerCase() === 'true';
+    const configured = Number(
+      this.config.get<string>('CONNECTED_WHOLESALER_SCORE_MULTIPLIER'),
+    );
+    this.boostMultiplier =
+      Number.isFinite(configured) && configured > 0
+        ? configured
+        : CONNECTED_WHOLESALER_SCORE_MULTIPLIER;
+  }
+
+  onModuleInit(): void {
+    this.logger.log(
+      `RANKING_ALGORITHM_REFINED MULTIPLIER=${this.boostMultiplier} DEBUG=${this.debugRanking ? '1' : '0'}`,
+    );
+  }
 
   async search(params: {
     sessionVendorId: string;
@@ -45,32 +72,53 @@ export class WholesaleDiscoverySearchService {
     HITS: WholesaleDiscoveryHit[];
     SOURCE: 'ELASTICSEARCH' | 'POSTGRES_FALLBACK';
     BOOSTED_COUNT: number;
+    MULTIPLIER: number;
   }> {
     const limit = Math.min(Math.max(params.limit ?? 40, 1), 100);
     const q = params.query.trim();
     const connected = new Set(params.connectedVendorIds);
+    const source: 'ELASTICSEARCH' | 'POSTGRES_FALLBACK' =
+      this.elastic.isEnabled() && q.length > 0
+        ? 'ELASTICSEARCH'
+        : 'POSTGRES_FALLBACK';
 
     const raw =
-      this.elastic.isEnabled() && q.length > 0
+      source === 'ELASTICSEARCH'
         ? await this.searchElastic(q, limit)
         : await this.searchPostgres(q, limit);
 
-    const ranked = rankWholesaleHitsByConnectedVendors(raw, connected).map(
-      (hit) => ({
-        ...hit,
-        CONNECTED_WHOLESALER: connected.has(hit.vendorId),
-      }),
+    const ranked = rankWholesaleHitsByConnectedVendors(
+      raw,
+      connected,
+      this.boostMultiplier,
     );
+
+    if (this.debugRanking) {
+      for (const hit of ranked) {
+        this.logger.log(
+          buildScoreCompositionLog({
+            ID: hit.id,
+            VENDOR_ID: hit.vendorId,
+            BASE_SCORE: hit.baseScore,
+            BOOST_APPLIED: hit.boostApplied,
+            FINAL_SCORE: hit.score,
+            CONNECTED_WHOLESALER: hit.CONNECTED_WHOLESALER,
+          }),
+        );
+      }
+    }
+
     const boosted = countBoostedHits(ranked, connected);
 
     this.logger.log(
-      `RANKING_ALGORITHM_OPTIMIZED SESSION_VENDOR=${params.sessionVendorId} QUERY_LEN=${q.length} HITS=${ranked.length} BOOSTED=${boosted} SOURCE=${this.elastic.isEnabled() ? 'ELASTICSEARCH' : 'POSTGRES_FALLBACK'}`,
+      `RANKING_ALGORITHM_REFINED SESSION_VENDOR=${params.sessionVendorId} QUERY_LEN=${q.length} HITS=${ranked.length} BOOSTED=${boosted} MULTIPLIER=${this.boostMultiplier} SOURCE=${source}`,
     );
 
     return {
       HITS: ranked,
-      SOURCE: this.elastic.isEnabled() ? 'ELASTICSEARCH' : 'POSTGRES_FALLBACK',
+      SOURCE: source,
       BOOSTED_COUNT: boosted,
+      MULTIPLIER: this.boostMultiplier,
     };
   }
 
@@ -183,7 +231,7 @@ export class WholesaleDiscoverySearchService {
       unitPriceCents: row.unitPriceCents,
       availableQuantity: row.availableQuantity,
       status: row.status,
-      // Preserve relative freshness as a soft score when ES is offline.
+      // Soft relevance proxy for ILIKE path (same multiplicative boost applied later).
       score: Math.max(0, limit - index),
     }));
   }

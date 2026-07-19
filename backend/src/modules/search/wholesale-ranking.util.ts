@@ -5,39 +5,90 @@ export type RankableWholesaleHit = {
   score?: number;
 };
 
+export type RankedWholesaleHit<T extends RankableWholesaleHit> = T & {
+  baseScore: number;
+  boostApplied: number;
+  score: number;
+  CONNECTED_WHOLESALER: boolean;
+};
+
+/** Multiplicative CONNECTED_WHOLESALERS boost — enhances relevance, does not override it. */
+export const CONNECTED_WHOLESALER_SCORE_MULTIPLIER = 1.2;
+
+export type ScoreComposition = {
+  ID: string;
+  VENDOR_ID: string;
+  BASE_SCORE: number;
+  BOOST_APPLIED: number;
+  FINAL_SCORE: number;
+  CONNECTED_WHOLESALER: boolean;
+};
+
+function toConnectedSet(
+  connectedVendorIds: ReadonlySet<string> | readonly string[],
+): Set<string> {
+  return connectedVendorIds instanceof Set
+    ? connectedVendorIds
+    : new Set(connectedVendorIds);
+}
+
+function numericBaseScore(score: unknown): number {
+  const value = typeof score === 'number' ? score : Number(score);
+  return Number.isFinite(value) ? value : 0;
+}
+
 /**
- * Relationship-aware ranking: connected wholesalers sort ahead of others,
- * then by descending score / name.
- * Telemetry companion: RANKING_ALGORITHM_OPTIMIZED
+ * Hybrid ranking: finalScore = baseScore * 1.2 for CONNECTED_WHOLESALERS,
+ * otherwise finalScore = baseScore. Empty connected set applies no boost/penalty.
+ * Telemetry: RANKING_ALGORITHM_REFINED, SEARCH_SCORE_CALCULATED
  */
 export function rankWholesaleHitsByConnectedVendors<
   T extends RankableWholesaleHit,
->(hits: T[], connectedVendorIds: ReadonlySet<string> | readonly string[]): T[] {
-  const connected =
-    connectedVendorIds instanceof Set
-      ? connectedVendorIds
-      : new Set(connectedVendorIds);
+>(
+  hits: T[],
+  connectedVendorIds: ReadonlySet<string> | readonly string[],
+  multiplier: number = CONNECTED_WHOLESALER_SCORE_MULTIPLIER,
+): Array<RankedWholesaleHit<T>> {
+  const connected = toConnectedSet(connectedVendorIds);
+  const safeMultiplier =
+    Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
 
-  return [...hits].sort((a, b) => {
-    const aBoost = connected.has(a.vendorId) ? 1 : 0;
-    const bBoost = connected.has(b.vendorId) ? 1 : 0;
-    if (aBoost !== bBoost) return bBoost - aBoost;
+  const scored = hits.map((hit) => {
+    const baseScore = numericBaseScore(hit.score);
+    const isConnected = connected.has(hit.vendorId);
+    // Empty CONNECTED_WHOLESALERS → identity (raw relevance, no penalty).
+    const boostApplied =
+      connected.size > 0 && isConnected ? safeMultiplier : 1;
+    const finalScore = baseScore * boostApplied;
+    return {
+      ...hit,
+      baseScore,
+      boostApplied,
+      score: finalScore,
+      CONNECTED_WHOLESALER: isConnected,
+    };
+  });
 
-    const aScore = Number.isFinite(a.score) ? (a.score as number) : 0;
-    const bScore = Number.isFinite(b.score) ? (b.score as number) : 0;
-    if (aScore !== bScore) return bScore - aScore;
-
+  return scored.sort((a, b) => {
+    if (a.score !== b.score) return b.score - a.score;
     return a.name.localeCompare(b.name);
   });
 }
 
-export function countBoostedHits<T extends RankableWholesaleHit>(
+export function countBoostedHits<T extends { CONNECTED_WHOLESALER?: boolean; vendorId: string }>(
   hits: T[],
   connectedVendorIds: ReadonlySet<string> | readonly string[],
 ): number {
-  const connected =
-    connectedVendorIds instanceof Set
-      ? connectedVendorIds
-      : new Set(connectedVendorIds);
-  return hits.filter((hit) => connected.has(hit.vendorId)).length;
+  const connected = toConnectedSet(connectedVendorIds);
+  if (connected.size === 0) return 0;
+  return hits.filter(
+    (hit) =>
+      hit.CONNECTED_WHOLESALER === true || connected.has(hit.vendorId),
+  ).length;
+}
+
+export function buildScoreCompositionLog(
+  hit: ScoreComposition,
+): string {
+  return `SEARCH_SCORE_CALCULATED ID=${hit.ID} VENDOR=${hit.VENDOR_ID} BASE=${hit.BASE_SCORE} BOOST=${hit.BOOST_APPLIED} FINAL=${hit.FINAL_SCORE} CONNECTED=${hit.CONNECTED_WHOLESALER ? '1' : '0'}`;
 }

@@ -98,7 +98,7 @@ export class WholesaleProductsController {
 
   /**
    * GET /api/vendors/wholesale-products/search?q=
-   * Relationship-aware discovery: CONNECTED_WHOLESALERS boosted first.
+   * Hybrid ranking: finalScore = baseRelevance * 1.2 for CONNECTED_WHOLESALERS.
    */
   @Get('search')
   async search(
@@ -119,10 +119,11 @@ export class WholesaleProductsController {
     });
 
     return {
-      STATUS: 'RANKING_ALGORITHM_OPTIMIZED',
+      STATUS: 'RANKING_ALGORITHM_REFINED',
       SESSION_VENDOR_ID: sessionVendorId,
       QUERY: query,
       SOURCE: result.SOURCE,
+      MULTIPLIER: result.MULTIPLIER,
       CONNECTED_WHOLESALERS: connectedVendorIds,
       BOOSTED_COUNT: result.BOOSTED_COUNT,
       COUNT: result.HITS.length,
@@ -136,6 +137,8 @@ export class WholesaleProductsController {
         UNIT_PRICE_CENTS: hit.unitPriceCents,
         AVAILABLE_QUANTITY: hit.availableQuantity,
         STATUS: hit.status,
+        BASE_SCORE: hit.baseScore,
+        BOOST_APPLIED: hit.boostApplied,
         SCORE: hit.score,
         CONNECTED_WHOLESALER: hit.CONNECTED_WHOLESALER,
       })),
