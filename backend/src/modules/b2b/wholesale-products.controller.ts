@@ -18,6 +18,8 @@ import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { SupabaseAuthGuard } from '../../common/auth/supabase-auth.guard';
+import { WholesaleDiscoverySearchService } from '../search/wholesale-discovery-search.service';
+import { VendorConnectionsService } from './vendor-connections.service';
 import { WholesaleProductsService } from './wholesale-products.service';
 
 const UUID_RE =
@@ -27,7 +29,11 @@ const UUID_RE =
 @UseGuards(SupabaseAuthGuard, RolesGuard)
 @Roles('vendor')
 export class WholesaleProductsController {
-  constructor(private readonly wholesale: WholesaleProductsService) {}
+  constructor(
+    private readonly wholesale: WholesaleProductsService,
+    private readonly discovery: WholesaleDiscoverySearchService,
+    private readonly connections: VendorConnectionsService,
+  ) {}
 
   @Post()
   @HttpCode(201)
@@ -87,6 +93,52 @@ export class WholesaleProductsController {
       STATUS: 'WHOLESALE_SKU_UPDATED',
       INDEX: 'ELASTICSEARCH_SYNC_COMPLETED',
       PRODUCT: this.serialize(product),
+    };
+  }
+
+  /**
+   * GET /api/vendors/wholesale-products/search?q=
+   * Relationship-aware discovery: CONNECTED_WHOLESALERS boosted first.
+   */
+  @Get('search')
+  async search(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('q') q?: string,
+    @Query('limit') limitRaw?: string,
+  ) {
+    const sessionVendorId = this.requireVendor(user);
+    const query = typeof q === 'string' ? q : '';
+    const limit = Number.parseInt(limitRaw ?? '40', 10);
+    const connectedVendorIds =
+      await this.connections.listAcceptedConnectedVendorIds(sessionVendorId);
+    const result = await this.discovery.search({
+      sessionVendorId,
+      query,
+      connectedVendorIds,
+      limit: Number.isFinite(limit) ? limit : 40,
+    });
+
+    return {
+      STATUS: 'RANKING_ALGORITHM_OPTIMIZED',
+      SESSION_VENDOR_ID: sessionVendorId,
+      QUERY: query,
+      SOURCE: result.SOURCE,
+      CONNECTED_WHOLESALERS: connectedVendorIds,
+      BOOSTED_COUNT: result.BOOSTED_COUNT,
+      COUNT: result.HITS.length,
+      PRODUCTS: result.HITS.map((hit) => ({
+        ID: hit.id,
+        VENDOR_ID: hit.vendorId,
+        NAME: hit.name,
+        DESCRIPTION: hit.description,
+        PACKAGING_UNIT: hit.packagingUnit,
+        MOQ: hit.moq,
+        UNIT_PRICE_CENTS: hit.unitPriceCents,
+        AVAILABLE_QUANTITY: hit.availableQuantity,
+        STATUS: hit.status,
+        SCORE: hit.score,
+        CONNECTED_WHOLESALER: hit.CONNECTED_WHOLESALER,
+      })),
     };
   }
 
