@@ -1,13 +1,9 @@
-import Link from 'next/link';
+import { TenantNotFoundFallback } from '@/components/tenant/TenantNotFoundFallback';
 
 export default function TenantNotFound() {
-  return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: 640 }}>
-      <h1>Marketplace not found</h1>
-      <p>The tenant segment in this URL does not match an active marketplace.</p>
-      <p>
-        <Link href="/">Return to platform home</Link>
-      </p>
-    </main>
-  );
+  // eslint-disable-next-line no-console
+  console.log('FALLBACK_TRIGGERED REASON=NOT_FOUND_ROUTE');
+  // eslint-disable-next-line no-console
+  console.log('TENANT_NOT_FOUND');
+  return <TenantNotFoundFallback detail="NOT_FOUND_ROUTE" />;
 }

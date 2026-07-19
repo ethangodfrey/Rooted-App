@@ -76,7 +76,57 @@ export const TENANT_SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
 export function isValidTenantSubdomainSlug(slug: string): boolean {
   const normalized = slug.trim().toLowerCase();
   if (!normalized) return false;
+  // Reject underscored / unicode / overlong / punctuation labels early.
+  if (normalized.length > 63) return false;
+  if (/[^a-z0-9-]/.test(normalized)) return false;
+  if (normalized.startsWith('-') || normalized.endsWith('-')) return false;
+  if (normalized.includes('--')) return false;
   return TENANT_SUBDOMAIN_PATTERN.test(normalized);
+}
+
+export type SubdomainPreflightResult =
+  | { OK: true; SLUG: string | null; KIND: 'APEX' | 'SUBDOMAIN' | 'LOCAL' | 'CUSTOM' }
+  | { OK: false; REASON: 'INVALID_SLUG' | 'RESERVED' | 'EMPTY_HOST'; LABEL: string | null };
+
+/**
+ * Lightweight edge pre-flight for `*.vendorlymarketplace.com` hosts.
+ * Rejects malicious / malformed subdomain labels before tenant API calls.
+ */
+export function preflightTenantHost(
+  rawHost: string,
+  platformDomain: string,
+): SubdomainPreflightResult {
+  const host = normalizeHost(rawHost);
+  if (!host) {
+    return { OK: false, REASON: 'EMPTY_HOST', LABEL: null };
+  }
+
+  if (isPlatformApex(host, platformDomain)) {
+    return { OK: true, SLUG: null, KIND: 'APEX' };
+  }
+
+  const label =
+    peekSubdomainLabel(host, platformDomain) ??
+    (isLocalDevHost(host) && host.endsWith('.localhost')
+      ? peekSubdomainLabel(host, 'localhost')
+      : null);
+
+  if (label) {
+    if (isReservedSubdomainSlug(label)) {
+      return { OK: false, REASON: 'RESERVED', LABEL: label };
+    }
+    if (!isValidTenantSubdomainSlug(label)) {
+      return { OK: false, REASON: 'INVALID_SLUG', LABEL: label };
+    }
+    return {
+      OK: true,
+      SLUG: label,
+      KIND: isLocalDevHost(host) ? 'LOCAL' : 'SUBDOMAIN',
+    };
+  }
+
+  // Custom domains (no platform subdomain) proceed to resolver.
+  return { OK: true, SLUG: null, KIND: 'CUSTOM' };
 }
 
 /**
