@@ -26,6 +26,19 @@ export {
   MAX_PUBLIC_URL_LENGTH,
 } from './domains';
 
+export {
+  parseVendorConnectionRequest,
+  parseWholesaleProductCreate,
+  vendorBusinessConnectionStatusSchema,
+  vendorConnectionRequestSchema,
+  wholesaleProductCreateSchema,
+  type VendorBusinessConnectionStatus,
+  type VendorConnectionRequestInput,
+  type VendorConnectionRequestParseResult,
+  type WholesaleProductCreateInput,
+  type WholesaleProductCreateParseResult,
+} from './b2b';
+
 const MIN_ANON_KEY_LENGTH = 32;
 
 /**
