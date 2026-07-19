@@ -4,6 +4,8 @@
 
 Markets/events live in Supabase `events` table — seeded via USDA/OSM pipelines in `scripts/` and enriched by backend agents.
 
+Nationwide directory core (phase53): `public.markets` with `directory_slug`, `operating_hours`, city/state + lat/lng indexes. Nest geo search: `GET /api/markets/nearby`. Multi-region structural seed: `npm run markets:seed-nationwide`.
+
 ## Dedupe rule
 
 Dedupe by **normalized name + city + state**. Use `npm run markets:dedupe` (backend script via root package.json).

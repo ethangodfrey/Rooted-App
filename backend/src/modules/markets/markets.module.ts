@@ -7,6 +7,8 @@ import { MarketsDirectoryService } from './markets-directory.service';
 import { MarketsGooglePlacesService } from './markets-google-places.service';
 import { MarketsLinksService } from './markets-links.service';
 import { PublicMarketsController } from './public-markets.controller';
+import { MarketsNearbyController } from './markets-nearby.controller';
+import { MarketsNearbyService } from './markets-nearby.service';
 import { MarketsAgentService } from './markets-agent.service';
 import { MarketsAiService } from './markets-ai.service';
 import { MarketsDiscoveryService } from './markets-discovery.service';
@@ -24,8 +26,10 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     AdminMarketsController,
     PublicMarketsController,
     MarketsDirectoryController,
+    MarketsNearbyController,
   ],
   providers: [
+    MarketsNearbyService,
     MarketsGooglePlacesService,
     MarketsLinksService,
     MarketsNominatimService,
@@ -47,6 +51,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsClassifyAiService,
     MarketsLinksService,
     MarketsDirectoryService,
+    MarketsNearbyService,
   ],
 })
 export class MarketsModule {}

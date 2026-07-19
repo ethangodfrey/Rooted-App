@@ -39,6 +39,19 @@ export {
   type WholesaleProductCreateParseResult,
 } from './b2b';
 
+export {
+  DEFAULT_NEARBY_LIMIT,
+  DEFAULT_NEARBY_RADIUS_MILES,
+  MAX_NEARBY_LIMIT,
+  MAX_NEARBY_RADIUS_MILES,
+  boundingBoxDegrees,
+  nearbyMarketsQuerySchema,
+  parseNearbyMarketsQuery,
+  parseNearbyMarketsQuerySafe,
+  type NearbyMarketsQuery,
+  type NearbyMarketsQueryParseResult,
+} from './geo';
+
 const MIN_ANON_KEY_LENGTH = 32;
 
 /**
