@@ -11,6 +11,7 @@ import {
   UNKNOWN_TENANT_CONTEXT,
   buildTenantHostContext,
   extractSubdomainSlug,
+  isValidTenantSubdomainSlug,
   normalizeHost,
 } from '../src/modules/tenants/tenant-host.util';
 import { TenantsService } from '../src/modules/tenants/tenants.service';
@@ -51,6 +52,16 @@ describe('TENANT ROUTING HARNESS', () => {
     expect(context.SLUG).toBeNull();
     expect(context.RESOLUTION).toBe('UNKNOWN');
     log('ROUTE_PASSED MULTI_LEVEL_REJECTED');
+  });
+
+  it('ROUTE_PASSED rejects malicious or invalid subdomain slug syntax', () => {
+    expect(isValidTenantSubdomainSlug('denver')).toBe(true);
+    expect(isValidTenantSubdomainSlug('evil_slug')).toBe(false);
+    expect(isValidTenantSubdomainSlug('-leading')).toBe(false);
+    expect(isValidTenantSubdomainSlug('trailing-')).toBe(false);
+    expect(isValidTenantSubdomainSlug('has--double')).toBe(false);
+    expect(isValidTenantSubdomainSlug('bad.chars!')).toBe(false);
+    log('ROUTE_PASSED INVALID_SLUG_REJECTED');
   });
 
   it('ROUTE_PASSED excludes reserved structural subdomains api/www/main', () => {

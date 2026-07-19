@@ -1,10 +1,11 @@
-import Link from 'next/link';
+import { TenantNotFoundFallback } from '@/components/tenant/TenantNotFoundFallback';
 
-const MESSAGES: Record<string, string> = {
-  not_found: 'We could not find a marketplace for this domain.',
-  suspended: 'This marketplace is temporarily unavailable.',
-  missing_host: 'The request did not include a valid hostname.',
-  resolve_failed: 'Tenant routing failed due to a temporary error. Please retry shortly.',
+const REASON_DETAIL: Record<string, string> = {
+  not_found: 'UNSEEDED_OR_UNKNOWN_HOST',
+  suspended: 'TENANT_SUSPENDED',
+  missing_host: 'MISSING_HOST',
+  resolve_failed: 'RESOLVE_FAILED',
+  invalid_slug: 'INVALID_SLUG',
 };
 
 export default async function TenantErrorPage({
@@ -15,20 +16,12 @@ export default async function TenantErrorPage({
   const params = await searchParams;
   const reason = params.reason ?? 'resolve_failed';
   const host = params.host ?? '';
-  const message = MESSAGES[reason] ?? MESSAGES.resolve_failed;
+  const detail = REASON_DETAIL[reason] ?? REASON_DETAIL.resolve_failed;
 
-  return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: 640 }}>
-      <h1>Marketplace unavailable</h1>
-      <p>{message}</p>
-      {host ? (
-        <p>
-          Host: <code>{host}</code>
-        </p>
-      ) : null}
-      <p>
-        <Link href="/">Return to platform home</Link>
-      </p>
-    </main>
-  );
+  // eslint-disable-next-line no-console
+  console.log(`FALLBACK_TRIGGERED REASON=${reason.toUpperCase()} HOST=${host || 'NONE'}`);
+  // eslint-disable-next-line no-console
+  console.log('TENANT_NOT_FOUND');
+
+  return <TenantNotFoundFallback host={host || null} detail={detail} />;
 }

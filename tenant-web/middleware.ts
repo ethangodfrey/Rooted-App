@@ -6,8 +6,10 @@ import {
   isLocalDevHost,
   isPlatformApex,
   isReservedSubdomainSlug,
+  isValidTenantSubdomainSlug,
   normalizeHost,
   peekSubdomainLabel,
+  preflightTenantHost,
   resolveApiBaseUrl,
   resolvePlatformDomain,
   shouldBypassMiddleware,
@@ -93,7 +95,35 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
   const normalizedHost = normalizeHost(rawHost);
 
   if (!normalizedHost) {
+    // eslint-disable-next-line no-console
+    console.log('FALLBACK_TRIGGERED REASON=MISSING_HOST');
+    // eslint-disable-next-line no-console
+    console.log('TENANT_NOT_FOUND');
     return tenantErrorRedirect(request, 'missing_host', '');
+  }
+
+  // Pre-flight: reject malformed / malicious subdomain labels before rewrites.
+  const preflight = preflightTenantHost(normalizedHost, platformDomain);
+  if (!preflight.OK) {
+    if (preflight.REASON === 'RESERVED') {
+      // eslint-disable-next-line no-console
+      console.log(
+        `TENANT_BYPASS RESERVED_SUBDOMAIN SLUG=${preflight.LABEL} HOST=${normalizedHost}`,
+      );
+      return NextResponse.next();
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `FALLBACK_TRIGGERED REASON=${preflight.REASON} LABEL=${preflight.LABEL ?? 'NONE'} HOST=${normalizedHost}`,
+    );
+    // eslint-disable-next-line no-console
+    console.log('TENANT_NOT_FOUND');
+    return tenantErrorRedirect(
+      request,
+      preflight.REASON === 'INVALID_SLUG' ? 'invalid_slug' : 'not_found',
+      normalizedHost,
+    );
   }
 
   // Reserved structural subdomains (api / www / main) — no tenant rewrite.
@@ -115,10 +145,20 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
   const pathSegments = pathname.split('/').filter(Boolean);
   const firstSegment = pathSegments[0] ?? null;
   const subdomainSlug =
+    preflight.SLUG ??
     extractSubdomainSlug(normalizedHost, platformDomain) ??
     (isLocalDevHost(normalizedHost) && normalizedHost.endsWith('.localhost')
       ? extractSubdomainSlug(normalizedHost, 'localhost')
       : null);
+
+  // Guard path-segment tenant tokens the same way as host labels.
+  if (firstSegment && !isValidTenantSubdomainSlug(firstSegment) && firstSegment !== 'tenant-error') {
+    // eslint-disable-next-line no-console
+    console.log(`FALLBACK_TRIGGERED REASON=INVALID_PATH_SLUG SLUG=${firstSegment}`);
+    // eslint-disable-next-line no-console
+    console.log('TENANT_NOT_FOUND');
+    return tenantErrorRedirect(request, 'invalid_slug', normalizedHost);
+  }
 
   try {
     let envelope = null as Awaited<ReturnType<typeof resolveTenantByHost>> | null;
@@ -142,6 +182,14 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
     // No state/city allowlist — any valid DNS label rewrites into app/[tenant]/...
     const rewriteSlug = subdomainSlug ?? tenantSlug;
 
+    if (!isValidTenantSubdomainSlug(rewriteSlug)) {
+      // eslint-disable-next-line no-console
+      console.log(`FALLBACK_TRIGGERED REASON=INVALID_REWRITE_SLUG SLUG=${rewriteSlug}`);
+      // eslint-disable-next-line no-console
+      console.log('TENANT_NOT_FOUND');
+      return tenantErrorRedirect(request, 'invalid_slug', resolvedHost);
+    }
+
     // eslint-disable-next-line no-console
     console.log(
       `NATIONWIDE_ROUTING_ACTIVE SLUG=${rewriteSlug} HOST=${resolvedHost} RESOLUTION=${resolution}`,
@@ -162,11 +210,21 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
     return withTenantHeaders(response, rewriteSlug, tenant.id, resolvedHost, resolution);
   } catch (error) {
     if (error instanceof TenantNotFoundError) {
+      // eslint-disable-next-line no-console
+      console.log(`FALLBACK_TRIGGERED REASON=UNSEEDED_HOST HOST=${error.host}`);
+      // eslint-disable-next-line no-console
+      console.log('TENANT_NOT_FOUND');
       return tenantErrorRedirect(request, 'not_found', error.host);
     }
     if (error instanceof TenantSuspendedError) {
+      // eslint-disable-next-line no-console
+      console.log(`FALLBACK_TRIGGERED REASON=SUSPENDED SLUG=${error.slug}`);
       return tenantErrorRedirect(request, 'suspended', normalizedHost);
     }
+    // eslint-disable-next-line no-console
+    console.log(`FALLBACK_TRIGGERED REASON=RESOLVE_FAILED HOST=${normalizedHost}`);
+    // eslint-disable-next-line no-console
+    console.log('TENANT_NOT_FOUND');
     return tenantErrorRedirect(request, 'resolve_failed', normalizedHost);
   }
 }

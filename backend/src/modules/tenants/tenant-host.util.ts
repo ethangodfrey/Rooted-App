@@ -32,6 +32,10 @@ export const TENANT_SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
 export function isValidTenantSubdomainSlug(slug: string): boolean {
   const normalized = slug.trim().toLowerCase();
   if (!normalized) return false;
+  if (normalized.length > 63) return false;
+  if (/[^a-z0-9-]/.test(normalized)) return false;
+  if (normalized.startsWith('-') || normalized.endsWith('-')) return false;
+  if (normalized.includes('--')) return false;
   return TENANT_SUBDOMAIN_PATTERN.test(normalized);
 }
 
