@@ -70,7 +70,7 @@ async function startPreview() {
         return [l.slice(0, i), l.slice(i + 1)];
       }),
   );
-  env.VITE_API_URL = 'https://api.vendorly.app';
+  env.VITE_API_URL = 'https://api.vendorlymarketplace.app';
   env.VITE_APP_URL = 'http://127.0.0.1:4173';
 
   const child = spawn('npm', ['run', 'preview', '--', '--host', '127.0.0.1', '--port', '4173'], {
@@ -200,10 +200,10 @@ async function main() {
         : 'PASS'
       : 'FAIL',
     env_VITE_API_URL_note: apiUrlLazyOnly
-      ? 'api.vendorly.app in vendor-pages/admin-pages lazy chunks (expected for code-split build)'
+      ? 'api.vendorlymarketplace.app in vendor-pages/admin-pages lazy chunks (expected for code-split build)'
       : apiUrlPass
-        ? 'api.vendorly.app present in crawled bundles'
-        : 'api.vendorly.app not found in any crawled chunk',
+        ? 'api.vendorlymarketplace.app present in crawled bundles'
+        : 'api.vendorlymarketplace.app not found in any crawled chunk',
     crawled_chunk_count: envCheck.crawledChunkCount,
     includes_lazy_vendor_chunk: envCheck.includesLazyVendorChunk ? 'YES' : 'NO',
     gross_volume_trend:
@@ -247,7 +247,7 @@ async function main() {
 
   if (!apiUrlPass) {
     console.error(
-      '\nFLAG: api.vendorly.app missing from all crawled production chunks. Set VITE_API_URL on Vendorly_Marketplace1 and redeploy.',
+      '\nFLAG: api.vendorlymarketplace.app missing from all crawled production chunks. Set VITE_API_URL on Vendorly_Marketplace1 and redeploy.',
     );
     process.exitCode = 2;
   } else if (!prodHasSettlement) {

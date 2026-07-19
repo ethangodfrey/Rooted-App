@@ -20,9 +20,9 @@ Set or confirm:
 | Variable | Production value |
 |----------|------------------|
 | `NODE_ENV` | `production` |
-| `PUBLIC_BASE_URL` | `https://api.vendorly.app` |
-| `WEB_APP_URL` | `https://vendorly.app` |
-| `CORS_ORIGINS` | `https://vendorly-marketplace1.vercel.app,https://vendorly.app,https://www.vendorly.app` |
+| `PUBLIC_BASE_URL` | `https://api.vendorlymarketplace.app` |
+| `WEB_APP_URL` | `https://vendorlymarketplace.com` |
+| `CORS_ORIGINS` | `https://vendorly-marketplace1.vercel.app,https://vendorlymarketplace.com,https://www.vendorlymarketplace.com` |
 | `DATABASE_URL` | Supabase pooler URI (port 6543) |
 | `SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 | `STRIPE_WEBHOOK_SECRET` | From Stripe Dashboard → Webhooks |
@@ -30,7 +30,7 @@ Set or confirm:
 
 **Notes:**
 - `assertProductionEnv` blocks startup without `DATABASE_URL`, `PUBLIC_BASE_URL`, `WEB_APP_URL`, `SUPABASE_URL`.
-- HTTPS `*.vendorly.app` subdomains are auto-allowed even if omitted from `CORS_ORIGINS`.
+- HTTPS `*.vendorlymarketplace.com` subdomains are auto-allowed even if omitted from `CORS_ORIGINS`.
 - After saving variables → **Deploy** / redeploy the service.
 
 ## 3. Vercel — frontend production variables
@@ -44,8 +44,8 @@ See [`docs/VERCEL_PRODUCTION_PROJECT.md`](VERCEL_PRODUCTION_PROJECT.md) if phase
 |----------|----------------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key |
-| `VITE_APP_URL` | `https://vendorly.app` |
-| `VITE_API_URL` | `https://api.vendorly.app` |
+| `VITE_APP_URL` | `https://vendorlymarketplace.com` |
+| `VITE_API_URL` | `https://api.vendorlymarketplace.app` |
 
 `web/scripts/verify-build-env.mjs` **blocks Production builds** when `VITE_API_URL` is missing or not HTTPS.
 
@@ -56,14 +56,14 @@ Redeploy Production after any env change.
 Against your live API (custom domain or Railway `*.up.railway.app`):
 
 ```bash
-API_BASE=https://api.vendorly.app npm run smoke:boundaries
+API_BASE=https://api.vendorlymarketplace.app npm run smoke:boundaries
 # or temporary Railway URL:
 API_BASE=https://YOUR-SERVICE.up.railway.app npm run smoke:boundaries
 ```
 
 **Expected:**
 - Unauthorized `Origin` → no `Access-Control-Allow-Origin`
-- `https://vendorly.app` and `https://shop.vendorly.app` → ACAO matches origin
+- `https://vendorlymarketplace.com` and `https://shop.vendorlymarketplace.com` → ACAO matches origin
 - `GET /health/live` without Origin → `200`
 - `POST /webhooks/stripe` with bad signature → `{ ok: false, error: "invalid_signature" }` (or `webhook_not_configured` if Stripe secret unset), **no stack/SQL in body**
 
@@ -74,7 +74,7 @@ cd backend && npm run build
 NODE_ENV=production \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/rooted \
   PUBLIC_BASE_URL=http://127.0.0.1:4000 \
-  WEB_APP_URL=https://vendorly.app \
+  WEB_APP_URL=https://vendorlymarketplace.com \
   SUPABASE_URL=https://ajedyjbdpjahnhzrxwdj.supabase.co \
   STRIPE_SECRET_KEY=sk_test_smoke \
   STRIPE_WEBHOOK_SECRET=whsec_smoke \

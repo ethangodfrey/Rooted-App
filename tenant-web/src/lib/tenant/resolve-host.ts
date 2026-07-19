@@ -75,7 +75,11 @@ export function isLocalDevHost(host: string): boolean {
 }
 
 export function resolvePlatformDomain(): string {
-  return (process.env.TENANT_PLATFORM_DOMAIN ?? 'rooted.app').trim().toLowerCase();
+  return (
+    process.env.TENANT_PLATFORM_DOMAIN ?? 'vendorlymarketplace.com'
+  )
+    .trim()
+    .toLowerCase();
 }
 
 export function resolveApiBaseUrl(): string {

@@ -119,7 +119,7 @@ cd web && npm run build
 |----------|------------------|
 | `VITE_SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Supabase → Settings → API |
-| `VITE_API_URL` | `https://api.vendorly.app` |
+| `VITE_API_URL` | `https://api.vendorlymarketplace.app` |
 | `VITE_APP_URL` | `https://vendorly-marketplace1.vercel.app` or custom domain |
 
 ### B4 — Post-deployment verification (settlement charts)
@@ -137,7 +137,7 @@ cd web && npm run build
 4. Optional API boundary smoke:
 
 ```bash
-API_BASE=https://api.vendorly.app npm run smoke:boundaries
+API_BASE=https://api.vendorlymarketplace.app npm run smoke:boundaries
 ```
 
 ---

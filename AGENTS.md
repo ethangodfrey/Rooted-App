@@ -50,7 +50,7 @@ You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food mar
 | Command | Pass criteria | Notes |
 |---------|---------------|-------|
 | `npm run smoke:ui-baseline` | PASS (exit 0) | 10/10 source nodes, 9/9 production bundle markers |
-| `npm run smoke:settlement` | PASS_LAZY_CHUNK (exit 0*) | Production chunk architecture + settlement matrices; `api.vendorly.app` verified in lazy vendor/admin chunks |
+| `npm run smoke:settlement` | PASS_LAZY_CHUNK (exit 0*) | Production chunk architecture + settlement matrices; `api.vendorlymarketplace.app` verified in lazy vendor/admin chunks |
 
 \*Settlement **UI segment** checks without `SMOKE_VENDOR_EMAIL` / `SMOKE_VENDOR_PASSWORD` safely route to **`BLOCKED_AUTH`** — expected behavior, not a smoke failure.
 

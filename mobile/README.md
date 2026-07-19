@@ -29,7 +29,7 @@ Expo + Supabase mobile client for the Vendorly local food marketplace.
 
    - `EXPO_PUBLIC_SUPABASE_URL` — Supabase project URL (cloud; works on cellular)
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
-   - `EXPO_PUBLIC_API_URL` — optional NestJS backend. **Off LAN:** use `https://api.vendorly.app` (or your deployed API), not a LAN IP. **Same Wi‑Fi dev:** use your PC's LAN IP. Leave blank to hide POS; core flows still work.
+   - `EXPO_PUBLIC_API_URL` — optional NestJS backend. **Off LAN:** use `https://api.vendorlymarketplace.app` (or your deployed API), not a LAN IP. **Same Wi‑Fi dev:** use your PC's LAN IP. Leave blank to hide POS; core flows still work.
    - `EXPO_PUBLIC_AUTH_REDIRECT_URL` — optional hosted auth redirect page for password reset
 
 4. Run Supabase SQL scripts in order (Supabase SQL Editor):

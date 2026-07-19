@@ -86,8 +86,8 @@ export async function auditProductionEnv(url) {
     )
   ).join('\n');
 
-  const apiUrlInEntry = entryOnlyJs.includes('api.vendorly.app');
-  const apiUrlInAnyChunk = combinedJs.includes('api.vendorly.app');
+  const apiUrlInEntry = entryOnlyJs.includes('api.vendorlymarketplace.app');
+  const apiUrlInAnyChunk = combinedJs.includes('api.vendorlymarketplace.app');
 
   return {
     httpStatus: await fetch(url).then((r) => r.status),

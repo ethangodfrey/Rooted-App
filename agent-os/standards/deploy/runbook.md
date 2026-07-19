@@ -35,10 +35,10 @@ Reference: `docs/OFF_LAN_ACCESS.md`
 
 ## Phase gate: custom domains (optional)
 
-- [ ] Vercel: `vendorly.app` + SSL
-- [ ] Railway: `api.vendorly.app` + SSL
+- [ ] Vercel: `vendorlymarketplace.com` + SSL
+- [ ] Railway: `api.vendorlymarketplace.app` + SSL
 - [ ] Update all env vars to custom domains → redeploy both
-- [ ] Supabase Site URL + redirects → `vendorly.app`
+- [ ] Supabase Site URL + redirects → `vendorlymarketplace.com`
 
 ## Phase gate: mobile off-LAN (after web + API)
 

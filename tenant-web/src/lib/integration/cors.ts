@@ -12,8 +12,8 @@ function allowedOrigins(): Set<string> {
   const defaults = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://vendorly.app',
-    'https://www.vendorly.app',
+    'https://vendorlymarketplace.com',
+    'https://www.vendorlymarketplace.com',
     'https://vendorlymarketplace.vercel.app',
     'https://vendorly-marketplace1.vercel.app',
   ];

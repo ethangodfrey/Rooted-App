@@ -1,7 +1,7 @@
 const API_PORT = 4000;
 
 /**
- * Live Railway public URL. Used when `api.vendorly.app` DNS is not configured
+ * Live Railway public URL. Used when `api.vendorlymarketplace.app` DNS is not configured
  * (or as a production fallback). Prefer a custom domain once DNS points at Railway.
  */
 export const RAILWAY_PUBLIC_API_URL =
@@ -19,8 +19,11 @@ function normalizeConfiguredApiUrl(configured: string): string {
 
   try {
     const host = new URL(trimmed).hostname.toLowerCase();
-    // Custom domain is documented but not yet resolving in DNS.
-    if (host === 'api.vendorly.app') {
+    // Custom domains may not resolve until CNAME cutover completes.
+    if (
+      host === 'api.vendorlymarketplace.app' ||
+      host === 'api.vendorly.app'
+    ) {
       return RAILWAY_PUBLIC_API_URL;
     }
   } catch {

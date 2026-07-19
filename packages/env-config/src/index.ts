@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { MAX_PUBLIC_URL_LENGTH } from './domains';
+
 export type EnvRecord = Record<string, string | undefined>;
 
 export type ServerEnv = {
@@ -13,7 +15,37 @@ export type ClientEnv = {
   SUPABASE_ANON_KEY: string;
 };
 
+export {
+  CANONICAL_API_HOST,
+  CANONICAL_API_ORIGIN,
+  CANONICAL_APP_HOST,
+  CANONICAL_APP_ORIGIN,
+  CANONICAL_WWW_ORIGIN,
+  LEGACY_API_HOST,
+  LEGACY_APP_HOST,
+  MAX_PUBLIC_URL_LENGTH,
+} from './domains';
+
 const MIN_ANON_KEY_LENGTH = 32;
+
+/**
+ * Public HTTPS URL parser for app/API origins.
+ * Explicit max length keeps longer marketplace hosts
+ * (vendorlymarketplace.com / api.vendorlymarketplace.app) valid.
+ */
+export const publicHttpsUrlSchema = z
+  .string()
+  .trim()
+  .min(1, 'ENV_VALIDATION_ERROR: PUBLIC_URL REQUIRED')
+  .max(
+    MAX_PUBLIC_URL_LENGTH,
+    `ENV_VALIDATION_ERROR: PUBLIC_URL EXCEEDS ${MAX_PUBLIC_URL_LENGTH} CHARS`,
+  )
+  .url('ENV_VALIDATION_ERROR: PUBLIC_URL MUST BE A VALID URL')
+  .refine(
+    (value) => value.toLowerCase().startsWith('https://'),
+    'ENV_VALIDATION_ERROR: PUBLIC_URL MUST BE HTTPS',
+  );
 
 const databaseUrlSchema = z
   .string({
@@ -34,6 +66,10 @@ const supabaseUrlSchema = z
   })
   .trim()
   .min(1, 'MISSING_PARAMETER: SUPABASE_URL')
+  .max(
+    MAX_PUBLIC_URL_LENGTH,
+    `ENV_VALIDATION_ERROR: SUPABASE_URL EXCEEDS ${MAX_PUBLIC_URL_LENGTH} CHARS`,
+  )
   .url('ENV_VALIDATION_ERROR: SUPABASE_URL MUST BE A VALID URL')
   .refine(
     (value) => value.toLowerCase().startsWith('https://'),
@@ -201,4 +237,13 @@ export function nestConfigValidate<T extends Record<string, unknown>>(
 ): T {
   validateServerEnv(config as EnvRecord);
   return config;
+}
+
+/** Optional PUBLIC_BASE_URL / VITE_APP_URL style HTTPS origin check. */
+export function validatePublicHttpsUrl(value: string): string {
+  const parsed = publicHttpsUrlSchema.safeParse(value);
+  if (!parsed.success) {
+    abortWithEnvError(formatIssues(parsed.error));
+  }
+  return parsed.data;
 }

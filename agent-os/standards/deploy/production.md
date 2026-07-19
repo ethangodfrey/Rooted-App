@@ -4,9 +4,9 @@
 
 | Component | Host | URL |
 |-----------|------|-----|
-| Web SPA | Vercel **`Vendorly_Marketplace1`** | `vendorly-marketplace1.vercel.app` → `vendorly.app` |
+| Web SPA | Vercel **`Vendorly_Marketplace1`** | `vendorly-marketplace1.vercel.app` → `vendorlymarketplace.com` |
 | Tenant edge gateway | Vercel **`tenant-web`** project | Separate deploy; root `tenant-web/` |
-| Backend API | Railway | `api.vendorly.app` → service port `4000` (`/api/health`) |
+| Backend API | Railway | `api.vendorlymarketplace.app` → service port `4000` (`/api/health`) |
 | Database + Auth | Supabase | `ajedyjbdpjahnhzrxwdj.supabase.co` |
 
 See `docs/VERCEL_MULTI_PROJECT.md` for split-project build targets.
@@ -39,7 +39,7 @@ Deterministic pass/fail matrix for repo-root validation. **No manual shell `NODE
 | Web SPA build | `npm run build:web` | exit 0; 11 lazy chunks in `web/dist/` | non-zero exit; TypeScript or Vite errors |
 | Tenant gateway build | `npm run build:tenant-web` | exit 0; API routes + static prerender (incl. `/404`) | non-zero exit; Next.js prerender or type errors |
 | UI baseline smoke | `npm run smoke:ui-baseline` | exit 0; 10/10 source nodes, 9/9 production markers | missing markers or source regressions |
-| Settlement smoke | `npm run smoke:settlement` | `PASS_LAZY_CHUNK`; settlement matrices in production crawl | `api.vendorly.app` absent from all chunks |
+| Settlement smoke | `npm run smoke:settlement` | `PASS_LAZY_CHUNK`; settlement matrices in production crawl | `api.vendorlymarketplace.app` absent from all chunks |
 | Settlement UI (optional) | `npm run smoke:settlement` | `BLOCKED_AUTH` when smoke creds unset — **expected, not fail** | treat auth gate as regression only if bundle/env checks also fail |
 
 ### Structural constraints

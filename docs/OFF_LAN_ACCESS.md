@@ -35,8 +35,8 @@ Set these env vars in Vercel (Production):
 |----------|---------|
 | `VITE_SUPABASE_URL` | `https://YOUR-PROJECT.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | *(anon key)* |
-| `VITE_APP_URL` | `https://vendorly.app` (or your `*.vercel.app` URL) |
-| `VITE_API_URL` | `https://api.vendorly.app` (or your deployed API) |
+| `VITE_APP_URL` | `https://vendorlymarketplace.com` (or your `*.vercel.app` URL) |
+| `VITE_API_URL` | `https://api.vendorlymarketplace.app` (or your deployed API) |
 
 ### 2. Supabase auth URLs
 
@@ -53,10 +53,10 @@ The backend must be reachable at the same URL you put in `VITE_API_URL` / `EXPO_
 
 ```env
 NODE_ENV=production
-PUBLIC_BASE_URL=https://api.vendorly.app
-WEB_APP_URL=https://vendorly.app
+PUBLIC_BASE_URL=https://api.vendorlymarketplace.app
+WEB_APP_URL=https://vendorlymarketplace.com
 # Optional: Vercel preview domains, www, etc.
-CORS_ORIGINS=https://vendorly.app,https://www.vendorly.app,https://your-project.vercel.app
+CORS_ORIGINS=https://vendorlymarketplace.com,https://www.vendorlymarketplace.com,https://your-project.vercel.app
 DATABASE_URL=postgresql://...   # Supabase pooler URL
 REDIS_URL=rediss://...          # e.g. Upstash — required for POS queues in prod
 POS_QUEUES_ENABLED=true
@@ -84,7 +84,7 @@ In `mobile/.env` (or EAS secrets for store builds):
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=...
-EXPO_PUBLIC_API_URL=https://api.vendorly.app
+EXPO_PUBLIC_API_URL=https://api.vendorlymarketplace.app
 EXPO_PUBLIC_AUTH_REDIRECT_URL=https://YOUR-PROJECT.supabase.co/storage/v1/object/public/auth/auth-redirect.html
 ```
 

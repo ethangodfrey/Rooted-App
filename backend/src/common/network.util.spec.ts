@@ -10,7 +10,8 @@ describe('isDevLanOrigin', () => {
   });
 
   it('rejects public and malformed origins', () => {
-    expect(isDevLanOrigin('https://vendorly.app')).toBe(false);
+    expect(isDevLanOrigin('https://vendorlymarketplace.com')).toBe(false);
+    expect(isDevLanOrigin('https://api.vendorlymarketplace.app')).toBe(false);
     expect(isDevLanOrigin('https://example.com')).toBe(false);
     expect(isDevLanOrigin('')).toBe(false);
     expect(isDevLanOrigin('not-a-url')).toBe(false);

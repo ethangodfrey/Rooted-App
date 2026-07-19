@@ -5,15 +5,33 @@ import {
 } from './origin-policy';
 
 describe('isTrustedVendorlyOrigin', () => {
-  it('accepts https vendorly.app and subdomains', () => {
+  it('accepts https vendorlymarketplace.com and subdomains', () => {
+    expect(isTrustedVendorlyOrigin('https://vendorlymarketplace.com')).toBe(true);
+    expect(isTrustedVendorlyOrigin('https://shop.vendorlymarketplace.com')).toBe(
+      true,
+    );
+    expect(isTrustedVendorlyOrigin('https://tenant-1.vendorlymarketplace.com')).toBe(
+      true,
+    );
+  });
+
+  it('accepts https vendorlymarketplace.app API/app hosts', () => {
+    expect(isTrustedVendorlyOrigin('https://vendorlymarketplace.app')).toBe(true);
+    expect(isTrustedVendorlyOrigin('https://api.vendorlymarketplace.app')).toBe(
+      true,
+    );
+  });
+
+  it('accepts legacy vendorly.app hosts during cutover', () => {
     expect(isTrustedVendorlyOrigin('https://vendorly.app')).toBe(true);
     expect(isTrustedVendorlyOrigin('https://shop.vendorly.app')).toBe(true);
-    expect(isTrustedVendorlyOrigin('https://tenant-1.vendorly.app')).toBe(true);
   });
 
   it('rejects non-https and unrelated hosts', () => {
-    expect(isTrustedVendorlyOrigin('http://vendorly.app')).toBe(false);
-    expect(isTrustedVendorlyOrigin('https://evil-vendorly.app.attacker.com')).toBe(false);
+    expect(isTrustedVendorlyOrigin('http://vendorlymarketplace.com')).toBe(false);
+    expect(
+      isTrustedVendorlyOrigin('https://evil-vendorlymarketplace.com.attacker.com'),
+    ).toBe(false);
     expect(isTrustedVendorlyOrigin('https://example.com')).toBe(false);
   });
 });
@@ -45,17 +63,23 @@ describe('isTrustedVercelMarketplaceOrigin', () => {
 });
 
 describe('isCorsOriginAllowed', () => {
-  const allowed = new Set(['https://vendorly.app']);
+  const allowed = new Set(['https://vendorlymarketplace.com']);
 
   it('allows explicit configured origins in production', () => {
     expect(
-      isCorsOriginAllowed('https://vendorly.app', { isDev: false, allowedOrigins: allowed }),
+      isCorsOriginAllowed('https://vendorlymarketplace.com', {
+        isDev: false,
+        allowedOrigins: allowed,
+      }),
     ).toBe(true);
   });
 
-  it('allows vendorly subdomains in production without explicit listing', () => {
+  it('allows marketplace subdomains in production without explicit listing', () => {
     expect(
-      isCorsOriginAllowed('https://ops.vendorly.app', { isDev: false, allowedOrigins: allowed }),
+      isCorsOriginAllowed('https://ops.vendorlymarketplace.com', {
+        isDev: false,
+        allowedOrigins: allowed,
+      }),
     ).toBe(true);
   });
 

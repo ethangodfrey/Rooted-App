@@ -46,8 +46,9 @@ type ProbeFail = {
 
 type ProbeResult = ProbeOk | ProbeFail;
 
-function loadEnvFile(filePath: string): void {
+function loadEnvFile(filePath: string, options?: { override?: boolean }): void {
   if (!existsSync(filePath)) return;
+  const override = options?.override === true;
   for (const line of readFileSync(filePath, 'utf8').split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
@@ -56,7 +57,7 @@ function loadEnvFile(filePath: string): void {
     const key = trimmed.slice(0, eq).trim();
     const raw = trimmed.slice(eq + 1).trim();
     const value = raw.replace(/^["']|["']$/g, '').replace(/\r$/, '').trim();
-    if (!process.env[key]) process.env[key] = value;
+    if (override || !process.env[key]) process.env[key] = value;
   }
 }
 
@@ -286,7 +287,14 @@ function logHeaderSignals(headers: Record<string, string>, label: string): void 
 
 async function main(): Promise<void> {
   loadEnvFile(resolve(process.cwd(), '.env'));
-  loadEnvFile(resolve(process.cwd(), '.env.live'));
+  const livePath = resolve(process.cwd(), '.env.live');
+  const liveExamplePath = resolve(process.cwd(), '.env.live.example');
+  // Prefer local .env.live; otherwise let .env.live.example override stale shell DEPLOY_*.
+  if (existsSync(livePath)) {
+    loadEnvFile(livePath, { override: true });
+  } else {
+    loadEnvFile(liveExamplePath, { override: true });
+  }
 
   const targets = loadTargets();
   log('INGRESS_CUTOVER START');
@@ -328,7 +336,7 @@ async function main(): Promise<void> {
   if (!dnsOk || !health.OK || !readiness.OK) {
     log('INGRESS_FAIL CUTOVER_NOT_ALIGNED');
     if (!dnsHealth) {
-      log('INGRESS_HINT CNAME_api.vendorly.app_TO_RAILWAY_SERVICE_DOMAIN');
+      log('INGRESS_HINT CNAME_api.vendorlymarketplace.app_TO_RAILWAY_SERVICE_DOMAIN');
     }
     if (!readiness.OK && readiness.DETAIL === 'HTML_CATCHALL_REJECTED') {
       log('INGRESS_HINT REDEPLOY_tenant-web_EXCLUDE_api_FROM_TENANT_MIDDLEWARE');

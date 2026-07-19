@@ -45,7 +45,7 @@ const PROD_MARKERS = [
   'Gross volume trend',
   'Platform fee split',
   'Market settlement',
-  'api.vendorly.app',
+  'api.vendorlymarketplace.app',
 ];
 
 function read(path) {
@@ -129,7 +129,7 @@ async function main() {
     apiUrlInEntryChunks: prod.env.apiUrlInEntryChunks,
     apiUrlInLazyChunks: prod.env.apiUrlInLazyChunks,
     note: prod.env.apiUrlInLazyChunks
-      ? 'EXPECTED — api.vendorly.app lives in vendor-pages/admin-pages chunks, not index entry.'
+      ? 'EXPECTED — api.vendorlymarketplace.app lives in vendor-pages/admin-pages chunks, not index entry.'
       : prod.env.apiUrlPresent
         ? 'Present in crawled bundles.'
         : 'Missing from all crawled chunks.',

@@ -161,10 +161,10 @@ async function main(): Promise<void> {
 
   const nestCandidates = [
     process.env.DEPLOY_HEALTH_URL?.trim(),
-    'https://api.vendorly.app/api/health',
+    'https://api.vendorlymarketplace.app/api/health',
     'https://rooted-app-production-43fb.up.railway.app/api/health',
     'https://rooted-app-production-8ba5.up.railway.app/api/health',
-    'https://api.vendorly.app/health/live',
+    'https://api.vendorlymarketplace.app/health/live',
   ].filter(Boolean) as string[];
 
   const readinessPreferred =
@@ -194,7 +194,7 @@ async function main(): Promise<void> {
     );
     if (!allowLocal) {
       log('INGRESS_FAIL REMOTE_NEST_UNAVAILABLE');
-      log('DNS_MISSING OR ROUTING_NOT_ALIGNED FOR api.vendorly.app');
+      log('DNS_MISSING OR ROUTING_NOT_ALIGNED FOR api.vendorlymarketplace.app');
       fail('LIVE_STACK_SOAK FAIL NO_REMOTE_NEST_HEALTH (LOCAL_FALLBACK_DISABLED)');
     }
     log('REMOTE_NEST_UNAVAILABLE ATTEMPTING_LOCAL_NEST_WITH_LIVE_DEPS');
