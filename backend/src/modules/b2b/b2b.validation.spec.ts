@@ -1,5 +1,6 @@
 import {
   parseVendorConnectionRequest,
+  parseWholesaleInvoiceReconcile,
   parseWholesaleOrderDraftCreate,
   parseWholesaleOrderFulfillment,
   parseWholesaleOrderSettlement,
@@ -109,6 +110,21 @@ describe('b2b zod contracts', () => {
     const parsed = parseWholesaleOrderSettlement({
       order_id: '33333333-3333-4333-8333-333333333333',
       delivered_at: '',
+    });
+    expect(parsed.OK).toBe(false);
+  });
+
+  it('accepts an invoice reconcile payload', () => {
+    const parsed = parseWholesaleInvoiceReconcile({
+      invoice_id: '44444444-4444-4444-8444-444444444444',
+      paid_at: '2026-08-20T12:00:00.000Z',
+    });
+    expect(parsed.OK).toBe(true);
+  });
+
+  it('rejects reconcile without invoice_id', () => {
+    const parsed = parseWholesaleInvoiceReconcile({
+      invoice_id: 'nope',
     });
     expect(parsed.OK).toBe(false);
   });

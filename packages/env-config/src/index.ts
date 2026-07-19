@@ -28,12 +28,14 @@ export {
 
 export {
   parseVendorConnectionRequest,
+  parseWholesaleInvoiceReconcile,
   parseWholesaleOrderDraftCreate,
   parseWholesaleOrderFulfillment,
   parseWholesaleOrderSettlement,
   parseWholesaleProductCreate,
   vendorBusinessConnectionStatusSchema,
   vendorConnectionRequestSchema,
+  wholesaleInvoiceReconcileSchema,
   wholesaleOrderDraftCreateSchema,
   wholesaleOrderFulfillmentSchema,
   wholesaleOrderSettlementSchema,
@@ -41,6 +43,8 @@ export {
   type VendorBusinessConnectionStatus,
   type VendorConnectionRequestInput,
   type VendorConnectionRequestParseResult,
+  type WholesaleInvoiceReconcileInput,
+  type WholesaleInvoiceReconcileParseResult,
   type WholesaleOrderDraftCreateInput,
   type WholesaleOrderDraftCreateParseResult,
   type WholesaleOrderFulfillmentInput,

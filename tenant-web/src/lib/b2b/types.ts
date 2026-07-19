@@ -90,6 +90,8 @@ export type WholesaleInvoiceLineItem = {
   LINE_TOTAL_CENTS?: number;
 };
 
+export type WholesaleInvoiceDisplayStatus = 'PENDING' | 'PAID' | 'OVERDUE';
+
 export type WholesaleInvoiceRow = {
   ID: string;
   ORDER_ID: string;
@@ -105,14 +107,34 @@ export type WholesaleInvoiceRow = {
   PAYMENT_TERMS: string;
   LINE_ITEMS: WholesaleInvoiceLineItem[];
   STATUS: string;
+  DISPLAY_STATUS?: WholesaleInvoiceDisplayStatus | string;
   ISSUED_AT: string;
   DUE_AT: string;
+  PAID_AT?: string | null;
 };
 
 export type WholesaleInvoiceResponse = {
   STATUS: string;
+  SESSION_VENDOR_ID?: string;
+  VIEWER_ROLE?: 'SELLER' | 'BUYER' | 'UNKNOWN' | string;
+  CAN_RECONCILE?: boolean;
+  DISPLAY_STATUS?: WholesaleInvoiceDisplayStatus | string;
   INVOICE?: WholesaleInvoiceRow;
   error?: string;
+};
+
+export type WholesaleInvoiceReconcilePayload = {
+  invoice_id: string;
+  paid_at?: string;
+};
+
+export type WholesaleInvoiceReconcileResponse = {
+  STATUS: string;
+  LEDGER?: string;
+  DISPLAY_STATUS?: WholesaleInvoiceDisplayStatus | string;
+  INVOICE?: WholesaleInvoiceRow;
+  error?: string;
+  message?: string;
 };
 
 /** Wire payload for POST /api/vendors/orders/fulfillment (snake_case). */

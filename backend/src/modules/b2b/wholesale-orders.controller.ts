@@ -19,6 +19,7 @@ import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { SupabaseAuthGuard } from '../../common/auth/supabase-auth.guard';
+import { resolveInvoiceDisplayStatus } from './wholesale-invoice.util';
 import { WholesaleOrdersService } from './wholesale-orders.service';
 
 const UUID_RE =
@@ -163,8 +164,25 @@ export class WholesaleOrdersController {
       vendorId,
       invoiceId.trim(),
     );
+    const viewerRole =
+      invoice.sellerVendorId === vendorId
+        ? 'SELLER'
+        : invoice.buyerVendorId === vendorId
+          ? 'BUYER'
+          : 'UNKNOWN';
+    const displayStatus = resolveInvoiceDisplayStatus(
+      invoice.status,
+      invoice.dueAt,
+    );
     return {
       STATUS: 'WHOLESALE_INVOICE',
+      SESSION_VENDOR_ID: vendorId,
+      VIEWER_ROLE: viewerRole,
+      CAN_RECONCILE:
+        viewerRole === 'SELLER' &&
+        invoice.status !== 'PAID' &&
+        invoice.status !== 'VOID',
+      DISPLAY_STATUS: displayStatus,
       INVOICE: this.serializeInvoice(invoice),
     };
   }
@@ -295,8 +313,13 @@ export class WholesaleOrdersController {
     status: string;
     issuedAt: Date;
     dueAt: Date;
+    paidAt?: Date | null;
     createdAt?: Date;
   }) {
+    const displayStatus = resolveInvoiceDisplayStatus(
+      invoice.status,
+      invoice.dueAt,
+    );
     return {
       ID: invoice.id,
       ORDER_ID: invoice.orderId,
@@ -312,8 +335,10 @@ export class WholesaleOrdersController {
       PAYMENT_TERMS: invoice.paymentTerms,
       LINE_ITEMS: Array.isArray(invoice.lineItems) ? invoice.lineItems : [],
       STATUS: invoice.status,
+      DISPLAY_STATUS: displayStatus,
       ISSUED_AT: invoice.issuedAt.toISOString(),
       DUE_AT: invoice.dueAt.toISOString(),
+      PAID_AT: invoice.paidAt ? invoice.paidAt.toISOString() : null,
     };
   }
 

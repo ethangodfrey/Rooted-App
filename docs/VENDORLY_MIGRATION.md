@@ -81,6 +81,7 @@ docs/supabase/phase57_wholesale_order_acceptance.sql # accept/reject statuses + 
 docs/supabase/phase58_wholesale_fulfillment_tracking.sql # ORDER_SHIPPED_IN_TRANSIT + carrier tracking columns
 docs/supabase/phase59_wholesale_delivery_settlement.sql # ORDER_DELIVERY_CONFIRMED + settlement ledger
 docs/supabase/phase60_wholesale_invoices_net_terms.sql # wholesale_invoices Net-30 billing on delivery confirm
+docs/supabase/phase61_invoice_reconciliation.sql # paid_at + seller reconcile-to-PAID
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).
