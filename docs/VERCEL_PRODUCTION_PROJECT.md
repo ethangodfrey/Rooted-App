@@ -52,8 +52,8 @@ From the wrong project → **Vendorly_Marketplace1** → **Settings → Environm
 |----------|--------|
 | `VITE_SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | *(from Supabase → Settings → API)* |
-| `VITE_APP_URL` | `https://vendorly-marketplace1.vercel.app` *(until custom domain)* or `https://vendorly.app` |
-| `VITE_API_URL` | `https://api.vendorly.app` |
+| `VITE_APP_URL` | `https://vendorly-marketplace1.vercel.app` *(until custom domain)* or `https://vendorlymarketplace.com` |
+| `VITE_API_URL` | `https://api.vendorlymarketplace.app` |
 
 Redeploy Production after saving.
 
@@ -63,7 +63,7 @@ Railway → API service → Variables:
 
 ```env
 WEB_APP_URL=https://vendorly-marketplace1.vercel.app
-CORS_ORIGINS=https://vendorly-marketplace1.vercel.app,https://vendorly.app,https://www.vendorly.app
+CORS_ORIGINS=https://vendorly-marketplace1.vercel.app,https://vendorlymarketplace.com,https://www.vendorlymarketplace.com
 ```
 
 *(Replace with your exact **Vendorly_Marketplace1** deployment URL from Vercel → Domains.)*
@@ -90,7 +90,7 @@ Prevents future confusion when `main` pushes.
 # See docs/POST_PHASE41_RELEASE_RUNBOOK.md
 
 # API CORS + webhooks
-API_BASE=https://api.vendorly.app npm run smoke:boundaries
+API_BASE=https://api.vendorlymarketplace.app npm run smoke:boundaries
 
 # Lazy-chunk-aware UI + settlement baseline
 npm run smoke:ui-baseline
@@ -109,8 +109,8 @@ npx vercel --prod
 
 ## Custom domain
 
-When `vendorly.app` should point at **Vendorly_Marketplace1**:
+When `vendorlymarketplace.com` should point at **Vendorly_Marketplace1**:
 
-1. Vercel → **Vendorly_Marketplace1** → **Settings → Domains** → add `vendorly.app`
+1. Vercel → **Vendorly_Marketplace1** → **Settings → Domains** → add `vendorlymarketplace.com`
 2. Remove the domain from other Vercel projects
-3. Set `VITE_APP_URL=https://vendorly.app` on **Vendorly_Marketplace1** → redeploy
+3. Set `VITE_APP_URL=https://vendorlymarketplace.com` on **Vendorly_Marketplace1** → redeploy

@@ -116,7 +116,7 @@ Core shopper and vendor flows use **Supabase in the cloud** — they work anywhe
 
 For **POS, admin AI, and proxied market photos**, set public HTTPS API URLs:
 
-1. Deploy this app to **Vercel** with `VITE_APP_URL` + `VITE_API_URL=https://api.vendorly.app` (see [Production deploy](#production-deploy-vercel)).
+1. Deploy this app to **Vercel** with `VITE_APP_URL` + `VITE_API_URL=https://api.vendorlymarketplace.app` (see [Production deploy](#production-deploy-vercel)).
 2. Deploy the NestJS backend (or tunnel it) and set backend `WEB_APP_URL` to match.
 3. Add production auth redirect URLs in Supabase.
 
@@ -158,8 +158,8 @@ Same-Wi‑Fi dev from a phone: open `http://YOUR-PC-LAN-IP:5173` (API auto-targe
 |----------|-----|------------|
 | `VITE_SUPABASE_URL` | Supabase project URL | Same as mobile |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key | Same as mobile |
-| `VITE_APP_URL` | Optional (`http://localhost:5173`) | **Required** — e.g. `https://vendorly.app` |
-| `VITE_API_URL` | Optional (auto `:4000` on same host) | **Required** — `https://api.vendorly.app` |
+| `VITE_APP_URL` | Optional (`http://localhost:5173`) | **Required** — e.g. `https://vendorlymarketplace.com` |
+| `VITE_API_URL` | Optional (auto `:4000` on same host) | **Required** — `https://api.vendorlymarketplace.app` |
 
 Copy `web/.env.example` → `web/.env` for local dev. Production values go in your host's env dashboard (never commit `.env`).
 
@@ -196,8 +196,8 @@ Open http://localhost:4173 and confirm pages load. `npm run build` must pass bef
    |------|---------------|
    | `VITE_SUPABASE_URL` | `https://your-project-ref.supabase.co` |
    | `VITE_SUPABASE_ANON_KEY` | *(anon key from Supabase → Settings → API)* |
-   | `VITE_APP_URL` | `https://vendorly.app` |
-   | `VITE_API_URL` | `https://api.vendorly.app` |
+   | `VITE_APP_URL` | `https://vendorlymarketplace.com` |
+   | `VITE_API_URL` | `https://api.vendorlymarketplace.app` |
 
 5. Click **Deploy**.
 
@@ -222,7 +222,7 @@ npx vercel env add VITE_API_URL production
 
 ### 3. Custom domain (optional)
 
-1. Vercel → **Project → Settings → Domains** → add `vendorly.app` (and `www` if needed).
+1. Vercel → **Project → Settings → Domains** → add `vendorlymarketplace.com` (and `www` if needed).
 2. At your DNS provider, add the records Vercel shows (usually `A`/`CNAME` to Vercel).
 3. Wait for SSL provisioning, then set `VITE_APP_URL` to the canonical HTTPS URL and **Redeploy**.
 
@@ -230,11 +230,11 @@ npx vercel env add VITE_API_URL production
 
 In **Supabase Dashboard → Authentication → URL Configuration**:
 
-- **Site URL:** `https://vendorly.app` (or your Vercel `*.vercel.app` URL until DNS is ready)
+- **Site URL:** `https://vendorlymarketplace.com` (or your Vercel `*.vercel.app` URL until DNS is ready)
 - **Redirect URLs** — add:
-  - `https://vendorly.app/auth/callback`
-  - `https://vendorly.app/auth/reset-password`
-  - `https://vendorly.app/**`
+  - `https://vendorlymarketplace.com/auth/callback`
+  - `https://vendorlymarketplace.com/auth/reset-password`
+  - `https://vendorlymarketplace.com/**`
   - `vendorly://auth/callback` (mobile deep link)
 
 For Google OAuth, keep the Google Cloud **Authorized redirect URI** as Supabase's callback (`https://YOUR-PROJECT.supabase.co/auth/v1/callback`), not the web app URL.
@@ -244,8 +244,8 @@ For Google OAuth, keep the Google Cloud **Authorized redirect URI** as Supabase'
 On the NestJS backend (`backend/.env`), set:
 
 ```
-WEB_APP_URL=https://vendorly.app
-PUBLIC_BASE_URL=https://api.vendorly.app
+WEB_APP_URL=https://vendorlymarketplace.com
+PUBLIC_BASE_URL=https://api.vendorlymarketplace.app
 ```
 
 Redeploy the backend after changing CORS. Without this, browser calls to `VITE_API_URL` from the production site will be blocked.

@@ -49,7 +49,7 @@ Set in Vercel → **Vendorly_Marketplace1** → Environment Variables → **Prod
 |----------|---------|
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key |
-| `VITE_API_URL` | NestJS API (`https://api.vendorly.app`) — **required for production builds** (`web/scripts/verify-build-env.mjs`) |
+| `VITE_API_URL` | NestJS API (`https://api.vendorlymarketplace.app`) — **required for production builds** (`web/scripts/verify-build-env.mjs`) |
 | `VITE_APP_URL` | Public web origin |
 | `VITE_TENANT_WEB_URL` | *(optional)* Base URL for tenant-web APIs; falls back to Supabase RPC if unset |
 
@@ -75,7 +75,7 @@ See `tenant-web/.env.example`.
 The Vite production build code-splits vendor and admin routes into lazy chunks:
 
 - Entry HTML loads `index-*.js` + `react-vendor-*.js` only.
-- `api.vendorly.app`, settlement charts, and POS ledger strings live in **`vendor-pages-*.js`** and **`admin-pages-*.js`**.
+- `api.vendorlymarketplace.app`, settlement charts, and POS ledger strings live in **`vendor-pages-*.js`** and **`admin-pages-*.js`**.
 
 Smoke scripts **must crawl lazy chunks**, not only entry assets. Otherwise `VITE_API_URL` and settlement markers falsely report `FAIL`.
 
@@ -90,7 +90,7 @@ npm run smoke:ui-baseline       # source tree + production marker sanity check
 
 | Check | Entry-only scan | Lazy-chunk crawl | Pass rule |
 |-------|-----------------|------------------|-----------|
-| `VITE_API_URL` / `api.vendorly.app` | Often **absent** in `index-*.js` | **Present** in `vendor-pages` / `admin-pages` | **PASS** when `apiUrlPresent: true` even if `apiUrlInEntryChunks: false` |
+| `VITE_API_URL` / `api.vendorlymarketplace.app` | Often **absent** in `index-*.js` | **Present** in `vendor-pages` / `admin-pages` | **PASS** when `apiUrlPresent: true` even if `apiUrlInEntryChunks: false` |
 
 ---
 
@@ -103,7 +103,7 @@ npm run smoke:ui-baseline       # source tree + production marker sanity check
 ```bash
 npm run smoke:ui-baseline
 npm run smoke:settlement
-API_BASE=https://api.vendorly.app npm run smoke:boundaries
+API_BASE=https://api.vendorlymarketplace.app npm run smoke:boundaries
 ```
 
 ---

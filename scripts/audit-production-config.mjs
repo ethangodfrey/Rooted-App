@@ -22,7 +22,7 @@ const checks = [
     ok: /PUBLIC_BASE_URL=https:\/\/api\.vendorly\.app/.test(backendExample),
   },
   {
-    name: 'Backend CORS documents vendorly.app origins',
+    name: 'Backend CORS documents vendorlymarketplace.com origins',
     ok: /CORS_ORIGINS=.*vendorly\.app/.test(backendExample),
   },
   {

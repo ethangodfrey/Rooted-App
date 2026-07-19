@@ -328,7 +328,7 @@ async function main(): Promise<void> {
   if (!dnsOk || !health.OK || !readiness.OK) {
     log('INGRESS_FAIL CUTOVER_NOT_ALIGNED');
     if (!dnsHealth) {
-      log('INGRESS_HINT CNAME_api.vendorly.app_TO_RAILWAY_SERVICE_DOMAIN');
+      log('INGRESS_HINT CNAME_api.vendorlymarketplace.app_TO_RAILWAY_SERVICE_DOMAIN');
     }
     if (!readiness.OK && readiness.DETAIL === 'HTML_CATCHALL_REJECTED') {
       log('INGRESS_HINT REDEPLOY_tenant-web_EXCLUDE_api_FROM_TENANT_MIDDLEWARE');

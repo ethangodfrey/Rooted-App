@@ -6,18 +6,20 @@ Canonical gateway targets live in [`deploy/ingress.targets.json`](../deploy/ingr
 
 | Item | Value |
 |------|-------|
-| Public host | `api.vendorly.app` |
+| Public host | `api.vendorlymarketplace.app` |
 | Health probe | `GET /api/health` → `STATUS=HEALTH_OK` |
 | Container port | `4000` (`PORT`, listen `0.0.0.0`) |
 | Restart | `railway restart --service backend` |
 
-DNS: create a **CNAME** for `api.vendorly.app` pointing at the Railway service domain (`*.up.railway.app`). Production variables are declared in `backend/railway.json` / `backend/railway.toml` (`PORT`, `PUBLIC_BASE_URL`).
+DNS: create a **CNAME** for `api.vendorlymarketplace.app` pointing at the Railway service domain (`*.up.railway.app`). Production variables are declared in `backend/railway.json` / `backend/railway.toml` (`PORT`, `PUBLIC_BASE_URL`).
+
+Client apex: `vendorlymarketplace.com` (optional `www`). App/API sibling domain: `vendorlymarketplace.app`.
 
 ## Tenant-web (Vercel)
 
 | Item | Value |
 |------|-------|
-| Public host | `tenant-web-psi.vercel.app` (or custom domain) |
+| Public host | `tenant-web-psi.vercel.app` (or `vendorlymarketplace.com`) |
 | Readiness probe | `GET /api/health/readiness` |
 | Route file | `tenant-web/src/app/api/health/readiness/route.ts` |
 
@@ -41,6 +43,11 @@ npm run test:deploy:resilience:live
 # With LIVE_SMOKE_BOOT_LOCAL_NEST=0 — fails closed if remote Nest/readiness are down
 ```
 
-Status vocabulary (text only, no emoji): `INGRESS_OK`, `DNS_VERIFIED`, `ROUTING_ALIGNED`.
+Status vocabulary (text only, no emoji): `INGRESS_OK`, `DNS_VERIFIED`, `ROUTING_ALIGNED`, `DOMAIN_MIGRATION_COMPLETE`, `ROUTING_RECONFIGURED`.
+
+```bash
+npm run verify:domains
+# ROUTING_RECONFIGURED / DOMAIN_MIGRATION_COMPLETE
+```
 
 Cutover assertions reject localhost targets, HTML catch-all bodies, and JSON that does not match production schemas (`STATUS` + `TIMESTAMP` for Nest health; `STATUS` + `TIMESTAMP` + `CHECKS` for tenant-web readiness).

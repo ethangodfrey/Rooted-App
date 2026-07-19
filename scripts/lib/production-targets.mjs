@@ -7,7 +7,10 @@ export const VERCEL_PROJECT_NAME = 'Vendorly_Marketplace1';
 /** Default production web URL (confirm in Vercel → Vendorly_Marketplace1 → Domains). */
 export const VERCEL_PRODUCTION_WEB_URL = 'https://vendorly-marketplace1.vercel.app';
 
-export const PRODUCTION_API_URL = 'https://api.vendorly.app';
+/** Canonical client apex after marketplace domain migration. */
+export const PRODUCTION_WEB_URL = 'https://vendorlymarketplace.com';
+
+export const PRODUCTION_API_URL = 'https://api.vendorlymarketplace.app';
 
 export const POS_WEBHOOK_TEST_URL = `${VERCEL_PRODUCTION_WEB_URL}/api/webhooks/pos-sync?provider=SQUARE`;
 

@@ -22,7 +22,7 @@
     "production": {
       "variables": {
         "PORT": "4000",
-        "PUBLIC_BASE_URL": "https://api.vendorly.app"
+        "PUBLIC_BASE_URL": "https://api.vendorlymarketplace.app"
       },
       "build": {
         "builder": "DOCKERFILE",

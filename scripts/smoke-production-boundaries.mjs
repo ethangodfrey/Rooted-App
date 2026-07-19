@@ -3,10 +3,10 @@
  * Smoke-test production CORS boundaries and Stripe webhook error sanitization.
  *
  * Usage:
- *   API_BASE=https://api.vendorly.app node scripts/smoke-production-boundaries.mjs
+ *   API_BASE=https://api.vendorlymarketplace.app node scripts/smoke-production-boundaries.mjs
  *   API_BASE=http://localhost:4000 node scripts/smoke-production-boundaries.mjs
  */
-const API_BASE = (process.env.API_BASE ?? 'https://api.vendorly.app').replace(/\/$/, '');
+const API_BASE = (process.env.API_BASE ?? 'https://api.vendorlymarketplace.app').replace(/\/$/, '');
 
 async function request(method, path, headers = {}, body) {
   const url = `${API_BASE}${path}`;
@@ -97,12 +97,12 @@ async function main() {
 
   results.push(
     printResult(
-      'CORS allow — vendorly.app',
-      await request('GET', '/health/live', { Origin: 'https://vendorly.app' }),
+      'CORS allow — vendorlymarketplace.com',
+      await request('GET', '/health/live', { Origin: 'https://vendorlymarketplace.com' }),
       [
         {
-          label: 'ACAO present for vendorly.app',
-          test: (r) => r.headers['access-control-allow-origin'] === 'https://vendorly.app',
+          label: 'ACAO present for vendorlymarketplace.com',
+          test: (r) => r.headers['access-control-allow-origin'] === 'https://vendorlymarketplace.com',
         },
       ],
     ),
@@ -110,12 +110,16 @@ async function main() {
 
   results.push(
     printResult(
-      'CORS allow — vendorly subdomain',
-      await request('GET', '/health/live', { Origin: 'https://shop.vendorly.app' }),
+      'CORS allow — vendorlymarketplace subdomain',
+      await request('GET', '/health/live', {
+        Origin: 'https://shop.vendorlymarketplace.com',
+      }),
       [
         {
-          label: 'ACAO present for *.vendorly.app subdomain',
-          test: (r) => r.headers['access-control-allow-origin'] === 'https://shop.vendorly.app',
+          label: 'ACAO present for *.vendorlymarketplace.com subdomain',
+          test: (r) =>
+            r.headers['access-control-allow-origin'] ===
+            'https://shop.vendorlymarketplace.com',
         },
       ],
     ),

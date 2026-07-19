@@ -1,7 +1,13 @@
 import { isDevLanOrigin } from '../network.util';
 
-const VENDORLY_HTTPS_ORIGIN =
+const LEGACY_VENDORLY_HTTPS_ORIGIN =
   /^https:\/\/([a-z0-9-]+\.)*vendorly\.app(?::\d+)?$/i;
+
+const MARKETPLACE_COM_HTTPS_ORIGIN =
+  /^https:\/\/([a-z0-9-]+\.)*vendorlymarketplace\.com(?::\d+)?$/i;
+
+const MARKETPLACE_APP_HTTPS_ORIGIN =
+  /^https:\/\/([a-z0-9-]+\.)*vendorlymarketplace\.app(?::\d+)?$/i;
 
 /**
  * Vendorly marketplace hosts on Vercel, including:
@@ -12,15 +18,30 @@ const VENDORLY_HTTPS_ORIGIN =
 const VERCEL_MARKETPLACE_HOST =
   /^vendorly([-.]?marketplace\d*)([.-][a-z0-9-]+)*\.vercel\.app$/i;
 
+function hostnameTrusted(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === 'vendorlymarketplace.com') return true;
+  if (host.endsWith('.vendorlymarketplace.com')) return true;
+  if (host === 'vendorlymarketplace.app') return true;
+  if (host.endsWith('.vendorlymarketplace.app')) return true;
+  // Legacy apex retained during DNS cutover.
+  if (host === 'vendorly.app') return true;
+  if (host.endsWith('.vendorly.app')) return true;
+  return false;
+}
+
 /** Verified Vendorly production hostnames over HTTPS (apex + subdomains). */
 export function isTrustedVendorlyOrigin(origin: string): boolean {
   try {
     const url = new URL(origin);
     if (url.protocol !== 'https:') return false;
-    if (url.hostname === 'vendorly.app') return true;
-    return url.hostname.endsWith('.vendorly.app');
+    return hostnameTrusted(url.hostname);
   } catch {
-    return VENDORLY_HTTPS_ORIGIN.test(origin);
+    return (
+      MARKETPLACE_COM_HTTPS_ORIGIN.test(origin) ||
+      MARKETPLACE_APP_HTTPS_ORIGIN.test(origin) ||
+      LEGACY_VENDORLY_HTTPS_ORIGIN.test(origin)
+    );
   }
 }
 

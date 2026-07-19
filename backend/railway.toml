@@ -1,7 +1,7 @@
 # Railway quick-start for Vendorly backend.
 # Root Directory must be the REPOSITORY ROOT (not backend/) so Dockerfile can
 # COPY packages/env-config for @vendorly/env-config.
-# Custom domain: bind api.vendorly.app -> this service (CNAME to *.up.railway.app).
+# Custom domain: bind api.vendorlymarketplace.app -> this service (CNAME to *.up.railway.app).
 # Container listens on 0.0.0.0:$PORT (default 4000) for Railway's public proxy.
 # Docs: docs/DEPLOY.md, deploy/ingress.targets.json
 
@@ -20,4 +20,4 @@ restartPolicyMaxRetries = 10
 
 [environments.production.variables]
 PORT = "4000"
-PUBLIC_BASE_URL = "https://api.vendorly.app"
+PUBLIC_BASE_URL = "https://api.vendorlymarketplace.app"

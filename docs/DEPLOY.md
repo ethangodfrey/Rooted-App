@@ -4,8 +4,8 @@ Actionable checklist for deploying **web** (Vercel) and **backend** (Docker host
 
 | Component | Host | URL |
 |-----------|------|-----|
-| Web (Vite SPA) | Vercel | `https://vendorly.app` |
-| Backend (NestJS) | Railway *(recommended)* or Render / Fly / VPS | `https://api.vendorly.app` |
+| Web (Vite SPA) | Vercel | `https://vendorlymarketplace.com` |
+| Backend (NestJS) | Railway *(recommended)* or Render / Fly / VPS | `https://api.vendorlymarketplace.app` |
 | Database + auth | Supabase | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 
 Related: [`OFF_LAN_ACCESS.md`](OFF_LAN_ACCESS.md) (what needs a public API), [`web/README.md`](../web/README.md) (OAuth), [`docs/SQUARE_SETUP.md`](SQUARE_SETUP.md) (POS).
@@ -22,7 +22,7 @@ You can deploy **web to Vercel + Supabase only** and skip Railway until you have
 |----------|-----------|-------|
 | `VITE_SUPABASE_URL` | **Yes** | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | **Yes** | Supabase → Settings → API → anon public |
-| `VITE_APP_URL` | **Yes** | `https://vendorly.app` or your `*.vercel.app` URL |
+| `VITE_APP_URL` | **Yes** | `https://vendorlymarketplace.com` or your `*.vercel.app` URL |
 | `VITE_API_URL` | **No — omit** | Do not set until backend is deployed |
 
 **Important:** If `VITE_API_URL` is set to a broken or unreachable API, admin pages will show connection errors and the browser may log failed health checks. Leave it unset for Supabase-only mode.
@@ -48,7 +48,7 @@ After changing env vars, **Redeploy** (values are baked in at build time).
 
 1. **Supabase paid plan** — IPv4 add-on or direct connection so Railway can reach Postgres (fixes Prisma P1000 / pooler auth issues on free tier).
 2. **Railway backend** — set `DATABASE_URL`, `REDIS_URL` (Upstash), deploy from `backend/Dockerfile`.
-3. **Then** add `VITE_API_URL=https://api.vendorly.app` in Vercel and `EXPO_PUBLIC_API_URL` for mobile → redeploy.
+3. **Then** add `VITE_API_URL=https://api.vendorlymarketplace.app` in Vercel and `EXPO_PUBLIC_API_URL` for mobile → redeploy.
 
 See §2 below for full backend setup when ready.
 
@@ -190,7 +190,7 @@ If Root Directory is empty **and** there is no root `vercel.json`, Vercel auto-d
    |----------|-------|-------|
    | `VITE_SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` | Same as mobile |
    | `VITE_SUPABASE_ANON_KEY` | *(Supabase → Settings → API → anon public)* | Never commit |
-   | `VITE_APP_URL` | `https://vendorly.app` | Or `https://your-project.vercel.app` until DNS is ready |
+   | `VITE_APP_URL` | `https://vendorlymarketplace.com` | Or `https://your-project.vercel.app` until DNS is ready |
    | `VITE_API_URL` | *(omit for Supabase-only)* | Optional — set to deployed backend URL when Railway is live |
 
 6. Click **Deploy**.
@@ -210,13 +210,13 @@ npx vercel env add VITE_APP_URL production
 npx vercel --prod
 ```
 
-### Custom domain `vendorly.app`
+### Custom domain `vendorlymarketplace.com`
 
-1. Vercel → **Project → Settings → Domains** → add `vendorly.app` and optionally `www.vendorly.app`.
+1. Vercel → **Project → Settings → Domains** → add `vendorlymarketplace.com` and optionally `www.vendorlymarketplace.com`.
 2. At your DNS registrar, add the records Vercel shows (typically `A` / `CNAME` to Vercel).
 3. Wait for SSL (usually a few minutes).
-4. Set `VITE_APP_URL=https://vendorly.app` in Vercel env → **Redeploy**.
-5. Add `https://www.vendorly.app` to backend `CORS_ORIGINS` if you use www (see §2).
+4. Set `VITE_APP_URL=https://vendorlymarketplace.com` in Vercel env → **Redeploy**.
+5. Add `https://www.vendorlymarketplace.com` to backend `CORS_ORIGINS` if you use www (see §2).
 
 ### Post-deploy smoke test
 
@@ -245,7 +245,7 @@ The backend is a **long-running Node process** (POS queues, cron, webhooks). It 
 
 ```
 Browser / mobile  →  Vercel (web)     → Supabase (auth, marketplace data)
-                   →  api.vendorly.app → NestJS (POS, Stripe webhooks, market photo proxy, admin AI)
+                   →  api.vendorlymarketplace.app → NestJS (POS, Stripe webhooks, market photo proxy, admin AI)
 Database          →  Supabase Postgres (DATABASE_URL pooler URL)
 Job queues        →  Upstash Redis (REDIS_URL, POS_QUEUES_ENABLED=true)
 ```
@@ -256,21 +256,21 @@ Job queues        →  Upstash Redis (REDIS_URL, POS_QUEUES_ENABLED=true)
 2. Add a service → **Dockerfile** deploy.
 3. **Settings → Root Directory:** `backend`.
 4. **Settings → Networking → Generate Domain** (temporary `*.up.railway.app` URL).
-5. **Settings → Networking → Custom Domain** → add `api.vendorly.app` → add the CNAME Railway shows at your DNS provider.
+5. **Settings → Networking → Custom Domain** → add `api.vendorlymarketplace.app` → add the CNAME Railway shows at your DNS provider.
    - Canonical ingress targets: [`deploy/ingress.targets.json`](../deploy/ingress.targets.json)
    - Container port must match Railway proxy mapping (`PORT=4000` default; Nest listens on `0.0.0.0:$PORT`).
-6. **Variables** — set at minimum (see tables below). Set `PORT=4000` and `PUBLIC_BASE_URL=https://api.vendorly.app` (also declared under `environments.production.variables` in `backend/railway.json` / `backend/railway.toml`).
+6. **Variables** — set at minimum (see tables below). Set `PORT=4000` and `PUBLIC_BASE_URL=https://api.vendorlymarketplace.app` (also declared under `environments.production.variables` in `backend/railway.json` / `backend/railway.toml`).
 7. **Settings → Deploy → Health Check Path:** `/api/health` (production JSON probe: `STATUS=HEALTH_OK`).
 8. Deploy. When healthy, verify:
 
    ```powershell
-   curl https://api.vendorly.app/api/health
+   curl https://api.vendorlymarketplace.app/api/health
    # {"STATUS":"HEALTH_OK","TIMESTAMP":...}
 
-   curl https://api.vendorly.app/health/live
+   curl https://api.vendorlymarketplace.app/health/live
    # {"status":"ok","uptime":...}
 
-   curl https://api.vendorly.app/health/ready
+   curl https://api.vendorlymarketplace.app/health/ready
    # 200 when DATABASE_URL (+ Redis if queues enabled) are reachable
 
    npm run verify:ingress
@@ -297,9 +297,9 @@ Copy from `backend/.env.example`. **Never commit** real values.
 | `NODE_ENV` | `production` | |
 | `PORT` | `4000` | Railway/Render set this automatically |
 | `DATABASE_URL` | Supabase **pooler** URI | Dashboard → Settings → Database → Connection string (Transaction mode, port 6543) |
-| `PUBLIC_BASE_URL` | `https://api.vendorly.app` | Public API URL |
-| `WEB_APP_URL` | `https://vendorly.app` | Primary CORS origin |
-| `CORS_ORIGINS` | `https://vendorly.app,https://www.vendorly.app,https://YOUR-PROJECT.vercel.app` | Comma-separated extras (Vercel preview URL until custom domain) |
+| `PUBLIC_BASE_URL` | `https://api.vendorlymarketplace.app` | Public API URL |
+| `WEB_APP_URL` | `https://vendorlymarketplace.com` | Primary CORS origin |
+| `CORS_ORIGINS` | `https://vendorlymarketplace.com,https://www.vendorlymarketplace.com,https://YOUR-PROJECT.vercel.app` | Comma-separated extras (Vercel preview URL until custom domain) |
 | `SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` | JWKS token verification |
 | `POS_CREDENTIAL_KEY` | *(base64 32-byte key)* | Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
 
@@ -320,8 +320,8 @@ Without Redis, POS sync runs inline in dev only; production should use Upstash (
 | `APP_DEEP_LINK` | `vendorly://pos/connected` |
 | `SQUARE_*` / `TOAST_*` / `CLOVER_*` | Provider sandbox or production credentials |
 
-Register Square OAuth redirect: `https://api.vendorly.app/pos/oauth/square/callback`  
-Register webhooks: `https://api.vendorly.app/pos/webhooks/square` — see [`SQUARE_SETUP.md`](SQUARE_SETUP.md).
+Register Square OAuth redirect: `https://api.vendorlymarketplace.app/pos/oauth/square/callback`  
+Register webhooks: `https://api.vendorlymarketplace.app/pos/webhooks/square` — see [`SQUARE_SETUP.md`](SQUARE_SETUP.md).
 
 #### Stripe (if Phase 32 enabled)
 
@@ -329,7 +329,7 @@ Register webhooks: `https://api.vendorly.app/pos/webhooks/square` — see [`SQUA
 |----------|-------|
 | `STRIPE_SECRET_KEY` | Dashboard → Developers → API keys |
 | `STRIPE_PUBLISHABLE_KEY` | |
-| `STRIPE_WEBHOOK_SECRET` | Endpoint URL: `https://api.vendorly.app/stripe/webhooks` |
+| `STRIPE_WEBHOOK_SECRET` | Endpoint URL: `https://api.vendorlymarketplace.app/stripe/webhooks` |
 
 #### Optional agents / markets (off by default)
 
@@ -352,9 +352,9 @@ Register webhooks: `https://api.vendorly.app/pos/webhooks/square` — see [`SQUA
 After Vercel domain is known, set on the backend and **redeploy**:
 
 ```env
-WEB_APP_URL=https://vendorly.app
-CORS_ORIGINS=https://vendorly-marketplace1.vercel.app,https://vendorly.app,https://www.vendorly.app
-PUBLIC_BASE_URL=https://api.vendorly.app
+WEB_APP_URL=https://vendorlymarketplace.com
+CORS_ORIGINS=https://vendorly-marketplace1.vercel.app,https://vendorlymarketplace.com,https://www.vendorlymarketplace.com
+PUBLIC_BASE_URL=https://api.vendorlymarketplace.app
 ```
 
 Without this, browser calls from the production site to `VITE_API_URL` fail with CORS errors.
@@ -369,13 +369,13 @@ Project: `ajedyjbdpjahnhzrxwdj.supabase.co`
 
 | Field | Value |
 |-------|-------|
-| **Site URL** | `https://vendorly.app` (or Vercel URL until DNS ready) |
+| **Site URL** | `https://vendorlymarketplace.com` (or Vercel URL until DNS ready) |
 | **Redirect URLs** | Add each line below |
 
 ```
-https://vendorly.app/auth/callback
-https://vendorly.app/auth/reset-password
-https://vendorly.app/**
+https://vendorlymarketplace.com/auth/callback
+https://vendorlymarketplace.com/auth/reset-password
+https://vendorlymarketplace.com/**
 https://YOUR-PROJECT.vercel.app/auth/callback
 https://YOUR-PROJECT.vercel.app/**
 vendorly://auth/callback
@@ -409,7 +409,7 @@ In `mobile/.env` or **EAS Secrets** for production builds:
 |----------|------------------|
 | `EXPO_PUBLIC_SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same anon key as web |
-| `EXPO_PUBLIC_API_URL` | `https://api.vendorly.app` |
+| `EXPO_PUBLIC_API_URL` | `https://api.vendorlymarketplace.app` |
 | `EXPO_PUBLIC_AUTH_REDIRECT_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co/storage/v1/object/public/auth/auth-redirect.html` |
 
 Do **not** use LAN IPs (`192.168.x.x`, `10.x.x.x`) for off-LAN / store builds.
@@ -424,10 +424,10 @@ Run on **cellular or off home Wi‑Fi**:
 
 | # | Test | Expected |
 |---|------|----------|
-| 1 | Open `https://vendorly.app` | Site loads |
+| 1 | Open `https://vendorlymarketplace.com` | Site loads |
 | 2 | Sign in | Supabase auth succeeds |
 | 3 | Browse map / events / reserve | Works (Supabase-only) |
-| 4 | `curl https://api.vendorly.app/health/live` | `{"status":"ok",...}` |
+| 4 | `curl https://api.vendorlymarketplace.app/health/live` | `{"status":"ok",...}` |
 | 5 | Vendor → POS connect | Reaches API (HTTPS) |
 | 6 | Event photos via API proxy | Load if `VITE_API_URL` / `EXPO_PUBLIC_API_URL` set |
 | 7 | Mobile app with production env | Same as web for auth + API |
@@ -472,8 +472,8 @@ Run on **cellular or off home Wi‑Fi**:
 After deploying, note:
 
 - [ ] Web URL live on Vercel
-- [ ] `vendorly.app` DNS + SSL
-- [ ] `api.vendorly.app` DNS + `/health/live` OK
+- [ ] `vendorlymarketplace.com` DNS + SSL
+- [ ] `api.vendorlymarketplace.app` DNS + `/health/live` OK
 - [ ] Supabase redirect URLs updated
 - [ ] Backend CORS includes production web URL(s)
 - [ ] Mobile / EAS secrets updated

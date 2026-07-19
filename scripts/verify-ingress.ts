@@ -162,7 +162,7 @@ async function main(): Promise<void> {
   const remoteOk = dnsBackend && dnsReadiness && health.OK && readiness.OK;
   if (!remoteOk) {
     log('INGRESS_FAIL REMOTE_GATEWAY_NOT_ALIGNED');
-    log('INGRESS_HINT BIND_api.vendorly.app_CNAME_TO_RAILWAY_AND_REDEPLOY_tenant-web_READINESS');
+    log('INGRESS_HINT BIND_api.vendorlymarketplace.app_CNAME_TO_RAILWAY_AND_REDEPLOY_tenant-web_READINESS');
     process.exit(1);
   }
 

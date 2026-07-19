@@ -6,7 +6,7 @@
 |----------|-------|
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | Supabase **pooler** URI (port 6543) |
-| `PUBLIC_BASE_URL` | Public API URL (Railway or `https://api.vendorly.app`) |
+| `PUBLIC_BASE_URL` | Public API URL (Railway or `https://api.vendorlymarketplace.app`) |
 | `WEB_APP_URL` | Primary web origin for CORS |
 | `CORS_ORIGINS` | Comma-separated extra origins (Vercel URL, www) |
 | `SUPABASE_URL` | `https://ajedyjbdpjahnhzrxwdj.supabase.co` |
