@@ -21,6 +21,7 @@ import type {
 } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { aggregateSupplierArMetrics } from './wholesale-ar-metrics.util';
 import { resolveInvoiceDisplayStatus } from './wholesale-invoice.util';
 
 const NET_TERMS_DAYS = 30;
@@ -636,5 +637,28 @@ export class WholesaleOrdersService {
 
   displayStatusForInvoice(invoice: { status: string; dueAt: Date }) {
     return resolveInvoiceDisplayStatus(invoice.status, invoice.dueAt);
+  }
+
+  /**
+   * Seller-scoped A/R buckets: PAID revenue, PENDING outstanding, OVERDUE at-risk.
+   */
+  async getArMetricsForSeller(sellerVendorId: string) {
+    const rows = await this.prisma.wholesaleInvoice.findMany({
+      where: { sellerVendorId },
+      select: { status: true, totalCents: true },
+    });
+
+    const metrics = aggregateSupplierArMetrics(
+      rows.map((row) => ({
+        status: row.status,
+        totalCents: row.totalCents,
+      })),
+    );
+
+    this.logger.log(
+      `METRICS_AGGREGATION_SUCCESS SELLER=${sellerVendorId} REVENUE_CENTS=${metrics.TOTAL_REVENUE_CENTS} OUTSTANDING_CENTS=${metrics.OUTSTANDING_CAPITAL_CENTS} AT_RISK_CENTS=${metrics.AT_RISK_CAPITAL_CENTS}`,
+    );
+
+    return metrics;
   }
 }
