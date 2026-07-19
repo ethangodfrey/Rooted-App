@@ -96,7 +96,16 @@ export class StripeService {
       type: 'account_onboarding',
     });
 
-    return { url: link.url, accountId, expiresAt: link.expires_at };
+    this.logger.log(
+      `STRIPE_ACCOUNT_LINKED VENDOR=${vendorId} ACCOUNT=${accountId}`,
+    );
+
+    return {
+      STATUS: 'STRIPE_ACCOUNT_LINKED',
+      url: link.url,
+      accountId,
+      expiresAt: link.expires_at,
+    };
   }
 
   /** Returns Connect readiness flags stored on the vendor row. */

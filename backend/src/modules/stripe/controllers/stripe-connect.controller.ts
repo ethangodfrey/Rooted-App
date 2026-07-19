@@ -38,14 +38,30 @@ export class StripeConnectController {
     const returnUrl = dto.returnUrl ?? `${webBase}/vendor/settings/payments?stripe=return`;
     const refreshUrl = dto.refreshUrl ?? `${webBase}/vendor/settings/payments?stripe=refresh`;
 
-    return this.stripe.createVendorConnectLink(vendorId, returnUrl, refreshUrl);
+    const result = await this.stripe.createVendorConnectLink(
+      vendorId,
+      returnUrl,
+      refreshUrl,
+    );
+    return {
+      ...result,
+      STATUS: 'STRIPE_ACCOUNT_LINKED',
+      VENDOR_ID: vendorId,
+    };
   }
 
   /** Poll Connect readiness after onboarding redirect. */
   @Get('status')
   async status(@CurrentUser() user: AuthenticatedUser) {
     const vendorId = this.requireVendor(user);
-    return this.stripe.getVendorConnectStatus(vendorId);
+    const result = await this.stripe.getVendorConnectStatus(vendorId);
+    return {
+      ...result,
+      STATUS: result.connected
+        ? 'STRIPE_ACCOUNT_LINKED'
+        : 'STRIPE_ACCOUNT_PENDING',
+      VENDOR_ID: vendorId,
+    };
   }
 
   private requireVendor(user: AuthenticatedUser): string {
