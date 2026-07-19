@@ -16,29 +16,31 @@ export function useUserCoords() {
     setCoordsReady(false);
 
     async function resolveProfileCoords() {
-      const hasProfileLocation =
-        Boolean(user?.city?.trim()) ||
-        Boolean(user?.state?.trim()) ||
-        Boolean(user?.zip_code?.trim()) ||
-        Boolean(shopper?.default_location?.trim());
+      try {
+        const hasProfileLocation =
+          Boolean(user?.city?.trim()) ||
+          Boolean(user?.state?.trim()) ||
+          Boolean(user?.zip_code?.trim()) ||
+          Boolean(shopper?.default_location?.trim());
 
-      if (!hasProfileLocation) {
-        if (!cancelled) setCoordsReady(true);
-        return;
-      }
+        if (!hasProfileLocation) {
+          return;
+        }
 
-      const geocoded = await geocodeAddress({
-        city: user?.city,
-        state: user?.state,
-        postalCode: user?.zip_code,
-      });
+        const geocoded = await geocodeAddress({
+          city: user?.city,
+          state: user?.state,
+          postalCode: user?.zip_code,
+        });
 
-      if (!cancelled) {
-        if (geocoded && isValidCoords(geocoded)) {
+        if (!cancelled && geocoded && isValidCoords(geocoded)) {
           setCoords(geocoded);
           setSource('profile');
         }
-        setCoordsReady(true);
+      } catch {
+        // Profile geocode is best-effort; fall through without coords.
+      } finally {
+        if (!cancelled) setCoordsReady(true);
       }
     }
 

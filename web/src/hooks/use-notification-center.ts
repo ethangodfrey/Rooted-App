@@ -100,16 +100,28 @@ export function useNotificationCenter(userId: string | null | undefined) {
   const dismissLiveAlert = useCallback(() => setLiveAlert(null), [])
 
   const markOneRead = useCallback(async (id: string) => {
-    await markNotificationRead(id)
+    const previous = items;
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, is_read: true } : item)),
-    )
-  }, [])
+    );
+    try {
+      await markNotificationRead(id);
+    } catch (err) {
+      setItems(previous);
+      setError(err instanceof Error ? err.message : 'NOTIFICATION_READ_FAILED');
+    }
+  }, [items]);
 
   const markAllRead = useCallback(async () => {
-    await markAllNotificationsRead()
-    setItems((prev) => prev.map((item) => ({ ...item, is_read: true })))
-  }, [])
+    const previous = items;
+    setItems((prev) => prev.map((item) => ({ ...item, is_read: true })));
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      setItems(previous);
+      setError(err instanceof Error ? err.message : 'NOTIFICATION_READ_FAILED');
+    }
+  }, [items]);
 
   return {
     items,

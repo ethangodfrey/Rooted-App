@@ -52,7 +52,11 @@ export function usePosActivityFeed({
   const initialLoadDoneRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!vendorId || !enabled) return;
+    if (!vendorId || !enabled) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
 
     const isInitial = !initialLoadDoneRef.current;
     if (isInitial) {
@@ -70,7 +74,7 @@ export function usePosActivityFeed({
       initialLoadDoneRef.current = true;
     } catch (err) {
       if (!mountedRef.current) return;
-      setError((err as Error).message);
+      setError(err instanceof Error ? err.message : 'Failed to load POS activity');
     } finally {
       if (!mountedRef.current) return;
       setLoading(false);

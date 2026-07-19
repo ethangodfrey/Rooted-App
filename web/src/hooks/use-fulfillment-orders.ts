@@ -53,6 +53,7 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
   const [fulfilledOrders, setFulfilledOrders] = useState<FulfillmentOrderRow[]>([]);
   const [counts, setCounts] = useState<FulfillmentCounts>({ pending: 0, fulfilled: 0 });
   const [loading, setLoading] = useState(true);
+  const [marketsLoaded, setMarketsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fulfillingIds, setFulfillingIds] = useState<Set<string>>(() => new Set());
 
@@ -61,8 +62,11 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
   const loadMarkets = useCallback(async () => {
     if (!vendorId) {
       setMarkets([]);
+      setMarketsLoaded(true);
       return;
     }
+
+    setMarketsLoaded(false);
 
     try {
       const { data, error: queryError } = await supabase
@@ -94,6 +98,8 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load markets');
       setMarkets([]);
+    } finally {
+      setMarketsLoaded(true);
     }
   }, [vendorId]);
 
@@ -106,10 +112,21 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
       return;
     }
 
+    if (selectedMarketId === 'all' && !marketsLoaded) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
+      if (selectedMarketId === 'all' && marketIds.length === 0) {
+        setPendingOrders([]);
+        setFulfilledOrders([]);
+        setCounts({ pending: 0, fulfilled: 0 });
+        return;
+      }
+
       let query = supabase
         .from('orders')
         .select(FULFILLMENT_SELECT)
@@ -119,7 +136,7 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
 
       if (selectedMarketId !== 'all') {
         query = query.eq('event_id', selectedMarketId);
-      } else if (marketIds.length > 0) {
+      } else {
         query = query.in('event_id', marketIds);
       }
 
@@ -148,7 +165,7 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [vendorId, selectedMarketId, marketIds]);
+  }, [vendorId, selectedMarketId, marketIds, marketsLoaded]);
 
   useEffect(() => {
     void loadMarkets();
@@ -184,28 +201,35 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
         fulfilled: current.fulfilled + 1,
       }));
 
-      const paymentPatch = paymentStatusOnFulfill(order.payment_status);
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          order_status: 'fulfilled',
-          updated_at: fulfilledSnapshot.updated_at,
-          ...(paymentPatch ? { payment_status: paymentPatch } : {}),
-        })
-        .eq('id', orderId)
-        .eq('vendor_id', vendorId);
+      try {
+        const paymentPatch = paymentStatusOnFulfill(order.payment_status);
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({
+            order_status: 'fulfilled',
+            updated_at: fulfilledSnapshot.updated_at,
+            ...(paymentPatch ? { payment_status: paymentPatch } : {}),
+          })
+          .eq('id', orderId)
+          .eq('vendor_id', vendorId);
 
-      setFulfillingIds((current) => {
-        const next = new Set(current);
-        next.delete(orderId);
-        return next;
-      });
-
-      if (updateError) {
+        if (updateError) {
+          setPendingOrders(previousPending);
+          setFulfilledOrders(previousFulfilled);
+          setCounts(previousCounts);
+          setError(updateError.message);
+        }
+      } catch (err) {
         setPendingOrders(previousPending);
         setFulfilledOrders(previousFulfilled);
         setCounts(previousCounts);
-        setError(updateError.message);
+        setError(err instanceof Error ? err.message : 'Failed to fulfill order');
+      } finally {
+        setFulfillingIds((current) => {
+          const next = new Set(current);
+          next.delete(orderId);
+          return next;
+        });
       }
     },
     [vendorId, fulfillingIds, pendingOrders, fulfilledOrders, counts],

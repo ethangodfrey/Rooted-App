@@ -76,9 +76,17 @@ export function useMarketDetail(marketId: string | undefined): UseMarketDetailRe
           return;
         }
 
-        setEvent((eventRes.data as Event | null) ?? null);
+        if (!eventRes.data) {
+          setError('Market not found.');
+          setEvent(null);
+          setVendors([]);
+          return;
+        }
+
+        setEvent(eventRes.data as Event);
 
         if (vendorEventsRes.error) {
+          setError(vendorEventsRes.error.message);
           setVendors([]);
           return;
         }

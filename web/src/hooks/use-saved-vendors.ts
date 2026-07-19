@@ -24,17 +24,22 @@ export function useSavedVendors() {
 
       setSaved(next);
       setPending(true);
-      const { error } = await supabase
-        .from('shoppers')
-        .update({ saved_vendors: next })
-        .eq('user_id', user.id);
-      setPending(false);
+      try {
+        const { error } = await supabase
+          .from('shoppers')
+          .update({ saved_vendors: next })
+          .eq('user_id', user.id);
 
-      if (error) {
+        if (error) {
+          setSaved(previous);
+          return;
+        }
+        await refreshUser();
+      } catch {
         setSaved(previous);
-        return;
+      } finally {
+        setPending(false);
       }
-      await refreshUser();
     },
     [saved, user, refreshUser],
   );
