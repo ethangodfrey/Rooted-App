@@ -6,11 +6,37 @@
  *
  * Success lines (uppercase, no emoji):
  *   ROUTING_RECONFIGURED
- *   DOMAIN_MIGRATION_COMPLETE
+ *   MIGRATION_COMPLETE
+ *   INGRESS_VERIFIED
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+function assertEnvConfigParsesMarketplaceUrls(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const envConfig = require(resolve(
+      process.cwd(),
+      'packages/env-config/dist/index.js',
+    )) as {
+      validatePublicHttpsUrl: (value: string) => string;
+      CANONICAL_API_ORIGIN: string;
+      CANONICAL_APP_ORIGIN: string;
+    };
+    envConfig.validatePublicHttpsUrl(envConfig.CANONICAL_APP_ORIGIN);
+    envConfig.validatePublicHttpsUrl(envConfig.CANONICAL_API_ORIGIN);
+    envConfig.validatePublicHttpsUrl(
+      'https://api.vendorlymarketplace.app/api/health',
+    );
+    log('DOMAIN_OK ENV_CONFIG_URL_PARSER');
+    return true;
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    log(`DOMAIN_FAIL ENV_CONFIG_URL_PARSER DETAIL=${detail}`);
+    return false;
+  }
+}
 
 const REQUIRED = [
   {
@@ -88,12 +114,44 @@ function main(): void {
     }
   }
 
+  if (!assertEnvConfigParsesMarketplaceUrls()) {
+    failed = true;
+  }
+
+  const liveExample = resolve(process.cwd(), '.env.live.example');
+  if (existsSync(liveExample)) {
+    const liveText = readFileSync(liveExample, 'utf8');
+    if (!liveText.includes('DEPLOY_HEALTH_URL=https://api.vendorlymarketplace.app/api/health')) {
+      log('DOMAIN_FAIL LIVE_TEMPLATE_HEALTH_URL');
+      failed = true;
+    } else {
+      log('DOMAIN_OK LIVE_TEMPLATE_HEALTH_URL');
+    }
+  }
+
+  // Optional local operator copy — must not reintroduce legacy API host.
+  const liveLocal = resolve(process.cwd(), '.env.live');
+  if (existsSync(liveLocal)) {
+    const liveText = readFileSync(liveLocal, 'utf8');
+    if (liveText.includes('DEPLOY_HEALTH_URL=https://api.vendorly.app/api/health')) {
+      log('DOMAIN_FAIL LIVE_LOCAL_LEGACY_HEALTH_URL');
+      failed = true;
+    } else if (
+      liveText.includes('DEPLOY_HEALTH_URL=https://api.vendorlymarketplace.app/api/health')
+    ) {
+      log('DOMAIN_OK LIVE_LOCAL_HEALTH_URL');
+    }
+  }
+
   if (failed) {
     log('DOMAIN_MIGRATION FAIL');
     process.exit(1);
   }
 
   log('ROUTING_RECONFIGURED');
+  log('MIGRATION_COMPLETE');
+  log('INGRESS_VERIFIED');
+  // Alias retained for older operator docs.
   log('DOMAIN_MIGRATION_COMPLETE');
 }
 

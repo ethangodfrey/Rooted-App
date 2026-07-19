@@ -43,11 +43,11 @@ npm run test:deploy:resilience:live
 # With LIVE_SMOKE_BOOT_LOCAL_NEST=0 — fails closed if remote Nest/readiness are down
 ```
 
-Status vocabulary (text only, no emoji): `INGRESS_OK`, `DNS_VERIFIED`, `ROUTING_ALIGNED`, `DOMAIN_MIGRATION_COMPLETE`, `ROUTING_RECONFIGURED`.
+Status vocabulary (text only, no emoji): `INGRESS_OK`, `DNS_VERIFIED`, `ROUTING_ALIGNED`, `MIGRATION_COMPLETE`, `INGRESS_VERIFIED`, `ROUTING_RECONFIGURED`.
 
 ```bash
 npm run verify:domains
-# ROUTING_RECONFIGURED / DOMAIN_MIGRATION_COMPLETE
+# ROUTING_RECONFIGURED / MIGRATION_COMPLETE / INGRESS_VERIFIED
 ```
 
 Cutover assertions reject localhost targets, HTML catch-all bodies, and JSON that does not match production schemas (`STATUS` + `TIMESTAMP` for Nest health; `STATUS` + `TIMESTAMP` + `CHECKS` for tenant-web readiness).
