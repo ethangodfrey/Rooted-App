@@ -144,9 +144,74 @@ model Vendor {
   posProductMappings   PosProductMapping[]
   posTransactions      PosImportedTransaction[]
   marketRegistrations  VendorMarketRegistration[]
+  businessConnectionsSent     VendorBusinessConnection[] @relation("BusinessConnectionSender")
+  businessConnectionsReceived VendorBusinessConnection[] @relation("BusinessConnectionReceiver")
+  wholesaleProducts           WholesaleProduct[]
 
   @@index([userId])
   @@map("vendors")
+}
+
+/// B2B wholesale partnership edge between directory Vendor rows (phase54).
+/// Distinct from profile-level vendor_connections (social/network handshakes).
+enum VendorBusinessConnectionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+
+  @@map("vendor_business_connection_status")
+}
+
+model VendorBusinessConnection {
+  id               String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderVendorId   String                          @map("sender_vendor_id") @db.Uuid
+  senderVendor     Vendor                          @relation("BusinessConnectionSender", fields: [senderVendorId], references: [id], onDelete: Cascade)
+  receiverVendorId String                          @map("receiver_vendor_id") @db.Uuid
+  receiverVendor   Vendor                          @relation("BusinessConnectionReceiver", fields: [receiverVendorId], references: [id], onDelete: Cascade)
+  status           VendorBusinessConnectionStatus  @default(PENDING)
+  initiatedAt      DateTime                        @default(now()) @map("initiated_at") @db.Timestamptz(6)
+  updatedAt        DateTime                        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([senderVendorId, receiverVendorId])
+  @@index([senderVendorId, status])
+  @@index([receiverVendorId, status])
+  @@index([initiatedAt])
+  @@map("vendor_business_connections")
+}
+
+enum WholesaleProductStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("wholesale_product_status")
+}
+
+/// Bulk wholesale catalog SKU — distinct from consumer-facing Product rows.
+model WholesaleProduct {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId        String                 @map("vendor_id") @db.Uuid
+  vendor          Vendor                 @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  /// Packaging unit label (CASE, CRATE, BIN, LB, KG, EACH, ...).
+  packagingUnit   String                 @map("packaging_unit")
+  /// Fractional net weight per packaging unit (lbs).
+  weightLbs       Decimal                @map("weight_lbs") @db.Decimal(12, 4)
+  /// Minimum order quantity in packaging units.
+  moq             Int
+  /// Base unit price in cents for orders at MOQ.
+  unitPriceCents  Int                    @map("unit_price_cents")
+  /// Volume tiers: [{ "minQty": 10, "unitPriceCents": 1200 }, ...]
+  pricingTiers    Json                   @default("[]") @map("pricing_tiers")
+  freightNotes    String?                @map("freight_notes")
+  pickupNotes     String?                @map("pickup_notes")
+  status          WholesaleProductStatus @default(ACTIVE)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([vendorId, status])
+  @@index([vendorId, name])
+  @@map("wholesale_products")
 }
 
 model Product {
@@ -326,8 +391,10 @@ model Market {
   name            String
   /// Region-scoped slug (unique within region).
   slug            String
-  /// Nationwide unique directory handle for routing / SEO.
+  /// Nationwide unique directory handle for tenant subdomain / SEO routing.
   directorySlug   String?       @unique @map("directory_slug")
+  /// Regional description banner copy for tenant theme injection.
+  description     String?
   locationAddress String?       @map("location_address")
   city            String?
   state           String?
@@ -337,6 +404,10 @@ model Market {
   longitude       Decimal?      @db.Decimal(10, 7)
   /// Free-text operating hours (e.g. "Sat 9:00-14:00").
   operatingHours  String?       @map("operating_hours")
+  /// Optional marketplace theme primary (CSS --tenant-primary).
+  themePrimaryColor String?     @map("theme_primary_color")
+  /// Optional marketplace theme accent (CSS --tenant-accent).
+  themeAccentColor  String?     @map("theme_accent_color")
   posProvider     PosProvider?  @map("pos_provider")
   eventId         String?       @map("event_id") @db.Uuid
   event           Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)

@@ -53,6 +53,29 @@ describe('TENANT ROUTING HARNESS', () => {
     log('ROUTE_PASSED MULTI_LEVEL_REJECTED');
   });
 
+  it('ROUTE_PASSED excludes reserved structural subdomains api/www/main', () => {
+    for (const reserved of ['api', 'main'] as const) {
+      const context = buildTenantHostContext(
+        `${reserved}.vendorlymarketplace.com`,
+        'vendorlymarketplace.com',
+      );
+      expect(context.SLUG).toBeNull();
+      expect(context.RESOLUTION).toBe('RESERVED');
+      expect(extractSubdomainSlug(context.HOST, 'vendorlymarketplace.com')).toBeNull();
+      log(`ROUTE_PASSED RESERVED_SUBDOMAIN SLUG=${reserved}`);
+    }
+
+    // www is stripped by normalizeHost to the platform apex (not a tenant slug).
+    const wwwContext = buildTenantHostContext(
+      'www.vendorlymarketplace.com',
+      'vendorlymarketplace.com',
+    );
+    expect(wwwContext.SLUG).toBeNull();
+    expect(wwwContext.RESOLUTION).toBe('APEX');
+    expect(extractSubdomainSlug('www', 'vendorlymarketplace.com')).toBeNull();
+    log('ROUTE_PASSED RESERVED_SUBDOMAIN SLUG=www VIA_APEX');
+  });
+
   it('appends slug onto execution context for middleware consumers', () => {
     const headers = { host: 'spurs-suds.localhost' };
     const context = buildTenantHostContext(headers.host, 'localhost');

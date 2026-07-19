@@ -1,6 +1,11 @@
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
+import { getMarketDirectoryBySlug } from '@/lib/markets/directory';
+import {
+  MarketThemeProvider,
+  buildMarketThemeValue,
+} from '@/lib/tenant/market-theme';
 import { TenantProvider } from '@/lib/tenant/use-tenant';
 import { getTenantBySlug } from '@/lib/tenant/tenant-service';
 import { TenantNotFoundError, TenantSuspendedError } from '@/lib/tenant/types';
@@ -42,22 +47,30 @@ export default async function TenantLayout({
       ? resolutionHeader
       : 'slug_path';
 
+  const market = await getMarketDirectoryBySlug(slug);
+  const theme = buildMarketThemeValue({
+    tenant,
+    market,
+    resolvedHost,
+    resolution,
+  });
+
+  // Uppercase text-only layout tracing (no emoji).
+  // eslint-disable-next-line no-console
+  console.log(
+    `THEME_INJECTED_OK SLUG=${slug} MARKET=${market?.directorySlug ?? market?.slug ?? 'NONE'} PRIMARY=${theme.primaryColor}`,
+  );
+
   return (
     <TenantProvider
       value={{
         tenant,
+        market,
         resolvedHost,
         resolution,
       }}
     >
-      <div
-        style={{
-          ['--tenant-primary' as string]: tenant.branding.primaryColor ?? '#1f6b4f',
-          ['--tenant-accent' as string]: tenant.branding.accentColor ?? '#e8a838',
-        }}
-      >
-        {children}
-      </div>
+      <MarketThemeProvider value={theme}>{children}</MarketThemeProvider>
     </TenantProvider>
   );
 }

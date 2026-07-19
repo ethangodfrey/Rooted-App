@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminMarketsController } from './admin-markets.controller';
+import { MarketsDirectoryController } from './markets-directory.controller';
+import { MarketsDirectoryService } from './markets-directory.service';
 import { MarketsGooglePlacesService } from './markets-google-places.service';
 import { MarketsLinksService } from './markets-links.service';
 import { PublicMarketsController } from './public-markets.controller';
@@ -23,6 +25,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
   controllers: [
     AdminMarketsController,
     PublicMarketsController,
+    MarketsDirectoryController,
     MarketsNearbyController,
   ],
   providers: [
@@ -39,6 +42,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsClassifyAiService,
     MarketsAgentService,
     MarketsSchedulerService,
+    MarketsDirectoryService,
   ],
   exports: [
     MarketsAgentService,
@@ -46,6 +50,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsScheduleAiService,
     MarketsClassifyAiService,
     MarketsLinksService,
+    MarketsDirectoryService,
     MarketsNearbyService,
   ],
 })

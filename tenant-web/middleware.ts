@@ -2,9 +2,12 @@ import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server
 
 import { readTenantEnvelopeFromEdge } from '@/lib/tenant/edge-cache';
 import {
+  extractSubdomainSlug,
   isLocalDevHost,
   isPlatformApex,
+  isReservedSubdomainSlug,
   normalizeHost,
+  peekSubdomainLabel,
   resolveApiBaseUrl,
   resolvePlatformDomain,
   shouldBypassMiddleware,
@@ -23,6 +26,7 @@ export const config = {
 const TENANT_HEADER_SLUG = 'x-tenant-slug';
 const TENANT_HEADER_ID = 'x-tenant-id';
 const TENANT_HEADER_HOST = 'x-resolved-host';
+const TENANT_HEADER_RESOLUTION = 'x-tenant-resolution';
 
 function tenantErrorRedirect(request: NextRequest, reason: string, host: string): NextResponse {
   const url = request.nextUrl.clone();
@@ -38,10 +42,12 @@ function withTenantHeaders(
   slug: string,
   tenantId: string,
   resolvedHost: string,
+  resolution: string,
 ): NextResponse {
   response.headers.set(TENANT_HEADER_SLUG, slug);
   response.headers.set(TENANT_HEADER_ID, tenantId);
   response.headers.set(TENANT_HEADER_HOST, resolvedHost);
+  response.headers.set(TENANT_HEADER_RESOLUTION, resolution);
   return response;
 }
 
@@ -63,6 +69,12 @@ async function triggerBackgroundRevalidation(
   );
 }
 
+function logTenantResolved(slug: string, host: string, resolution: string): void {
+  // Uppercase text-only edge tracing (no emoji).
+  // eslint-disable-next-line no-console
+  console.log(`TENANT_RESOLVED SLUG=${slug} HOST=${host} RESOLUTION=${resolution}`);
+}
+
 export async function middleware(request: NextRequest, event: NextFetchEvent): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
@@ -80,12 +92,29 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
     return tenantErrorRedirect(request, 'missing_host', '');
   }
 
+  // Reserved structural subdomains (api / www / main) — no tenant rewrite.
+  const reservedLabel =
+    peekSubdomainLabel(normalizedHost, platformDomain) ??
+    (isLocalDevHost(normalizedHost) && normalizedHost.endsWith('.localhost')
+      ? peekSubdomainLabel(normalizedHost, 'localhost')
+      : null);
+  if (isReservedSubdomainSlug(reservedLabel)) {
+    // eslint-disable-next-line no-console
+    console.log(`TENANT_BYPASS RESERVED_SUBDOMAIN SLUG=${reservedLabel} HOST=${normalizedHost}`);
+    return NextResponse.next();
+  }
+
   if (isPlatformApex(normalizedHost, platformDomain) && !isLocalDevHost(normalizedHost)) {
     return NextResponse.next();
   }
 
   const pathSegments = pathname.split('/').filter(Boolean);
   const firstSegment = pathSegments[0] ?? null;
+  const subdomainSlug =
+    extractSubdomainSlug(normalizedHost, platformDomain) ??
+    (isLocalDevHost(normalizedHost) && normalizedHost.endsWith('.localhost')
+      ? extractSubdomainSlug(normalizedHost, 'localhost')
+      : null);
 
   try {
     let envelope = null as Awaited<ReturnType<typeof resolveTenantByHost>> | null;
@@ -102,20 +131,26 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
       envelope = await resolveTenantByHost(normalizedHost);
     }
 
-    const { tenant, resolvedHost } = envelope;
+    const { tenant, resolvedHost, resolution } = envelope;
     const tenantSlug = tenant.slug;
 
-    if (firstSegment === tenantSlug) {
+    // Prefer host subdomain mapping when present; otherwise use resolved tenant slug.
+    const rewriteSlug = subdomainSlug ?? tenantSlug;
+
+    logTenantResolved(rewriteSlug, resolvedHost, resolution);
+
+    if (firstSegment === rewriteSlug) {
       const response = NextResponse.next();
-      return withTenantHeaders(response, tenantSlug, tenant.id, resolvedHost);
+      return withTenantHeaders(response, rewriteSlug, tenant.id, resolvedHost, resolution);
     }
 
+    // Rewrite into the dynamic tenant segment: app/[tenant]/...
     const rewriteUrl = request.nextUrl.clone();
     const suffix = pathname === '/' ? '' : pathname;
-    rewriteUrl.pathname = `/${tenantSlug}${suffix}`;
+    rewriteUrl.pathname = `/${rewriteSlug}${suffix}`;
 
     const response = NextResponse.rewrite(rewriteUrl);
-    return withTenantHeaders(response, tenantSlug, tenant.id, resolvedHost);
+    return withTenantHeaders(response, rewriteSlug, tenant.id, resolvedHost, resolution);
   } catch (error) {
     if (error instanceof TenantNotFoundError) {
       return tenantErrorRedirect(request, 'not_found', error.host);

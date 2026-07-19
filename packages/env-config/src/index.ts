@@ -27,6 +27,19 @@ export {
 } from './domains';
 
 export {
+  parseVendorConnectionRequest,
+  parseWholesaleProductCreate,
+  vendorBusinessConnectionStatusSchema,
+  vendorConnectionRequestSchema,
+  wholesaleProductCreateSchema,
+  type VendorBusinessConnectionStatus,
+  type VendorConnectionRequestInput,
+  type VendorConnectionRequestParseResult,
+  type WholesaleProductCreateInput,
+  type WholesaleProductCreateParseResult,
+} from './b2b';
+
+export {
   DEFAULT_NEARBY_LIMIT,
   DEFAULT_NEARBY_RADIUS_MILES,
   MAX_NEARBY_LIMIT,

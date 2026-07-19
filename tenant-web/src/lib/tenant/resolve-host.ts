@@ -27,6 +27,9 @@ const INTERNAL_PREFIXES = [
   '/tenant-error',
 ];
 
+/** Structural platform roots — never rewritten to /[tenant] routes. */
+export const RESERVED_SUBDOMAIN_SLUGS = new Set(['api', 'www', 'main']);
+
 export function normalizeHost(rawHost: string): string {
   const withoutPort = rawHost.split(':')[0]?.trim().toLowerCase() ?? '';
   return withoutPort.startsWith('www.') ? withoutPort.slice(4) : withoutPort;
@@ -59,7 +62,27 @@ export function shouldBypassMiddleware(pathname: string): boolean {
   return STATIC_EXTENSIONS.has(extension);
 }
 
+export function isReservedSubdomainSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  return RESERVED_SUBDOMAIN_SLUGS.has(slug.trim().toLowerCase());
+}
+
+/**
+ * Extract a single-label tenant subdomain from `{slug}.{platformDomain}`.
+ * Returns null for apex, multi-level hosts, and reserved structural roots.
+ */
 export function extractSubdomainSlug(host: string, platformDomain: string): string | null {
+  if (!host.endsWith(`.${platformDomain}`)) return null;
+  const slug = host.slice(0, -(platformDomain.length + 1));
+  if (!slug || slug.includes('.')) return null;
+  if (isReservedSubdomainSlug(slug)) return null;
+  return slug;
+}
+
+/**
+ * Raw subdomain label before reserved filtering (for RESERVED bypass decisions).
+ */
+export function peekSubdomainLabel(host: string, platformDomain: string): string | null {
   if (!host.endsWith(`.${platformDomain}`)) return null;
   const slug = host.slice(0, -(platformDomain.length + 1));
   if (!slug || slug.includes('.')) return null;

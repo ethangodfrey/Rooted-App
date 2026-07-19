@@ -7,10 +7,13 @@ import {
   type ReactNode,
 } from 'react';
 
+import type { MarketDirectoryContext } from '@/lib/markets/directory';
+
 import type { TenantConfig, TenantResolution } from './types';
 
 export interface TenantContextValue {
   tenant: TenantConfig;
+  market: MarketDirectoryContext | null;
   resolvedHost: string;
   resolution: TenantResolution;
 }
@@ -44,4 +47,9 @@ export function useTenantBranding() {
 export function useTenantPosIntegrations() {
   const { tenant } = useTenant();
   return tenant.posIntegrations;
+}
+
+export function useTenantMarket() {
+  const { market } = useTenant();
+  return market;
 }
