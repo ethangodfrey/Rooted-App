@@ -131,6 +131,19 @@ export function WholesaleOutboundOrders({
                       DELIVERED_AT {order.DELIVERED_AT}
                     </p>
                   ) : null}
+                  {order.INVOICE_ID ? (
+                    <a
+                      href={`/vendor/wholesale/invoices/${order.INVOICE_ID}${
+                        accessToken
+                          ? `?access_token=${encodeURIComponent(accessToken)}`
+                          : ''
+                      }`}
+                      className="mt-3 inline-flex rounded-lg border border-emerald-300/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-50 transition hover:bg-emerald-500/20"
+                      data-testid={`view-invoice-${order.INVOICE_ID}`}
+                    >
+                      VIEW INVOICE {order.INVOICE_NUMBER || order.INVOICE_ID}
+                    </a>
+                  ) : null}
                 </div>
               ) : null}
 

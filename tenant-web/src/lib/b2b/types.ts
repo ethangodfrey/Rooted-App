@@ -73,8 +73,46 @@ export type WholesaleOrderDraftRow = {
   SHIPPED_AT?: string | null;
   DELIVERED_AT?: string | null;
   DELIVERY_CONFIRMED_AT?: string | null;
+  INVOICE_ID?: string | null;
+  INVOICE_NUMBER?: string | null;
   ITEMS: WholesaleOrderDraftItemRow[];
   CREATED_AT: string;
+};
+
+export type WholesaleInvoiceLineItem = {
+  productSkuId?: string;
+  PRODUCT_SKU_ID?: string;
+  quantity?: number;
+  QUANTITY?: number;
+  unitPriceCents?: number;
+  UNIT_PRICE_CENTS?: number;
+  lineTotalCents?: number;
+  LINE_TOTAL_CENTS?: number;
+};
+
+export type WholesaleInvoiceRow = {
+  ID: string;
+  ORDER_ID: string;
+  SETTLEMENT_LOG_ID?: string | null;
+  INVOICE_NUMBER: string;
+  BUYER_VENDOR_ID: string;
+  SELLER_VENDOR_ID: string;
+  BUYER_BUSINESS_NAME?: string | null;
+  SELLER_BUSINESS_NAME?: string | null;
+  CURRENCY: string;
+  SUBTOTAL_CENTS: number;
+  TOTAL_CENTS: number;
+  PAYMENT_TERMS: string;
+  LINE_ITEMS: WholesaleInvoiceLineItem[];
+  STATUS: string;
+  ISSUED_AT: string;
+  DUE_AT: string;
+};
+
+export type WholesaleInvoiceResponse = {
+  STATUS: string;
+  INVOICE?: WholesaleInvoiceRow;
+  error?: string;
 };
 
 /** Wire payload for POST /api/vendors/orders/fulfillment (snake_case). */
@@ -119,6 +157,8 @@ export type WholesaleOutboundOrdersResponse = {
 export type WholesaleOrderSettlementResponse = {
   STATUS: string;
   LEDGER?: string;
+  BILLING?: string;
+  INVOICE?: WholesaleInvoiceRow;
   ORDER?: WholesaleOrderDraftRow;
   error?: string;
   message?: string;

@@ -7,7 +7,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Prisma,
   VendorBusinessConnectionStatus,
+  WholesaleInvoiceStatus,
   WholesaleOrderStatus,
   WholesaleProductStatus,
 } from '@prisma/client';
@@ -18,6 +20,20 @@ import type {
 } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+
+const NET_TERMS_DAYS = 30;
+
+function addUtcDays(base: Date, days: number): Date {
+  const next = new Date(base.getTime());
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function buildInvoiceNumber(orderId: string, issuedAt: Date): string {
+  const ymd = issuedAt.toISOString().slice(0, 10).replace(/-/g, '');
+  const short = orderId.replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `WI-${ymd}-${short}`;
+}
 
 type PricingTier = { minQty: number; unitPriceCents: number };
 
@@ -206,7 +222,7 @@ export class WholesaleOrdersService {
     return created;
   }
 
-  /** Inbound drafts for the authenticated seller. */
+  /** Inbound drafts for the authenticated seller (includes invoice when settled). */
   async listInboundForSeller(sellerVendorId: string) {
     return this.prisma.wholesaleOrder.findMany({
       where: { sellerVendorId },
@@ -214,6 +230,7 @@ export class WholesaleOrdersService {
         items: true,
         buyerVendor: { select: { id: true, businessName: true } },
         sellerVendor: { select: { id: true, businessName: true } },
+        invoice: { select: { id: true, invoiceNumber: true, status: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -227,6 +244,7 @@ export class WholesaleOrdersService {
         items: true,
         buyerVendor: { select: { id: true, businessName: true } },
         sellerVendor: { select: { id: true, businessName: true } },
+        invoice: { select: { id: true, invoiceNumber: true, status: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -483,7 +501,65 @@ export class WholesaleOrdersService {
         `WHOLESALE_LEDGER_SETTLED LOG=${ledger.id} ORDER=${settled.id} SUBTOTAL_CENTS=${settled.subtotalCents}`,
       );
 
-      return settled;
+      const dueAt = addUtcDays(confirmedAt, NET_TERMS_DAYS);
+      const lineItems = settled.items.map((item) => ({
+        productSkuId: item.productSkuId,
+        quantity: item.quantity,
+        unitPriceCents: item.negotiatedTierUnitPrice,
+        lineTotalCents: item.lineTotalCents,
+      }));
+
+      const invoice = await tx.wholesaleInvoice.create({
+        data: {
+          orderId: settled.id,
+          settlementLogId: ledger.id,
+          invoiceNumber: buildInvoiceNumber(settled.id, confirmedAt),
+          buyerVendorId: settled.buyerVendorId,
+          sellerVendorId: settled.sellerVendorId,
+          buyerBusinessName: settled.buyerVendor?.businessName ?? null,
+          sellerBusinessName: settled.sellerVendor?.businessName ?? null,
+          currency: settled.currency || 'USD',
+          subtotalCents: settled.subtotalCents,
+          totalCents: settled.subtotalCents,
+          paymentTerms: 'NET_30',
+          lineItems: lineItems as Prisma.InputJsonValue,
+          status: WholesaleInvoiceStatus.ISSUED,
+          issuedAt: confirmedAt,
+          dueAt,
+        },
+      });
+
+      this.logger.log(
+        `WHOLESALE_INVOICE_GENERATED ID=${invoice.id} NUMBER=${invoice.invoiceNumber} DUE_AT=${dueAt.toISOString()} TERMS=NET_30`,
+      );
+      this.logger.log(
+        `BILLING_LEDGER_UPDATED INVOICE=${invoice.id} ORDER=${settled.id} TOTAL_CENTS=${invoice.totalCents}`,
+      );
+
+      return { order: settled, invoice };
     });
+  }
+
+  /** Buyer or seller may read an invoice linked to their wholesale order. */
+  async getInvoiceForVendor(sessionVendorId: string, invoiceId: string) {
+    const invoice = await this.prisma.wholesaleInvoice.findUnique({
+      where: { id: invoiceId },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('WHOLESALE_INVOICE_ERROR: INVOICE_NOT_FOUND');
+    }
+
+    if (
+      invoice.buyerVendorId !== sessionVendorId &&
+      invoice.sellerVendorId !== sessionVendorId
+    ) {
+      this.logger.warn(
+        `CROSS_TENANT_LEAK_BLOCKED ACTION=INVOICE_READ SESSION=${sessionVendorId} INVOICE=${invoiceId}`,
+      );
+      throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+    }
+
+    return invoice;
   }
 }
