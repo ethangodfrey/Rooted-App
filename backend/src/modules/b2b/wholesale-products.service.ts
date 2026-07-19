@@ -40,18 +40,7 @@ export class WholesaleProductsService {
     this.logger.log(
       `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity}`,
     );
-    await this.indexer.indexProduct({
-      id: created.id,
-      vendorId: created.vendorId,
-      name: created.name,
-      description: created.description,
-      packagingUnit: created.packagingUnit,
-      moq: created.moq,
-      unitPriceCents: created.unitPriceCents,
-      availableQuantity: created.availableQuantity,
-      status: created.status,
-      updatedAt: created.updatedAt.toISOString(),
-    });
+    await this.syncProductToSearchIndex(created);
     return created;
   }
 
@@ -109,19 +98,47 @@ export class WholesaleProductsService {
       },
     });
 
-    await this.indexer.indexProduct({
-      id: updated.id,
-      vendorId: updated.vendorId,
-      name: updated.name,
-      description: updated.description,
-      packagingUnit: updated.packagingUnit,
-      moq: updated.moq,
-      unitPriceCents: updated.unitPriceCents,
-      availableQuantity: updated.availableQuantity,
-      status: updated.status,
-      updatedAt: updated.updatedAt.toISOString(),
+    await this.syncProductToSearchIndex(updated);
+    return updated;
+  }
+
+  /** Load vendor geo and push to ES (US-only validation inside indexer). */
+  private async syncProductToSearchIndex(product: {
+    id: string;
+    vendorId: string;
+    name: string;
+    description: string | null;
+    packagingUnit: string;
+    moq: number;
+    unitPriceCents: number;
+    availableQuantity: number;
+    status: string;
+    updatedAt: Date;
+  }): Promise<void> {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: product.vendorId },
+      select: { latitude: true, longitude: true, country: true },
     });
 
-    return updated;
+    const latitude =
+      vendor?.latitude == null ? null : Number(vendor.latitude);
+    const longitude =
+      vendor?.longitude == null ? null : Number(vendor.longitude);
+
+    await this.indexer.indexProduct({
+      id: product.id,
+      vendorId: product.vendorId,
+      name: product.name,
+      description: product.description,
+      packagingUnit: product.packagingUnit,
+      moq: product.moq,
+      unitPriceCents: product.unitPriceCents,
+      availableQuantity: product.availableQuantity,
+      status: product.status,
+      updatedAt: product.updatedAt.toISOString(),
+      country: vendor?.country ?? 'USA',
+      latitude: Number.isFinite(latitude) ? latitude : null,
+      longitude: Number.isFinite(longitude) ? longitude : null,
+    });
   }
 }

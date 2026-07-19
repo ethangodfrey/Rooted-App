@@ -136,6 +136,11 @@ model Vendor {
   /// Phase 49 — booth accepts SNAP/EBT (discovery)
   acceptsSnapEbt        Boolean @default(false) @map("accepts_snap_ebt")
 
+  /// Phase 24/27 — WGS84 vendor pin + country (default USA in Supabase).
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+  country   String?
+
   posts                Post[]
   certifications       VendorCertification[]
   orders               Order[]
@@ -151,6 +156,7 @@ model Vendor {
   wholesaleOrdersAsSeller     WholesaleOrder[]           @relation("WholesaleOrderSeller")
 
   @@index([userId])
+  @@index([latitude, longitude])
   @@map("vendors")
 }
 
