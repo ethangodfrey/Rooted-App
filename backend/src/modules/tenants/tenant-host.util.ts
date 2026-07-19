@@ -23,6 +23,18 @@ export function isReservedSubdomainSlug(slug: string | null | undefined): boolea
   return RESERVED_SUBDOMAIN_SLUGS.has(slug.trim().toLowerCase());
 }
 
+/**
+ * DNS-safe single-label slug for city/state tenant hosts.
+ * Dynamic — not an allowlist of regions or states.
+ */
+export const TENANT_SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+export function isValidTenantSubdomainSlug(slug: string): boolean {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return false;
+  return TENANT_SUBDOMAIN_PATTERN.test(normalized);
+}
+
 export function extractSubdomainSlug(
   host: string,
   platformDomain: string,
@@ -31,6 +43,7 @@ export function extractSubdomainSlug(
   const slug = host.slice(0, -(platformDomain.length + 1));
   if (!slug || slug.includes('.')) return null;
   if (isReservedSubdomainSlug(slug)) return null;
+  if (!isValidTenantSubdomainSlug(slug)) return null;
   return slug;
 }
 

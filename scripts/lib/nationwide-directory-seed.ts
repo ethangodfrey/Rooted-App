@@ -1,7 +1,15 @@
 /**
  * Multi-region structural seed data for public.markets + public.regions.
  * Indexed city/state + lat/lng + directory_slug for nationwide geo routing.
+ *
+ * Covers all 50 US states via US_STATE_GEO_FIXTURES plus denser metro rows
+ * for high-traffic corridors. No emoji.
  */
+
+import {
+  US_STATE_GEO_FIXTURES,
+  type UsStateGeoFixture,
+} from '@vendorly/env-config';
 
 export type NationwideRegionSeed = {
   name: string;
@@ -29,10 +37,49 @@ export type NationwideMarketSeed = {
   operatingHours: string;
 };
 
-export const NATIONWIDE_REGIONS: NationwideRegionSeed[] = [
+function stateRegionSlug(abbr: string): string {
+  return `us-${abbr.toLowerCase()}`;
+}
+
+function buildStateRegions(): NationwideRegionSeed[] {
+  return US_STATE_GEO_FIXTURES.map((row) => ({
+    name: `${row.NAME} Markets`,
+    slug: stateRegionSlug(row.ABBR),
+    timezone: row.TIMEZONE,
+    geographicBounds: {
+      type: 'bbox',
+      // Pure coordinate pads — not used to clip nearby queries.
+      north: Math.min(90, row.LATITUDE + 1.5),
+      south: Math.max(-90, row.LATITUDE - 1.5),
+      east: Math.min(180, row.LONGITUDE + 1.5),
+      west: Math.max(-180, row.LONGITUDE - 1.5),
+    },
+  }));
+}
+
+function buildStateMarkets(): NationwideMarketSeed[] {
+  return US_STATE_GEO_FIXTURES.map((row: UsStateGeoFixture) => {
+    const citySlug = row.TENANT_SLUG;
+    return {
+      regionSlug: stateRegionSlug(row.ABBR),
+      name: `${row.CITY} Farmers Market`,
+      slug: `${citySlug}-central`,
+      directorySlug: `${row.ABBR.toLowerCase()}-${citySlug}`,
+      locationAddress: `${row.CITY} Market Square`,
+      city: row.CITY,
+      state: row.ABBR,
+      latitude: row.LATITUDE,
+      longitude: row.LONGITUDE,
+      operatingHours: 'Sat 8:00-14:00',
+    };
+  });
+}
+
+/** Dense metro extras (additional markets beyond the 50-state baseline). */
+const METRO_EXTRA_REGIONS: NationwideRegionSeed[] = [
   {
-    name: 'Colorado Front Range',
-    slug: 'co-front-range',
+    name: 'Colorado Front Range Metro',
+    slug: 'co-front-range-metro',
     timezone: 'America/Denver',
     geographicBounds: {
       type: 'bbox',
@@ -42,71 +89,11 @@ export const NATIONWIDE_REGIONS: NationwideRegionSeed[] = [
       west: -105.3,
     },
   },
-  {
-    name: 'California Bay Area',
-    slug: 'ca-bay-area',
-    timezone: 'America/Los_Angeles',
-    geographicBounds: {
-      type: 'bbox',
-      north: 38.0,
-      south: 37.2,
-      east: -121.7,
-      west: -122.6,
-    },
-  },
-  {
-    name: 'New York Metro',
-    slug: 'ny-metro',
-    timezone: 'America/New_York',
-    geographicBounds: {
-      type: 'bbox',
-      north: 41.0,
-      south: 40.5,
-      east: -73.7,
-      west: -74.3,
-    },
-  },
-  {
-    name: 'Texas Triangle',
-    slug: 'tx-triangle',
-    timezone: 'America/Chicago',
-    geographicBounds: {
-      type: 'bbox',
-      north: 30.5,
-      south: 29.5,
-      east: -95.0,
-      west: -98.0,
-    },
-  },
-  {
-    name: 'Illinois Chicago',
-    slug: 'il-chicago',
-    timezone: 'America/Chicago',
-    geographicBounds: {
-      type: 'bbox',
-      north: 42.1,
-      south: 41.6,
-      east: -87.5,
-      west: -87.9,
-    },
-  },
 ];
 
-export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
+const METRO_EXTRA_MARKETS: NationwideMarketSeed[] = [
   {
-    regionSlug: 'co-front-range',
-    name: 'Denver Union Station Farmers Market',
-    slug: 'denver-union-station',
-    directorySlug: 'co-denver-union-station',
-    locationAddress: '1701 Wynkoop St',
-    city: 'Denver',
-    state: 'CO',
-    latitude: 39.7527,
-    longitude: -105.0002,
-    operatingHours: 'Sat 9:00-14:00',
-  },
-  {
-    regionSlug: 'co-front-range',
+    regionSlug: 'co-front-range-metro',
     name: 'Boulder County Farmers Market',
     slug: 'boulder-county',
     directorySlug: 'co-boulder-county',
@@ -118,7 +105,7 @@ export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
     operatingHours: 'Wed & Sat mornings',
   },
   {
-    regionSlug: 'ca-bay-area',
+    regionSlug: stateRegionSlug('CA'),
     name: 'Ferry Plaza Farmers Market',
     slug: 'ferry-plaza',
     directorySlug: 'ca-sf-ferry-plaza',
@@ -130,19 +117,7 @@ export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
     operatingHours: 'Tue Thu Sat 8:00-14:00',
   },
   {
-    regionSlug: 'ca-bay-area',
-    name: 'Berkeley Farmers Market',
-    slug: 'berkeley-center',
-    directorySlug: 'ca-berkeley-center',
-    locationAddress: 'Center St at Martin Luther King Jr Way',
-    city: 'Berkeley',
-    state: 'CA',
-    latitude: 37.8705,
-    longitude: -122.2727,
-    operatingHours: 'Sat 10:00-15:00',
-  },
-  {
-    regionSlug: 'ny-metro',
+    regionSlug: stateRegionSlug('NY'),
     name: 'Union Square Greenmarket',
     slug: 'union-square',
     directorySlug: 'ny-union-square-greenmarket',
@@ -154,19 +129,7 @@ export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
     operatingHours: 'Mon Wed Fri Sat 8:00-18:00',
   },
   {
-    regionSlug: 'ny-metro',
-    name: 'Brooklyn Borough Hall Greenmarket',
-    slug: 'brooklyn-borough-hall',
-    directorySlug: 'ny-brooklyn-borough-hall',
-    locationAddress: '209 Joralemon St',
-    city: 'Brooklyn',
-    state: 'NY',
-    latitude: 40.6928,
-    longitude: -73.9903,
-    operatingHours: 'Tue Thu Sat 8:00-18:00',
-  },
-  {
-    regionSlug: 'tx-triangle',
+    regionSlug: stateRegionSlug('TX'),
     name: 'Houston Downtown Farmers Market',
     slug: 'houston-downtown',
     directorySlug: 'tx-houston-downtown',
@@ -178,19 +141,7 @@ export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
     operatingHours: 'Sat 8:00-13:00',
   },
   {
-    regionSlug: 'tx-triangle',
-    name: 'Austin Farmers Market Downtown',
-    slug: 'austin-republic-square',
-    directorySlug: 'tx-austin-republic-square',
-    locationAddress: '422 Guadalupe St',
-    city: 'Austin',
-    state: 'TX',
-    latitude: 30.2678,
-    longitude: -97.7467,
-    operatingHours: 'Sat 9:00-13:00',
-  },
-  {
-    regionSlug: 'il-chicago',
+    regionSlug: stateRegionSlug('IL'),
     name: 'Green City Market Lincoln Park',
     slug: 'green-city-lincoln-park',
     directorySlug: 'il-chicago-green-city',
@@ -202,15 +153,49 @@ export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
     operatingHours: 'Wed Sat 7:00-13:00',
   },
   {
-    regionSlug: 'il-chicago',
-    name: 'Chicago French Market',
-    slug: 'chicago-french-market',
-    directorySlug: 'il-chicago-french-market',
-    locationAddress: '131 N Clinton St',
-    city: 'Chicago',
-    state: 'IL',
-    latitude: 41.8845,
-    longitude: -87.6412,
-    operatingHours: 'Tue-Fri 7:00-19:00 Sat 7:00-18:00',
+    regionSlug: stateRegionSlug('WA'),
+    name: 'Pike Place Market Daystalls',
+    slug: 'pike-place',
+    directorySlug: 'wa-seattle-pike-place',
+    locationAddress: '85 Pike St',
+    city: 'Seattle',
+    state: 'WA',
+    latitude: 47.6097,
+    longitude: -122.3425,
+    operatingHours: 'Daily 9:00-18:00',
   },
+  {
+    regionSlug: stateRegionSlug('FL'),
+    name: 'Lincoln Road Farmers Market',
+    slug: 'lincoln-road',
+    directorySlug: 'fl-miami-lincoln-road',
+    locationAddress: 'Lincoln Rd',
+    city: 'Miami Beach',
+    state: 'FL',
+    latitude: 25.7907,
+    longitude: -80.13,
+    operatingHours: 'Sun 9:00-18:00',
+  },
+  {
+    regionSlug: stateRegionSlug('ME'),
+    name: 'Portland Maine Farmers Market',
+    slug: 'portland-monument-square',
+    directorySlug: 'me-portland-monument-square',
+    locationAddress: 'Monument Square',
+    city: 'Portland',
+    state: 'ME',
+    latitude: 43.6575,
+    longitude: -70.2589,
+    operatingHours: 'Wed Sat 7:00-13:00',
+  },
+];
+
+export const NATIONWIDE_REGIONS: NationwideRegionSeed[] = [
+  ...buildStateRegions(),
+  ...METRO_EXTRA_REGIONS,
+];
+
+export const NATIONWIDE_MARKETS: NationwideMarketSeed[] = [
+  ...buildStateMarkets(),
+  ...METRO_EXTRA_MARKETS,
 ];

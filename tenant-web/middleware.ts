@@ -27,6 +27,8 @@ const TENANT_HEADER_SLUG = 'x-tenant-slug';
 const TENANT_HEADER_ID = 'x-tenant-id';
 const TENANT_HEADER_HOST = 'x-resolved-host';
 const TENANT_HEADER_RESOLUTION = 'x-tenant-resolution';
+/** Downstream directory / theme context key (matches Market.directory_slug). */
+const TENANT_HEADER_DIRECTORY_SLUG = 'x-directory-slug';
 
 function tenantErrorRedirect(request: NextRequest, reason: string, host: string): NextResponse {
   const url = request.nextUrl.clone();
@@ -48,6 +50,8 @@ function withTenantHeaders(
   response.headers.set(TENANT_HEADER_ID, tenantId);
   response.headers.set(TENANT_HEADER_HOST, resolvedHost);
   response.headers.set(TENANT_HEADER_RESOLUTION, resolution);
+  // Pass parsed host slug straight into directory API / layout context.
+  response.headers.set(TENANT_HEADER_DIRECTORY_SLUG, slug);
   return response;
 }
 
@@ -135,8 +139,13 @@ export async function middleware(request: NextRequest, event: NextFetchEvent): P
     const tenantSlug = tenant.slug;
 
     // Prefer host subdomain mapping when present; otherwise use resolved tenant slug.
+    // No state/city allowlist — any valid DNS label rewrites into app/[tenant]/...
     const rewriteSlug = subdomainSlug ?? tenantSlug;
 
+    // eslint-disable-next-line no-console
+    console.log(
+      `NATIONWIDE_ROUTING_ACTIVE SLUG=${rewriteSlug} HOST=${resolvedHost} RESOLUTION=${resolution}`,
+    );
     logTenantResolved(rewriteSlug, resolvedHost, resolution);
 
     if (firstSegment === rewriteSlug) {

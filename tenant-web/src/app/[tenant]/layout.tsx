@@ -47,7 +47,9 @@ export default async function TenantLayout({
       ? resolutionHeader
       : 'slug_path';
 
-  const market = await getMarketDirectoryBySlug(slug);
+  const directorySlugHeader = requestHeaders.get('x-directory-slug')?.trim().toLowerCase();
+  const directoryLookupSlug = directorySlugHeader || slug;
+  const market = await getMarketDirectoryBySlug(directoryLookupSlug);
   const theme = buildMarketThemeValue({
     tenant,
     market,
@@ -58,7 +60,7 @@ export default async function TenantLayout({
   // Uppercase text-only layout tracing (no emoji).
   // eslint-disable-next-line no-console
   console.log(
-    `THEME_INJECTED_OK SLUG=${slug} MARKET=${market?.directorySlug ?? market?.slug ?? 'NONE'} PRIMARY=${theme.primaryColor}`,
+    `THEME_INJECTED_OK SLUG=${slug} DIRECTORY=${directoryLookupSlug} MARKET=${market?.directorySlug ?? market?.slug ?? 'NONE'} PRIMARY=${theme.primaryColor}`,
   );
 
   return (

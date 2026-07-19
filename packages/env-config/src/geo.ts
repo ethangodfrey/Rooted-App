@@ -70,12 +70,26 @@ export function parseNearbyMarketsQuerySafe(
   return { OK: true, DATA: parsed.data };
 }
 
-/** Rough miles→degrees conversion for bounding-box prefilter (lat-aware). */
+export type GeoBoundingBox = {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+};
+
+/**
+ * Rough miles→degrees conversion for bounding-box prefilter (lat-aware).
+ *
+ * Intentional nationwide behavior:
+ * - Pure WGS84 grid — no state-border clipping or regional allowlists.
+ * - Interstate queries (e.g. Kansas City MO/KS) remain a single contiguous box.
+ * - Only earth-axis clamps (±90 / ±180) apply so CONUS/AK/HI stay valid.
+ */
 export function boundingBoxDegrees(
   latitude: number,
   longitude: number,
   radiusMiles: number,
-): { minLat: number; maxLat: number; minLng: number; maxLng: number } {
+): GeoBoundingBox {
   const latDelta = radiusMiles / 69;
   const lngDenom = Math.max(Math.cos((latitude * Math.PI) / 180) * 69, 0.01);
   const lngDelta = radiusMiles / lngDenom;
@@ -85,4 +99,18 @@ export function boundingBoxDegrees(
     minLng: Math.max(-180, longitude - lngDelta),
     maxLng: Math.min(180, longitude + lngDelta),
   };
+}
+
+/** True when a point lies inside a geo bbox (inclusive). */
+export function pointInBoundingBox(
+  latitude: number,
+  longitude: number,
+  box: GeoBoundingBox,
+): boolean {
+  return (
+    latitude >= box.minLat &&
+    latitude <= box.maxLat &&
+    longitude >= box.minLng &&
+    longitude <= box.maxLng
+  );
 }
