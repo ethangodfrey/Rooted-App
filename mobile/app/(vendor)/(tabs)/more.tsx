@@ -47,6 +47,12 @@ export default function VendorMoreScreen() {
           onPress={() => router.push('/(vendor)/handoffs')}
         />
         <ActionRow
+          icon="shopping-cart"
+          title="Wholesale order entry"
+          subtitle="Touch-optimized buyer order draft against supplier catalogs."
+          onPress={() => router.push('/(vendor)/wholesale/order')}
+        />
+        <ActionRow
           icon="shield"
           title="Compliance & credentials"
           subtitle="Cottage food requirements, permits, and trust badges."
