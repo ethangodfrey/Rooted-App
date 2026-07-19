@@ -39,4 +39,15 @@ export class WholesaleProductsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  /** Peer discovery catalog — ACTIVE wholesale SKUs for a directory vendor. */
+  async listCatalogForVendor(vendorId: string) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: vendorId },
+      select: { id: true, businessName: true },
+    });
+    if (!vendor) return null;
+    const products = await this.listForVendor(vendorId);
+    return { vendor, products };
+  }
 }

@@ -95,4 +95,21 @@ export class VendorConnectionsService {
       orderBy: { initiatedAt: 'desc' },
     });
   }
+
+  async findWithPeer(viewerVendorId: string, peerVendorId: string) {
+    return this.prisma.vendorBusinessConnection.findFirst({
+      where: {
+        OR: [
+          {
+            senderVendorId: viewerVendorId,
+            receiverVendorId: peerVendorId,
+          },
+          {
+            senderVendorId: peerVendorId,
+            receiverVendorId: viewerVendorId,
+          },
+        ],
+      },
+    });
+  }
 }

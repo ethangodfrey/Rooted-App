@@ -4,6 +4,8 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
+  ParseUUIDPipe,
   Post,
   UnauthorizedException,
   UseGuards,
@@ -69,6 +71,34 @@ export class VendorConnectionsController {
         STATUS: row.status,
         INITIATED_AT: row.initiatedAt.toISOString(),
       })),
+    };
+  }
+
+  /** GET /api/vendors/connections/with/:peerVendorId */
+  @Get('with/:peerVendorId')
+  async withPeer(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('peerVendorId', ParseUUIDPipe) peerVendorId: string,
+  ) {
+    const vendorId = this.requireVendor(user);
+    const row = await this.connections.findWithPeer(vendorId, peerVendorId);
+    if (!row) {
+      return {
+        STATUS: 'B2B_CONNECTION_ABSENT',
+        PEER_VENDOR_ID: peerVendorId,
+        CONNECTION: null,
+      };
+    }
+    return {
+      STATUS: 'B2B_CONNECTION_STATUS',
+      PEER_VENDOR_ID: peerVendorId,
+      CONNECTION: {
+        ID: row.id,
+        SENDER_VENDOR_ID: row.senderVendorId,
+        RECEIVER_VENDOR_ID: row.receiverVendorId,
+        STATUS: row.status,
+        INITIATED_AT: row.initiatedAt.toISOString(),
+      },
     };
   }
 
