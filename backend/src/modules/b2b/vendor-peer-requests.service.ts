@@ -162,6 +162,17 @@ export class VendorPeerRequestsService {
     });
   }
 
+  async findBetween(vendorA: string, vendorB: string) {
+    return this.prisma.vendorPeerConnection.findFirst({
+      where: {
+        OR: [
+          { requestorId: vendorA, recipientId: vendorB },
+          { requestorId: vendorB, recipientId: vendorA },
+        ],
+      },
+    });
+  }
+
   async findAcceptedBetween(vendorA: string, vendorB: string) {
     return this.prisma.vendorPeerConnection.findFirst({
       where: {
