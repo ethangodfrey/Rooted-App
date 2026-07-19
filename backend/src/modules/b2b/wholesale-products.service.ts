@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, WholesaleProductStatus } from '@prisma/client';
 import type { WholesaleProductCreateInput } from '@vendorly/env-config';
 
@@ -49,5 +54,42 @@ export class WholesaleProductsService {
     if (!vendor) return null;
     const products = await this.listForVendor(vendorId);
     return { vendor, products };
+  }
+
+  /**
+   * Ownership-gated mutation — Tenant_B cannot append/update Tenant_A SKUs.
+   * Mirrors wholesale_products RLS: vendor_id must match auth vendor.
+   */
+  async updateForVendor(
+    sessionVendorId: string,
+    productId: string,
+    patch: { name?: string; moq?: number; unitPriceCents?: number },
+  ) {
+    const existing = await this.prisma.wholesaleProduct.findUnique({
+      where: { id: productId },
+      select: { id: true, vendorId: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('WHOLESALE_ERROR: PRODUCT_NOT_FOUND');
+    }
+
+    if (existing.vendorId !== sessionVendorId) {
+      this.logger.warn(
+        `CROSS_TENANT_LEAK_BLOCKED ACTION=WHOLESALE_UPDATE SESSION=${sessionVendorId} OWNER=${existing.vendorId} PRODUCT=${productId}`,
+      );
+      throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+    }
+
+    return this.prisma.wholesaleProduct.update({
+      where: { id: productId },
+      data: {
+        ...(patch.name !== undefined ? { name: patch.name } : {}),
+        ...(patch.moq !== undefined ? { moq: patch.moq } : {}),
+        ...(patch.unitPriceCents !== undefined
+          ? { unitPriceCents: patch.unitPriceCents }
+          : {}),
+      },
+    });
   }
 }

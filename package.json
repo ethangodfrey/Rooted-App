@@ -44,6 +44,7 @@
     "test:integration:core": "ts-node scripts/test-core-lifecycle.ts",
     "test:integration:pre-merge": "npm run env:build && TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-pre-merge-e2e.ts",
     "test:integration:nationwide": "npm run env:build && TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-nationwide-routing.ts",
+    "test:b2b:isolation": "npm test --prefix backend -- --testPathPatterns=b2b.isolation --no-coverage",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
     "verify:ingress": "ts-node scripts/verify-ingress-cutover.ts",
