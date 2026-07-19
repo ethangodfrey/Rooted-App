@@ -73,6 +73,7 @@ docs/supabase/phase44c_national_harvester_pos_analytics_rls.sql # phase44 RLS po
 docs/supabase/phase48_pickup_codes_storefront.sql # storefront checkout pickup codes + fulfillment windows + market_id
 docs/supabase/phase49_stripe_policy_snap_ebt.sql # preorder payment policy + SNAP/EBT vendor/product flags
 docs/supabase/phase49_seed_snap_stripe_test_vendor.sql # optional UPDATE seed for Connect + SNAP smoke tests
+docs/supabase/phase54_b2b_wholesale_marketplace.sql # vendor_business_connections + wholesale_products B2B catalog
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).
