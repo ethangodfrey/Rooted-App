@@ -114,3 +114,122 @@ export function pointInBoundingBox(
     longitude <= box.maxLng
   );
 }
+
+/**
+ * Optional proximity contract for GET /api/vendors/wholesale-products/search.
+ * When any of lat/lng/radius is present, all coordinate fields are required.
+ * country_code is always forced to US for proximity queries (Phase 10).
+ */
+export const wholesaleProximitySearchQuerySchema = z
+  .object({
+    q: z.string().optional().default(''),
+    limit: z.coerce
+      .number({
+        invalid_type_error: 'GEO_VALIDATION_ERROR: LIMIT INVALID',
+      })
+      .int('GEO_VALIDATION_ERROR: LIMIT MUST BE INTEGER')
+      .positive('GEO_VALIDATION_ERROR: LIMIT MUST BE POSITIVE')
+      .max(MAX_NEARBY_LIMIT, `GEO_VALIDATION_ERROR: LIMIT MAX ${MAX_NEARBY_LIMIT}`)
+      .optional()
+      .default(DEFAULT_NEARBY_LIMIT),
+    latitude: z.coerce
+      .number({
+        invalid_type_error: 'GEO_VALIDATION_ERROR: LATITUDE INVALID',
+      })
+      .min(-90, 'GEO_VALIDATION_ERROR: LATITUDE MIN -90')
+      .max(90, 'GEO_VALIDATION_ERROR: LATITUDE MAX 90')
+      .optional(),
+    longitude: z.coerce
+      .number({
+        invalid_type_error: 'GEO_VALIDATION_ERROR: LONGITUDE INVALID',
+      })
+      .min(-180, 'GEO_VALIDATION_ERROR: LONGITUDE MIN -180')
+      .max(180, 'GEO_VALIDATION_ERROR: LONGITUDE MAX 180')
+      .optional(),
+    radiusMiles: z.coerce
+      .number({
+        invalid_type_error: 'GEO_VALIDATION_ERROR: RADIUS_MILES INVALID',
+      })
+      .positive('GEO_VALIDATION_ERROR: RADIUS_MILES MUST BE POSITIVE')
+      .max(
+        MAX_NEARBY_RADIUS_MILES,
+        `GEO_VALIDATION_ERROR: RADIUS_MILES MAX ${MAX_NEARBY_RADIUS_MILES}`,
+      )
+      .optional(),
+    /** Rejected when not US — proximity search is US-only. */
+    country_code: z.string().optional(),
+    countryCode: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasLat = value.latitude != null;
+    const hasLng = value.longitude != null;
+    const hasRadius = value.radiusMiles != null;
+    const anyGeo = hasLat || hasLng || hasRadius;
+    if (!anyGeo) return;
+
+    if (!hasLat || !hasLng || !hasRadius) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'GEO_VALIDATION_ERROR: LATITUDE LONGITUDE RADIUS_MILES REQUIRED TOGETHER',
+      });
+    }
+
+    const countryRaw = value.country_code ?? value.countryCode;
+    if (countryRaw != null && countryRaw.trim()) {
+      const normalized = countryRaw.trim().toUpperCase();
+      const usAliases = new Set([
+        'US',
+        'USA',
+        'UNITED STATES',
+        'UNITED STATES OF AMERICA',
+        'U.S.',
+        'U.S.A.',
+        'U.S.A',
+        'U.S',
+      ]);
+      if (!usAliases.has(normalized)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'GEO_FILTER_ERROR: COUNTRY_CODE MUST BE US',
+        });
+      }
+    }
+  })
+  .transform((value) => {
+    const proximityEnabled =
+      value.latitude != null &&
+      value.longitude != null &&
+      value.radiusMiles != null;
+    return {
+      q: value.q ?? '',
+      limit: value.limit,
+      proximityEnabled,
+      latitude: proximityEnabled ? value.latitude! : null,
+      longitude: proximityEnabled ? value.longitude! : null,
+      radiusMiles: proximityEnabled ? value.radiusMiles! : null,
+      countryCode: 'US' as const,
+    };
+  });
+
+export type WholesaleProximitySearchQuery = z.infer<
+  typeof wholesaleProximitySearchQuerySchema
+>;
+
+export type WholesaleProximitySearchParseResult =
+  | { OK: true; DATA: WholesaleProximitySearchQuery }
+  | { OK: false; ERROR: string };
+
+export function parseWholesaleProximitySearchQuerySafe(
+  input: Record<string, unknown>,
+): WholesaleProximitySearchParseResult {
+  const parsed = wholesaleProximitySearchQuerySchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'GEO_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}

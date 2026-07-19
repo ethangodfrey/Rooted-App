@@ -64,10 +64,14 @@ export {
   nearbyMarketsQuerySchema,
   parseNearbyMarketsQuery,
   parseNearbyMarketsQuerySafe,
+  parseWholesaleProximitySearchQuerySafe,
   pointInBoundingBox,
+  wholesaleProximitySearchQuerySchema,
   type GeoBoundingBox,
   type NearbyMarketsQuery,
   type NearbyMarketsQueryParseResult,
+  type WholesaleProximitySearchParseResult,
+  type WholesaleProximitySearchQuery,
 } from './geo';
 
 export {

@@ -228,7 +228,11 @@ export function WholesaleOrderEntryScreen({
           disabled={loading}
         />
         {fromCache ? (
-          <Text variant="caption" className="mt-2" style={{ color: colors.muted }}>
+          <Text
+            variant="caption"
+            className="mt-2 font-mono"
+            style={{ color: colors.muted }}
+          >
             CATALOG_SOURCE=OFFLINE_CACHE
           </Text>
         ) : null}

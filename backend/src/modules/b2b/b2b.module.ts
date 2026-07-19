@@ -1,7 +1,13 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ElasticsearchModule } from '../search/elasticsearch.module';
+import { UsWholesaleProximityMiddleware } from '../search/us-wholesale-proximity.middleware';
 import { StripeModule } from '../stripe/stripe.module';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
@@ -27,6 +33,7 @@ import { WholesaleProductsService } from './wholesale-products.service';
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,
     WholesaleInvoiceOverdueScheduler,
+    UsWholesaleProximityMiddleware,
   ],
   exports: [
     VendorConnectionsService,
@@ -35,4 +42,13 @@ import { WholesaleProductsService } from './wholesale-products.service';
     WholesaleInvoiceOverdueService,
   ],
 })
-export class B2bModule {}
+export class B2bModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(UsWholesaleProximityMiddleware)
+      .forRoutes({
+        path: 'api/vendors/wholesale-products/search',
+        method: RequestMethod.GET,
+      });
+  }
+}

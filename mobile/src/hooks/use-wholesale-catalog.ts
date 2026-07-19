@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { WholesaleProductRow } from '@/src/lib/b2b/types';
+import {
+  readWholesaleCatalogCache,
+  writeWholesaleCatalogCache,
+} from '@/src/lib/b2b/wholesale-catalog-cache';
 import { fetchWholesaleCatalog } from '@/src/lib/b2b/wholesale-api';
+import { isDeviceOnline } from '@/src/workers/SyncWorker';
 
 export type UseWholesaleCatalogOptions = {
   sellerVendorId?: string | null;
 };
 
 /**
- * Online catalog loader for Phase 9a. Offline-first caching lands in Phase 9b.
+ * Offline-first wholesale catalog: serve AsyncStorage cache when offline /
+ * fetch fails, refresh from Nest when connectivity returns.
  */
 export function useWholesaleCatalog(options: UseWholesaleCatalogOptions = {}) {
   const { sellerVendorId = null } = options;
@@ -22,6 +28,20 @@ export function useWholesaleCatalog(options: UseWholesaleCatalogOptions = {}) {
     sellerVendorId?.trim() || null,
   );
   const [fromCache, setFromCache] = useState(false);
+  const offlineSyncLogged = useRef(false);
+
+  const applyCache = useCallback(
+    (cached: Awaited<ReturnType<typeof readWholesaleCatalogCache>>) => {
+      if (!cached) return false;
+      setProducts(cached.products);
+      setVendorName(cached.vendorName);
+      setSessionVendorId(cached.sessionVendorId);
+      setResolvedSellerId(cached.resolvedSellerId ?? cached.sellerVendorId);
+      setFromCache(true);
+      return true;
+    },
+    [],
+  );
 
   const load = useCallback(async () => {
     const seller = sellerVendorId?.trim() || null;
@@ -35,6 +55,31 @@ export function useWholesaleCatalog(options: UseWholesaleCatalogOptions = {}) {
 
     setLoading(true);
     setError(null);
+
+    if (!offlineSyncLogged.current) {
+      offlineSyncLogged.current = true;
+      // eslint-disable-next-line no-console
+      console.log('OFFLINE_SYNC_INITIALIZED');
+    }
+
+    const cached = await readWholesaleCatalogCache(seller);
+    const online = await isDeviceOnline();
+
+    if (!online) {
+      if (applyCache(cached)) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `WHOLESALE_CATALOG_OFFLINE_HIT SELLER=${seller} COUNT=${cached!.count}`,
+        );
+        setError(null);
+      } else {
+        setProducts([]);
+        setError('WHOLESALE_CATALOG_OFFLINE_MISS');
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       const body = await fetchWholesaleCatalog(seller);
       const nextProducts = Array.isArray(body.PRODUCTS) ? body.PRODUCTS : [];
@@ -47,19 +92,30 @@ export function useWholesaleCatalog(options: UseWholesaleCatalogOptions = {}) {
           : body.VENDOR_ID ?? seller,
       );
       setFromCache(false);
+      await writeWholesaleCatalogCache({ sellerVendorId: seller, response: body });
       // eslint-disable-next-line no-console
-      console.log(`WHOLESALE_CATALOG_LOADED COUNT=${body.COUNT ?? nextProducts.length}`);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message.toUpperCase()
-          : 'WHOLESALE_CATALOG_LOAD_FAILED',
+      console.log(
+        `WHOLESALE_CATALOG_LOADED COUNT=${body.COUNT ?? nextProducts.length} CACHED=1`,
       );
-      setProducts([]);
+    } catch (err) {
+      if (applyCache(cached)) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `WHOLESALE_CATALOG_FALLBACK_CACHE SELLER=${seller} COUNT=${cached!.count}`,
+        );
+        setError('WHOLESALE_CATALOG_STALE_CACHE');
+      } else {
+        setProducts([]);
+        setError(
+          err instanceof Error
+            ? err.message.toUpperCase()
+            : 'WHOLESALE_CATALOG_LOAD_FAILED',
+        );
+      }
     } finally {
       setLoading(false);
     }
-  }, [sellerVendorId]);
+  }, [applyCache, sellerVendorId]);
 
   useEffect(() => {
     void load();
