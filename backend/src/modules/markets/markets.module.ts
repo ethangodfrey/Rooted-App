@@ -5,6 +5,8 @@ import { AdminMarketsController } from './admin-markets.controller';
 import { MarketsGooglePlacesService } from './markets-google-places.service';
 import { MarketsLinksService } from './markets-links.service';
 import { PublicMarketsController } from './public-markets.controller';
+import { MarketsNearbyController } from './markets-nearby.controller';
+import { MarketsNearbyService } from './markets-nearby.service';
 import { MarketsAgentService } from './markets-agent.service';
 import { MarketsAiService } from './markets-ai.service';
 import { MarketsDiscoveryService } from './markets-discovery.service';
@@ -18,8 +20,13 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [AdminMarketsController, PublicMarketsController],
+  controllers: [
+    AdminMarketsController,
+    PublicMarketsController,
+    MarketsNearbyController,
+  ],
   providers: [
+    MarketsNearbyService,
     MarketsGooglePlacesService,
     MarketsLinksService,
     MarketsNominatimService,
@@ -39,6 +46,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsScheduleAiService,
     MarketsClassifyAiService,
     MarketsLinksService,
+    MarketsNearbyService,
   ],
 })
 export class MarketsModule {}
