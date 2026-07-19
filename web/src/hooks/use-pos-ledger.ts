@@ -50,6 +50,10 @@ export function usePosLedger({
 
   const refresh = useCallback(async () => {
     if (!vendorId || !enabled || !isSupabaseConfigured) {
+      setConnections([]);
+      setTransactions([]);
+      setLiveFeed([]);
+      setError(null);
       setLoading(false);
       return;
     }

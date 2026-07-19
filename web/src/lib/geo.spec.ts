@@ -21,6 +21,15 @@ describe('isValidCoords', () => {
     expect(isValidCoords({ latitude: Number.NaN, longitude: 0 })).toBe(false);
     expect(isValidCoords({ latitude: 0, longitude: Number.POSITIVE_INFINITY })).toBe(false);
   });
+
+  it('coerces numeric strings from database payloads', () => {
+    expect(isValidCoords({ latitude: '41.8781', longitude: '-87.6298' })).toBe(true);
+    expect(coordsFrom({ latitude: '40.7', longitude: '-74.0' })).toEqual({
+      latitude: 40.7,
+      longitude: -74.0,
+    });
+    expect(isValidCoords({ latitude: 'not-a-number', longitude: '0' })).toBe(false);
+  });
 });
 
 describe('coordsFrom', () => {

@@ -1,4 +1,5 @@
 import { supabase } from '@/src/lib/supabase'
+import { isValidCoords } from '@/src/lib/geo'
 
 export type MapBounds = {
   minLat: number
@@ -55,9 +56,10 @@ export function clusterTrackedBusinesses(
   const buckets = new Map<string, TrackedBusiness[]>()
 
   for (const biz of businesses) {
-    const lat = Number(biz.latitude)
-    const lng = Number(biz.longitude)
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+    const coords = { latitude: biz.latitude, longitude: biz.longitude }
+    if (!isValidCoords(coords)) continue
+    const lat = coords.latitude
+    const lng = coords.longitude
     const key = `${Math.round(lat / cell)}:${Math.round(lng / cell)}`
     const list = buckets.get(key)
     if (list) list.push(biz)
@@ -70,6 +72,7 @@ export function clusterTrackedBusinesses(
       items.reduce((sum, b) => sum + Number(b.latitude), 0) / items.length
     const lng =
       items.reduce((sum, b) => sum + Number(b.longitude), 0) / items.length
+    if (!isValidCoords({ latitude: lat, longitude: lng })) continue
     clusters.push({
       id: `cluster-${key}`,
       latitude: lat,
@@ -111,13 +114,15 @@ export async function fetchTrackedBusinessesInBounds(
 
   if (error) throw new Error(error.message)
 
-  return ((data ?? []) as TrackedBusiness[]).map((row) => ({
-    ...row,
-    latitude: Number(row.latitude),
-    longitude: Number(row.longitude),
-    vendor_specialties: row.vendor_specialties ?? [],
-    farmer_specialties: row.farmer_specialties ?? [],
-  }))
+  return ((data ?? []) as TrackedBusiness[])
+    .map((row) => ({
+      ...row,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+      vendor_specialties: row.vendor_specialties ?? [],
+      farmer_specialties: row.farmer_specialties ?? [],
+    }))
+    .filter((row) => isValidCoords(row))
 }
 
 export function boundsFromRegion(region: {

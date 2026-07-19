@@ -21,6 +21,7 @@ import {
 } from '@/lib/community-events';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
+import { coordsFrom } from '@/lib/geo';
 import { fetchNearbyMarkets } from '@/lib/national-markets-api';
 import { supabase } from '@/lib/supabase';
 import type { NearbyNationalMarket } from '@/types/pos-transactions';
@@ -444,7 +445,15 @@ export function VendorEventsPage() {
                           {new Date(event.end_time).toLocaleString()}
                         </p>
                         <p className="m-0 mt-0.5 text-xs text-stone-400">
-                          {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
+                          {(() => {
+                            const coords = coordsFrom({
+                              latitude: event.latitude,
+                              longitude: event.longitude,
+                            });
+                            return coords
+                              ? `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`
+                              : '—';
+                          })()}
                           {active ? ' · SCHEDULED' : ' · ENDED'}
                           {event.verification_status === 'pending'
                             ? ' · AWAITING ADMIN'

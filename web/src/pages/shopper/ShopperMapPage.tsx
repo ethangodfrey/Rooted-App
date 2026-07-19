@@ -16,7 +16,7 @@ import {
   parseMapSearchQuery,
 } from '@/lib/event-map-search';
 import { formatEventDisplayDate } from '@/lib/format';
-import { distanceMiles, formatDistance, parseCoords, type Coords } from '@/lib/geo';
+import { coordsFrom, distanceMiles, formatDistance, parseCoords, type Coords } from '@/lib/geo';
 import {
   fetchActiveCommunityEventsWithParticipants,
   type CommunityEventWithParticipants,
@@ -329,10 +329,11 @@ export function ShopperMapPage() {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const next = {
+        const next = coordsFrom({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-        };
+        });
+        if (!next) return;
         setFocusTarget(next);
         setSelectedEventId(null);
       },

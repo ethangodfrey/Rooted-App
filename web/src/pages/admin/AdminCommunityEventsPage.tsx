@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
+import { coordsFrom } from '@/lib/geo';
 import {
   approveCommunityEvent,
   fetchCommunityEventsForAdmin,
@@ -234,7 +235,15 @@ export function AdminCommunityEventsPage() {
                       {new Date(row.end_time).toLocaleString()}
                     </p>
                     <p className="app-row-meta">
-                      LAT {row.latitude.toFixed(4)} · LNG {row.longitude.toFixed(4)}
+                      {(() => {
+                        const coords = coordsFrom({
+                          latitude: row.latitude,
+                          longitude: row.longitude,
+                        });
+                        return coords
+                          ? `LAT ${coords.latitude.toFixed(4)} · LNG ${coords.longitude.toFixed(4)}`
+                          : 'LAT — · LNG —';
+                      })()}
                     </p>
                     {row.description ? (
                       <p className="app-row-meta" style={{ marginTop: '0.35rem' }}>

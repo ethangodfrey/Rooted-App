@@ -7,7 +7,7 @@ import { useUserCoords } from '@/hooks/use-user-coords';
 import { eventRuntimePhase, eventRuntimeHint, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatPrice } from '@/lib/format';
-import { distanceMiles, formatDistance } from '@/lib/geo';
+import { distanceMiles, formatDistance, coordsFrom } from '@/lib/geo';
 import { fetchCuratedLeftovers, formatExpiresIn, type CuratedLeftover } from '@/lib/leftovers';
 import { getMarketContext } from '@/lib/market-context';
 import { marketPath } from '@/lib/market-routes';
@@ -157,10 +157,9 @@ export function ShopperHomePage() {
   );
 
   const distanceFor = (event: Event): string | null => {
-    if (!nearbyCoords || event.latitude == null || event.longitude == null) return null;
-    return `${formatDistance(
-      distanceMiles(nearbyCoords, { latitude: event.latitude, longitude: event.longitude }),
-    )} away`;
+    const eventCoords = coordsFrom(event);
+    if (!nearbyCoords || !eventCoords) return null;
+    return `${formatDistance(distanceMiles(nearbyCoords, eventCoords))} away`;
   };
 
   const openNowLoading = !coordsReady || nearbyLoading;

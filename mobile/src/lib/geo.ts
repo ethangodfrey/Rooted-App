@@ -3,17 +3,22 @@ export interface Coords {
   longitude: number;
 }
 
+type CoordInput = { latitude?: unknown; longitude?: unknown } | null | undefined;
+
+/** Coerce Supabase/JSON lat/lng (number or numeric string) into a finite number. */
+function normalizeCoord(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 /** True when latitude/longitude are finite and within valid Earth bounds. */
-export function isValidCoords(
-  value: { latitude?: number | null; longitude?: number | null } | null | undefined,
-): value is Coords {
+export function isValidCoords(value: CoordInput): value is Coords {
   if (!value) return false;
-  const { latitude, longitude } = value;
+  const latitude = normalizeCoord(value.latitude);
+  const longitude = normalizeCoord(value.longitude);
+  if (latitude == null || longitude == null) return false;
   return (
-    latitude != null &&
-    longitude != null &&
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
     latitude >= -90 &&
     latitude <= 90 &&
     longitude >= -180 &&
@@ -21,10 +26,12 @@ export function isValidCoords(
   );
 }
 
-export function coordsFrom(
-  value: { latitude?: number | null; longitude?: number | null } | null | undefined,
-): Coords | null {
-  return isValidCoords(value) ? { latitude: value.latitude, longitude: value.longitude } : null;
+export function coordsFrom(value: CoordInput): Coords | null {
+  if (!isValidCoords(value)) return null;
+  return {
+    latitude: normalizeCoord(value.latitude)!,
+    longitude: normalizeCoord(value.longitude)!,
+  };
 }
 
 /** Parse discrete lat/lng values into validated coordinates. */
