@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { coordsFrom, distanceMiles, formatDistance, isValidCoords } from './geo';
+import { coordsFrom, distanceMiles, formatDistance, isValidCoords, parseCoords } from './geo';
 
 describe('isValidCoords', () => {
   it('accepts valid Earth-bound coordinates', () => {
@@ -29,6 +29,19 @@ describe('isValidCoords', () => {
       longitude: -74.0,
     });
     expect(isValidCoords({ latitude: 'not-a-number', longitude: '0' })).toBe(false);
+  });
+});
+
+describe('parseCoords', () => {
+  it('returns validated coordinates from discrete lat/lng values', () => {
+    expect(parseCoords(40.7, -74.0)).toEqual({ latitude: 40.7, longitude: -74.0 });
+  });
+
+  it('returns null for undefined, null, or invalid values', () => {
+    expect(parseCoords(undefined, undefined)).toBeNull();
+    expect(parseCoords(null, null)).toBeNull();
+    expect(parseCoords(91, 0)).toBeNull();
+    expect(parseCoords(0, Number.NaN)).toBeNull();
   });
 });
 

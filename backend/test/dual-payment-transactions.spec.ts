@@ -144,6 +144,57 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       expect(finalizePaidOrder).not.toHaveBeenCalled();
     });
 
+    it('does not finalize inventory when checkout succeeds but order is not stripe_pending', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-already-paid',
+          total: 1500,
+          payment_status: 'paid_online',
+          stripe_checkout_session_id: 'cs_already_paid',
+          stripe_payment_intent_id: 'pi_existing',
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-paid',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_duplicate_success',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_already_paid',
+            payment_intent: 'pi_retry',
+            metadata: {
+              order_id: 'order-already-paid',
+              customer_user_id: 'user-paid',
+            },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('paid_online');
+      expect(fake.orders[0].stripe_payment_intent_id).toBe('pi_existing');
+    });
+
     it('compensates inventory when checkout.session.expired fires for a pending order', async () => {
       const compensateStripeCheckout = jest.fn();
       const fake = createFakeOrderPrisma([
@@ -194,6 +245,52 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         'order-expired',
         'user-expired',
       );
+    });
+
+    it('ignores expired checkout webhooks when customer_user_id metadata is missing', async () => {
+      const compensateStripeCheckout = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-expired-no-user',
+          total: 1200,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_expired_no_user',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-expired',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout,
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_expired_no_user',
+        type: 'checkout.session.expired',
+        data: {
+          object: {
+            id: 'cs_expired_no_user',
+            metadata: { order_id: 'order-expired-no-user' },
+          },
+        },
+      } as never);
+
+      expect(compensateStripeCheckout).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
     });
   });
 
@@ -266,6 +363,33 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
 
       expect(result).toMatchObject({ imported: 0, skipped: 0, updated: 1 });
       expect(fake.store.transactions[0].state).toBe('REFUNDED');
+    });
+
+    it('maps partial Square refunds to PARTIALLY_REFUNDED', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const partialRefund = normalizeSquareOrder(adapter, {
+        id: 'sq-partial-1',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 1000, currency: 'USD' },
+        refunded_money: { amount: 400 },
+        line_items: [{ uid: 'li-1', name: 'Bread', quantity: '1', gross_sales_money: { amount: 1000 } }],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [partialRefund]);
+
+      expect(result.imported).toBe(1);
+      expect(fake.store.transactions[0]).toMatchObject({
+        providerTransactionId: 'sq-partial-1',
+        state: 'PARTIALLY_REFUNDED',
+        grossAmount: 1000,
+      });
     });
 
     it('maps canceled Square orders to VOIDED and still imports auditably', async () => {

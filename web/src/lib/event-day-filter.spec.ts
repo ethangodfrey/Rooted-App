@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  eventDatesForWeekStrip,
   eventOccursOnCalendarDay,
   filterEventsByCalendarDay,
   findNearestDayWithEvents,
+  formatCalendarDayLabel,
   startOfDay,
   startOfWeek,
 } from './event-day-filter';
@@ -73,6 +75,31 @@ describe('filterEventsByCalendarDay', () => {
 
   it('returns an empty array for empty event lists', () => {
     expect(filterEventsByCalendarDay([], new Date('2026-07-12T08:00:00'))).toEqual([]);
+  });
+});
+
+describe('eventDatesForWeekStrip', () => {
+  it('returns ISO timestamps for days that have at least one event', () => {
+    const events = [
+      { start_datetime: '2026-07-12T14:00:00.000Z', hours_summary: null, state: 'IL' },
+    ];
+    const now = new Date('2026-07-10T08:00:00');
+    const dates = eventDatesForWeekStrip(events, now, 14);
+
+    expect(dates.length).toBeGreaterThan(0);
+    expect(dates.some((iso) => iso.includes('2026-07-12'))).toBe(true);
+  });
+
+  it('returns an empty array when no events match the strip window', () => {
+    expect(eventDatesForWeekStrip([], new Date('2026-07-10T08:00:00'))).toEqual([]);
+  });
+});
+
+describe('formatCalendarDayLabel', () => {
+  it('returns a human-readable weekday and date label', () => {
+    const label = formatCalendarDayLabel(new Date('2026-07-12T12:00:00'));
+    expect(label.length).toBeGreaterThan(0);
+    expect(label).toMatch(/12/);
   });
 });
 
