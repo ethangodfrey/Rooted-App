@@ -63,8 +63,8 @@ function main(): void {
   if (!accepted.ok) return;
   assert(accepted.next[0]!.availableQuantity === 20, 'STOCK_FAIL REMAINING');
 
-  const from = 'ORDER_DRAFT_INITIALIZED';
-  const to = 'ORDER_ACCEPTED_BY_SELLER';
+  const from: string = 'ORDER_DRAFT_INITIALIZED';
+  const to: string = 'ORDER_ACCEPTED_BY_SELLER';
   assert(from !== to, 'STATUS_FAIL TRANSITION');
   log(`ORDER_ACCEPTED_BY_SELLER FROM=${from} TO=${to}`);
 

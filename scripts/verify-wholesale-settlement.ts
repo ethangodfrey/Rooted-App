@@ -34,8 +34,8 @@ function main(): void {
   assert(parsed.OK, 'SCHEMA_FAIL SHOULD_ACCEPT');
   if (!parsed.OK) return;
 
-  const from = 'ORDER_SHIPPED_IN_TRANSIT';
-  const to = 'ORDER_DELIVERY_CONFIRMED';
+  const from: string = 'ORDER_SHIPPED_IN_TRANSIT';
+  const to: string = 'ORDER_DELIVERY_CONFIRMED';
   assert(from !== to, 'STATUS_FAIL TRANSITION');
   log(`ORDER_DELIVERY_CONFIRMED FROM=${from} TO=${to}`);
   log(

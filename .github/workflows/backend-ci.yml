@@ -26,6 +26,12 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
+      - name: Install env-config
+        working-directory: .
+        run: |
+          npm ci --prefix packages/env-config
+          npm run build --prefix packages/env-config
+
       - name: Install dependencies
         run: npm ci
 
