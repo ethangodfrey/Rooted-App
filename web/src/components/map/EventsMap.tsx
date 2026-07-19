@@ -301,12 +301,12 @@ export function EventsMap({
     [businesses, mapZoom],
   );
   const eventCenter = centroidOfEvents(events);
-  const initialCenter: [number, number] = userCoords
+  const initialCenter: [number, number] = isValidCoords(userCoords)
     ? [userCoords.latitude, userCoords.longitude]
-    : eventCenter
+    : eventCenter && isValidCoords(eventCenter)
       ? [eventCenter.latitude, eventCenter.longitude]
       : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
-  const initialZoom = userCoords || eventCenter ? 9 : DEFAULT_ZOOM;
+  const initialZoom = isValidCoords(userCoords) || eventCenter ? 9 : DEFAULT_ZOOM;
 
   return (
     <div className="events-map-panel relative isolate z-0">
