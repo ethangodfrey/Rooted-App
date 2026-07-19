@@ -21,6 +21,7 @@ import type {
 } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { StripeService } from '../stripe/stripe.service';
 import { aggregateSupplierArMetrics } from './wholesale-ar-metrics.util';
 import { resolveInvoiceDisplayStatus } from './wholesale-invoice.util';
 
@@ -75,7 +76,10 @@ function resolveUnitPriceCents(
 export class WholesaleOrdersService {
   private readonly logger = new Logger(WholesaleOrdersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stripe: StripeService,
+  ) {}
 
   async createDraft(
     sessionVendorId: string,
@@ -540,6 +544,43 @@ export class WholesaleOrdersService {
       );
 
       return { order: settled, invoice };
+    }).then(async (result) => {
+      let payment: {
+        PAYMENT_INTENT_ID: string | null;
+        PAYMENT_STATUS: string | null;
+        CLIENT_SECRET: string | null;
+        SKIPPED_REASON: string | null;
+      };
+      try {
+        payment = await this.stripe.createWholesaleInvoicePaymentIntent({
+          invoiceId: result.invoice.id,
+          orderId: result.order.id,
+          sellerVendorId: result.order.sellerVendorId,
+          buyerVendorId: result.order.buyerVendorId,
+          amountCents: result.invoice.totalCents,
+          currency: result.invoice.currency,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.error(
+          `PAYMENT_INTENT_FAILED INVOICE=${result.invoice.id} ERROR=${message}`,
+        );
+        payment = {
+          PAYMENT_INTENT_ID: null,
+          PAYMENT_STATUS: null,
+          CLIENT_SECRET: null,
+          SKIPPED_REASON: 'PAYMENT_INTENT_ERROR',
+        };
+      }
+
+      const invoice =
+        payment.PAYMENT_INTENT_ID != null
+          ? await this.prisma.wholesaleInvoice.findUniqueOrThrow({
+              where: { id: result.invoice.id },
+            })
+          : result.invoice;
+
+      return { order: result.order, invoice, payment };
     });
   }
 

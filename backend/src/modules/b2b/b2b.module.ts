@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { StripeModule } from '../stripe/stripe.module';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
 import { WholesaleInvoiceOverdueScheduler } from './wholesale-invoice-overdue.scheduler';
@@ -12,7 +13,7 @@ import { WholesaleProductsController } from './wholesale-products.controller';
 import { WholesaleProductsService } from './wholesale-products.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, StripeModule],
   controllers: [
     VendorConnectionsController,
     WholesaleProductsController,

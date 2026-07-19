@@ -5,7 +5,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
+import { Prisma, WholesaleInvoiceStatus, WholesaleOrderStatus } from '@prisma/client';
 import Stripe from 'stripe';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -388,6 +388,169 @@ export class StripeService {
     return stripe.webhooks.constructEvent(rawBody, signature, this.webhookSecret);
   }
 
+  /**
+   * Destination-charge PaymentIntent for a wholesale Net-30 invoice after delivery confirm.
+   * Leaves PI in requires_payment_method until the buyer completes payment / webhook clears.
+   */
+  async createWholesaleInvoicePaymentIntent(params: {
+    invoiceId: string;
+    orderId: string;
+    sellerVendorId: string;
+    buyerVendorId: string;
+    amountCents: number;
+    currency?: string;
+  }): Promise<{
+    PAYMENT_INTENT_ID: string | null;
+    PAYMENT_STATUS: string | null;
+    CLIENT_SECRET: string | null;
+    SKIPPED_REASON: string | null;
+  }> {
+    if (!this.client) {
+      this.logger.log(
+        `PAYMENT_INTENT_SKIPPED REASON=STRIPE_NOT_CONFIGURED INVOICE=${params.invoiceId}`,
+      );
+      return {
+        PAYMENT_INTENT_ID: null,
+        PAYMENT_STATUS: null,
+        CLIENT_SECRET: null,
+        SKIPPED_REASON: 'STRIPE_NOT_CONFIGURED',
+      };
+    }
+
+    const seller = await this.prisma.vendor.findUnique({
+      where: { id: params.sellerVendorId },
+      select: {
+        stripeAccountId: true,
+        stripeChargesEnabled: true,
+      },
+    });
+
+    if (!seller?.stripeAccountId || !seller.stripeChargesEnabled) {
+      this.logger.log(
+        `PAYMENT_INTENT_SKIPPED REASON=SELLER_NOT_CONNECTED INVOICE=${params.invoiceId} SELLER=${params.sellerVendorId}`,
+      );
+      return {
+        PAYMENT_INTENT_ID: null,
+        PAYMENT_STATUS: null,
+        CLIENT_SECRET: null,
+        SKIPPED_REASON: 'SELLER_NOT_CONNECTED',
+      };
+    }
+
+    if (!Number.isFinite(params.amountCents) || params.amountCents <= 0) {
+      this.logger.log(
+        `PAYMENT_INTENT_SKIPPED REASON=INVALID_AMOUNT INVOICE=${params.invoiceId}`,
+      );
+      return {
+        PAYMENT_INTENT_ID: null,
+        PAYMENT_STATUS: null,
+        CLIENT_SECRET: null,
+        SKIPPED_REASON: 'INVALID_AMOUNT',
+      };
+    }
+
+    const applicationFee = computePlatformFeeCents(
+      params.amountCents,
+      this.platformFeeBps(),
+    );
+    const currency = (params.currency || 'usd').toLowerCase();
+
+    const intent = await this.client.paymentIntents.create({
+      amount: params.amountCents,
+      currency,
+      automatic_payment_methods: { enabled: true },
+      application_fee_amount: applicationFee,
+      transfer_data: { destination: seller.stripeAccountId },
+      metadata: {
+        purpose: 'wholesale_net30',
+        wholesale_invoice_id: params.invoiceId,
+        wholesale_order_id: params.orderId,
+        seller_vendor_id: params.sellerVendorId,
+        buyer_vendor_id: params.buyerVendorId,
+      },
+    });
+
+    await this.prisma.wholesaleInvoice.update({
+      where: { id: params.invoiceId },
+      data: {
+        stripePaymentIntentId: intent.id,
+        stripePaymentStatus: intent.status,
+      },
+    });
+
+    this.logger.log(
+      `PAYMENT_INTENT_CREATED ID=${intent.id} INVOICE=${params.invoiceId} ORDER=${params.orderId} AMOUNT_CENTS=${params.amountCents} STATUS=${intent.status}`,
+    );
+
+    return {
+      PAYMENT_INTENT_ID: intent.id,
+      PAYMENT_STATUS: intent.status,
+      CLIENT_SECRET: intent.client_secret,
+      SKIPPED_REASON: null,
+    };
+  }
+
+  /** Marks wholesale invoice PAID + order PAYMENT_SETTLED when a wholesale PI succeeds. */
+  async settleWholesaleInvoiceFromPaymentIntent(
+    paymentIntent: Stripe.PaymentIntent,
+  ): Promise<void> {
+    const invoiceId = paymentIntent.metadata?.wholesale_invoice_id?.trim();
+    const orderId = paymentIntent.metadata?.wholesale_order_id?.trim();
+    if (!invoiceId || paymentIntent.metadata?.purpose !== 'wholesale_net30') {
+      return;
+    }
+
+    const paidAt = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.wholesaleInvoice.findUnique({
+        where: { id: invoiceId },
+        select: { id: true, status: true, orderId: true },
+      });
+      if (!invoice) return;
+
+      if (invoice.status !== WholesaleInvoiceStatus.PAID) {
+        await tx.wholesaleInvoice.update({
+          where: { id: invoice.id },
+          data: {
+            status: WholesaleInvoiceStatus.PAID,
+            paidAt,
+            stripePaymentIntentId: paymentIntent.id,
+            stripePaymentStatus: paymentIntent.status,
+          },
+        });
+      } else {
+        await tx.wholesaleInvoice.update({
+          where: { id: invoice.id },
+          data: {
+            stripePaymentIntentId: paymentIntent.id,
+            stripePaymentStatus: paymentIntent.status,
+          },
+        });
+      }
+
+      const targetOrderId = orderId || invoice.orderId;
+      await tx.wholesaleOrder.updateMany({
+        where: {
+          id: targetOrderId,
+          status: {
+            in: [
+              WholesaleOrderStatus.ORDER_DELIVERY_CONFIRMED,
+              WholesaleOrderStatus.PAYMENT_SETTLED,
+            ],
+          },
+        },
+        data: { status: WholesaleOrderStatus.PAYMENT_SETTLED },
+      });
+    });
+
+    this.logger.log(
+      `FUNDS_SETTLED PAYMENT_INTENT=${paymentIntent.id} INVOICE=${invoiceId} ORDER=${orderId || 'UNKNOWN'}`,
+    );
+    this.logger.log(
+      `PAYMENT_SETTLED INVOICE=${invoiceId} ORDER=${orderId || 'UNKNOWN'}`,
+    );
+  }
+
   /** Handles Stripe webhooks used by checkout and Connect account onboarding. */
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
     this.logger.log(`Stripe webhook received: ${event.type} (${event.id})`);
@@ -417,6 +580,27 @@ export class StripeService {
         case 'account.updated':
           await this.onAccountUpdated(event.data.object as Stripe.Account);
           break;
+        case 'payment_intent.succeeded':
+          await this.settleWholesaleInvoiceFromPaymentIntent(
+            event.data.object as Stripe.PaymentIntent,
+          );
+          break;
+        case 'payment_intent.payment_failed': {
+          const failed = event.data.object as Stripe.PaymentIntent;
+          if (
+            failed.metadata?.purpose === 'wholesale_net30' &&
+            failed.metadata.wholesale_invoice_id
+          ) {
+            await this.prisma.wholesaleInvoice.updateMany({
+              where: { id: failed.metadata.wholesale_invoice_id },
+              data: { stripePaymentStatus: failed.status },
+            });
+            this.logger.log(
+              `PAYMENT_INTENT_FAILED ID=${failed.id} INVOICE=${failed.metadata.wholesale_invoice_id}`,
+            );
+          }
+          break;
+        }
         default:
           break;
       }
