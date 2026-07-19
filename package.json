@@ -47,6 +47,7 @@
     "test:b2b:isolation": "npm test --prefix backend -- --testPathPatterns=b2b.isolation --no-coverage",
     "test:wholesale:pricing": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-pricing.ts",
     "test:wholesale:order-draft": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-draft.ts",
+    "test:wholesale:acceptance": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-acceptance.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
     "verify:ingress": "ts-node scripts/verify-ingress-cutover.ts",

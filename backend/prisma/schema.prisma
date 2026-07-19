@@ -207,6 +207,8 @@ model WholesaleProduct {
   pricingTiers    Json                   @default("[]") @map("pricing_tiers")
   freightNotes    String?                @map("freight_notes")
   pickupNotes     String?                @map("pickup_notes")
+  /// Units available for wholesale reservation (phase57).
+  availableQuantity Int                  @default(0) @map("available_quantity")
   status          WholesaleProductStatus @default(ACTIVE)
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -217,9 +219,11 @@ model WholesaleProduct {
   @@map("wholesale_products")
 }
 
-/// Default draft status after client-validated payload assembly (phase56).
+/// Draft → seller response statuses (phase56/57).
 enum WholesaleOrderStatus {
   ORDER_DRAFT_INITIALIZED
+  ORDER_ACCEPTED_BY_SELLER
+  ORDER_REJECTED_BY_SELLER
 
   @@map("wholesale_order_status")
 }

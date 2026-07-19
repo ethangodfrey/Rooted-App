@@ -43,19 +43,7 @@ export class WholesaleProductsController {
 
     return {
       STATUS: 'WHOLESALE_SKU_INDEXED',
-      PRODUCT: {
-        ID: product.id,
-        VENDOR_ID: product.vendorId,
-        NAME: product.name,
-        PACKAGING_UNIT: product.packagingUnit,
-        WEIGHT_LBS: Number(product.weightLbs),
-        MOQ: product.moq,
-        UNIT_PRICE_CENTS: product.unitPriceCents,
-        PRICING_TIERS: product.pricingTiers,
-        FREIGHT_NOTES: product.freightNotes,
-        PICKUP_NOTES: product.pickupNotes,
-        STATUS: product.status,
-      },
+      PRODUCT: this.serialize(product),
     };
   }
 
@@ -111,6 +99,7 @@ export class WholesaleProductsController {
     pricingTiers: unknown;
     freightNotes: string | null;
     pickupNotes: string | null;
+    availableQuantity: number;
     status: string;
   }) {
     return {
@@ -124,6 +113,7 @@ export class WholesaleProductsController {
       PRICING_TIERS: product.pricingTiers,
       FREIGHT_NOTES: product.freightNotes,
       PICKUP_NOTES: product.pickupNotes,
+      AVAILABLE_QUANTITY: product.availableQuantity,
       STATUS: product.status,
     };
   }
