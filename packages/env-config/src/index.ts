@@ -26,6 +26,19 @@ export {
   MAX_PUBLIC_URL_LENGTH,
 } from './domains';
 
+export {
+  DEFAULT_NEARBY_LIMIT,
+  DEFAULT_NEARBY_RADIUS_MILES,
+  MAX_NEARBY_LIMIT,
+  MAX_NEARBY_RADIUS_MILES,
+  boundingBoxDegrees,
+  nearbyMarketsQuerySchema,
+  parseNearbyMarketsQuery,
+  parseNearbyMarketsQuerySafe,
+  type NearbyMarketsQuery,
+  type NearbyMarketsQueryParseResult,
+} from './geo';
+
 const MIN_ANON_KEY_LENGTH = 32;
 
 /**
