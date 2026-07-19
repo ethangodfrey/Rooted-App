@@ -68,14 +68,28 @@ export function isReservedSubdomainSlug(slug: string | null | undefined): boolea
 }
 
 /**
+ * DNS-safe single-label slug for city/state tenant hosts.
+ * Dynamic — not an allowlist of regions or states.
+ */
+export const TENANT_SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+export function isValidTenantSubdomainSlug(slug: string): boolean {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return false;
+  return TENANT_SUBDOMAIN_PATTERN.test(normalized);
+}
+
+/**
  * Extract a single-label tenant subdomain from `{slug}.{platformDomain}`.
- * Returns null for apex, multi-level hosts, and reserved structural roots.
+ * Returns null for apex, multi-level hosts, reserved structural roots, and
+ * invalid DNS labels. Any valid city/state-based slug maps into /[tenant].
  */
 export function extractSubdomainSlug(host: string, platformDomain: string): string | null {
   if (!host.endsWith(`.${platformDomain}`)) return null;
   const slug = host.slice(0, -(platformDomain.length + 1));
   if (!slug || slug.includes('.')) return null;
   if (isReservedSubdomainSlug(slug)) return null;
+  if (!isValidTenantSubdomainSlug(slug)) return null;
   return slug;
 }
 

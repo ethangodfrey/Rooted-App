@@ -1,18 +1,25 @@
 /**
  * Mock payloads for the pre-merge E2E integration audit.
  * Uppercase text-only tracing only — no emoji.
+ *
+ * Denver remains a convenience sample; nationwide coverage lives in
+ * @vendorly/env-config US_STATE_GEO_FIXTURES + verify-nationwide-routing.ts.
  */
+
+import { getStateGeoFixture } from '@vendorly/env-config';
 
 export const PLATFORM_DOMAIN = 'vendorlymarketplace.com';
 
-export const MOCK_TENANT_HOST = 'denver.vendorlymarketplace.com';
+const DENVER = getStateGeoFixture('CO');
 
-export const MOCK_TENANT_SLUG = 'denver';
+export const MOCK_TENANT_HOST = `${DENVER?.TENANT_SLUG ?? 'denver'}.vendorlymarketplace.com`;
 
-/** Denver Union Station approximate coordinates. */
+export const MOCK_TENANT_SLUG = DENVER?.TENANT_SLUG ?? 'denver';
+
+/** Denver representative coordinates (from 50-state fixture map). */
 export const MOCK_DENVER_GEO = {
-  LATITUDE: 39.7527,
-  LONGITUDE: -104.9996,
+  LATITUDE: DENVER?.LATITUDE ?? 39.7392,
+  LONGITUDE: DENVER?.LONGITUDE ?? -104.9903,
   RADIUS_MILES: 25,
 } as const;
 

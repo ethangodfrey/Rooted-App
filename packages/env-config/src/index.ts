@@ -48,9 +48,24 @@ export {
   nearbyMarketsQuerySchema,
   parseNearbyMarketsQuery,
   parseNearbyMarketsQuerySafe,
+  pointInBoundingBox,
+  type GeoBoundingBox,
   type NearbyMarketsQuery,
   type NearbyMarketsQueryParseResult,
 } from './geo';
+
+export {
+  NATIONWIDE_GEO_CROSS_SECTION,
+  TENANT_SUBDOMAIN_PATTERN,
+  US_STATE_COUNT,
+  US_STATE_GEO_FIXTURES,
+  assertUsStateFixtureCoverage,
+  getNationwideCrossSectionFixtures,
+  getStateGeoFixture,
+  isValidTenantSubdomainSlug,
+  type UsStateAbbr,
+  type UsStateGeoFixture,
+} from './us-states';
 
 const MIN_ANON_KEY_LENGTH = 32;
 

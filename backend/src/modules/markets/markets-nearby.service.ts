@@ -51,8 +51,9 @@ export class MarketsNearbyService {
     const { latitude, longitude, radiusMiles, limit } = query;
     const box = boundingBoxDegrees(latitude, longitude, radiusMiles);
 
+    // Bounding box is a pure WGS84 prefilter — no state-border clipping.
     this.logger.log(
-      `GEO_QUERY LAT=${latitude} LNG=${longitude} RADIUS_MI=${radiusMiles} LIMIT=${limit}`,
+      `GEO_QUERY LAT=${latitude} LNG=${longitude} RADIUS_MI=${radiusMiles} LIMIT=${limit} MODE=NATIONWIDE_NO_STATE_CLIP`,
     );
 
     const rows = await this.prisma.$queryRaw<RawNearbyRow[]>(Prisma.sql`
