@@ -66,7 +66,16 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
       });
 
       const prisma = { wholesaleProduct: { findMany } };
-      const service = new WholesaleProductsService(prisma as never);
+      const indexer = {
+        indexProduct: jest.fn().mockResolvedValue({
+          SYNCED: false,
+          SKIPPED_REASON: 'NODE_UNSET',
+        }),
+      };
+      const service = new WholesaleProductsService(
+        prisma as never,
+        indexer as never,
+      );
 
       const tenantBRows = await service.listForVendor(TENANT_B_VENDOR_ID);
       expect(tenantBRows).toEqual([]);
@@ -88,7 +97,16 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
       const prisma = {
         wholesaleProduct: { findUnique, update },
       };
-      const service = new WholesaleProductsService(prisma as never);
+      const indexer = {
+        indexProduct: jest.fn().mockResolvedValue({
+          SYNCED: false,
+          SKIPPED_REASON: 'NODE_UNSET',
+        }),
+      };
+      const service = new WholesaleProductsService(
+        prisma as never,
+        indexer as never,
+      );
 
       await expect(
         service.updateForVendor(TENANT_B_VENDOR_ID, WHOLESALE_SKU_TENANT_A_ID, {
@@ -106,11 +124,26 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
       const create = jest.fn().mockResolvedValue({
         id: WHOLESALE_SKU_TENANT_A_ID,
         vendorId: TENANT_A_VENDOR_ID,
+        name: 'Tenant A Case',
+        description: null,
         packagingUnit: 'CASE',
         moq: 5,
+        unitPriceCents: 2400,
+        availableQuantity: 0,
+        status: 'ACTIVE',
+        updatedAt: new Date('2026-07-19T00:00:00.000Z'),
       });
       const prisma = { wholesaleProduct: { create } };
-      const service = new WholesaleProductsService(prisma as never);
+      const indexer = {
+        indexProduct: jest.fn().mockResolvedValue({
+          SYNCED: true,
+          SKIPPED_REASON: null,
+        }),
+      };
+      const service = new WholesaleProductsService(
+        prisma as never,
+        indexer as never,
+      );
 
       await service.create(TENANT_A_VENDOR_ID, {
         name: 'Tenant A Case',
@@ -129,9 +162,11 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
           data: expect.objectContaining({ vendorId: TENANT_A_VENDOR_ID }),
         }),
       );
+      expect(indexer.indexProduct).toHaveBeenCalled();
       const stamped = create.mock.calls[0][0].data.vendorId;
       expect(stamped).not.toBe(TENANT_B_VENDOR_ID);
       logIsolation('DATA_ISOLATION_VERIFIED ACTION=WHOLESALE_CREATE VENDOR_STAMP=TENANT_A');
+      logIsolation('ELASTICSEARCH_SYNC_COMPLETED ACTION=WHOLESALE_CREATE');
     });
 
     it('DATA_ISOLATION_VERIFIED Tenant_A may update own SKU', async () => {
@@ -142,10 +177,26 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
       const update = jest.fn().mockResolvedValue({
         id: WHOLESALE_SKU_TENANT_A_ID,
         vendorId: TENANT_A_VENDOR_ID,
+        name: 'Tenant A Case',
+        description: null,
+        packagingUnit: 'CASE',
         moq: 8,
+        unitPriceCents: 2400,
+        availableQuantity: 0,
+        status: 'ACTIVE',
+        updatedAt: new Date('2026-07-19T00:00:00.000Z'),
       });
       const prisma = { wholesaleProduct: { findUnique, update } };
-      const service = new WholesaleProductsService(prisma as never);
+      const indexer = {
+        indexProduct: jest.fn().mockResolvedValue({
+          SYNCED: true,
+          SKIPPED_REASON: null,
+        }),
+      };
+      const service = new WholesaleProductsService(
+        prisma as never,
+        indexer as never,
+      );
 
       const updated = await service.updateForVendor(
         TENANT_A_VENDOR_ID,
@@ -154,7 +205,9 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
       );
       expect(updated.moq).toBe(8);
       expect(update).toHaveBeenCalled();
+      expect(indexer.indexProduct).toHaveBeenCalled();
       logIsolation('DATA_ISOLATION_VERIFIED ACTION=WHOLESALE_UPDATE OWNER=TENANT_A');
+      logIsolation('ELASTICSEARCH_SYNC_COMPLETED ACTION=WHOLESALE_UPDATE');
     });
   });
 

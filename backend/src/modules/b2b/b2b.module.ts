@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { ElasticsearchModule } from '../search/elasticsearch.module';
 import { StripeModule } from '../stripe/stripe.module';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
@@ -13,7 +14,7 @@ import { WholesaleProductsController } from './wholesale-products.controller';
 import { WholesaleProductsService } from './wholesale-products.service';
 
 @Module({
-  imports: [PrismaModule, StripeModule],
+  imports: [PrismaModule, StripeModule, ElasticsearchModule],
   controllers: [
     VendorConnectionsController,
     WholesaleProductsController,
