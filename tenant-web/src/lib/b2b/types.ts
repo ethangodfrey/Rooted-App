@@ -137,6 +137,30 @@ export type WholesaleInvoiceReconcileResponse = {
   message?: string;
 };
 
+/** Seller A/R command-center metrics from GET /api/vendors/invoices/ar-metrics */
+export type SupplierArMetrics = {
+  TOTAL_REVENUE_CENTS: number;
+  OUTSTANDING_CAPITAL_CENTS: number;
+  AT_RISK_CAPITAL_CENTS: number;
+};
+
+export type SupplierArMetricsResponse = {
+  STATUS: string;
+  SESSION_VENDOR_ID?: string;
+  CURRENCY?: string;
+  TOTAL_REVENUE_CENTS?: number;
+  OUTSTANDING_CAPITAL_CENTS?: number;
+  AT_RISK_CAPITAL_CENTS?: number;
+  COUNTS?: {
+    PAID?: number;
+    PENDING?: number;
+    OVERDUE?: number;
+  };
+  METRICS?: SupplierArMetrics;
+  error?: string;
+  message?: string;
+};
+
 /** Wire payload for POST /api/vendors/orders/fulfillment (snake_case). */
 export type WholesaleOrderFulfillmentPayload = {
   order_id: string;

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
   UnauthorizedException,
@@ -21,6 +22,34 @@ import { WholesaleOrdersService } from './wholesale-orders.service';
 @Roles('vendor')
 export class WholesaleInvoicesController {
   constructor(private readonly orders: WholesaleOrdersService) {}
+
+  /**
+   * GET /api/vendors/invoices/ar-metrics
+   * Seller A/R command-center totals (revenue / outstanding / at-risk).
+   */
+  @Get('ar-metrics')
+  async arMetrics(@CurrentUser() user: AuthenticatedUser) {
+    const sellerVendorId = this.requireVendor(user);
+    const metrics = await this.orders.getArMetricsForSeller(sellerVendorId);
+    return {
+      STATUS: 'METRICS_AGGREGATION_SUCCESS',
+      SESSION_VENDOR_ID: sellerVendorId,
+      CURRENCY: 'USD',
+      TOTAL_REVENUE_CENTS: metrics.TOTAL_REVENUE_CENTS,
+      OUTSTANDING_CAPITAL_CENTS: metrics.OUTSTANDING_CAPITAL_CENTS,
+      AT_RISK_CAPITAL_CENTS: metrics.AT_RISK_CAPITAL_CENTS,
+      COUNTS: {
+        PAID: metrics.COUNT_PAID,
+        PENDING: metrics.COUNT_PENDING,
+        OVERDUE: metrics.COUNT_OVERDUE,
+      },
+      METRICS: {
+        TOTAL_REVENUE_CENTS: metrics.TOTAL_REVENUE_CENTS,
+        OUTSTANDING_CAPITAL_CENTS: metrics.OUTSTANDING_CAPITAL_CENTS,
+        AT_RISK_CAPITAL_CENTS: metrics.AT_RISK_CAPITAL_CENTS,
+      },
+    };
+  }
 
   /**
    * POST /api/vendors/invoices/reconcile
