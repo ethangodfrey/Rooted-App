@@ -254,3 +254,66 @@ export function parseWholesaleOrderDraftCreate(
   }
   return { OK: true, DATA: parsed.data };
 }
+
+export const wholesaleOrderFulfillmentSchema = z
+  .object({
+    order_id: z
+      .string({
+        required_error: 'FULFILLMENT_VALIDATION_ERROR: ORDER_ID REQUIRED',
+        invalid_type_error: 'FULFILLMENT_VALIDATION_ERROR: ORDER_ID INVALID',
+      })
+      .uuid('FULFILLMENT_VALIDATION_ERROR: ORDER_ID MUST BE UUID'),
+    carrier_name: z
+      .string({
+        required_error: 'FULFILLMENT_VALIDATION_ERROR: CARRIER_NAME REQUIRED',
+        invalid_type_error: 'FULFILLMENT_VALIDATION_ERROR: CARRIER_NAME INVALID',
+      })
+      .trim()
+      .min(1, 'FULFILLMENT_VALIDATION_ERROR: CARRIER_NAME REQUIRED')
+      .max(120, 'FULFILLMENT_VALIDATION_ERROR: CARRIER_NAME TOO LONG'),
+    tracking_number: z
+      .string({
+        required_error: 'FULFILLMENT_VALIDATION_ERROR: TRACKING_NUMBER REQUIRED',
+        invalid_type_error:
+          'FULFILLMENT_VALIDATION_ERROR: TRACKING_NUMBER INVALID',
+      })
+      .trim()
+      .min(1, 'FULFILLMENT_VALIDATION_ERROR: TRACKING_NUMBER REQUIRED')
+      .max(120, 'FULFILLMENT_VALIDATION_ERROR: TRACKING_NUMBER TOO LONG'),
+    estimated_delivery_at: z
+      .string({
+        required_error:
+          'FULFILLMENT_VALIDATION_ERROR: ESTIMATED_DELIVERY_AT REQUIRED',
+        invalid_type_error:
+          'FULFILLMENT_VALIDATION_ERROR: ESTIMATED_DELIVERY_AT INVALID',
+      })
+      .trim()
+      .min(1, 'FULFILLMENT_VALIDATION_ERROR: ESTIMATED_DELIVERY_AT REQUIRED')
+      .refine((value) => !Number.isNaN(Date.parse(value)), {
+        message:
+          'FULFILLMENT_VALIDATION_ERROR: ESTIMATED_DELIVERY_AT MUST BE ISO8601',
+      }),
+  })
+  .strict();
+
+export type WholesaleOrderFulfillmentInput = z.infer<
+  typeof wholesaleOrderFulfillmentSchema
+>;
+
+export type WholesaleOrderFulfillmentParseResult =
+  | { OK: true; DATA: WholesaleOrderFulfillmentInput }
+  | { OK: false; ERROR: string };
+
+export function parseWholesaleOrderFulfillment(
+  input: unknown,
+): WholesaleOrderFulfillmentParseResult {
+  const parsed = wholesaleOrderFulfillmentSchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'FULFILLMENT_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}

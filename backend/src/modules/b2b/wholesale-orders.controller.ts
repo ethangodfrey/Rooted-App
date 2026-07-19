@@ -9,7 +9,10 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { parseWholesaleOrderDraftCreate } from '@vendorly/env-config';
+import {
+  parseWholesaleOrderDraftCreate,
+  parseWholesaleOrderFulfillment,
+} from '@vendorly/env-config';
 
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
@@ -63,6 +66,28 @@ export class WholesaleOrdersController {
       SESSION_VENDOR_ID: sellerVendorId,
       COUNT: rows.length,
       ORDERS: rows.map((order) => this.serializeOrder(order)),
+    };
+  }
+
+  /**
+   * POST /api/vendors/orders/fulfillment
+   * Transition ORDER_ACCEPTED_BY_SELLER → ORDER_SHIPPED_IN_TRANSIT with carrier manifest.
+   */
+  @Post('fulfillment')
+  @HttpCode(200)
+  async fulfill(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: unknown,
+  ) {
+    const sellerVendorId = this.requireVendor(user);
+    const parsed = parseWholesaleOrderFulfillment(body);
+    if (!parsed.OK) {
+      throw new BadRequestException(parsed.ERROR);
+    }
+    const order = await this.orders.fulfillForSeller(sellerVendorId, parsed.DATA);
+    return {
+      STATUS: 'ORDER_FULFILLMENT_TRACKED',
+      ORDER: this.serializeOrder(order),
     };
   }
 
@@ -121,6 +146,10 @@ export class WholesaleOrdersController {
     status: string;
     currency: string;
     subtotalCents: number;
+    carrierName?: string | null;
+    trackingNumber?: string | null;
+    estimatedDeliveryAt?: Date | null;
+    shippedAt?: Date | null;
     createdAt: Date;
     items: Array<{
       id: string;
@@ -141,6 +170,12 @@ export class WholesaleOrdersController {
       STATUS: order.status,
       CURRENCY: order.currency,
       SUBTOTAL_CENTS: order.subtotalCents,
+      CARRIER_NAME: order.carrierName ?? null,
+      TRACKING_NUMBER: order.trackingNumber ?? null,
+      ESTIMATED_DELIVERY_AT: order.estimatedDeliveryAt
+        ? order.estimatedDeliveryAt.toISOString()
+        : null,
+      SHIPPED_AT: order.shippedAt ? order.shippedAt.toISOString() : null,
       ITEMS: order.items.map((item) => ({
         ID: item.id,
         PRODUCT_SKU_ID: item.productSkuId,

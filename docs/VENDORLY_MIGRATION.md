@@ -78,6 +78,7 @@ docs/supabase/phase54_b2b_wholesale_marketplace.sql # vendor_business_connection
 docs/supabase/phase55_market_theme_branding.sql # markets description + theme_* colors for tenant injection
 docs/supabase/phase56_wholesale_order_drafts.sql # wholesale_orders + wholesale_order_items draft pipeline
 docs/supabase/phase57_wholesale_order_acceptance.sql # accept/reject statuses + wholesale available_quantity
+docs/supabase/phase58_wholesale_fulfillment_tracking.sql # ORDER_SHIPPED_IN_TRANSIT + carrier tracking columns
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

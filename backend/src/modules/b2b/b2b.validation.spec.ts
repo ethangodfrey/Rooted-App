@@ -1,6 +1,7 @@
 import {
   parseVendorConnectionRequest,
   parseWholesaleOrderDraftCreate,
+  parseWholesaleOrderFulfillment,
   parseWholesaleProductCreate,
 } from '@vendorly/env-config';
 
@@ -71,6 +72,26 @@ describe('b2b zod contracts', () => {
           negotiated_tier_unit_price: 100,
         },
       ],
+    });
+    expect(parsed.OK).toBe(false);
+  });
+
+  it('accepts a fulfillment logistics manifest', () => {
+    const parsed = parseWholesaleOrderFulfillment({
+      order_id: '33333333-3333-4333-8333-333333333333',
+      carrier_name: 'FedEx',
+      tracking_number: '1Z999AA10123456784',
+      estimated_delivery_at: '2026-07-25T18:00:00.000Z',
+    });
+    expect(parsed.OK).toBe(true);
+  });
+
+  it('rejects fulfillment without tracking number', () => {
+    const parsed = parseWholesaleOrderFulfillment({
+      order_id: '33333333-3333-4333-8333-333333333333',
+      carrier_name: 'UPS',
+      tracking_number: '',
+      estimated_delivery_at: '2026-07-25T18:00:00.000Z',
     });
     expect(parsed.OK).toBe(false);
   });

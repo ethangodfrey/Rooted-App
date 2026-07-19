@@ -22,6 +22,7 @@ export type WholesaleOrderStatusCode =
   | 'ORDER_DRAFT_INITIALIZED'
   | 'ORDER_ACCEPTED_BY_SELLER'
   | 'ORDER_REJECTED_BY_SELLER'
+  | 'ORDER_SHIPPED_IN_TRANSIT'
   | string;
 
 export type WholesaleCatalogResponse = {
@@ -65,8 +66,20 @@ export type WholesaleOrderDraftRow = {
   STATUS: WholesaleOrderStatusCode;
   CURRENCY: string;
   SUBTOTAL_CENTS: number;
+  CARRIER_NAME?: string | null;
+  TRACKING_NUMBER?: string | null;
+  ESTIMATED_DELIVERY_AT?: string | null;
+  SHIPPED_AT?: string | null;
   ITEMS: WholesaleOrderDraftItemRow[];
   CREATED_AT: string;
+};
+
+/** Wire payload for POST /api/vendors/orders/fulfillment (snake_case). */
+export type WholesaleOrderFulfillmentPayload = {
+  order_id: string;
+  carrier_name: string;
+  tracking_number: string;
+  estimated_delivery_at: string;
 };
 
 export type WholesaleOrderDraftResponse = {
