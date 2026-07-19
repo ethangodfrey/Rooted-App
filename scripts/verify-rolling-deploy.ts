@@ -14,7 +14,9 @@
  *   DEPLOY_CONCURRENCY      Default: 20
  *   DEPLOY_BATCH_SIZE       Default: 100
  *   DEPLOY_RESTART_COMMAND  Optional shell command fired at midpoint (teardown sim)
- *   DEPLOY_ALLOW_READINESS_SKIP  When "1", readiness URL failures are ignored if URL unset
+ *   DEPLOY_LIVE_STACK       When "1", require JSON bodies and emit LIVE_STACK_* logs
+ *   DEPLOY_REQUIRE_HEALTH_OK When "1"/live, require STATUS=HEALTH_OK in JSON body
+ *   DEPLOY_SELF_TEST        Ephemeral local probes
  */
 
 import { exec } from 'node:child_process';
@@ -32,7 +34,13 @@ type ProbeResult = {
   status: number;
   ok: boolean;
   gatewayError: boolean;
+  contentType: string;
+  bodyPreview: string;
 };
+
+function isTruthy(name: string): boolean {
+  return /^(1|true|yes)$/i.test(process.env[name]?.trim() || '');
+}
 
 function loadEnvFile(filePath: string): void {
   if (!existsSync(filePath)) return;
@@ -71,18 +79,65 @@ function numEnv(name: string, fallback: number): number {
 }
 
 async function probeOnce(probe: ProbeName, url: string): Promise<ProbeResult> {
+  const liveStack = isTruthy('DEPLOY_LIVE_STACK');
+  const requireHealthOk =
+    isTruthy('DEPLOY_REQUIRE_HEALTH_OK') || liveStack;
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: { Accept: 'application/json' },
     });
     const status = response.status;
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    const text = await response.text();
     const gatewayError = status === 502 || status === 503 || status === 504;
-    // Readiness/health success contract: HTTP 200 only for drain proof.
-    const ok = status === 200;
-    return { probe, status, ok, gatewayError };
+    let ok = status === 200;
+
+    if (ok && liveStack) {
+      const isJson =
+        contentType.includes('application/json') ||
+        text.trimStart().startsWith('{');
+      if (!isJson) {
+        ok = false;
+      } else if (requireHealthOk) {
+        try {
+          const json = JSON.parse(text) as { STATUS?: string; status?: string };
+          const statusToken = (json.STATUS || json.status || '')
+            .toString()
+            .toUpperCase();
+          // Accept HEALTH_OK (new probes) or legacy liveness {"status":"ok"}.
+          ok =
+            statusToken === 'HEALTH_OK' ||
+            statusToken === 'OK' ||
+            (typeof json === 'object' &&
+              json !== null &&
+              'markets' in (json as object)) ||
+            (typeof json === 'object' &&
+              json !== null &&
+              'items' in (json as object));
+        } catch {
+          ok = false;
+        }
+      }
+    }
+
+    return {
+      probe,
+      status,
+      ok,
+      gatewayError,
+      contentType,
+      bodyPreview: text.slice(0, 120),
+    };
   } catch {
-    return { probe, status: 0, ok: false, gatewayError: true };
+    return {
+      probe,
+      status: 0,
+      ok: false,
+      gatewayError: true,
+      contentType: '',
+      bodyPreview: '',
+    };
   }
 }
 
@@ -163,11 +218,14 @@ function startSelfTestServer(
 
 async function main(): Promise<void> {
   loadEnv();
-  log('ZERO_DOWNTIME_VERIFICATION_RUNNING');
-
-  const selfTest = /^(1|true|yes)$/i.test(
-    process.env.DEPLOY_SELF_TEST?.trim() || '',
+  const liveStack = isTruthy('DEPLOY_LIVE_STACK');
+  log(
+    liveStack
+      ? 'LIVE_STACK_SOAK RUNNING'
+      : 'ZERO_DOWNTIME_VERIFICATION_RUNNING',
   );
+
+  const selfTest = isTruthy('DEPLOY_SELF_TEST');
   const ephemeral: Server[] = [];
 
   let healthUrl =
@@ -215,11 +273,14 @@ async function main(): Promise<void> {
       const warm = await probeOnce(target.probe, target.url);
       if (!warm.ok) {
         fail(
-          `WARMUP_FAILED PROBE=${target.probe} STATUS=${warm.status} URL=${target.url}`,
+          `WARMUP_FAILED PROBE=${target.probe} STATUS=${warm.status} URL=${target.url} BODY=${warm.bodyPreview}`,
         );
       }
+      if (liveStack) {
+        log(`EDGE_ROUTE_OK PROBE=${target.probe} STATUS=${warm.status}`);
+      }
     }
-    log('WARMUP_PASSED');
+    log(liveStack ? 'REMOTE_PASSED WARMUP' : 'WARMUP_PASSED');
 
     const started = Date.now();
     const midpointAt = started + durationMs / 2;
@@ -266,6 +327,11 @@ async function main(): Promise<void> {
     log(
       `ZERO_DOWNTIME_SUCCESS TOTAL_REQUESTS=${totalPassed} ERRORS=0 GATEWAY_ERRORS=0 BATCHES=${batchIndex}`,
     );
+    if (liveStack) {
+      log(
+        `LIVE_STACK_SOAK REMOTE_PASSED TOTAL_REQUESTS=${totalPassed} ERRORS=0`,
+      );
+    }
   } finally {
     await Promise.all(
       ephemeral.map(

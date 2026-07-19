@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.live.example
 
 # Build output
 dist/
@@ -29,3 +30,4 @@ market-seed-data.json
 # Built shared packages
 packages/*/dist
 packages/*/node_modules
+artifacts/
