@@ -317,3 +317,46 @@ export function parseWholesaleOrderFulfillment(
   }
   return { OK: true, DATA: parsed.data };
 }
+
+export const wholesaleOrderSettlementSchema = z
+  .object({
+    order_id: z
+      .string({
+        required_error: 'SETTLEMENT_VALIDATION_ERROR: ORDER_ID REQUIRED',
+        invalid_type_error: 'SETTLEMENT_VALIDATION_ERROR: ORDER_ID INVALID',
+      })
+      .uuid('SETTLEMENT_VALIDATION_ERROR: ORDER_ID MUST BE UUID'),
+    delivered_at: z
+      .string({
+        required_error: 'SETTLEMENT_VALIDATION_ERROR: DELIVERED_AT REQUIRED',
+        invalid_type_error: 'SETTLEMENT_VALIDATION_ERROR: DELIVERED_AT INVALID',
+      })
+      .trim()
+      .min(1, 'SETTLEMENT_VALIDATION_ERROR: DELIVERED_AT REQUIRED')
+      .refine((value) => !Number.isNaN(Date.parse(value)), {
+        message: 'SETTLEMENT_VALIDATION_ERROR: DELIVERED_AT MUST BE ISO8601',
+      }),
+  })
+  .strict();
+
+export type WholesaleOrderSettlementInput = z.infer<
+  typeof wholesaleOrderSettlementSchema
+>;
+
+export type WholesaleOrderSettlementParseResult =
+  | { OK: true; DATA: WholesaleOrderSettlementInput }
+  | { OK: false; ERROR: string };
+
+export function parseWholesaleOrderSettlement(
+  input: unknown,
+): WholesaleOrderSettlementParseResult {
+  const parsed = wholesaleOrderSettlementSchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'SETTLEMENT_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}

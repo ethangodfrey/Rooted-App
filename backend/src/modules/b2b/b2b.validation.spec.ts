@@ -2,6 +2,7 @@ import {
   parseVendorConnectionRequest,
   parseWholesaleOrderDraftCreate,
   parseWholesaleOrderFulfillment,
+  parseWholesaleOrderSettlement,
   parseWholesaleProductCreate,
 } from '@vendorly/env-config';
 
@@ -92,6 +93,22 @@ describe('b2b zod contracts', () => {
       carrier_name: 'UPS',
       tracking_number: '',
       estimated_delivery_at: '2026-07-25T18:00:00.000Z',
+    });
+    expect(parsed.OK).toBe(false);
+  });
+
+  it('accepts a delivery settlement payload', () => {
+    const parsed = parseWholesaleOrderSettlement({
+      order_id: '33333333-3333-4333-8333-333333333333',
+      delivered_at: '2026-07-26T15:30:00.000Z',
+    });
+    expect(parsed.OK).toBe(true);
+  });
+
+  it('rejects settlement without delivered_at', () => {
+    const parsed = parseWholesaleOrderSettlement({
+      order_id: '33333333-3333-4333-8333-333333333333',
+      delivered_at: '',
     });
     expect(parsed.OK).toBe(false);
   });

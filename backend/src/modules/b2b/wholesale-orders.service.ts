@@ -14,6 +14,7 @@ import {
 import type {
   WholesaleOrderDraftCreateInput,
   WholesaleOrderFulfillmentInput,
+  WholesaleOrderSettlementInput,
 } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -218,6 +219,19 @@ export class WholesaleOrdersService {
     });
   }
 
+  /** Outbound purchase history for the authenticated buyer. */
+  async listOutboundForBuyer(buyerVendorId: string) {
+    return this.prisma.wholesaleOrder.findMany({
+      where: { buyerVendorId },
+      include: {
+        items: true,
+        buyerVendor: { select: { id: true, businessName: true } },
+        sellerVendor: { select: { id: true, businessName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   /**
    * Seller accepts a draft: status → ORDER_ACCEPTED_BY_SELLER and reserve stock.
    */
@@ -397,5 +411,79 @@ export class WholesaleOrdersService {
     );
 
     return shipped;
+  }
+
+  /**
+   * Buyer confirms delivery: status → ORDER_DELIVERY_CONFIRMED + settlement ledger row.
+   */
+  async settleForBuyer(
+    buyerVendorId: string,
+    input: WholesaleOrderSettlementInput,
+  ) {
+    const deliveredAt = new Date(input.delivered_at);
+    if (Number.isNaN(deliveredAt.getTime())) {
+      throw new BadRequestException(
+        'SETTLEMENT_VALIDATION_ERROR: DELIVERED_AT INVALID',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.wholesaleOrder.findUnique({
+        where: { id: input.order_id },
+        include: { items: true },
+      });
+
+      if (!order) {
+        throw new NotFoundException('WHOLESALE_ORDER_ERROR: ORDER_NOT_FOUND');
+      }
+
+      if (order.buyerVendorId !== buyerVendorId) {
+        this.logger.warn(
+          `CROSS_TENANT_LEAK_BLOCKED ACTION=ORDER_SETTLE SESSION=${buyerVendorId} BUYER=${order.buyerVendorId} ORDER=${input.order_id}`,
+        );
+        throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+      }
+
+      if (order.status !== WholesaleOrderStatus.ORDER_SHIPPED_IN_TRANSIT) {
+        throw new ConflictException(
+          `WHOLESALE_ORDER_ERROR: INVALID_STATUS CURRENT=${order.status}`,
+        );
+      }
+
+      const confirmedAt = new Date();
+      const settled = await tx.wholesaleOrder.update({
+        where: { id: input.order_id },
+        data: {
+          status: WholesaleOrderStatus.ORDER_DELIVERY_CONFIRMED,
+          deliveredAt,
+          deliveryConfirmedAt: confirmedAt,
+        },
+        include: {
+          items: true,
+          buyerVendor: { select: { id: true, businessName: true } },
+          sellerVendor: { select: { id: true, businessName: true } },
+        },
+      });
+
+      const ledger = await tx.wholesaleSettlementLog.create({
+        data: {
+          orderId: settled.id,
+          buyerVendorId: settled.buyerVendorId,
+          sellerVendorId: settled.sellerVendorId,
+          subtotalCents: settled.subtotalCents,
+          deliveredAt,
+          settledAt: confirmedAt,
+        },
+      });
+
+      this.logger.log(
+        `ORDER_DELIVERY_CONFIRMED ID=${settled.id} BUYER=${buyerVendorId} DELIVERED_AT=${deliveredAt.toISOString()}`,
+      );
+      this.logger.log(
+        `WHOLESALE_LEDGER_SETTLED LOG=${ledger.id} ORDER=${settled.id} SUBTOTAL_CENTS=${settled.subtotalCents}`,
+      );
+
+      return settled;
+    });
   }
 }

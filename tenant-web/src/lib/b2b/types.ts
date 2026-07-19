@@ -23,6 +23,7 @@ export type WholesaleOrderStatusCode =
   | 'ORDER_ACCEPTED_BY_SELLER'
   | 'ORDER_REJECTED_BY_SELLER'
   | 'ORDER_SHIPPED_IN_TRANSIT'
+  | 'ORDER_DELIVERY_CONFIRMED'
   | string;
 
 export type WholesaleCatalogResponse = {
@@ -70,6 +71,8 @@ export type WholesaleOrderDraftRow = {
   TRACKING_NUMBER?: string | null;
   ESTIMATED_DELIVERY_AT?: string | null;
   SHIPPED_AT?: string | null;
+  DELIVERED_AT?: string | null;
+  DELIVERY_CONFIRMED_AT?: string | null;
   ITEMS: WholesaleOrderDraftItemRow[];
   CREATED_AT: string;
 };
@@ -80,6 +83,12 @@ export type WholesaleOrderFulfillmentPayload = {
   carrier_name: string;
   tracking_number: string;
   estimated_delivery_at: string;
+};
+
+/** Wire payload for POST /api/vendors/orders/settlement (snake_case). */
+export type WholesaleOrderSettlementPayload = {
+  order_id: string;
+  delivered_at: string;
 };
 
 export type WholesaleOrderDraftResponse = {
@@ -96,6 +105,23 @@ export type WholesaleInboundOrdersResponse = {
   COUNT: number;
   ORDERS: WholesaleOrderDraftRow[];
   error?: string;
+};
+
+export type WholesaleOutboundOrdersResponse = {
+  STATUS: string;
+  VIEW?: string;
+  SESSION_VENDOR_ID?: string;
+  COUNT: number;
+  ORDERS: WholesaleOrderDraftRow[];
+  error?: string;
+};
+
+export type WholesaleOrderSettlementResponse = {
+  STATUS: string;
+  LEDGER?: string;
+  ORDER?: WholesaleOrderDraftRow;
+  error?: string;
+  message?: string;
 };
 
 export type WholesaleOrderActionResponse = {
