@@ -30,6 +30,9 @@ RUN npm run build --prefix backend
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Railway public proxy maps service traffic to this container port.
+# Keep default aligned with deploy/ingress.targets.json BACKEND.CONTAINER_PORT.
+ENV PORT=4000
 
 RUN apk add --no-cache openssl libc6-compat
 
@@ -50,7 +53,8 @@ USER node
 
 EXPOSE 4000
 
+# Probe the same path Railway healthcheckPath uses (/api/health), via $PORT.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://localhost:4000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "const p=process.env.PORT||'4000';fetch('http://127.0.0.1:'+p+'/api/health').then(async r=>{const t=await r.text();process.exit(r.ok&&t.includes('HEALTH')?0:1)}).catch(()=>process.exit(1))"
 
 CMD ["node", "dist/main.js"]

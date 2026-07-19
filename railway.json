@@ -6,6 +6,7 @@
     "watchPatterns": [
       "backend/**",
       "packages/env-config/**",
+      "deploy/ingress.targets.json",
       "railway.json"
     ]
   },
@@ -19,12 +20,17 @@
   },
   "environments": {
     "production": {
+      "variables": {
+        "PORT": "4000",
+        "PUBLIC_BASE_URL": "https://api.vendorly.app"
+      },
       "build": {
         "builder": "DOCKERFILE",
         "dockerfilePath": "backend/Dockerfile",
         "watchPatterns": [
           "backend/**",
           "packages/env-config/**",
+          "deploy/ingress.targets.json",
           "railway.json"
         ]
       },

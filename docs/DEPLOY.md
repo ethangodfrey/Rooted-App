@@ -257,19 +257,27 @@ Job queues        →  Upstash Redis (REDIS_URL, POS_QUEUES_ENABLED=true)
 3. **Settings → Root Directory:** `backend`.
 4. **Settings → Networking → Generate Domain** (temporary `*.up.railway.app` URL).
 5. **Settings → Networking → Custom Domain** → add `api.vendorly.app` → add the CNAME Railway shows at your DNS provider.
-6. **Variables** — set at minimum (see tables below). Railway injects `PORT`; the app listens on `0.0.0.0:${PORT}`.
-7. **Settings → Deploy → Health Check Path:** `/health/live` (liveness; always 200 when process is up).
+   - Canonical ingress targets: [`deploy/ingress.targets.json`](../deploy/ingress.targets.json)
+   - Container port must match Railway proxy mapping (`PORT=4000` default; Nest listens on `0.0.0.0:$PORT`).
+6. **Variables** — set at minimum (see tables below). Set `PORT=4000` and `PUBLIC_BASE_URL=https://api.vendorly.app` (also declared under `environments.production.variables` in `backend/railway.json` / `backend/railway.toml`).
+7. **Settings → Deploy → Health Check Path:** `/api/health` (production JSON probe: `STATUS=HEALTH_OK`).
 8. Deploy. When healthy, verify:
 
    ```powershell
+   curl https://api.vendorly.app/api/health
+   # {"STATUS":"HEALTH_OK","TIMESTAMP":...}
+
    curl https://api.vendorly.app/health/live
    # {"status":"ok","uptime":...}
 
    curl https://api.vendorly.app/health/ready
    # 200 when DATABASE_URL (+ Redis if queues enabled) are reachable
+
+   npm run verify:ingress
+   # INGRESS_OK / DNS_VERIFIED / ROUTING_ALIGNED
    ```
 
-Optional quick-start: `backend/railway.toml` is checked in for health-check defaults.
+Optional quick-start: `backend/railway.toml` is checked in for health-check + production domain variables.
 
 ### Render alternative
 

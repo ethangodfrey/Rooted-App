@@ -42,6 +42,7 @@
     "test:integration:core": "ts-node scripts/test-core-lifecycle.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
+    "verify:ingress": "ts-node scripts/verify-ingress.ts",
     "env:build": "npm run build --prefix packages/env-config",
     "env:typecheck": "npm run typecheck --prefix packages/env-config",
     "health:audit": "npx tsx scripts/autonomous-health-check.ts",

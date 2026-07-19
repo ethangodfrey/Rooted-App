@@ -19,6 +19,8 @@ const STATIC_EXTENSIONS = new Set([
 const INTERNAL_PREFIXES = [
   '/_next',
   '/api',
+  '/api/health',
+  '/api/health/readiness',
   '/favicon.ico',
   '/robots.txt',
   '/sitemap.xml',
@@ -31,13 +33,29 @@ export function normalizeHost(rawHost: string): string {
 }
 
 export function shouldBypassMiddleware(pathname: string): boolean {
-  if (INTERNAL_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+  const normalized =
+    pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+
+  // Structural gateway probes — never tenant-rewrite these paths.
+  if (
+    normalized === '/api/health' ||
+    normalized === '/api/health/readiness' ||
+    normalized.startsWith('/api/health/')
+  ) {
     return true;
   }
 
-  const dotIndex = pathname.lastIndexOf('.');
+  if (
+    INTERNAL_PREFIXES.some(
+      (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
+    )
+  ) {
+    return true;
+  }
+
+  const dotIndex = normalized.lastIndexOf('.');
   if (dotIndex === -1) return false;
-  const extension = pathname.slice(dotIndex).toLowerCase();
+  const extension = normalized.slice(dotIndex).toLowerCase();
   return STATIC_EXTENSIONS.has(extension);
 }
 

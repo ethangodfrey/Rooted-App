@@ -6,7 +6,7 @@
 |-----------|------|-----|
 | Web SPA | Vercel **`Vendorly_Marketplace1`** | `vendorly-marketplace1.vercel.app` → `vendorly.app` |
 | Tenant edge gateway | Vercel **`tenant-web`** project | Separate deploy; root `tenant-web/` |
-| Backend API | Railway | `api.vendorly.app` (or `*.up.railway.app`) |
+| Backend API | Railway | `api.vendorly.app` → service port `4000` (`/api/health`) |
 | Database + Auth | Supabase | `ajedyjbdpjahnhzrxwdj.supabase.co` |
 
 See `docs/VERCEL_MULTI_PROJECT.md` for split-project build targets.
