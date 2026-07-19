@@ -252,6 +252,7 @@ model WholesaleOrder {
   updatedAt            DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   items                WholesaleOrderItem[]
   settlementLog        WholesaleSettlementLog?
+  invoice              WholesaleInvoice?
 
   @@index([buyerVendorId, status])
   @@index([sellerVendorId, status])
@@ -261,18 +262,57 @@ model WholesaleOrder {
 
 /// Buyer delivery settlement ledger row (phase59).
 model WholesaleSettlementLog {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId        String         @unique @map("order_id") @db.Uuid
-  order          WholesaleOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  buyerVendorId  String         @map("buyer_vendor_id") @db.Uuid
-  sellerVendorId String         @map("seller_vendor_id") @db.Uuid
-  subtotalCents  Int            @map("subtotal_cents")
-  deliveredAt    DateTime       @map("delivered_at") @db.Timestamptz(6)
-  settledAt      DateTime       @default(now()) @map("settled_at") @db.Timestamptz(6)
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String            @unique @map("order_id") @db.Uuid
+  order          WholesaleOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerVendorId  String            @map("buyer_vendor_id") @db.Uuid
+  sellerVendorId String            @map("seller_vendor_id") @db.Uuid
+  subtotalCents  Int               @map("subtotal_cents")
+  deliveredAt    DateTime          @map("delivered_at") @db.Timestamptz(6)
+  settledAt      DateTime          @default(now()) @map("settled_at") @db.Timestamptz(6)
+  invoice        WholesaleInvoice?
 
   @@index([buyerVendorId, settledAt])
   @@index([sellerVendorId, settledAt])
   @@map("wholesale_settlement_logs")
+}
+
+enum WholesaleInvoiceStatus {
+  ISSUED
+  PAID
+  VOID
+
+  @@map("wholesale_invoice_status")
+}
+
+/// Formal B2B invoice generated on delivery confirmation (phase60 / Net-30).
+model WholesaleInvoice {
+  id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId            String                 @unique @map("order_id") @db.Uuid
+  order              WholesaleOrder         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  settlementLogId    String?                @unique @map("settlement_log_id") @db.Uuid
+  settlementLog      WholesaleSettlementLog? @relation(fields: [settlementLogId], references: [id], onDelete: SetNull)
+  invoiceNumber      String                 @unique @map("invoice_number")
+  buyerVendorId      String                 @map("buyer_vendor_id") @db.Uuid
+  sellerVendorId     String                 @map("seller_vendor_id") @db.Uuid
+  buyerBusinessName  String?                @map("buyer_business_name")
+  sellerBusinessName String?                @map("seller_business_name")
+  currency           String                 @default("USD")
+  subtotalCents      Int                    @map("subtotal_cents")
+  totalCents         Int                    @map("total_cents")
+  paymentTerms       String                 @default("NET_30") @map("payment_terms")
+  /// Snapshot of line items: [{ productSkuId, quantity, unitPriceCents, lineTotalCents }]
+  lineItems          Json                   @default("[]") @map("line_items")
+  status             WholesaleInvoiceStatus @default(ISSUED)
+  issuedAt           DateTime               @default(now()) @map("issued_at") @db.Timestamptz(6)
+  dueAt              DateTime               @map("due_at") @db.Timestamptz(6)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([buyerVendorId, issuedAt])
+  @@index([sellerVendorId, issuedAt])
+  @@index([dueAt, status])
+  @@map("wholesale_invoices")
 }
 
 model WholesaleOrderItem {

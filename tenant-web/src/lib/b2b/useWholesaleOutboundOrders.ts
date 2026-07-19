@@ -100,6 +100,16 @@ export function useWholesaleOutboundOrders(
         console.log(
           `WHOLESALE_LEDGER_SETTLED ORDER=${body.ORDER?.ID ?? payload.order_id} LEDGER=${body.LEDGER ?? 'WHOLESALE_LEDGER_SETTLED'}`,
         );
+        if (body.INVOICE?.ID) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `WHOLESALE_INVOICE_GENERATED ID=${body.INVOICE.ID} NUMBER=${body.INVOICE.INVOICE_NUMBER} DUE_AT=${body.INVOICE.DUE_AT}`,
+          );
+          // eslint-disable-next-line no-console
+          console.log(
+            `BILLING_LEDGER_UPDATED INVOICE=${body.INVOICE.ID} BILLING=${body.BILLING ?? 'BILLING_LEDGER_UPDATED'}`,
+          );
+        }
         setOrders((prev) =>
           prev.map((row) =>
             row.ID === payload.order_id
@@ -107,6 +117,11 @@ export function useWholesaleOutboundOrders(
                   ...row,
                   ...(body.ORDER ?? {}),
                   STATUS: 'ORDER_DELIVERY_CONFIRMED',
+                  INVOICE_ID: body.INVOICE?.ID ?? body.ORDER?.INVOICE_ID ?? null,
+                  INVOICE_NUMBER:
+                    body.INVOICE?.INVOICE_NUMBER ??
+                    body.ORDER?.INVOICE_NUMBER ??
+                    null,
                 }
               : row,
           ),

@@ -84,6 +84,7 @@ export function WholesaleInboundOrders({
           const isDraft = order.STATUS === 'ORDER_DRAFT_INITIALIZED';
           const isAccepted = order.STATUS === 'ORDER_ACCEPTED_BY_SELLER';
           const isShipped = order.STATUS === 'ORDER_SHIPPED_IN_TRANSIT';
+          const isConfirmed = order.STATUS === 'ORDER_DELIVERY_CONFIRMED';
           const busy = actingId === order.ID;
           return (
             <li
@@ -129,6 +130,26 @@ export function WholesaleInboundOrders({
                     <p className="mt-1 text-white/55">
                       ETA {order.ESTIMATED_DELIVERY_AT}
                     </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {isConfirmed ? (
+                <div className="mt-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-3 font-mono text-[11px] uppercase tracking-wide text-sky-100">
+                  <p>ORDER_DELIVERY_CONFIRMED</p>
+                  <p className="mt-1 text-white/70">WHOLESALE_INVOICE_GENERATED</p>
+                  {order.INVOICE_ID ? (
+                    <a
+                      href={`/vendor/wholesale/invoices/${order.INVOICE_ID}${
+                        accessToken
+                          ? `?access_token=${encodeURIComponent(accessToken)}`
+                          : ''
+                      }`}
+                      className="mt-3 inline-flex rounded-lg border border-sky-300/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sky-50 transition hover:bg-sky-500/20"
+                      data-testid={`seller-view-invoice-${order.INVOICE_ID}`}
+                    >
+                      VIEW INVOICE {order.INVOICE_NUMBER || order.INVOICE_ID}
+                    </a>
                   ) : null}
                 </div>
               ) : null}

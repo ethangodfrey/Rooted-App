@@ -124,11 +124,48 @@ export class WholesaleOrdersController {
     if (!parsed.OK) {
       throw new BadRequestException(parsed.ERROR);
     }
-    const order = await this.orders.settleForBuyer(buyerVendorId, parsed.DATA);
+    const { order, invoice } = await this.orders.settleForBuyer(
+      buyerVendorId,
+      parsed.DATA,
+    );
     return {
       STATUS: 'ORDER_DELIVERY_CONFIRMED',
       LEDGER: 'WHOLESALE_LEDGER_SETTLED',
-      ORDER: this.serializeOrder(order),
+      BILLING: 'BILLING_LEDGER_UPDATED',
+      INVOICE: this.serializeInvoice(invoice),
+      ORDER: this.serializeOrder({
+        ...order,
+        invoice: {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          status: invoice.status,
+        },
+      }),
+    };
+  }
+
+  /**
+   * GET /api/vendors/orders/invoices/:invoiceId
+   * Buyer or seller invoice detail for Net-30 billing paper trail.
+   */
+  @Get('invoices/:invoiceId')
+  async getInvoice(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('invoiceId') invoiceId: string,
+  ) {
+    const vendorId = this.requireVendor(user);
+    if (!UUID_RE.test(invoiceId.trim())) {
+      throw new BadRequestException(
+        'WHOLESALE_INVOICE_VALIDATION_ERROR: INVOICE_ID INVALID',
+      );
+    }
+    const invoice = await this.orders.getInvoiceForVendor(
+      vendorId,
+      invoiceId.trim(),
+    );
+    return {
+      STATUS: 'WHOLESALE_INVOICE',
+      INVOICE: this.serializeInvoice(invoice),
     };
   }
 
@@ -203,6 +240,11 @@ export class WholesaleOrdersController {
     }>;
     buyerVendor?: { id: string; businessName: string | null } | null;
     sellerVendor?: { id: string; businessName: string | null } | null;
+    invoice?: {
+      id: string;
+      invoiceNumber: string;
+      status: string;
+    } | null;
   }) {
     return {
       ID: order.id,
@@ -223,6 +265,8 @@ export class WholesaleOrdersController {
       DELIVERY_CONFIRMED_AT: order.deliveryConfirmedAt
         ? order.deliveryConfirmedAt.toISOString()
         : null,
+      INVOICE_ID: order.invoice?.id ?? null,
+      INVOICE_NUMBER: order.invoice?.invoiceNumber ?? null,
       ITEMS: order.items.map((item) => ({
         ID: item.id,
         PRODUCT_SKU_ID: item.productSkuId,
@@ -231,6 +275,45 @@ export class WholesaleOrdersController {
         LINE_TOTAL_CENTS: item.lineTotalCents,
       })),
       CREATED_AT: order.createdAt.toISOString(),
+    };
+  }
+
+  private serializeInvoice(invoice: {
+    id: string;
+    orderId: string;
+    settlementLogId?: string | null;
+    invoiceNumber: string;
+    buyerVendorId: string;
+    sellerVendorId: string;
+    buyerBusinessName?: string | null;
+    sellerBusinessName?: string | null;
+    currency: string;
+    subtotalCents: number;
+    totalCents: number;
+    paymentTerms: string;
+    lineItems: unknown;
+    status: string;
+    issuedAt: Date;
+    dueAt: Date;
+    createdAt?: Date;
+  }) {
+    return {
+      ID: invoice.id,
+      ORDER_ID: invoice.orderId,
+      SETTLEMENT_LOG_ID: invoice.settlementLogId ?? null,
+      INVOICE_NUMBER: invoice.invoiceNumber,
+      BUYER_VENDOR_ID: invoice.buyerVendorId,
+      SELLER_VENDOR_ID: invoice.sellerVendorId,
+      BUYER_BUSINESS_NAME: invoice.buyerBusinessName ?? null,
+      SELLER_BUSINESS_NAME: invoice.sellerBusinessName ?? null,
+      CURRENCY: invoice.currency,
+      SUBTOTAL_CENTS: invoice.subtotalCents,
+      TOTAL_CENTS: invoice.totalCents,
+      PAYMENT_TERMS: invoice.paymentTerms,
+      LINE_ITEMS: Array.isArray(invoice.lineItems) ? invoice.lineItems : [],
+      STATUS: invoice.status,
+      ISSUED_AT: invoice.issuedAt.toISOString(),
+      DUE_AT: invoice.dueAt.toISOString(),
     };
   }
 
