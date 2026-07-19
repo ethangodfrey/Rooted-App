@@ -5,6 +5,8 @@ import {
   Get,
   HttpCode,
   NotFoundException,
+  Param,
+  Patch,
   Post,
   Query,
   UnauthorizedException,
@@ -43,6 +45,47 @@ export class WholesaleProductsController {
 
     return {
       STATUS: 'WHOLESALE_SKU_INDEXED',
+      INDEX: 'ELASTICSEARCH_SYNC_COMPLETED',
+      PRODUCT: this.serialize(product),
+    };
+  }
+
+  /**
+   * PATCH /api/vendors/wholesale-products/:productId
+   * Ownership-gated catalog update — re-indexes to Elasticsearch.
+   */
+  @Patch(':productId')
+  @HttpCode(200)
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('productId') productId: string,
+    @Body() body: unknown,
+  ) {
+    const vendorId = this.requireVendor(user);
+    if (!UUID_RE.test(productId.trim())) {
+      throw new BadRequestException(
+        'WHOLESALE_VALIDATION_ERROR: PRODUCT_ID INVALID',
+      );
+    }
+    const patch = (body && typeof body === 'object' ? body : {}) as {
+      name?: string;
+      moq?: number;
+      unitPriceCents?: number;
+    };
+    const product = await this.wholesale.updateForVendor(
+      vendorId,
+      productId.trim(),
+      {
+        ...(typeof patch.name === 'string' ? { name: patch.name } : {}),
+        ...(typeof patch.moq === 'number' ? { moq: patch.moq } : {}),
+        ...(typeof patch.unitPriceCents === 'number'
+          ? { unitPriceCents: patch.unitPriceCents }
+          : {}),
+      },
+    );
+    return {
+      STATUS: 'WHOLESALE_SKU_UPDATED',
+      INDEX: 'ELASTICSEARCH_SYNC_COMPLETED',
       PRODUCT: this.serialize(product),
     };
   }

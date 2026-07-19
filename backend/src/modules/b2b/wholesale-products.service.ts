@@ -8,12 +8,16 @@ import { Prisma, WholesaleProductStatus } from '@prisma/client';
 import type { WholesaleProductCreateInput } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { WholesaleProductIndexerService } from '../search/wholesale-product-indexer.service';
 
 @Injectable()
 export class WholesaleProductsService {
   private readonly logger = new Logger(WholesaleProductsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly indexer: WholesaleProductIndexerService,
+  ) {}
 
   async create(vendorId: string, input: WholesaleProductCreateInput) {
     const created = await this.prisma.wholesaleProduct.create({
@@ -36,6 +40,18 @@ export class WholesaleProductsService {
     this.logger.log(
       `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity}`,
     );
+    await this.indexer.indexProduct({
+      id: created.id,
+      vendorId: created.vendorId,
+      name: created.name,
+      description: created.description,
+      packagingUnit: created.packagingUnit,
+      moq: created.moq,
+      unitPriceCents: created.unitPriceCents,
+      availableQuantity: created.availableQuantity,
+      status: created.status,
+      updatedAt: created.updatedAt.toISOString(),
+    });
     return created;
   }
 
@@ -82,7 +98,7 @@ export class WholesaleProductsService {
       throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
     }
 
-    return this.prisma.wholesaleProduct.update({
+    const updated = await this.prisma.wholesaleProduct.update({
       where: { id: productId },
       data: {
         ...(patch.name !== undefined ? { name: patch.name } : {}),
@@ -92,5 +108,20 @@ export class WholesaleProductsService {
           : {}),
       },
     });
+
+    await this.indexer.indexProduct({
+      id: updated.id,
+      vendorId: updated.vendorId,
+      name: updated.name,
+      description: updated.description,
+      packagingUnit: updated.packagingUnit,
+      moq: updated.moq,
+      unitPriceCents: updated.unitPriceCents,
+      availableQuantity: updated.availableQuantity,
+      status: updated.status,
+      updatedAt: updated.updatedAt.toISOString(),
+    });
+
+    return updated;
   }
 }
