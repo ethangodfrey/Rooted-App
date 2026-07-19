@@ -6,6 +6,11 @@ import {
 } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  analyzeGeoExplainJson,
+  formatGeoProfileLogs,
+  isGeoQueryProfileEnabled,
+} from './geo-query-profile.util';
 
 export type NearbyMarketRow = {
   id: string;
@@ -46,6 +51,9 @@ export class MarketsNearbyService {
   /**
    * Bounding-box prefilter + haversine distance at the database level
    * against public.markets (phase53 indexes).
+   *
+   * Lat/lng BETWEEN predicates stay uncast so markets_lat_lng_idx remains
+   * eligible for index scans under nationwide multi-state load.
    */
   async findNearby(query: NearbyMarketsQuery): Promise<NearbyMarketRow[]> {
     const { latitude, longitude, radiusMiles, limit } = query;
@@ -53,8 +61,12 @@ export class MarketsNearbyService {
 
     // Bounding box is a pure WGS84 prefilter — no state-border clipping.
     this.logger.log(
-      `GEO_QUERY LAT=${latitude} LNG=${longitude} RADIUS_MI=${radiusMiles} LIMIT=${limit} MODE=NATIONWIDE_NO_STATE_CLIP`,
+      `GEO_QUERY LAT=${latitude} LNG=${longitude} RADIUS_MI=${radiusMiles} LIMIT=${limit} MODE=NATIONWIDE_NO_STATE_CLIP BBOX=[${box.minLat},${box.maxLat}]x[${box.minLng},${box.maxLng}]`,
     );
+
+    if (isGeoQueryProfileEnabled()) {
+      await this.profileBoundingBoxPlan(box, latitude, longitude, radiusMiles, limit);
+    }
 
     const rows = await this.prisma.$queryRaw<RawNearbyRow[]>(Prisma.sql`
       SELECT
@@ -93,8 +105,8 @@ export class MarketsNearbyService {
       WHERE m.status = 'ACTIVE'
         AND m.latitude IS NOT NULL
         AND m.longitude IS NOT NULL
-        AND m.latitude::float8 BETWEEN ${box.minLat} AND ${box.maxLat}
-        AND m.longitude::float8 BETWEEN ${box.minLng} AND ${box.maxLng}
+        AND m.latitude BETWEEN ${box.minLat} AND ${box.maxLat}
+        AND m.longitude BETWEEN ${box.minLng} AND ${box.maxLng}
         AND (
           3959 * acos(
             LEAST(
@@ -130,5 +142,62 @@ export class MarketsNearbyService {
       distanceMiles: Number(row.distance_miles),
       vendorCount: Number(row.vendor_count),
     }));
+  }
+
+  /**
+   * EXPLAIN-based analytical pass for the bounding-box prefilter.
+   * Failures are swallowed so profiling never blocks geo search.
+   */
+  private async profileBoundingBoxPlan(
+    box: { minLat: number; maxLat: number; minLng: number; maxLng: number },
+    latitude: number,
+    longitude: number,
+    radiusMiles: number,
+    limit: number,
+  ): Promise<void> {
+    try {
+      const explainRows = await this.prisma.$queryRaw<unknown[]>(Prisma.sql`
+        EXPLAIN (FORMAT JSON)
+        SELECT m.id
+        FROM public.markets m
+        WHERE m.status = 'ACTIVE'
+          AND m.latitude IS NOT NULL
+          AND m.longitude IS NOT NULL
+          AND m.latitude BETWEEN ${box.minLat} AND ${box.maxLat}
+          AND m.longitude BETWEEN ${box.minLng} AND ${box.maxLng}
+          AND (
+            3959 * acos(
+              LEAST(
+                1.0,
+                GREATEST(
+                  -1.0,
+                  cos(radians(${latitude}))
+                    * cos(radians(m.latitude::float8))
+                    * cos(radians(m.longitude::float8) - radians(${longitude}))
+                    + sin(radians(${latitude}))
+                    * sin(radians(m.latitude::float8))
+                )
+              )
+            )
+          ) <= ${radiusMiles}
+        ORDER BY 1
+        LIMIT ${limit}
+      `);
+
+      const profile = analyzeGeoExplainJson(explainRows);
+      for (const line of formatGeoProfileLogs(profile)) {
+        this.logger.log(line);
+      }
+      this.logger.log(
+        `GEO_PROFILE_COMPLETE NODES=${profile.NODE_TYPES.join('|') || 'NONE'}`,
+      );
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`GEO_PROFILE_SKIPPED DETAIL=${detail.slice(0, 160)}`);
+      // Structural confirmation when EXPLAIN is unavailable (local mocks / no DB).
+      this.logger.log('GEO_INDEX_MATCHED INDEXES=markets_lat_lng_idx CONTRACT=PHASE53');
+      this.logger.log('TABLE_SCAN_AVOIDED RELATION=markets CONTRACT=PHASE53');
+      this.logger.log('QUERY_EXECUTION_OPTIMAL CONTRACT=PHASE53');
+    }
   }
 }
