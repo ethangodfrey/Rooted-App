@@ -76,6 +76,7 @@ docs/supabase/phase49_seed_snap_stripe_test_vendor.sql # optional UPDATE seed fo
 docs/supabase/phase53_nationwide_directory_geo.sql # markets.directory_slug + operating_hours + city/state/lat-lng indexes
 docs/supabase/phase54_b2b_wholesale_marketplace.sql # vendor_business_connections + wholesale_products B2B catalog
 docs/supabase/phase55_market_theme_branding.sql # markets description + theme_* colors for tenant injection
+docs/supabase/phase56_wholesale_order_drafts.sql # wholesale_orders + wholesale_order_items draft pipeline
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

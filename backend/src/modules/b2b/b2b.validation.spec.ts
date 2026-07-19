@@ -1,5 +1,6 @@
 import {
   parseVendorConnectionRequest,
+  parseWholesaleOrderDraftCreate,
   parseWholesaleProductCreate,
 } from '@vendorly/env-config';
 
@@ -40,6 +41,36 @@ describe('b2b zod contracts', () => {
       weightLbs: 0,
       moq: 1,
       unitPriceCents: 100,
+    });
+    expect(parsed.OK).toBe(false);
+  });
+
+  it('accepts a wholesale order draft payload', () => {
+    const parsed = parseWholesaleOrderDraftCreate({
+      buyer_vendor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      seller_vendor_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      items: [
+        {
+          product_sku_id: '11111111-1111-4111-8111-111111111111',
+          quantity: 50,
+          negotiated_tier_unit_price: 2200,
+        },
+      ],
+    });
+    expect(parsed.OK).toBe(true);
+  });
+
+  it('rejects buyer equal to seller on draft payload', () => {
+    const parsed = parseWholesaleOrderDraftCreate({
+      buyer_vendor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      seller_vendor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      items: [
+        {
+          product_sku_id: '11111111-1111-4111-8111-111111111111',
+          quantity: 1,
+          negotiated_tier_unit_price: 100,
+        },
+      ],
     });
     expect(parsed.OK).toBe(false);
   });

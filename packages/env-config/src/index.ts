@@ -28,13 +28,17 @@ export {
 
 export {
   parseVendorConnectionRequest,
+  parseWholesaleOrderDraftCreate,
   parseWholesaleProductCreate,
   vendorBusinessConnectionStatusSchema,
   vendorConnectionRequestSchema,
+  wholesaleOrderDraftCreateSchema,
   wholesaleProductCreateSchema,
   type VendorBusinessConnectionStatus,
   type VendorConnectionRequestInput,
   type VendorConnectionRequestParseResult,
+  type WholesaleOrderDraftCreateInput,
+  type WholesaleOrderDraftCreateParseResult,
   type WholesaleProductCreateInput,
   type WholesaleProductCreateParseResult,
 } from './b2b';

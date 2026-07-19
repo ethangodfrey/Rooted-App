@@ -147,6 +147,8 @@ model Vendor {
   businessConnectionsSent     VendorBusinessConnection[] @relation("BusinessConnectionSender")
   businessConnectionsReceived VendorBusinessConnection[] @relation("BusinessConnectionReceiver")
   wholesaleProducts           WholesaleProduct[]
+  wholesaleOrdersAsBuyer      WholesaleOrder[]           @relation("WholesaleOrderBuyer")
+  wholesaleOrdersAsSeller     WholesaleOrder[]           @relation("WholesaleOrderSeller")
 
   @@index([userId])
   @@map("vendors")
@@ -208,10 +210,54 @@ model WholesaleProduct {
   status          WholesaleProductStatus @default(ACTIVE)
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  orderItems      WholesaleOrderItem[]
 
   @@index([vendorId, status])
   @@index([vendorId, name])
   @@map("wholesale_products")
+}
+
+/// Default draft status after client-validated payload assembly (phase56).
+enum WholesaleOrderStatus {
+  ORDER_DRAFT_INITIALIZED
+
+  @@map("wholesale_order_status")
+}
+
+/// Multi-tenant B2B wholesale order draft header.
+model WholesaleOrder {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerVendorId  String               @map("buyer_vendor_id") @db.Uuid
+  buyerVendor    Vendor               @relation("WholesaleOrderBuyer", fields: [buyerVendorId], references: [id], onDelete: Cascade)
+  sellerVendorId String               @map("seller_vendor_id") @db.Uuid
+  sellerVendor   Vendor               @relation("WholesaleOrderSeller", fields: [sellerVendorId], references: [id], onDelete: Cascade)
+  status         WholesaleOrderStatus @default(ORDER_DRAFT_INITIALIZED)
+  currency       String               @default("USD")
+  subtotalCents  Int                  @map("subtotal_cents")
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items          WholesaleOrderItem[]
+
+  @@index([buyerVendorId, status])
+  @@index([sellerVendorId, status])
+  @@index([createdAt])
+  @@map("wholesale_orders")
+}
+
+model WholesaleOrderItem {
+  id                       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId                  String           @map("order_id") @db.Uuid
+  order                    WholesaleOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productSkuId             String           @map("product_sku_id") @db.Uuid
+  product                  WholesaleProduct @relation(fields: [productSkuId], references: [id], onDelete: Restrict)
+  quantity                 Int
+  negotiatedTierUnitPrice  Int              @map("negotiated_tier_unit_price")
+  lineTotalCents           Int              @map("line_total_cents")
+  createdAt                DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orderId])
+  @@index([productSkuId])
+  @@map("wholesale_order_items")
 }
 
 model Product {
