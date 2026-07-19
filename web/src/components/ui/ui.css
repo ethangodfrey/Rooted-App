@@ -593,7 +593,8 @@
   border: 1px solid var(--color-border);
 }
 
-.app-image-fallback--vendor {
+.app-image-fallback--vendor,
+.app-image-fallback--vendor-logo {
   background: #f4f4f5;
   font-size: 1.5rem;
   border: 1px solid var(--color-border);

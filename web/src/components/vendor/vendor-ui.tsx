@@ -62,7 +62,8 @@ export function VendorSection({ title, children }: { title: string; children: Re
 }
 
 export function VendorActionGrid({ children, cols = 2 }: { children: ReactNode; cols?: 2 | 3 }) {
-  const gridClass = cols === 3 ? 'grid-cols-3 gap-3' : 'grid-cols-2 gap-3';
+  const gridClass =
+    cols === 3 ? 'grid-cols-1 gap-3 sm:grid-cols-3' : 'grid-cols-1 gap-3 sm:grid-cols-2';
   return <div className={`mb-5 grid ${gridClass}`}>{children}</div>;
 }
 
@@ -260,7 +261,7 @@ export function VendorKpiStat({
 }
 
 export function VendorFormPanel({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`${VENDOR_FORM_PANEL} ${className}`}>{children}</div>;
+  return <div className={`${VENDOR_FORM_PANEL} min-w-0 ${className}`}>{children}</div>;
 }
 
 export function VendorEmpty({ message }: { message: string }) {

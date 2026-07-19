@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { FieldError } from '@/components/ui/FieldError';
 import { FallbackImage } from '@/components/ui/FallbackImage';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import { updateShopperEmail, updateShopperProfile } from '@/lib/shopper-profile';
@@ -127,8 +128,6 @@ export function ShopperProfileEditPage() {
     navigate('/shopper/profile');
   }
 
-  const initials = (name || email || '?').trim().charAt(0).toUpperCase();
-
   return (
     <div className="app-screen app-screen--narrow">
       <Link to="/shopper/profile" className="app-back-link">
@@ -140,17 +139,13 @@ export function ShopperProfileEditPage() {
       <p className="app-subtitle">Update your photo, contact info, and saved vendors.</p>
 
       <div className="profile-avatar-block">
-        {photoUrl ? (
-          <FallbackImage
-            src={photoUrl}
-            alt=""
-            variant="avatar"
-            label={name || email}
-            className="profile-avatar"
-          />
-        ) : (
-          <div className="profile-avatar profile-avatar--placeholder">{initials}</div>
-        )}
+        <FallbackImage
+          src={photoUrl || null}
+          alt=""
+          variant="avatar"
+          label={name || email}
+          className="profile-avatar"
+        />
         <input
           ref={fileRef}
           type="file"
@@ -179,6 +174,7 @@ export function ShopperProfileEditPage() {
           id="name"
           className={`app-input${fieldErrors.name ? ' app-input--invalid' : ''}`}
           value={name}
+          aria-invalid={Boolean(fieldErrors.name)}
           onChange={(e) => {
             setName(e.target.value);
             setFieldErrors((prev) => {
@@ -198,6 +194,7 @@ export function ShopperProfileEditPage() {
           className={`app-input${fieldErrors.email ? ' app-input--invalid' : ''}`}
           type="email"
           value={email}
+          aria-invalid={Boolean(fieldErrors.email)}
           onChange={(e) => {
             setEmail(e.target.value);
             setFieldErrors((prev) => {
@@ -226,8 +223,10 @@ export function ShopperProfileEditPage() {
 
       <h2 style={{ fontSize: '1.125rem', margin: '1.5rem 0 0.75rem' }}>Saved vendors</h2>
       {loadingVendors ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
+        <div className="flex flex-col gap-3" aria-busy aria-label="Loading saved vendors">
+          {Array.from({ length: 3 }, (_, index) => (
+            <SkeletonCard key={index} height={64} />
+          ))}
         </div>
       ) : vendors.length === 0 ? (
         <p className="app-row-meta">Vendors you save appear here.</p>
