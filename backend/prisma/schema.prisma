@@ -219,28 +219,34 @@ model WholesaleProduct {
   @@map("wholesale_products")
 }
 
-/// Draft → seller response statuses (phase56/57).
+/// Draft → accept → ship statuses (phase56/57/58).
 enum WholesaleOrderStatus {
   ORDER_DRAFT_INITIALIZED
   ORDER_ACCEPTED_BY_SELLER
   ORDER_REJECTED_BY_SELLER
+  ORDER_SHIPPED_IN_TRANSIT
 
   @@map("wholesale_order_status")
 }
 
 /// Multi-tenant B2B wholesale order draft header.
 model WholesaleOrder {
-  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buyerVendorId  String               @map("buyer_vendor_id") @db.Uuid
-  buyerVendor    Vendor               @relation("WholesaleOrderBuyer", fields: [buyerVendorId], references: [id], onDelete: Cascade)
-  sellerVendorId String               @map("seller_vendor_id") @db.Uuid
-  sellerVendor   Vendor               @relation("WholesaleOrderSeller", fields: [sellerVendorId], references: [id], onDelete: Cascade)
-  status         WholesaleOrderStatus @default(ORDER_DRAFT_INITIALIZED)
-  currency       String               @default("USD")
-  subtotalCents  Int                  @map("subtotal_cents")
-  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  items          WholesaleOrderItem[]
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerVendorId        String               @map("buyer_vendor_id") @db.Uuid
+  buyerVendor          Vendor               @relation("WholesaleOrderBuyer", fields: [buyerVendorId], references: [id], onDelete: Cascade)
+  sellerVendorId       String               @map("seller_vendor_id") @db.Uuid
+  sellerVendor         Vendor               @relation("WholesaleOrderSeller", fields: [sellerVendorId], references: [id], onDelete: Cascade)
+  status               WholesaleOrderStatus @default(ORDER_DRAFT_INITIALIZED)
+  currency             String               @default("USD")
+  subtotalCents        Int                  @map("subtotal_cents")
+  /// Carrier label captured at fulfillment (phase58).
+  carrierName          String?              @map("carrier_name")
+  trackingNumber       String?              @map("tracking_number")
+  estimatedDeliveryAt  DateTime?            @map("estimated_delivery_at") @db.Timestamptz(6)
+  shippedAt            DateTime?            @map("shipped_at") @db.Timestamptz(6)
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items                WholesaleOrderItem[]
 
   @@index([buyerVendorId, status])
   @@index([sellerVendorId, status])

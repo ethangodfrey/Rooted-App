@@ -6,6 +6,7 @@ import type {
   WholesaleInboundOrdersResponse,
   WholesaleOrderActionResponse,
   WholesaleOrderDraftRow,
+  WholesaleOrderFulfillmentPayload,
 } from '@/lib/b2b/types';
 
 export type UseWholesaleInboundOrdersOptions = {
@@ -168,6 +169,67 @@ export function useWholesaleInboundOrders(
     [accessToken, apiBaseUrl],
   );
 
+  const fulfillOrder = useCallback(
+    async (payload: WholesaleOrderFulfillmentPayload) => {
+      if (!accessToken) {
+        setError('AUTHORIZATION_REQUIRED');
+        return null;
+      }
+      setActingId(payload.order_id);
+      setError(null);
+      setStatus(null);
+      try {
+        // eslint-disable-next-line no-console
+        console.log(
+          `LOGISTICS_MANIFEST_VALID ORDER=${payload.order_id} CARRIER=${payload.carrier_name.toUpperCase()}`,
+        );
+        const res = await fetch(`${apiBaseUrl}/api/vendors/orders/fulfillment`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+          cache: 'no-store',
+        });
+        const body = (await res.json()) as WholesaleOrderActionResponse;
+        if (!res.ok) {
+          throw new Error(
+            body.error ||
+              body.message ||
+              `WHOLESALE_FULFILL_HTTP_${res.status}`,
+          );
+        }
+        setStatus('ORDER_FULFILLMENT_TRACKED');
+        // eslint-disable-next-line no-console
+        console.log(
+          `ORDER_FULFILLMENT_TRACKED ID=${body.ORDER?.ID ?? payload.order_id} TRACKING=${body.ORDER?.TRACKING_NUMBER ?? payload.tracking_number}`,
+        );
+        setOrders((prev) =>
+          prev.map((row) =>
+            row.ID === payload.order_id
+              ? {
+                  ...row,
+                  ...(body.ORDER ?? {}),
+                  STATUS: 'ORDER_SHIPPED_IN_TRANSIT',
+                }
+              : row,
+          ),
+        );
+        return body;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'WHOLESALE_FULFILL_FAILED';
+        setError(message.toUpperCase());
+        return null;
+      } finally {
+        setActingId(null);
+      }
+    },
+    [accessToken, apiBaseUrl],
+  );
+
   return useMemo(
     () => ({
       loading,
@@ -178,11 +240,13 @@ export function useWholesaleInboundOrders(
       reload: load,
       acceptOrder,
       rejectOrder,
+      fulfillOrder,
     }),
     [
       acceptOrder,
       actingId,
       error,
+      fulfillOrder,
       load,
       loading,
       orders,

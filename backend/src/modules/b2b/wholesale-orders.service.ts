@@ -11,7 +11,10 @@ import {
   WholesaleOrderStatus,
   WholesaleProductStatus,
 } from '@prisma/client';
-import type { WholesaleOrderDraftCreateInput } from '@vendorly/env-config';
+import type {
+  WholesaleOrderDraftCreateInput,
+  WholesaleOrderFulfillmentInput,
+} from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -331,5 +334,68 @@ export class WholesaleOrdersService {
     );
 
     return rejected;
+  }
+
+  /**
+   * Seller ships an accepted order: status → ORDER_SHIPPED_IN_TRANSIT + carrier manifest.
+   */
+  async fulfillForSeller(
+    sellerVendorId: string,
+    input: WholesaleOrderFulfillmentInput,
+  ) {
+    const order = await this.prisma.wholesaleOrder.findUnique({
+      where: { id: input.order_id },
+      select: { id: true, sellerVendorId: true, status: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('WHOLESALE_ORDER_ERROR: ORDER_NOT_FOUND');
+    }
+
+    if (order.sellerVendorId !== sellerVendorId) {
+      this.logger.warn(
+        `CROSS_TENANT_LEAK_BLOCKED ACTION=ORDER_FULFILL SESSION=${sellerVendorId} SELLER=${order.sellerVendorId} ORDER=${input.order_id}`,
+      );
+      throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+    }
+
+    if (order.status !== WholesaleOrderStatus.ORDER_ACCEPTED_BY_SELLER) {
+      throw new ConflictException(
+        `WHOLESALE_ORDER_ERROR: INVALID_STATUS CURRENT=${order.status}`,
+      );
+    }
+
+    const estimatedDeliveryAt = new Date(input.estimated_delivery_at);
+    if (Number.isNaN(estimatedDeliveryAt.getTime())) {
+      throw new BadRequestException(
+        'FULFILLMENT_VALIDATION_ERROR: ESTIMATED_DELIVERY_AT INVALID',
+      );
+    }
+
+    this.logger.log(
+      `LOGISTICS_MANIFEST_VALID ORDER=${input.order_id} CARRIER=${input.carrier_name.toUpperCase()} TRACKING=${input.tracking_number}`,
+    );
+
+    const shipped = await this.prisma.wholesaleOrder.update({
+      where: { id: input.order_id },
+      data: {
+        status: WholesaleOrderStatus.ORDER_SHIPPED_IN_TRANSIT,
+        carrierName: input.carrier_name,
+        trackingNumber: input.tracking_number,
+        estimatedDeliveryAt,
+        shippedAt: new Date(),
+      },
+      include: {
+        items: true,
+        buyerVendor: { select: { id: true, businessName: true } },
+        sellerVendor: { select: { id: true, businessName: true } },
+      },
+    });
+
+    this.logger.log(
+      `ORDER_FULFILLMENT_TRACKED ID=${shipped.id} STATUS=${shipped.status} CARRIER=${shipped.carrierName} TRACKING=${shipped.trackingNumber}`,
+    );
+
+    return shipped;
   }
 }
