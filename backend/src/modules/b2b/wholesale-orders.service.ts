@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -187,7 +188,11 @@ export class WholesaleOrdersService {
           })),
         },
       },
-      include: { items: true },
+      include: {
+        items: true,
+        buyerVendor: { select: { id: true, businessName: true } },
+        sellerVendor: { select: { id: true, businessName: true } },
+      },
     });
 
     this.logger.log(
@@ -195,5 +200,136 @@ export class WholesaleOrdersService {
     );
 
     return created;
+  }
+
+  /** Inbound drafts for the authenticated seller. */
+  async listInboundForSeller(sellerVendorId: string) {
+    return this.prisma.wholesaleOrder.findMany({
+      where: { sellerVendorId },
+      include: {
+        items: true,
+        buyerVendor: { select: { id: true, businessName: true } },
+        sellerVendor: { select: { id: true, businessName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Seller accepts a draft: status → ORDER_ACCEPTED_BY_SELLER and reserve stock.
+   */
+  async acceptForSeller(sellerVendorId: string, orderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.wholesaleOrder.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+
+      if (!order) {
+        throw new NotFoundException('WHOLESALE_ORDER_ERROR: ORDER_NOT_FOUND');
+      }
+
+      if (order.sellerVendorId !== sellerVendorId) {
+        this.logger.warn(
+          `CROSS_TENANT_LEAK_BLOCKED ACTION=ORDER_ACCEPT SESSION=${sellerVendorId} SELLER=${order.sellerVendorId} ORDER=${orderId}`,
+        );
+        throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+      }
+
+      if (order.status !== WholesaleOrderStatus.ORDER_DRAFT_INITIALIZED) {
+        throw new ConflictException(
+          `WHOLESALE_ORDER_ERROR: INVALID_STATUS CURRENT=${order.status}`,
+        );
+      }
+
+      if (order.items.length === 0) {
+        throw new BadRequestException('WHOLESALE_ORDER_ERROR: ITEMS_REQUIRED');
+      }
+
+      for (const item of order.items) {
+        const reserved = await tx.wholesaleProduct.updateMany({
+          where: {
+            id: item.productSkuId,
+            vendorId: sellerVendorId,
+            status: WholesaleProductStatus.ACTIVE,
+            availableQuantity: { gte: item.quantity },
+          },
+          data: {
+            availableQuantity: { decrement: item.quantity },
+          },
+        });
+
+        if (reserved.count !== 1) {
+          const sku = await tx.wholesaleProduct.findUnique({
+            where: { id: item.productSkuId },
+            select: { availableQuantity: true },
+          });
+          throw new BadRequestException(
+            `WHOLESALE_ORDER_ERROR: INSUFFICIENT_STOCK SKU=${item.productSkuId} NEED=${item.quantity} AVAILABLE=${sku?.availableQuantity ?? 0}`,
+          );
+        }
+
+        this.logger.log(
+          `INVENTORY_RESERVATION_SUCCESS ORDER=${orderId} SKU=${item.productSkuId} QTY=${item.quantity}`,
+        );
+      }
+
+      const accepted = await tx.wholesaleOrder.update({
+        where: { id: orderId },
+        data: { status: WholesaleOrderStatus.ORDER_ACCEPTED_BY_SELLER },
+        include: {
+          items: true,
+          buyerVendor: { select: { id: true, businessName: true } },
+          sellerVendor: { select: { id: true, businessName: true } },
+        },
+      });
+
+      this.logger.log(
+        `ORDER_ACCEPTED_BY_SELLER ID=${accepted.id} SELLER=${sellerVendorId} LINES=${accepted.items.length}`,
+      );
+
+      return accepted;
+    });
+  }
+
+  /** Seller rejects a draft without inventory mutation. */
+  async rejectForSeller(sellerVendorId: string, orderId: string) {
+    const order = await this.prisma.wholesaleOrder.findUnique({
+      where: { id: orderId },
+      select: { id: true, sellerVendorId: true, status: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('WHOLESALE_ORDER_ERROR: ORDER_NOT_FOUND');
+    }
+
+    if (order.sellerVendorId !== sellerVendorId) {
+      this.logger.warn(
+        `CROSS_TENANT_LEAK_BLOCKED ACTION=ORDER_REJECT SESSION=${sellerVendorId} SELLER=${order.sellerVendorId} ORDER=${orderId}`,
+      );
+      throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+    }
+
+    if (order.status !== WholesaleOrderStatus.ORDER_DRAFT_INITIALIZED) {
+      throw new ConflictException(
+        `WHOLESALE_ORDER_ERROR: INVALID_STATUS CURRENT=${order.status}`,
+      );
+    }
+
+    const rejected = await this.prisma.wholesaleOrder.update({
+      where: { id: orderId },
+      data: { status: WholesaleOrderStatus.ORDER_REJECTED_BY_SELLER },
+      include: {
+        items: true,
+        buyerVendor: { select: { id: true, businessName: true } },
+        sellerVendor: { select: { id: true, businessName: true } },
+      },
+    });
+
+    this.logger.log(
+      `ORDER_REJECTED_BY_SELLER ID=${rejected.id} SELLER=${sellerVendorId}`,
+    );
+
+    return rejected;
   }
 }

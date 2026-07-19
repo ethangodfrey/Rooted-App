@@ -131,6 +131,17 @@ export const wholesaleProductCreateSchema = z
       .max(2000, 'WHOLESALE_VALIDATION_ERROR: PICKUP_NOTES TOO LONG')
       .optional()
       .nullable(),
+    availableQuantity: z.coerce
+      .number({
+        invalid_type_error:
+          'WHOLESALE_VALIDATION_ERROR: AVAILABLE_QUANTITY INVALID',
+      })
+      .int('WHOLESALE_VALIDATION_ERROR: AVAILABLE_QUANTITY MUST BE INTEGER')
+      .nonnegative(
+        'WHOLESALE_VALIDATION_ERROR: AVAILABLE_QUANTITY MUST BE NONNEGATIVE',
+      )
+      .max(1_000_000_000, 'WHOLESALE_VALIDATION_ERROR: AVAILABLE_QUANTITY TOO LARGE')
+      .optional(),
   })
   .strict();
 

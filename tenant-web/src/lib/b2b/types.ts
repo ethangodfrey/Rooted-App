@@ -14,8 +14,15 @@ export type WholesaleProductRow = {
   PRICING_TIERS: WholesalePricingTier | unknown;
   FREIGHT_NOTES: string | null;
   PICKUP_NOTES: string | null;
+  AVAILABLE_QUANTITY?: number;
   STATUS: string;
 };
+
+export type WholesaleOrderStatusCode =
+  | 'ORDER_DRAFT_INITIALIZED'
+  | 'ORDER_ACCEPTED_BY_SELLER'
+  | 'ORDER_REJECTED_BY_SELLER'
+  | string;
 
 export type WholesaleCatalogResponse = {
   STATUS: string;
@@ -53,7 +60,9 @@ export type WholesaleOrderDraftRow = {
   ID: string;
   BUYER_VENDOR_ID: string;
   SELLER_VENDOR_ID: string;
-  STATUS: string;
+  BUYER_VENDOR_NAME?: string | null;
+  SELLER_VENDOR_NAME?: string | null;
+  STATUS: WholesaleOrderStatusCode;
   CURRENCY: string;
   SUBTOTAL_CENTS: number;
   ITEMS: WholesaleOrderDraftItemRow[];
@@ -61,6 +70,22 @@ export type WholesaleOrderDraftRow = {
 };
 
 export type WholesaleOrderDraftResponse = {
+  STATUS: string;
+  ORDER?: WholesaleOrderDraftRow;
+  error?: string;
+  message?: string;
+};
+
+export type WholesaleInboundOrdersResponse = {
+  STATUS: string;
+  VIEW?: string;
+  SESSION_VENDOR_ID?: string;
+  COUNT: number;
+  ORDERS: WholesaleOrderDraftRow[];
+  error?: string;
+};
+
+export type WholesaleOrderActionResponse = {
   STATUS: string;
   ORDER?: WholesaleOrderDraftRow;
   error?: string;

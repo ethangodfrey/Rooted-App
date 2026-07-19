@@ -28,12 +28,13 @@ export class WholesaleProductsService {
         pricingTiers: input.pricingTiers as Prisma.InputJsonValue,
         freightNotes: input.freightNotes ?? null,
         pickupNotes: input.pickupNotes ?? null,
+        availableQuantity: input.availableQuantity ?? 0,
         status: WholesaleProductStatus.ACTIVE,
       },
     });
 
     this.logger.log(
-      `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq}`,
+      `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity}`,
     );
     return created;
   }
