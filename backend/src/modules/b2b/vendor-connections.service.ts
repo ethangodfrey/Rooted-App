@@ -97,6 +97,26 @@ export class VendorConnectionsService {
     });
   }
 
+  /**
+   * ACCEPTED peer vendor IDs for CONNECTED_WHOLESALERS discovery ranking.
+   */
+  async listAcceptedConnectedVendorIds(vendorId: string): Promise<string[]> {
+    const rows = await this.prisma.vendorBusinessConnection.findMany({
+      where: {
+        status: VendorBusinessConnectionStatus.ACCEPTED,
+        OR: [{ senderVendorId: vendorId }, { receiverVendorId: vendorId }],
+      },
+      select: { senderVendorId: true, receiverVendorId: true },
+    });
+
+    const peers = new Set<string>();
+    for (const row of rows) {
+      if (row.senderVendorId !== vendorId) peers.add(row.senderVendorId);
+      if (row.receiverVendorId !== vendorId) peers.add(row.receiverVendorId);
+    }
+    return [...peers];
+  }
+
   async findWithPeer(viewerVendorId: string, peerVendorId: string) {
     return this.prisma.vendorBusinessConnection.findFirst({
       where: {
