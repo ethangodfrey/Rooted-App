@@ -125,7 +125,7 @@ export class WholesaleOrdersController {
     if (!parsed.OK) {
       throw new BadRequestException(parsed.ERROR);
     }
-    const { order, invoice } = await this.orders.settleForBuyer(
+    const { order, invoice, payment } = await this.orders.settleForBuyer(
       buyerVendorId,
       parsed.DATA,
     );
@@ -133,6 +133,14 @@ export class WholesaleOrdersController {
       STATUS: 'ORDER_DELIVERY_CONFIRMED',
       LEDGER: 'WHOLESALE_LEDGER_SETTLED',
       BILLING: 'BILLING_LEDGER_UPDATED',
+      PAYMENT: payment.PAYMENT_INTENT_ID
+        ? 'PAYMENT_INTENT_CREATED'
+        : payment.SKIPPED_REASON
+          ? `PAYMENT_INTENT_SKIPPED:${payment.SKIPPED_REASON}`
+          : 'PAYMENT_INTENT_SKIPPED',
+      PAYMENT_INTENT_ID: payment.PAYMENT_INTENT_ID,
+      PAYMENT_STATUS: payment.PAYMENT_STATUS,
+      CLIENT_SECRET: payment.CLIENT_SECRET,
       INVOICE: this.serializeInvoice(invoice),
       ORDER: this.serializeOrder({
         ...order,
@@ -314,6 +322,8 @@ export class WholesaleOrdersController {
     issuedAt: Date;
     dueAt: Date;
     paidAt?: Date | null;
+    stripePaymentIntentId?: string | null;
+    stripePaymentStatus?: string | null;
     createdAt?: Date;
   }) {
     const displayStatus = resolveInvoiceDisplayStatus(
@@ -339,6 +349,8 @@ export class WholesaleOrdersController {
       ISSUED_AT: invoice.issuedAt.toISOString(),
       DUE_AT: invoice.dueAt.toISOString(),
       PAID_AT: invoice.paidAt ? invoice.paidAt.toISOString() : null,
+      STRIPE_PAYMENT_INTENT_ID: invoice.stripePaymentIntentId ?? null,
+      STRIPE_PAYMENT_STATUS: invoice.stripePaymentStatus ?? null,
     };
   }
 

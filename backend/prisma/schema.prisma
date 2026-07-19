@@ -226,6 +226,7 @@ enum WholesaleOrderStatus {
   ORDER_REJECTED_BY_SELLER
   ORDER_SHIPPED_IN_TRANSIT
   ORDER_DELIVERY_CONFIRMED
+  PAYMENT_SETTLED
 
   @@map("wholesale_order_status")
 }
@@ -310,6 +311,9 @@ model WholesaleInvoice {
   dueAt              DateTime               @map("due_at") @db.Timestamptz(6)
   /// Seller-confirmed payment clearance (phase61).
   paidAt             DateTime?              @map("paid_at") @db.Timestamptz(6)
+  /// Stripe PaymentIntent created on delivery confirm (phase63).
+  stripePaymentIntentId String?             @map("stripe_payment_intent_id")
+  stripePaymentStatus   String?             @map("stripe_payment_status")
   createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

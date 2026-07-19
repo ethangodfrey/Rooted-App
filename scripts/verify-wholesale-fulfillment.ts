@@ -42,8 +42,8 @@ function main(): void {
     `LOGISTICS_MANIFEST_VALID ORDER=${parsed.DATA.order_id} CARRIER=${parsed.DATA.carrier_name.toUpperCase()} TRACKING=${parsed.DATA.tracking_number}`,
   );
 
-  const from = 'ORDER_ACCEPTED_BY_SELLER';
-  const to = 'ORDER_SHIPPED_IN_TRANSIT';
+  const from: string = 'ORDER_ACCEPTED_BY_SELLER';
+  const to: string = 'ORDER_SHIPPED_IN_TRANSIT';
   assert(from !== to, 'STATUS_FAIL TRANSITION');
   log(`ORDER_FULFILLMENT_TRACKED FROM=${from} TO=${to}`);
 

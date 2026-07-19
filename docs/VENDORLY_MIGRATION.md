@@ -84,6 +84,7 @@ docs/supabase/phase60_wholesale_invoices_net_terms.sql # wholesale_invoices Net-
 docs/supabase/phase61_invoice_reconciliation.sql # paid_at + seller reconcile-to-PAID
 docs/supabase/phase62a_invoice_status_enum.sql # add PENDING/OVERDUE enum values (run alone)
 docs/supabase/phase62b_invoice_pending_backfill.sql # ISSUED→PENDING backfill + sweep index (after 62a)
+docs/supabase/phase63_wholesale_stripe_payments.sql # PAYMENT_SETTLED + invoice Stripe PaymentIntent columns
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

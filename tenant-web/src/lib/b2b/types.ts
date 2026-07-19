@@ -111,6 +111,8 @@ export type WholesaleInvoiceRow = {
   ISSUED_AT: string;
   DUE_AT: string;
   PAID_AT?: string | null;
+  STRIPE_PAYMENT_INTENT_ID?: string | null;
+  STRIPE_PAYMENT_STATUS?: string | null;
 };
 
 export type WholesaleInvoiceResponse = {
