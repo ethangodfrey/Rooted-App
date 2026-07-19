@@ -360,3 +360,46 @@ export function parseWholesaleOrderSettlement(
   }
   return { OK: true, DATA: parsed.data };
 }
+
+export const wholesaleInvoiceReconcileSchema = z
+  .object({
+    invoice_id: z
+      .string({
+        required_error: 'INVOICE_RECONCILE_VALIDATION_ERROR: INVOICE_ID REQUIRED',
+        invalid_type_error:
+          'INVOICE_RECONCILE_VALIDATION_ERROR: INVOICE_ID INVALID',
+      })
+      .uuid('INVOICE_RECONCILE_VALIDATION_ERROR: INVOICE_ID MUST BE UUID'),
+    paid_at: z
+      .string({
+        invalid_type_error: 'INVOICE_RECONCILE_VALIDATION_ERROR: PAID_AT INVALID',
+      })
+      .trim()
+      .refine((value) => value.length === 0 || !Number.isNaN(Date.parse(value)), {
+        message: 'INVOICE_RECONCILE_VALIDATION_ERROR: PAID_AT MUST BE ISO8601',
+      })
+      .optional(),
+  })
+  .strict();
+
+export type WholesaleInvoiceReconcileInput = z.infer<
+  typeof wholesaleInvoiceReconcileSchema
+>;
+
+export type WholesaleInvoiceReconcileParseResult =
+  | { OK: true; DATA: WholesaleInvoiceReconcileInput }
+  | { OK: false; ERROR: string };
+
+export function parseWholesaleInvoiceReconcile(
+  input: unknown,
+): WholesaleInvoiceReconcileParseResult {
+  const parsed = wholesaleInvoiceReconcileSchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'INVOICE_RECONCILE_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}

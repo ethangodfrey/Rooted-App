@@ -51,6 +51,7 @@
     "test:wholesale:fulfillment": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-fulfillment.ts",
     "test:wholesale:settlement": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-settlement.ts",
     "test:wholesale:invoice": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-invoice.ts",
+    "test:wholesale:reconcile": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-invoice-reconcile.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
     "verify:ingress": "ts-node scripts/verify-ingress-cutover.ts",

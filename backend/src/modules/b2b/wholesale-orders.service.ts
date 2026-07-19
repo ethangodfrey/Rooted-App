@@ -14,12 +14,14 @@ import {
   WholesaleProductStatus,
 } from '@prisma/client';
 import type {
+  WholesaleInvoiceReconcileInput,
   WholesaleOrderDraftCreateInput,
   WholesaleOrderFulfillmentInput,
   WholesaleOrderSettlementInput,
 } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { resolveInvoiceDisplayStatus } from './wholesale-invoice.util';
 
 const NET_TERMS_DAYS = 30;
 
@@ -561,5 +563,67 @@ export class WholesaleOrdersService {
     }
 
     return invoice;
+  }
+
+  /**
+   * Seller marks Net-30 invoice PAID after external funds clear.
+   */
+  async reconcileInvoiceForSeller(
+    sellerVendorId: string,
+    input: WholesaleInvoiceReconcileInput,
+  ) {
+    const invoice = await this.prisma.wholesaleInvoice.findUnique({
+      where: { id: input.invoice_id },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('WHOLESALE_INVOICE_ERROR: INVOICE_NOT_FOUND');
+    }
+
+    if (invoice.sellerVendorId !== sellerVendorId) {
+      this.logger.warn(
+        `CROSS_TENANT_LEAK_BLOCKED ACTION=INVOICE_RECONCILE SESSION=${sellerVendorId} SELLER=${invoice.sellerVendorId} INVOICE=${input.invoice_id}`,
+      );
+      throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+    }
+
+    if (invoice.status === WholesaleInvoiceStatus.PAID) {
+      throw new ConflictException('WHOLESALE_INVOICE_ERROR: ALREADY_PAID');
+    }
+
+    if (invoice.status === WholesaleInvoiceStatus.VOID) {
+      throw new ConflictException('WHOLESALE_INVOICE_ERROR: INVOICE_VOID');
+    }
+
+    const paidAt =
+      input.paid_at && input.paid_at.trim().length > 0
+        ? new Date(input.paid_at)
+        : new Date();
+    if (Number.isNaN(paidAt.getTime())) {
+      throw new BadRequestException(
+        'INVOICE_RECONCILE_VALIDATION_ERROR: PAID_AT INVALID',
+      );
+    }
+
+    const updated = await this.prisma.wholesaleInvoice.update({
+      where: { id: invoice.id },
+      data: {
+        status: WholesaleInvoiceStatus.PAID,
+        paidAt,
+      },
+    });
+
+    this.logger.log(
+      `INVOICE_MARKED_PAID ID=${updated.id} NUMBER=${updated.invoiceNumber} PAID_AT=${paidAt.toISOString()}`,
+    );
+    this.logger.log(
+      `LEDGER_RECONCILED INVOICE=${updated.id} ORDER=${updated.orderId} TOTAL_CENTS=${updated.totalCents}`,
+    );
+
+    return updated;
+  }
+
+  displayStatusForInvoice(invoice: { status: string; dueAt: Date }) {
+    return resolveInvoiceDisplayStatus(invoice.status, invoice.dueAt);
   }
 }

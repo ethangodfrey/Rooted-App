@@ -306,6 +306,8 @@ model WholesaleInvoice {
   status             WholesaleInvoiceStatus @default(ISSUED)
   issuedAt           DateTime               @default(now()) @map("issued_at") @db.Timestamptz(6)
   dueAt              DateTime               @map("due_at") @db.Timestamptz(6)
+  /// Seller-confirmed payment clearance (phase61).
+  paidAt             DateTime?              @map("paid_at") @db.Timestamptz(6)
   createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

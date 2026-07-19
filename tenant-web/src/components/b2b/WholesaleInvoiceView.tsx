@@ -1,9 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { resolveInvoiceDisplayStatus } from '@/lib/b2b/invoice-display';
 import type {
+  WholesaleInvoiceDisplayStatus,
   WholesaleInvoiceLineItem,
+  WholesaleInvoiceReconcileResponse,
   WholesaleInvoiceResponse,
   WholesaleInvoiceRow,
 } from '@/lib/b2b/types';
@@ -37,14 +40,28 @@ function lineTotal(item: WholesaleInvoiceLineItem): number {
   return Number(item.lineTotalCents ?? item.LINE_TOTAL_CENTS ?? 0);
 }
 
+function badgeClass(status: WholesaleInvoiceDisplayStatus): string {
+  if (status === 'PAID') {
+    return 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100';
+  }
+  if (status === 'OVERDUE') {
+    return 'border-rose-400/40 bg-rose-500/15 text-rose-100';
+  }
+  return 'border-amber-400/40 bg-amber-500/15 text-amber-100';
+}
+
 export function WholesaleInvoiceView({
   invoiceId,
   accessToken,
   apiBaseUrl = '',
 }: WholesaleInvoiceViewProps) {
   const [loading, setLoading] = useState(true);
+  const [reconciling, setReconciling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<WholesaleInvoiceRow | null>(null);
+  const [viewerRole, setViewerRole] = useState<string | null>(null);
+  const [canReconcile, setCanReconcile] = useState(false);
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -73,9 +90,11 @@ export function WholesaleInvoiceView({
         throw new Error('WHOLESALE_INVOICE_ERROR: INVOICE_MISSING');
       }
       setInvoice(body.INVOICE);
+      setViewerRole(body.VIEWER_ROLE ?? null);
+      setCanReconcile(Boolean(body.CAN_RECONCILE));
       // eslint-disable-next-line no-console
       console.log(
-        `WHOLESALE_INVOICE_LOADED ID=${body.INVOICE.ID} NUMBER=${body.INVOICE.INVOICE_NUMBER}`,
+        `WHOLESALE_INVOICE_LOADED ID=${body.INVOICE.ID} NUMBER=${body.INVOICE.INVOICE_NUMBER} ROLE=${body.VIEWER_ROLE ?? 'UNKNOWN'}`,
       );
     } catch (err) {
       setError(
@@ -93,12 +112,78 @@ export function WholesaleInvoiceView({
     void load();
   }, [load]);
 
+  const displayStatus: WholesaleInvoiceDisplayStatus = useMemo(() => {
+    if (!invoice) return 'PENDING';
+    if (invoice.DISPLAY_STATUS === 'PAID' || invoice.DISPLAY_STATUS === 'OVERDUE' || invoice.DISPLAY_STATUS === 'PENDING') {
+      return invoice.DISPLAY_STATUS;
+    }
+    return resolveInvoiceDisplayStatus(invoice.STATUS, invoice.DUE_AT);
+  }, [invoice]);
+
   const onExport = () => {
     // eslint-disable-next-line no-console
-    console.log(
-      `WHOLESALE_INVOICE_EXPORT ID=${invoiceId} ACTION=PRINT_TO_PDF`,
-    );
+    console.log(`WHOLESALE_INVOICE_EXPORT ID=${invoiceId} ACTION=PRINT_TO_PDF`);
     window.print();
+  };
+
+  const onMarkPaid = async () => {
+    if (!accessToken || !invoice) return;
+    setReconciling(true);
+    setError(null);
+    setStatusMessage(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/vendors/invoices/reconcile`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          invoice_id: invoice.ID,
+          paid_at: new Date().toISOString(),
+        }),
+        cache: 'no-store',
+      });
+      const body = (await res.json()) as WholesaleInvoiceReconcileResponse;
+      if (!res.ok) {
+        throw new Error(
+          body.error || body.message || `WHOLESALE_RECONCILE_HTTP_${res.status}`,
+        );
+      }
+      if (body.INVOICE) {
+        setInvoice(body.INVOICE);
+      } else {
+        setInvoice((prev) =>
+          prev
+            ? {
+                ...prev,
+                STATUS: 'PAID',
+                DISPLAY_STATUS: 'PAID',
+                PAID_AT: new Date().toISOString(),
+              }
+            : prev,
+        );
+      }
+      setCanReconcile(false);
+      setStatusMessage('INVOICE_MARKED_PAID');
+      // eslint-disable-next-line no-console
+      console.log(
+        `INVOICE_MARKED_PAID ID=${body.INVOICE?.ID ?? invoice.ID} NUMBER=${body.INVOICE?.INVOICE_NUMBER ?? invoice.INVOICE_NUMBER}`,
+      );
+      // eslint-disable-next-line no-console
+      console.log(
+        `LEDGER_RECONCILED INVOICE=${body.INVOICE?.ID ?? invoice.ID} LEDGER=${body.LEDGER ?? 'LEDGER_RECONCILED'}`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message.toUpperCase()
+          : 'WHOLESALE_RECONCILE_FAILED',
+      );
+    } finally {
+      setReconciling(false);
+    }
   };
 
   if (loading) {
@@ -109,15 +194,24 @@ export function WholesaleInvoiceView({
     );
   }
 
-  if (error || !invoice) {
+  if (error && !invoice) {
     return (
       <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 font-mono text-xs uppercase tracking-wide text-rose-200">
-        {error ?? 'WHOLESALE_INVOICE_NOT_FOUND'}
+        {error}
+      </p>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 font-mono text-xs uppercase tracking-wide text-rose-200">
+        WHOLESALE_INVOICE_NOT_FOUND
       </p>
     );
   }
 
   const currency = invoice.CURRENCY || 'USD';
+  const isSeller = viewerRole === 'SELLER';
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-10 font-sans text-zinc-50">
@@ -129,9 +223,17 @@ export function WholesaleInvoiceView({
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
             {invoice.INVOICE_NUMBER}
           </h1>
-          <p className="mt-2 font-mono text-[11px] uppercase tracking-widest text-sky-300/90">
-            {invoice.STATUS} — {invoice.PAYMENT_TERMS}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex rounded-md border px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] ${badgeClass(displayStatus)}`}
+              data-testid="invoice-display-status"
+            >
+              {displayStatus}
+            </span>
+            <span className="font-mono text-[11px] uppercase tracking-widest text-white/45">
+              DB {invoice.STATUS} — {invoice.PAYMENT_TERMS}
+            </span>
+          </div>
         </div>
         <button
           type="button"
@@ -142,6 +244,47 @@ export function WholesaleInvoiceView({
           EXPORT INVOICE
         </button>
       </div>
+
+      {error ? (
+        <p className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 font-mono text-xs uppercase tracking-wide text-rose-200">
+          {error}
+        </p>
+      ) : null}
+
+      {statusMessage ? (
+        <p
+          className="mb-4 font-mono text-[11px] uppercase tracking-widest text-emerald-300/90"
+          data-testid="invoice-reconcile-status"
+        >
+          {statusMessage}
+        </p>
+      ) : null}
+
+      {isSeller && canReconcile ? (
+        <div
+          className="mb-6 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-4 print:hidden"
+          data-testid="seller-reconcile-panel"
+        >
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-100">
+            Accounts Receivable — Seller Actions
+          </p>
+          <p className="mt-2 text-xs text-white/65">
+            Mark this Net-30 invoice paid after external funds clear. Current AR
+            badge: {displayStatus}.
+          </p>
+          <button
+            type="button"
+            disabled={reconciling}
+            onClick={() => {
+              void onMarkPaid();
+            }}
+            className="mt-4 inline-flex min-w-[11rem] items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
+            data-testid="mark-invoice-paid"
+          >
+            {reconciling ? 'RECONCILING' : 'MARK AS PAID'}
+          </button>
+        </div>
+      ) : null}
 
       <article
         className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-6 print:border-black print:bg-white print:text-black"
@@ -186,8 +329,8 @@ export function WholesaleInvoiceView({
             <dd className="mt-1">{invoice.ORDER_ID}</dd>
           </div>
           <div>
-            <dt className="text-white/40 print:text-neutral-500">Terms</dt>
-            <dd className="mt-1">{invoice.PAYMENT_TERMS}</dd>
+            <dt className="text-white/40 print:text-neutral-500">Paid At</dt>
+            <dd className="mt-1">{invoice.PAID_AT || '—'}</dd>
           </div>
         </dl>
 
