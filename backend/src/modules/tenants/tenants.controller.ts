@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 
+import { UNKNOWN_TENANT_CONTEXT } from './tenant-host.util';
 import { TenantCacheService } from './tenant-cache.service';
 import { TenantsService } from './tenants.service';
 
@@ -35,7 +36,7 @@ export class TenantsController {
   ) {
     const rawHost = hostQuery?.trim() || forwardedHost?.split(',')[0]?.trim() || requestHost;
     if (!rawHost) {
-      throw new NotFoundException('Host header is required');
+      throw new NotFoundException(UNKNOWN_TENANT_CONTEXT);
     }
 
     const normalized = this.tenants.normalizeHost(rawHost);

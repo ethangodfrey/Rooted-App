@@ -40,6 +40,7 @@
     "test:pos-sales": "npx tsx scripts/test-pos-sales-webhook.ts",
     "test:checkout": "npx tsx scripts/test-checkout-pipeline.ts",
     "test:integration:core": "ts-node scripts/test-core-lifecycle.ts",
+    "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "env:build": "npm run build --prefix packages/env-config",
     "env:typecheck": "npm run typecheck --prefix packages/env-config",
     "health:audit": "npx tsx scripts/autonomous-health-check.ts",

@@ -3,6 +3,11 @@ import { TenantStatus } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantCacheService } from './tenant-cache.service';
+import {
+  UNKNOWN_TENANT_CONTEXT,
+  extractSubdomainSlug,
+  normalizeHost,
+} from './tenant-host.util';
 import type { TenantConfig, TenantResolveResult } from './tenant.types';
 
 const TENANT_INCLUDE = {
@@ -27,15 +32,11 @@ export class TenantsService {
   ) {}
 
   normalizeHost(rawHost: string): string {
-    const withoutPort = rawHost.split(':')[0]?.trim().toLowerCase() ?? '';
-    return withoutPort.startsWith('www.') ? withoutPort.slice(4) : withoutPort;
+    return normalizeHost(rawHost);
   }
 
   extractSubdomainSlug(host: string, platformDomain: string): string | null {
-    if (!host.endsWith(`.${platformDomain}`)) return null;
-    const slug = host.slice(0, -(platformDomain.length + 1));
-    if (!slug || slug.includes('.')) return null;
-    return slug;
+    return extractSubdomainSlug(host, platformDomain);
   }
 
   mapTenant(row: {
@@ -150,7 +151,7 @@ export class TenantsService {
 
     const resolved = await this.findByHostFromDb(normalized, platformDomain);
     if (!resolved) {
-      throw new NotFoundException(`No active tenant for host "${normalized}"`);
+      throw new NotFoundException(UNKNOWN_TENANT_CONTEXT);
     }
 
     await this.cache.set(normalized, resolved.tenant, resolved.resolution);
@@ -165,7 +166,7 @@ export class TenantsService {
 
     const tenant = await this.findBySlugFromDb(slug);
     if (!tenant) {
-      throw new NotFoundException(`No active tenant with slug "${slug}"`);
+      throw new NotFoundException(UNKNOWN_TENANT_CONTEXT);
     }
 
     await this.cache.set(slug, tenant, 'slug_path');
