@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import {
   CREDENTIAL_LABELS,
@@ -159,9 +160,10 @@ export function AdminCredentialsPage() {
 
                 {docUrls[row.id] ? (
                   <a href={docUrls[row.id]} target="_blank" rel="noreferrer">
-                    <img
+                    <FallbackImage
                       src={docUrls[row.id]}
                       alt="Credential document"
+                      variant="banner"
                       style={{
                         width: '100%',
                         maxHeight: '240px',

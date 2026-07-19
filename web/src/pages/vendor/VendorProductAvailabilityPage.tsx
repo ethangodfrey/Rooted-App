@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { IconBadge } from '@/components/vendor/dashboard-icons';
+import { FieldError } from '@/components/ui/FieldError';
 import {
   VendorEmpty,
   VendorFormPanel,
@@ -43,6 +44,9 @@ export function VendorProductAvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Record<string, { presale?: string; inperson?: string }>
+  >({});
 
   const load = useCallback(async () => {
     if (!vendor || !productId) {
@@ -102,34 +106,58 @@ export function VendorProductAvailabilityPage() {
       ...prev,
       [eventId]: { ...prev[eventId], [field]: value.replace(/[^0-9]/g, '') },
     }));
+    setFieldErrors((prev) => {
+      const row = prev[eventId];
+      if (!row?.[field]) return prev;
+      const next = { ...prev };
+      const nextRow = { ...row };
+      delete nextRow[field];
+      if (Object.keys(nextRow).length === 0) {
+        delete next[eventId];
+      } else {
+        next[eventId] = nextRow;
+      }
+      return next;
+    });
   }
 
   async function handleSave() {
     if (!productId) return;
     setError(null);
 
+    const nextFieldErrors: Record<string, { presale?: string; inperson?: string }> = {};
     const rows = events.map((ev) => {
       const entry = quantities[ev.id] ?? { presale: '0', inperson: '0' };
+      const presale = Number.parseInt(entry.presale || '0', 10);
+      const inperson = Number.parseInt(entry.inperson || '0', 10);
+
+      if (!Number.isInteger(presale) || presale < 0) {
+        nextFieldErrors[ev.id] = {
+          ...nextFieldErrors[ev.id],
+          presale: 'Enter a whole number of 0 or more.',
+        };
+      }
+      if (!Number.isInteger(inperson) || inperson < 0) {
+        nextFieldErrors[ev.id] = {
+          ...nextFieldErrors[ev.id],
+          inperson: 'Enter a whole number of 0 or more.',
+        };
+      }
+
       return {
         product_id: productId,
         event_id: ev.id,
-        available_quantity_presale: Number.parseInt(entry.presale || '0', 10),
-        available_quantity_inperson: Number.parseInt(entry.inperson || '0', 10),
+        available_quantity_presale: presale,
+        available_quantity_inperson: inperson,
       };
     });
 
-    const invalid = rows.find(
-      (r) =>
-        !Number.isInteger(r.available_quantity_presale) ||
-        !Number.isInteger(r.available_quantity_inperson) ||
-        r.available_quantity_presale < 0 ||
-        r.available_quantity_inperson < 0,
-    );
-    if (invalid) {
-      setError('Quantities must be whole numbers of 0 or more.');
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       return;
     }
 
+    setFieldErrors({});
     setSaving(true);
     const { error: upError } = await supabase
       .from('product_event_availability')
@@ -174,18 +202,22 @@ export function VendorProductAvailabilityPage() {
                 <div className="app-input-group m-0">
                   <label>Presale qty</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors[ev.id]?.presale ? ' app-input--invalid' : ''}`}
                     value={quantities[ev.id]?.presale ?? '0'}
+                    aria-invalid={Boolean(fieldErrors[ev.id]?.presale)}
                     onChange={(e) => setQty(ev.id, 'presale', e.target.value)}
                   />
+                  <FieldError message={fieldErrors[ev.id]?.presale} />
                 </div>
                 <div className="app-input-group m-0">
                   <label>In-person qty</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors[ev.id]?.inperson ? ' app-input--invalid' : ''}`}
                     value={quantities[ev.id]?.inperson ?? '0'}
+                    aria-invalid={Boolean(fieldErrors[ev.id]?.inperson)}
                     onChange={(e) => setQty(ev.id, 'inperson', e.target.value)}
                   />
+                  <FieldError message={fieldErrors[ev.id]?.inperson} />
                 </div>
               </div>
             </div>

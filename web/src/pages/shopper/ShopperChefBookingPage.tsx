@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { useAuth } from '@/hooks/use-auth';
 import { CHEF_SERVICE_TYPE_LABEL, formatServicePrice } from '@/lib/chefs';
 import { supabase } from '@/lib/supabase';
 import type { ChefService } from '@/types/database';
 import '@/components/ui/ui.css';
+
+type BookingField = 'eventDate' | 'guestCount';
 
 export function ShopperChefBookingPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -20,6 +23,7 @@ export function ShopperChefBookingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<BookingField, string>>>({});
 
   useEffect(() => {
     async function load() {
@@ -34,13 +38,38 @@ export function ShopperChefBookingPage() {
     void load();
   }, [serviceId]);
 
+  function clearFieldError(field: BookingField) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function handleSubmit() {
     if (!user?.id || !service) return;
+
+    const nextFieldErrors: Partial<Record<BookingField, string>> = {};
     if (!eventDate.trim()) {
-      setError('Enter an event date.');
+      nextFieldErrors.eventDate = 'Enter an event date.';
+    }
+
+    const guests = guestCount.trim();
+    if (guests) {
+      const count = Number(guests);
+      if (!Number.isInteger(count) || count < 1) {
+        nextFieldErrors.guestCount = 'Guest count must be a whole number of 1 or more.';
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
 
+    setFieldErrors({});
     setSubmitting(true);
     setError(null);
 
@@ -49,7 +78,7 @@ export function ShopperChefBookingPage() {
       chef_id: service.chef_id,
       service_id: service.id,
       event_date: eventDate.trim(),
-      guest_count: guestCount ? Number(guestCount) : null,
+      guest_count: guests ? Number(guests) : null,
       location_address: location.trim() || null,
       special_requests: requests.trim() || null,
       booking_status: 'inquiry',
@@ -92,10 +121,15 @@ export function ShopperChefBookingPage() {
         <input
           id="event-date"
           type="date"
-          className="app-input"
+          className={`app-input${fieldErrors.eventDate ? ' app-input--invalid' : ''}`}
           value={eventDate}
-          onChange={(e) => setEventDate(e.target.value)}
+          aria-invalid={Boolean(fieldErrors.eventDate)}
+          onChange={(e) => {
+            setEventDate(e.target.value);
+            clearFieldError('eventDate');
+          }}
         />
+        <FieldError message={fieldErrors.eventDate} />
       </div>
       <div className="app-input-group">
         <label htmlFor="guests">Guest count</label>
@@ -103,11 +137,16 @@ export function ShopperChefBookingPage() {
           id="guests"
           type="number"
           min="1"
-          className="app-input"
+          className={`app-input${fieldErrors.guestCount ? ' app-input--invalid' : ''}`}
           value={guestCount}
-          onChange={(e) => setGuestCount(e.target.value)}
+          aria-invalid={Boolean(fieldErrors.guestCount)}
+          onChange={(e) => {
+            setGuestCount(e.target.value);
+            clearFieldError('guestCount');
+          }}
           placeholder="8"
         />
+        <FieldError message={fieldErrors.guestCount} />
       </div>
       <div className="app-input-group">
         <label htmlFor="location">Location / address</label>
