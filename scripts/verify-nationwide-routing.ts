@@ -1,18 +1,21 @@
 /**
- * Nationwide multi-tenant routing + geo integration audit.
+ * Final nationwide multi-tenant E2E validation pass (PR #162).
  *
- * Validates dynamic `*.vendorlymarketplace.com` subdomain rewrites for all
- * 50 state city fixtures, interstate bounding-box grids, and TypeScript health.
+ * Verifies dynamic `x-directory-slug` injection, 50-state subdomain rewrites,
+ * intrastate + interstate bounding-box grids, and monorepo TypeScript health.
  *
  * Usage:
  *   npm run test:integration:nationwide
  *
  * Success lines (uppercase, no emoji):
+ *   DIRECTORY_SLUG_INJECTED
  *   NATIONWIDE_ROUTING_ACTIVE
  *   STATE_VALIDATION_PASSED
+ *   INTRASTATE_GEO_OK
+ *   GEO_INTERSTATE_OK
  *   GEO_BBOX_VERIFIED
  *   TYPESCRIPT_SWEEP_PASSED
- *   INTEGRATION_CHECK_PASSED
+ *   NATIONWIDE_INTEGRATION_PASSED
  */
 
 import { spawnSync } from 'node:child_process';
@@ -32,11 +35,18 @@ import {
 
 const PLATFORM_DOMAIN = 'vendorlymarketplace.com';
 const RESERVED_SUBDOMAIN_SLUGS = new Set(['api', 'www', 'main']);
+const DIRECTORY_HEADER = 'x-directory-slug';
 
 type RewriteResult =
   | { KIND: 'BYPASS' }
   | { KIND: 'BYPASS_RESERVED'; SLUG: string }
-  | { KIND: 'REWRITE'; SLUG: string; PATH: string; DIRECTORY_SLUG: string }
+  | {
+      KIND: 'REWRITE';
+      SLUG: string;
+      PATH: string;
+      DIRECTORY_SLUG: string;
+      HEADERS: Record<string, string>;
+    }
   | { KIND: 'UNKNOWN' };
 
 function log(message: string): void {
@@ -81,7 +91,10 @@ function shouldBypassMiddleware(pathname: string): boolean {
   );
 }
 
-/** Mirrors tenant-web middleware: host slug → app/[tenant] + directory context. */
+/**
+ * Mirrors tenant-web middleware:
+ * host slug → app/[tenant] rewrite + x-directory-slug header injection.
+ */
 function simulateNationwideRewrite(
   rawHost: string,
   pathname: string,
@@ -102,21 +115,20 @@ function simulateNationwideRewrite(
   }
 
   const pathSegments = pathname.split('/').filter(Boolean);
-  if (pathSegments[0] === slug) {
-    return {
-      KIND: 'REWRITE',
-      SLUG: slug,
-      PATH: pathname,
-      DIRECTORY_SLUG: slug,
-    };
-  }
+  const path =
+    pathSegments[0] === slug
+      ? pathname
+      : `/${slug}${pathname === '/' ? '' : pathname}`;
 
-  const suffix = pathname === '/' ? '' : pathname;
   return {
     KIND: 'REWRITE',
     SLUG: slug,
-    PATH: `/${slug}${suffix}`,
+    PATH: path,
     DIRECTORY_SLUG: slug,
+    HEADERS: {
+      'x-tenant-slug': slug,
+      [DIRECTORY_HEADER]: slug,
+    },
   };
 }
 
@@ -136,6 +148,43 @@ function auditStateFixtureCoverage(): void {
   log(`STATE_VALIDATION_PASSED COUNT=${US_STATE_GEO_FIXTURES.length}`);
 }
 
+function auditDirectorySlugInjection(): void {
+  log('AUDIT_DIRECTORY_SLUG_START');
+
+  let injected = 0;
+  for (const row of US_STATE_GEO_FIXTURES) {
+    const host = `${row.TENANT_SLUG}.${PLATFORM_DOMAIN}`;
+    const rewrite = simulateNationwideRewrite(host, '/');
+    assert(rewrite.KIND === 'REWRITE', `DIRECTORY_SLUG_FAIL HOST=${host}`);
+    assert(
+      rewrite.HEADERS[DIRECTORY_HEADER] === row.TENANT_SLUG,
+      `DIRECTORY_SLUG_FAIL HEADER=${rewrite.HEADERS[DIRECTORY_HEADER]}`,
+    );
+    assert(
+      rewrite.DIRECTORY_SLUG === rewrite.SLUG,
+      `DIRECTORY_SLUG_FAIL MISMATCH SLUG=${rewrite.SLUG}`,
+    );
+    injected += 1;
+  }
+
+  // Nested path still carries directory context for layout/theme providers.
+  const nested = simulateNationwideRewrite(
+    'austin.vendorlymarketplace.com',
+    '/vendor/wholesale',
+  );
+  assert(nested.KIND === 'REWRITE', 'DIRECTORY_SLUG_FAIL NESTED');
+  assert(
+    nested.HEADERS[DIRECTORY_HEADER] === 'austin',
+    `DIRECTORY_SLUG_FAIL NESTED_HEADER=${nested.HEADERS[DIRECTORY_HEADER]}`,
+  );
+  assert(
+    nested.PATH === '/austin/vendor/wholesale',
+    `DIRECTORY_SLUG_FAIL NESTED_PATH=${nested.PATH}`,
+  );
+
+  log(`DIRECTORY_SLUG_INJECTED COUNT=${injected}`);
+}
+
 function auditNationwideRouting(): void {
   log('AUDIT_NATIONWIDE_ROUTING_START');
 
@@ -148,29 +197,64 @@ function auditNationwideRouting(): void {
       rewrite.PATH === `/${row.TENANT_SLUG}`,
       `NATIONWIDE_ROUTING_FAIL PATH=${rewrite.PATH}`,
     );
-    assert(
-      rewrite.DIRECTORY_SLUG === row.TENANT_SLUG,
-      `NATIONWIDE_ROUTING_FAIL DIRECTORY=${rewrite.DIRECTORY_SLUG}`,
-    );
   }
 
-  // City-based sample path with nested route.
   const nested = simulateNationwideRewrite('seattle.vendorlymarketplace.com', '/markets');
   assert(nested.KIND === 'REWRITE', 'NATIONWIDE_ROUTING_FAIL NESTED');
   assert(nested.PATH === '/seattle/markets', `NATIONWIDE_ROUTING_FAIL NESTED_PATH=${nested.PATH}`);
 
-  // Same-origin API must bypass tenant rewrite nationwide.
   const api = simulateNationwideRewrite(
     'miami.vendorlymarketplace.com',
     '/api/markets/nearby',
   );
   assert(api.KIND === 'BYPASS', 'NATIONWIDE_ROUTING_FAIL API_BYPASS');
 
+  for (const reserved of ['api', 'main'] as const) {
+    const result = simulateNationwideRewrite(`${reserved}.${PLATFORM_DOMAIN}`, '/');
+    assert(result.KIND === 'BYPASS_RESERVED', `NATIONWIDE_ROUTING_FAIL RESERVED=${reserved}`);
+  }
+
   log('NATIONWIDE_ROUTING_ACTIVE COUNT=50');
 }
 
+function auditIntrastateGeo(): void {
+  log('AUDIT_INTRASTATE_GEO_START');
+
+  let ok = 0;
+  for (const row of US_STATE_GEO_FIXTURES) {
+    const parsed = parseNearbyMarketsQuerySafe({
+      latitude: String(row.LATITUDE),
+      longitude: String(row.LONGITUDE),
+      radiusMiles: '25',
+      limit: '20',
+    });
+    assert(parsed.OK, `INTRASTATE_GEO_FAIL QUERY STATE=${row.ABBR}`);
+
+    const box = boundingBoxDegrees(
+      parsed.DATA.latitude,
+      parsed.DATA.longitude,
+      parsed.DATA.radiusMiles,
+    );
+    assert(
+      pointInBoundingBox(row.LATITUDE, row.LONGITUDE, box),
+      `INTRASTATE_GEO_FAIL CENTER STATE=${row.ABBR}`,
+    );
+
+    // Small local offset must remain inside the same-state search grid.
+    const localLat = row.LATITUDE + 0.05;
+    const localLng = row.LONGITUDE - 0.05;
+    assert(
+      pointInBoundingBox(localLat, localLng, box),
+      `INTRASTATE_GEO_FAIL OFFSET STATE=${row.ABBR}`,
+    );
+    ok += 1;
+  }
+
+  log(`INTRASTATE_GEO_OK COUNT=${ok}`);
+}
+
 function auditInterstateGeo(): void {
-  log('AUDIT_GEO_NATIONWIDE_START');
+  log('AUDIT_INTERSTATE_GEO_START');
 
   for (const row of getNationwideCrossSectionFixtures()) {
     const parsed = parseNearbyMarketsQuerySafe({
@@ -194,7 +278,6 @@ function auditInterstateGeo(): void {
     );
   }
 
-  // Interstate: Kansas City MO query must include KS side (no state clipping).
   const mo = getStateGeoFixture('MO');
   const ks = getStateGeoFixture('KS');
   assert(mo && ks, 'GEO_FAIL MISSING_KC_FIXTURES');
@@ -205,17 +288,25 @@ function auditInterstateGeo(): void {
   );
   log('GEO_INTERSTATE_OK PAIR=MO_KS');
 
-  // Portland OR/WA corridor — radius from OR includes nearby WA offset.
   const or = getStateGeoFixture('OR');
   assert(or, 'GEO_FAIL MISSING_OR');
   const portlandBox = boundingBoxDegrees(or.LATITUDE, or.LONGITUDE, 100);
-  const waOffsetLat = or.LATITUDE + 0.4;
-  const waOffsetLng = or.LONGITUDE;
   assert(
-    pointInBoundingBox(waOffsetLat, waOffsetLng, portlandBox),
+    pointInBoundingBox(or.LATITUDE + 0.4, or.LONGITUDE, portlandBox),
     'GEO_FAIL INTERSTATE_CLIPPED OR_WA',
   );
   log('GEO_INTERSTATE_OK PAIR=OR_WA');
+
+  // NY/NJ corridor near NYC — no state-border clipping in bbox prefilter.
+  const ny = getStateGeoFixture('NY');
+  const nj = getStateGeoFixture('NJ');
+  assert(ny && nj, 'GEO_FAIL MISSING_NY_NJ');
+  const nycBox = boundingBoxDegrees(ny.LATITUDE, ny.LONGITUDE, 40);
+  assert(
+    pointInBoundingBox(nj.LATITUDE, nj.LONGITUDE, nycBox),
+    'GEO_FAIL INTERSTATE_CLIPPED NY_NJ',
+  );
+  log('GEO_INTERSTATE_OK PAIR=NY_NJ');
 
   log('GEO_BBOX_VERIFIED');
 }
@@ -251,21 +342,43 @@ function auditTypescriptSweep(): void {
   log('TYPESCRIPT_SWEEP_PASSED');
 }
 
+function auditBackendNationwideJest(): void {
+  log('AUDIT_BACKEND_JEST_START');
+  const result = spawnSync(
+    'npm',
+    ['test', '--', '--testPathPatterns=markets-nationwide|tenant-routing', '--no-coverage'],
+    {
+      cwd: resolve(process.cwd(), 'backend'),
+      encoding: 'utf8',
+      env: process.env,
+      shell: process.platform === 'win32',
+    },
+  );
+  if (result.status !== 0) {
+    const detail = (result.stdout || result.stderr || '').trim().slice(0, 1200);
+    fail(`BACKEND_JEST_FAIL DETAIL=${detail}`);
+  }
+  log('BACKEND_JEST_PASSED');
+}
+
 function main(): void {
   log('NATIONWIDE_INTEGRATION_AUDIT_START');
 
   auditStateFixtureCoverage();
+  auditDirectorySlugInjection();
   auditNationwideRouting();
+  auditIntrastateGeo();
   auditInterstateGeo();
+  auditBackendNationwideJest();
   auditTypescriptSweep();
 
-  log('INTEGRATION_CHECK_PASSED');
+  log('NATIONWIDE_INTEGRATION_PASSED');
 }
 
 try {
   main();
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`INTEGRATION_CHECK_FAILED ${message}`);
+  console.error(`NATIONWIDE_INTEGRATION_FAILED ${message}`);
   process.exitCode = 1;
 }
