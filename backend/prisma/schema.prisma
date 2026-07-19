@@ -219,12 +219,13 @@ model WholesaleProduct {
   @@map("wholesale_products")
 }
 
-/// Draft → accept → ship statuses (phase56/57/58).
+/// Draft → accept → ship → deliver statuses (phase56–59).
 enum WholesaleOrderStatus {
   ORDER_DRAFT_INITIALIZED
   ORDER_ACCEPTED_BY_SELLER
   ORDER_REJECTED_BY_SELLER
   ORDER_SHIPPED_IN_TRANSIT
+  ORDER_DELIVERY_CONFIRMED
 
   @@map("wholesale_order_status")
 }
@@ -244,14 +245,34 @@ model WholesaleOrder {
   trackingNumber       String?              @map("tracking_number")
   estimatedDeliveryAt  DateTime?            @map("estimated_delivery_at") @db.Timestamptz(6)
   shippedAt            DateTime?            @map("shipped_at") @db.Timestamptz(6)
+  /// Buyer-reported delivery timestamp (phase59).
+  deliveredAt          DateTime?            @map("delivered_at") @db.Timestamptz(6)
+  deliveryConfirmedAt  DateTime?            @map("delivery_confirmed_at") @db.Timestamptz(6)
   createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   items                WholesaleOrderItem[]
+  settlementLog        WholesaleSettlementLog?
 
   @@index([buyerVendorId, status])
   @@index([sellerVendorId, status])
   @@index([createdAt])
   @@map("wholesale_orders")
+}
+
+/// Buyer delivery settlement ledger row (phase59).
+model WholesaleSettlementLog {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String         @unique @map("order_id") @db.Uuid
+  order          WholesaleOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerVendorId  String         @map("buyer_vendor_id") @db.Uuid
+  sellerVendorId String         @map("seller_vendor_id") @db.Uuid
+  subtotalCents  Int            @map("subtotal_cents")
+  deliveredAt    DateTime       @map("delivered_at") @db.Timestamptz(6)
+  settledAt      DateTime       @default(now()) @map("settled_at") @db.Timestamptz(6)
+
+  @@index([buyerVendorId, settledAt])
+  @@index([sellerVendorId, settledAt])
+  @@map("wholesale_settlement_logs")
 }
 
 model WholesaleOrderItem {

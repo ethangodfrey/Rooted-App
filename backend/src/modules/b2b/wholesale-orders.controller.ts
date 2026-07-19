@@ -12,6 +12,7 @@ import {
 import {
   parseWholesaleOrderDraftCreate,
   parseWholesaleOrderFulfillment,
+  parseWholesaleOrderSettlement,
 } from '@vendorly/env-config';
 
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
@@ -70,6 +71,23 @@ export class WholesaleOrdersController {
   }
 
   /**
+   * GET /api/vendors/orders/outbound
+   * Buyer-facing list of wholesale purchases / shipments.
+   */
+  @Get('outbound')
+  async listOutbound(@CurrentUser() user: AuthenticatedUser) {
+    const buyerVendorId = this.requireVendor(user);
+    const rows = await this.orders.listOutboundForBuyer(buyerVendorId);
+    return {
+      STATUS: 'WHOLESALE_OUTBOUND_ORDERS',
+      VIEW: 'BUYER',
+      SESSION_VENDOR_ID: buyerVendorId,
+      COUNT: rows.length,
+      ORDERS: rows.map((order) => this.serializeOrder(order)),
+    };
+  }
+
+  /**
    * POST /api/vendors/orders/fulfillment
    * Transition ORDER_ACCEPTED_BY_SELLER → ORDER_SHIPPED_IN_TRANSIT with carrier manifest.
    */
@@ -87,6 +105,29 @@ export class WholesaleOrdersController {
     const order = await this.orders.fulfillForSeller(sellerVendorId, parsed.DATA);
     return {
       STATUS: 'ORDER_FULFILLMENT_TRACKED',
+      ORDER: this.serializeOrder(order),
+    };
+  }
+
+  /**
+   * POST /api/vendors/orders/settlement
+   * Transition ORDER_SHIPPED_IN_TRANSIT → ORDER_DELIVERY_CONFIRMED + ledger settle.
+   */
+  @Post('settlement')
+  @HttpCode(200)
+  async settle(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: unknown,
+  ) {
+    const buyerVendorId = this.requireVendor(user);
+    const parsed = parseWholesaleOrderSettlement(body);
+    if (!parsed.OK) {
+      throw new BadRequestException(parsed.ERROR);
+    }
+    const order = await this.orders.settleForBuyer(buyerVendorId, parsed.DATA);
+    return {
+      STATUS: 'ORDER_DELIVERY_CONFIRMED',
+      LEDGER: 'WHOLESALE_LEDGER_SETTLED',
       ORDER: this.serializeOrder(order),
     };
   }
@@ -150,6 +191,8 @@ export class WholesaleOrdersController {
     trackingNumber?: string | null;
     estimatedDeliveryAt?: Date | null;
     shippedAt?: Date | null;
+    deliveredAt?: Date | null;
+    deliveryConfirmedAt?: Date | null;
     createdAt: Date;
     items: Array<{
       id: string;
@@ -176,6 +219,10 @@ export class WholesaleOrdersController {
         ? order.estimatedDeliveryAt.toISOString()
         : null,
       SHIPPED_AT: order.shippedAt ? order.shippedAt.toISOString() : null,
+      DELIVERED_AT: order.deliveredAt ? order.deliveredAt.toISOString() : null,
+      DELIVERY_CONFIRMED_AT: order.deliveryConfirmedAt
+        ? order.deliveryConfirmedAt.toISOString()
+        : null,
       ITEMS: order.items.map((item) => ({
         ID: item.id,
         PRODUCT_SKU_ID: item.productSkuId,

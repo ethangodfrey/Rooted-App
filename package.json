@@ -49,6 +49,7 @@
     "test:wholesale:order-draft": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-draft.ts",
     "test:wholesale:acceptance": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-acceptance.ts",
     "test:wholesale:fulfillment": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-fulfillment.ts",
+    "test:wholesale:settlement": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-settlement.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
     "verify:ingress": "ts-node scripts/verify-ingress-cutover.ts",
