@@ -71,21 +71,25 @@ async function bootstrap() {
 
   const lan = getLanIpv4Addresses();
   // eslint-disable-next-line no-console
-  console.log(`Vendorly backend listening on 0.0.0.0:${port}`);
+  console.log(`BOOT_SEQUENCE_COMPLETE PORT=${port}`);
   // eslint-disable-next-line no-console
-  console.log(`  Local:   http://localhost:${port}`);
+  console.log(`LISTEN 0.0.0.0:${port}`);
+  // eslint-disable-next-line no-console
+  console.log(`LOCAL http://localhost:${port}`);
   for (const address of lan) {
     // eslint-disable-next-line no-console
-    console.log(`  Network: http://${address}:${port}`);
+    console.log(`NETWORK http://${address}:${port}`);
   }
   if (lan.length === 0) {
     // eslint-disable-next-line no-console
-    console.log('  Network: (no LAN IPv4 detected — check Wi‑Fi / firewall)');
+    console.log('NETWORK UNAVAILABLE');
   }
+  // eslint-disable-next-line no-console
+  console.log('HEALTH_PROBE /api/health');
   if (config.get<string>('SQUARE_APPLICATION_ID', '').trim()) {
     const squareRedirect = posOAuthRedirectUri(config, 'SQUARE');
     // eslint-disable-next-line no-console
-    console.log(`Square OAuth redirect (register in Developer Dashboard): ${squareRedirect}`);
+    console.log(`SQUARE_OAUTH_REDIRECT ${squareRedirect}`);
   }
 }
 
