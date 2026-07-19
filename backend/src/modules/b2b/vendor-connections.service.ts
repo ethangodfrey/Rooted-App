@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -110,6 +111,45 @@ export class VendorConnectionsService {
           },
         ],
       },
+    });
+  }
+
+  /**
+   * Ownership-gated status update — only sender/receiver may mutate the edge.
+   * Mirrors vendor_business_connections RLS update policy.
+   */
+  async updateStatusForVendor(
+    sessionVendorId: string,
+    connectionId: string,
+    status: VendorBusinessConnectionStatus,
+  ) {
+    const existing = await this.prisma.vendorBusinessConnection.findUnique({
+      where: { id: connectionId },
+      select: {
+        id: true,
+        senderVendorId: true,
+        receiverVendorId: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('B2B_ERROR: CONNECTION_NOT_FOUND');
+    }
+
+    const participant =
+      existing.senderVendorId === sessionVendorId ||
+      existing.receiverVendorId === sessionVendorId;
+
+    if (!participant) {
+      this.logger.warn(
+        `CROSS_TENANT_LEAK_BLOCKED ACTION=CONNECTION_UPDATE SESSION=${sessionVendorId} CONNECTION=${connectionId}`,
+      );
+      throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
+    }
+
+    return this.prisma.vendorBusinessConnection.update({
+      where: { id: connectionId },
+      data: { status },
     });
   }
 }
