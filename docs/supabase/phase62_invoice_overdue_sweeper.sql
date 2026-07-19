@@ -2,10 +2,8 @@
 -- Run in Supabase SQL Editor after phase61_invoice_reconciliation.sql.
 --
 -- Postgres 55P04: new enum values must be committed before use.
--- Run these two files as SEPARATE executions:
+-- Run as TWO separate executions (do not combine):
 --   1) docs/supabase/phase62a_invoice_status_enum.sql
 --   2) docs/supabase/phase62b_invoice_pending_backfill.sql
 --
 -- Telemetry: CRON_SWEEP_EXECUTED, INVOICES_MARKED_OVERDUE
-
-\echo 'Run phase62a_invoice_status_enum.sql then phase62b_invoice_pending_backfill.sql separately.'
