@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
+import { WholesaleInvoiceOverdueScheduler } from './wholesale-invoice-overdue.scheduler';
+import { WholesaleInvoiceOverdueService } from './wholesale-invoice-overdue.service';
 import { WholesaleInvoicesController } from './wholesale-invoices.controller';
 import { WholesaleOrdersController } from './wholesale-orders.controller';
 import { WholesaleOrdersService } from './wholesale-orders.service';
@@ -21,11 +23,14 @@ import { WholesaleProductsService } from './wholesale-products.service';
     VendorConnectionsService,
     WholesaleProductsService,
     WholesaleOrdersService,
+    WholesaleInvoiceOverdueService,
+    WholesaleInvoiceOverdueScheduler,
   ],
   exports: [
     VendorConnectionsService,
     WholesaleProductsService,
     WholesaleOrdersService,
+    WholesaleInvoiceOverdueService,
   ],
 })
 export class B2bModule {}

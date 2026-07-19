@@ -279,6 +279,8 @@ model WholesaleSettlementLog {
 
 enum WholesaleInvoiceStatus {
   ISSUED
+  PENDING
+  OVERDUE
   PAID
   VOID
 
@@ -303,7 +305,7 @@ model WholesaleInvoice {
   paymentTerms       String                 @default("NET_30") @map("payment_terms")
   /// Snapshot of line items: [{ productSkuId, quantity, unitPriceCents, lineTotalCents }]
   lineItems          Json                   @default("[]") @map("line_items")
-  status             WholesaleInvoiceStatus @default(ISSUED)
+  status             WholesaleInvoiceStatus @default(PENDING)
   issuedAt           DateTime               @default(now()) @map("issued_at") @db.Timestamptz(6)
   dueAt              DateTime               @map("due_at") @db.Timestamptz(6)
   /// Seller-confirmed payment clearance (phase61).
