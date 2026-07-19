@@ -3,16 +3,24 @@
  * Used by TenantsService and the tenant-routing test harness.
  */
 
+/** Structural platform roots — never treated as marketplace tenant slugs. */
+export const RESERVED_SUBDOMAIN_SLUGS = new Set(['api', 'www', 'main']);
+
 export type TenantHostContext = {
   HOST: string;
   SLUG: string | null;
   PLATFORM_DOMAIN: string;
-  RESOLUTION: 'SUBDOMAIN' | 'APEX' | 'UNKNOWN';
+  RESOLUTION: 'SUBDOMAIN' | 'APEX' | 'UNKNOWN' | 'RESERVED';
 };
 
 export function normalizeHost(rawHost: string): string {
   const withoutPort = rawHost.split(':')[0]?.trim().toLowerCase() ?? '';
   return withoutPort.startsWith('www.') ? withoutPort.slice(4) : withoutPort;
+}
+
+export function isReservedSubdomainSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  return RESERVED_SUBDOMAIN_SLUGS.has(slug.trim().toLowerCase());
 }
 
 export function extractSubdomainSlug(
@@ -22,6 +30,7 @@ export function extractSubdomainSlug(
   if (!host.endsWith(`.${platformDomain}`)) return null;
   const slug = host.slice(0, -(platformDomain.length + 1));
   if (!slug || slug.includes('.')) return null;
+  if (isReservedSubdomainSlug(slug)) return null;
   return slug;
 }
 
@@ -43,6 +52,19 @@ export function buildTenantHostContext(
 ): TenantHostContext {
   const host = normalizeHost(rawHost);
   const platform = platformDomain.trim().toLowerCase();
+
+  if (host.endsWith(`.${platform}`)) {
+    const rawSlug = host.slice(0, -(platform.length + 1));
+    if (rawSlug && !rawSlug.includes('.') && isReservedSubdomainSlug(rawSlug)) {
+      return {
+        HOST: host,
+        SLUG: null,
+        PLATFORM_DOMAIN: platform,
+        RESOLUTION: 'RESERVED',
+      };
+    }
+  }
+
   const slug = extractSubdomainSlug(host, platform);
 
   if (slug) {
@@ -65,6 +87,15 @@ export function buildTenantHostContext(
 
   // Local multi-tenant form: {slug}.localhost
   if (isLocalDevHost(host) && host.endsWith('.localhost')) {
+    const localRaw = host.slice(0, -('.localhost'.length));
+    if (localRaw && !localRaw.includes('.') && isReservedSubdomainSlug(localRaw)) {
+      return {
+        HOST: host,
+        SLUG: null,
+        PLATFORM_DOMAIN: 'localhost',
+        RESOLUTION: 'RESERVED',
+      };
+    }
     const localSlug = extractSubdomainSlug(host, 'localhost');
     if (localSlug) {
       return {

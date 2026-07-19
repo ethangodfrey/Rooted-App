@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminMarketsController } from './admin-markets.controller';
+import { MarketsDirectoryController } from './markets-directory.controller';
+import { MarketsDirectoryService } from './markets-directory.service';
 import { MarketsGooglePlacesService } from './markets-google-places.service';
 import { MarketsLinksService } from './markets-links.service';
 import { PublicMarketsController } from './public-markets.controller';
@@ -18,7 +20,11 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [AdminMarketsController, PublicMarketsController],
+  controllers: [
+    AdminMarketsController,
+    PublicMarketsController,
+    MarketsDirectoryController,
+  ],
   providers: [
     MarketsGooglePlacesService,
     MarketsLinksService,
@@ -32,6 +38,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsClassifyAiService,
     MarketsAgentService,
     MarketsSchedulerService,
+    MarketsDirectoryService,
   ],
   exports: [
     MarketsAgentService,
@@ -39,6 +46,7 @@ import { MarketsSchedulerService } from './markets-scheduler.service';
     MarketsScheduleAiService,
     MarketsClassifyAiService,
     MarketsLinksService,
+    MarketsDirectoryService,
   ],
 })
 export class MarketsModule {}

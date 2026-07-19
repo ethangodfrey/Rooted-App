@@ -74,6 +74,8 @@ docs/supabase/phase48_pickup_codes_storefront.sql # storefront checkout pickup c
 docs/supabase/phase49_stripe_policy_snap_ebt.sql # preorder payment policy + SNAP/EBT vendor/product flags
 docs/supabase/phase49_seed_snap_stripe_test_vendor.sql # optional UPDATE seed for Connect + SNAP smoke tests
 docs/supabase/phase54_b2b_wholesale_marketplace.sql # vendor_business_connections + wholesale_products B2B catalog
+docs/supabase/phase53_nationwide_directory_geo.sql # markets.directory_slug + operating_hours + geo indexes
+docs/supabase/phase55_market_theme_branding.sql # markets description + theme_* colors for tenant injection
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).
