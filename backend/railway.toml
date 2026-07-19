@@ -1,10 +1,13 @@
 # Railway quick-start for Vendorly backend.
-# Create project from GitHub → set Root Directory to `backend` → add env vars from .env.example.
+# Root Directory must be the REPOSITORY ROOT (not backend/) so Dockerfile can
+# COPY packages/env-config for @vendorly/env-config.
+# Set dockerfilePath to backend/Dockerfile and add env vars from .env.example.
 # Docs: docs/DEPLOY.md
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "backend/Dockerfile"
+watchPatterns = ["backend/**", "packages/env-config/**"]
 
 [deploy]
 healthcheckPath = "/health/live"

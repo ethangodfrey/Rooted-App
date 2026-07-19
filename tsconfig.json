@@ -19,6 +19,7 @@
     "backend",
     "data",
     "docs",
+    "packages",
     "scripts/autonomous-health-check.ts",
     "scripts/e2e-phase-c-pipeline.ts",
     "scripts/seed-markets.ts",
