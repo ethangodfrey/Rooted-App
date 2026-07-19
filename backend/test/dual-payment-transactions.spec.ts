@@ -60,15 +60,22 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
 
   describe('Stripe checkout webhooks mutate order payment state', () => {
     it('transitions stripe_pending orders to paid_online on success payloads', async () => {
-      const executeRaw = jest.fn();
-      const prisma = {
-        $executeRaw: executeRaw,
-        $queryRaw: jest.fn(async () => []),
-        $transaction: jest.fn(async (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => unknown) =>
-          fn({ $queryRaw: jest.fn(async () => []), $executeRaw: executeRaw }),
-        ),
-        vendor: {},
-      } as never;
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-1',
+          total: 2500,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_live_ok',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-1',
+          platform_fee: 125,
+        },
+      ]);
       const stripe = new StripeService(
         {
           get: (key: string, def?: string) =>
@@ -77,9 +84,9 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
               STRIPE_WEBHOOK_SECRET: 'whsec_test',
             })[key] ?? def,
         } as ConfigService,
-        prisma,
+        fake.prisma,
         {
-          finalizePaidOrder: jest.fn(),
+          finalizePaidOrder,
           compensateStripeCheckout: jest.fn(),
         } as never,
       );
@@ -100,20 +107,31 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         },
       } as never);
 
-      expect(executeRaw).toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('paid_online');
+      expect(fake.orders[0].stripe_payment_intent_id).toBe('pi_live_ok');
+      expect(finalizePaidOrder).toHaveBeenCalledWith(
+        expect.anything(),
+        'order-1',
+        'user-1',
+      );
     });
 
     it('does not mutate orders on malformed success payloads missing order_id', async () => {
       const finalizePaidOrder = jest.fn();
-      const executeRaw = jest.fn();
-      const prisma = {
-        $executeRaw: executeRaw,
-        $queryRaw: jest.fn(async () => []),
-        $transaction: jest.fn(async (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => unknown) =>
-          fn({ $queryRaw: jest.fn(async () => []), $executeRaw: executeRaw }),
-        ),
-        vendor: {},
-      } as never;
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-bad-meta',
+          total: 1500,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_live_bad',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-bad',
+        },
+      ]);
       const stripe = new StripeService(
         {
           get: (key: string, def?: string) =>
@@ -122,7 +140,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
               STRIPE_WEBHOOK_SECRET: 'whsec_test',
             })[key] ?? def,
         } as ConfigService,
-        prisma,
+        fake.prisma,
         {
           finalizePaidOrder,
           compensateStripeCheckout: jest.fn(),
@@ -142,6 +160,104 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       } as never);
 
       expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
+    });
+
+    it('does not mutate orders when success payload is missing customer_user_id', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-no-user',
+          total: 1500,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_no_user',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-real',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_no_user',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_no_user',
+            payment_intent: 'pi_no_user',
+            metadata: { order_id: 'order-no-user' },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
+    });
+
+    it('does not mutate orders when checkout session id does not match the pending order', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-session-mismatch',
+          total: 1500,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_expected',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-mismatch',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_session_mismatch',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_wrong_session',
+            payment_intent: 'pi_wrong',
+            metadata: {
+              order_id: 'order-session-mismatch',
+              customer_user_id: 'user-mismatch',
+            },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
     });
 
     it('does not finalize inventory when checkout succeeds but order is not stripe_pending', async () => {
@@ -414,6 +530,68 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         providerTransactionId: 'sq-void-1',
         state: 'VOIDED',
         grossAmount: 0,
+      });
+    });
+
+    it('normalizes OPEN Square orders as COMPLETED for import', async () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-open-1',
+        state: 'OPEN',
+        total_money: { amount: 500, currency: 'USD' },
+        line_items: [{ uid: 'li-1', name: 'Apples', quantity: '2', gross_sales_money: { amount: 500 } }],
+      });
+
+      expect(txn).toMatchObject({
+        providerTransactionId: 'sq-open-1',
+        state: 'COMPLETED',
+        grossAmount: 500,
+      });
+    });
+
+    it('coerces missing Square money fields to zero cents', async () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-empty-money',
+        state: 'COMPLETED',
+        line_items: [],
+      });
+
+      expect(txn).toMatchObject({
+        providerTransactionId: 'sq-empty-money',
+        state: 'COMPLETED',
+        grossAmount: 0,
+        netAmount: 0,
+        discountAmount: 0,
+        taxAmount: 0,
+        tipAmount: 0,
+      });
+    });
+
+    it('maps cash tenders from Square payloads', async () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-cash-1',
+        state: 'COMPLETED',
+        total_money: { amount: 800, currency: 'USD' },
+        tenders: [{ type: 'CASH' }],
+        line_items: [{ uid: 'li-1', name: 'Honey', quantity: '1', gross_sales_money: { amount: 800 } }],
+      });
+
+      expect(txn.tenderType).toBe('CASH');
+      expect(txn.grossAmount).toBe(800);
+    });
+
+    it('synthesizes a register-sale line item when line_items are empty but total is positive', async () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-register-sale',
+        state: 'COMPLETED',
+        total_money: { amount: 650, currency: 'USD' },
+        line_items: [],
+      });
+
+      expect(txn.lineItems).toHaveLength(1);
+      expect(txn.lineItems[0]).toMatchObject({
+        name: 'Register sale',
+        quantity: 1,
+        grossAmount: 650,
       });
     });
   });

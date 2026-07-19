@@ -30,6 +30,13 @@ describe('isValidCoords', () => {
     });
     expect(isValidCoords({ latitude: 'not-a-number', longitude: '0' })).toBe(false);
   });
+
+  it('rejects empty strings and partial coordinate objects', () => {
+    expect(isValidCoords({ latitude: '', longitude: '-87.6298' })).toBe(false);
+    expect(isValidCoords({ latitude: '41.8781', longitude: '' })).toBe(false);
+    expect(isValidCoords({ latitude: undefined, longitude: -87.6298 })).toBe(false);
+    expect(coordsFrom({ latitude: '', longitude: '' })).toBeNull();
+  });
 });
 
 describe('parseCoords', () => {

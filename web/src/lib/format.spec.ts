@@ -34,6 +34,11 @@ describe('formatPrice', () => {
   it('handles negative amounts', () => {
     expect(formatPrice(-500)).toBe('$-5.00');
   });
+
+  it('formats non-finite inputs as NaN dollar strings', () => {
+    expect(formatPrice(Number.NaN)).toBe('$NaN');
+    expect(formatPrice(Number.POSITIVE_INFINITY)).toBe('$Infinity');
+  });
 });
 
 describe('formatEventDate', () => {
