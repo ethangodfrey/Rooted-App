@@ -155,3 +155,91 @@ export function parseWholesaleProductCreate(
   }
   return { OK: true, DATA: parsed.data };
 }
+
+const wholesaleOrderDraftItemSchema = z
+  .object({
+    product_sku_id: z
+      .string({
+        required_error: 'WHOLESALE_ORDER_VALIDATION_ERROR: PRODUCT_SKU_ID REQUIRED',
+        invalid_type_error:
+          'WHOLESALE_ORDER_VALIDATION_ERROR: PRODUCT_SKU_ID INVALID',
+      })
+      .uuid('WHOLESALE_ORDER_VALIDATION_ERROR: PRODUCT_SKU_ID MUST BE UUID'),
+    quantity: z.coerce
+      .number({
+        required_error: 'WHOLESALE_ORDER_VALIDATION_ERROR: QUANTITY REQUIRED',
+        invalid_type_error: 'WHOLESALE_ORDER_VALIDATION_ERROR: QUANTITY INVALID',
+      })
+      .int('WHOLESALE_ORDER_VALIDATION_ERROR: QUANTITY MUST BE INTEGER')
+      .positive('WHOLESALE_ORDER_VALIDATION_ERROR: QUANTITY MUST BE POSITIVE')
+      .max(1_000_000, 'WHOLESALE_ORDER_VALIDATION_ERROR: QUANTITY TOO LARGE'),
+    negotiated_tier_unit_price: z.coerce
+      .number({
+        required_error:
+          'WHOLESALE_ORDER_VALIDATION_ERROR: NEGOTIATED_TIER_UNIT_PRICE REQUIRED',
+        invalid_type_error:
+          'WHOLESALE_ORDER_VALIDATION_ERROR: NEGOTIATED_TIER_UNIT_PRICE INVALID',
+      })
+      .int(
+        'WHOLESALE_ORDER_VALIDATION_ERROR: NEGOTIATED_TIER_UNIT_PRICE MUST BE INTEGER',
+      )
+      .nonnegative(
+        'WHOLESALE_ORDER_VALIDATION_ERROR: NEGOTIATED_TIER_UNIT_PRICE MUST BE NONNEGATIVE',
+      ),
+  })
+  .strict();
+
+export const wholesaleOrderDraftCreateSchema = z
+  .object({
+    buyer_vendor_id: z
+      .string({
+        required_error: 'WHOLESALE_ORDER_VALIDATION_ERROR: BUYER_VENDOR_ID REQUIRED',
+        invalid_type_error:
+          'WHOLESALE_ORDER_VALIDATION_ERROR: BUYER_VENDOR_ID INVALID',
+      })
+      .uuid('WHOLESALE_ORDER_VALIDATION_ERROR: BUYER_VENDOR_ID MUST BE UUID'),
+    seller_vendor_id: z
+      .string({
+        required_error:
+          'WHOLESALE_ORDER_VALIDATION_ERROR: SELLER_VENDOR_ID REQUIRED',
+        invalid_type_error:
+          'WHOLESALE_ORDER_VALIDATION_ERROR: SELLER_VENDOR_ID INVALID',
+      })
+      .uuid('WHOLESALE_ORDER_VALIDATION_ERROR: SELLER_VENDOR_ID MUST BE UUID'),
+    items: z
+      .array(wholesaleOrderDraftItemSchema)
+      .min(1, 'WHOLESALE_ORDER_VALIDATION_ERROR: ITEMS REQUIRED')
+      .max(100, 'WHOLESALE_ORDER_VALIDATION_ERROR: ITEMS MAX 100'),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.buyer_vendor_id === value.seller_vendor_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'WHOLESALE_ORDER_VALIDATION_ERROR: BUYER_SELLER_MUST_DIFFER',
+        path: ['seller_vendor_id'],
+      });
+    }
+  });
+
+export type WholesaleOrderDraftCreateInput = z.infer<
+  typeof wholesaleOrderDraftCreateSchema
+>;
+
+export type WholesaleOrderDraftCreateParseResult =
+  | { OK: true; DATA: WholesaleOrderDraftCreateInput }
+  | { OK: false; ERROR: string };
+
+export function parseWholesaleOrderDraftCreate(
+  input: unknown,
+): WholesaleOrderDraftCreateParseResult {
+  const parsed = wholesaleOrderDraftCreateSchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'WHOLESALE_ORDER_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}

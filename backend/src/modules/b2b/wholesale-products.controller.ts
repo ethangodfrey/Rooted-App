@@ -68,7 +68,7 @@ export class WholesaleProductsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('vendorId') peerVendorId?: string,
   ) {
-    this.requireVendor(user);
+    const sessionVendorId = this.requireVendor(user);
 
     if (peerVendorId?.trim()) {
       if (!UUID_RE.test(peerVendorId.trim())) {
@@ -81,6 +81,7 @@ export class WholesaleProductsController {
       return {
         STATUS: 'WHOLESALE_CATALOG',
         VIEW: 'PEER',
+        SESSION_VENDOR_ID: sessionVendorId,
         VENDOR_ID: catalog.vendor.id,
         VENDOR_NAME: catalog.vendor.businessName,
         COUNT: catalog.products.length,
@@ -88,12 +89,12 @@ export class WholesaleProductsController {
       };
     }
 
-    const vendorId = this.requireVendor(user);
-    const rows = await this.wholesale.listForVendor(vendorId);
+    const rows = await this.wholesale.listForVendor(sessionVendorId);
     return {
       STATUS: 'WHOLESALE_CATALOG',
       VIEW: 'OWN',
-      VENDOR_ID: vendorId,
+      SESSION_VENDOR_ID: sessionVendorId,
+      VENDOR_ID: sessionVendorId,
       COUNT: rows.length,
       PRODUCTS: rows.map((product) => this.serialize(product)),
     };

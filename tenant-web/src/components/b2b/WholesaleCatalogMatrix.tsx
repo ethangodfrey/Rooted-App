@@ -8,6 +8,7 @@ import {
   formatUsdFromCents,
 } from '@/lib/b2b/pricing';
 import type { WholesaleCatalogResponse, WholesaleProductRow } from '@/lib/b2b/types';
+import { useWholesaleOrder } from '@/lib/b2b/useWholesaleOrder';
 
 export type WholesaleCatalogMatrixProps = {
   /** Directory vendor whose wholesale catalog to browse. Omit for own catalog. */
@@ -28,10 +29,28 @@ export function WholesaleCatalogMatrix({
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [vendorName, setVendorName] = useState<string | null>(null);
+  const [buyerVendorId, setBuyerVendorId] = useState<string | null>(null);
+  const [sellerVendorId, setSellerVendorId] = useState<string | null>(
+    vendorId?.trim() || null,
+  );
   const [products, setProducts] = useState<WholesaleProductRow[]>([]);
   const [qtyBySku, setQtyBySku] = useState<QtyMap>({});
   const [orderDraft, setOrderDraft] = useState<OrderDraft>({});
   const [orderMessage, setOrderMessage] = useState<string | null>(null);
+
+  const {
+    canDispatch,
+    submitting,
+    error: draftError,
+    status: draftStatus,
+    order: initializedOrder,
+    initializeOrder,
+  } = useWholesaleOrder({
+    buyerVendorId,
+    sellerVendorId,
+    accessToken,
+    apiBaseUrl,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,6 +71,12 @@ export function WholesaleCatalogMatrix({
       const nextProducts = Array.isArray(body.PRODUCTS) ? body.PRODUCTS : [];
       setProducts(nextProducts);
       setVendorName(body.VENDOR_NAME ?? null);
+      setBuyerVendorId(body.SESSION_VENDOR_ID ?? null);
+      setSellerVendorId(
+        body.VIEW === 'PEER'
+          ? body.VENDOR_ID ?? vendorId?.trim() ?? null
+          : body.VENDOR_ID ?? null,
+      );
       setQtyBySku((prev) => {
         const next: QtyMap = { ...prev };
         for (const product of nextProducts) {
@@ -106,6 +131,15 @@ export function WholesaleCatalogMatrix({
     }, 0);
   }, [orderDraft, rows]);
 
+  const queuedLines = useMemo(() => {
+    return rows
+      .filter((row) => orderDraft[row.product.ID] != null)
+      .map((row) => ({
+        product: row.product,
+        quantity: orderDraft[row.product.ID]!,
+      }));
+  }, [orderDraft, rows]);
+
   const updateQty = useCallback((product: WholesaleProductRow, nextQty: number) => {
     const moq = Number(product.MOQ) || 1;
     const qty = Number.isFinite(nextQty) ? Math.max(0, Math.floor(nextQty)) : 0;
@@ -152,6 +186,20 @@ export function WholesaleCatalogMatrix({
     },
     [],
   );
+
+  const onInitializeOrder = useCallback(async () => {
+    if (queuedLines.length === 0) {
+      setOrderMessage('WHOLESALE_ORDER_VALIDATION_ERROR: ITEMS REQUIRED');
+      return;
+    }
+    const result = await initializeOrder(queuedLines);
+    if (result?.STATUS === 'ORDER_DRAFT_INITIALIZED') {
+      setOrderMessage(
+        `ORDER_DRAFT_INITIALIZED ID=${result.ORDER?.ID ?? 'UNKNOWN'}`,
+      );
+      setOrderDraft({});
+    }
+  }, [initializeOrder, queuedLines]);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 font-sans text-zinc-50">
@@ -203,6 +251,22 @@ export function WholesaleCatalogMatrix({
       {orderMessage ? (
         <p className="mt-3 font-mono text-[11px] uppercase tracking-widest text-sky-300/90">
           {orderMessage}
+        </p>
+      ) : null}
+
+      {draftError ? (
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-widest text-rose-300">
+          {draftError}
+        </p>
+      ) : null}
+
+      {draftStatus === 'ORDER_DRAFT_INITIALIZED' && initializedOrder ? (
+        <p
+          className="mt-3 font-mono text-[11px] uppercase tracking-widest text-emerald-300/90"
+          data-testid="order-draft-initialized"
+        >
+          ORDER_DRAFT_INITIALIZED ID={initializedOrder.ID} SUBTOTAL_CENTS=
+          {initializedOrder.SUBTOTAL_CENTS}
         </p>
       ) : null}
 
@@ -339,12 +403,30 @@ export function WholesaleCatalogMatrix({
       </div>
 
       <footer className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-        <p className="font-mono text-[11px] uppercase tracking-widest text-white/55">
-          ORDER_DRAFT_LINES {Object.keys(orderDraft).length}
-        </p>
-        <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-50">
-          RUNNING_TOTAL {formatUsdFromCents(runningTotalCents)}
-        </p>
+        <div className="space-y-1">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-white/55">
+            ORDER_DRAFT_LINES {Object.keys(orderDraft).length}
+          </p>
+          <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-50">
+            RUNNING_TOTAL {formatUsdFromCents(runningTotalCents)}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={
+            submitting ||
+            !canDispatch ||
+            queuedLines.length === 0 ||
+            anyMoqGuard
+          }
+          onClick={() => {
+            void onInitializeOrder();
+          }}
+          className="inline-flex min-w-[12rem] items-center justify-center rounded-xl bg-sky-600 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
+          data-testid="initialize-wholesale-order"
+        >
+          {submitting ? 'DISPATCHING_DRAFT' : 'INITIALIZE ORDER'}
+        </button>
       </footer>
     </section>
   );
