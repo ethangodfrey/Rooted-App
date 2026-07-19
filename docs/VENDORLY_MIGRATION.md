@@ -82,6 +82,7 @@ docs/supabase/phase58_wholesale_fulfillment_tracking.sql # ORDER_SHIPPED_IN_TRAN
 docs/supabase/phase59_wholesale_delivery_settlement.sql # ORDER_DELIVERY_CONFIRMED + settlement ledger
 docs/supabase/phase60_wholesale_invoices_net_terms.sql # wholesale_invoices Net-30 billing on delivery confirm
 docs/supabase/phase61_invoice_reconciliation.sql # paid_at + seller reconcile-to-PAID
+docs/supabase/phase62_invoice_overdue_sweeper.sql # PENDING/OVERDUE statuses + Net-30 overdue cron support
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).

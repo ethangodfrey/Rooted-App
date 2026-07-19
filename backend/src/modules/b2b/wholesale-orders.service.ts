@@ -525,7 +525,7 @@ export class WholesaleOrdersService {
           totalCents: settled.subtotalCents,
           paymentTerms: 'NET_30',
           lineItems: lineItems as Prisma.InputJsonValue,
-          status: WholesaleInvoiceStatus.ISSUED,
+          status: WholesaleInvoiceStatus.PENDING,
           issuedAt: confirmedAt,
           dueAt,
         },
@@ -593,6 +593,17 @@ export class WholesaleOrdersService {
 
     if (invoice.status === WholesaleInvoiceStatus.VOID) {
       throw new ConflictException('WHOLESALE_INVOICE_ERROR: INVOICE_VOID');
+    }
+
+    const reconcilable: WholesaleInvoiceStatus[] = [
+      WholesaleInvoiceStatus.PENDING,
+      WholesaleInvoiceStatus.OVERDUE,
+      WholesaleInvoiceStatus.ISSUED,
+    ];
+    if (!reconcilable.includes(invoice.status)) {
+      throw new ConflictException(
+        'WHOLESALE_INVOICE_ERROR: STATUS_NOT_RECONCILABLE',
+      );
     }
 
     const paidAt =

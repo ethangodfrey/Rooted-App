@@ -33,14 +33,19 @@ function main(): void {
 
   const due = new Date('2026-08-25T15:30:00.000Z');
   assert(
-    resolveInvoiceDisplayStatus('ISSUED', due, new Date('2026-08-01T00:00:00.000Z')) ===
+    resolveInvoiceDisplayStatus('PENDING', due, new Date('2026-08-01T00:00:00.000Z')) ===
       'PENDING',
     'DISPLAY_FAIL PENDING',
   );
   assert(
-    resolveInvoiceDisplayStatus('ISSUED', due, new Date('2026-08-26T00:00:00.000Z')) ===
+    resolveInvoiceDisplayStatus('PENDING', due, new Date('2026-08-26T00:00:00.000Z')) ===
       'OVERDUE',
     'DISPLAY_FAIL OVERDUE',
+  );
+  assert(
+    resolveInvoiceDisplayStatus('ISSUED', due, new Date('2026-08-01T00:00:00.000Z')) ===
+      'PENDING',
+    'DISPLAY_FAIL ISSUED_LEGACY',
   );
   assert(
     resolveInvoiceDisplayStatus('PAID', due, new Date('2026-08-26T00:00:00.000Z')) ===

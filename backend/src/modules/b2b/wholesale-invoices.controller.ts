@@ -24,7 +24,7 @@ export class WholesaleInvoicesController {
 
   /**
    * POST /api/vendors/invoices/reconcile
-   * Seller marks an ISSUED Net-30 invoice as PAID after external funds clear.
+   * Seller marks a PENDING/OVERDUE Net-30 invoice as PAID after external funds clear.
    */
   @Post('reconcile')
   @HttpCode(200)
