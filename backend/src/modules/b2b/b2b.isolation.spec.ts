@@ -165,7 +165,6 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
         freightNotes: null,
         pickupNotes: null,
         isRetailEnabled: false,
-        saleModePreference: 'WHOLESALE_ONLY',
       });
 
       expect(create).toHaveBeenCalledWith(
