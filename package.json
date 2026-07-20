@@ -67,6 +67,7 @@
     "test:supplier:demand-forecast": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-supplier-demand-forecast.ts",
     "test:supplier:vendor-alerts": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-supplier-vendor-alerts.ts",
     "test:supplier:ar-analytics": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-supplier-ar-analytics.ts",
+    "test:integration:platform-smoke": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-platform-integration-smoke.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
     "verify:ingress": "ts-node scripts/verify-ingress-cutover.ts",
