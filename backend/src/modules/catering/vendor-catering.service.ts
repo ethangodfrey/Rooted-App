@@ -8,6 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { AvailabilityService } from '../availability/availability.service';
 import {
   assertCateringGuestRange,
   formatCateringModuleInitializedLog,
@@ -34,7 +35,10 @@ export type CreateInquiryBody = {
 export class VendorCateringService implements OnModuleInit {
   private readonly logger = new Logger(VendorCateringService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly availability: AvailabilityService,
+  ) {}
 
   onModuleInit(): void {
     this.logger.log(formatCateringModuleInitializedLog());
@@ -139,7 +143,7 @@ export class VendorCateringService implements OnModuleInit {
     };
   }
 
-  async createInquiry(shopperId: string, body: CreateInquiryBody) {
+  async createInquiry(shopperUserId: string, body: CreateInquiryBody) {
     const message = (body.message ?? '').trim();
     if (!body.vendorId?.trim()) {
       throw new BadRequestException('VENDOR_ID_REQUIRED');
@@ -157,23 +161,83 @@ export class VendorCateringService implements OnModuleInit {
       throw new BadRequestException('VENDOR_NOT_CATERING_PROVIDER');
     }
 
-    const eventDate = body.eventDate?.trim()
-      ? new Date(body.eventDate)
-      : null;
+    const shopperId = await this.resolveShopperId(shopperUserId);
 
-    const row = await this.prisma.cateringInquiry.create({
-      data: {
-        vendorId: body.vendorId,
-        shopperId,
-        message,
-        guestCount: body.guestCount ?? null,
-        eventDate:
-          eventDate && Number.isFinite(eventDate.getTime())
-            ? eventDate
-            : null,
-        status: 'OPEN',
-      },
-    });
+    const eventDateRaw = body.eventDate?.trim() || null;
+    const eventDate =
+      eventDateRaw && Number.isFinite(new Date(eventDateRaw).getTime())
+        ? new Date(eventDateRaw)
+        : null;
+
+    let status = 'OPEN';
+    let conflictDetected = false;
+    let conflictWarning: string | null = null;
+
+    if (eventDateRaw) {
+      const check = await this.availability.checkAvailability(
+        body.vendorId,
+        eventDateRaw,
+      );
+      if (check.BLOCKED) {
+        status = 'PENDING_REVIEW';
+        conflictDetected = true;
+        conflictWarning = check.CONFLICT_WARNING ?? 'Conflict Detected';
+        this.logger.log(
+          `AVAILABILITY_SYNC_ACTIVE ACTION=CONFLICT_DETECTED VENDOR=${body.vendorId} DATE=${check.DATE}`,
+        );
+      }
+    }
+
+    let row: { id: string };
+    try {
+      row = await this.prisma.cateringInquiry.create({
+        data: {
+          vendorId: body.vendorId,
+          shopperId,
+          message,
+          guestCount: body.guestCount ?? null,
+          eventDate:
+            eventDate && Number.isFinite(eventDate.getTime())
+              ? eventDate
+              : null,
+          status,
+          conflictDetected,
+          conflictWarning,
+        },
+        select: { id: true },
+      });
+    } catch {
+      // phase77 columns / PENDING_REVIEW may not exist yet.
+      row = await this.prisma.cateringInquiry.create({
+        data: {
+          vendorId: body.vendorId,
+          shopperId,
+          message,
+          guestCount: body.guestCount ?? null,
+          eventDate:
+            eventDate && Number.isFinite(eventDate.getTime())
+              ? eventDate
+              : null,
+          status: 'OPEN',
+        },
+        select: { id: true },
+      });
+      if (conflictDetected) {
+        try {
+          await this.prisma.$executeRaw(Prisma.sql`
+            UPDATE public.catering_inquiries
+            SET
+              status = 'PENDING_REVIEW',
+              conflict_detected = true,
+              conflict_warning = ${conflictWarning},
+              updated_at = NOW()
+            WHERE id = ${row.id}::uuid
+          `);
+        } catch {
+          // keep OPEN if schema not migrated
+        }
+      }
+    }
 
     try {
       await this.prisma.$executeRaw(Prisma.sql`
@@ -190,19 +254,117 @@ export class VendorCateringService implements OnModuleInit {
     }
 
     this.logger.log(
-      `VENDOR_SERVICES_UPDATED ACTION=INQUIRY VENDOR=${body.vendorId} SHOPPER=${shopperId} INQUIRY=${row.id}`,
+      `VENDOR_SERVICES_UPDATED ACTION=INQUIRY VENDOR=${body.vendorId} SHOPPER=${shopperId} INQUIRY=${row.id} STATUS=${status}`,
     );
 
     return {
       STATUS: 'VENDOR_SERVICES_UPDATED',
       INQUIRY_ID: row.id,
+      INQUIRY_STATUS: status,
+      CONFLICT_DETECTED: conflictDetected,
+      CONFLICT_WARNING: conflictWarning,
     };
   }
 
-  /** Raw fallback when Prisma client is ahead of DB (used by verify scripts conceptually). */
+  async listInquiriesForVendor(vendorId: string) {
+    try {
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          message: string;
+          guest_count: number | null;
+          event_date: Date | string | null;
+          status: string;
+          conflict_detected: boolean | null;
+          conflict_warning: string | null;
+          created_at: Date;
+        }>
+      >(Prisma.sql`
+        SELECT
+          id, message, guest_count, event_date, status,
+          conflict_detected, conflict_warning, created_at
+        FROM public.catering_inquiries
+        WHERE vendor_id = ${vendorId}::uuid
+        ORDER BY
+          CASE WHEN status = 'PENDING_REVIEW' THEN 0 ELSE 1 END,
+          created_at DESC
+        LIMIT 50
+      `);
+
+      return {
+        STATUS: 'AVAILABILITY_SYNC_ACTIVE',
+        ITEMS: rows.map((row) => ({
+          id: row.id,
+          message: row.message,
+          guestCount: row.guest_count,
+          eventDate:
+            row.event_date != null
+              ? String(row.event_date).slice(0, 10)
+              : null,
+          status: row.status,
+          conflictDetected: Boolean(row.conflict_detected),
+          conflictWarning: row.conflict_warning,
+          createdAt: row.created_at,
+        })),
+        COUNT: rows.length,
+      };
+    } catch {
+      const rows = await this.prisma.cateringInquiry.findMany({
+        where: { vendorId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          message: true,
+          guestCount: true,
+          eventDate: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+      return {
+        STATUS: 'AVAILABILITY_SYNC_ACTIVE',
+        ITEMS: rows.map((row) => ({
+          id: row.id,
+          message: row.message,
+          guestCount: row.guestCount,
+          eventDate: row.eventDate
+            ? row.eventDate.toISOString().slice(0, 10)
+            : null,
+          status: row.status,
+          conflictDetected: row.status === 'PENDING_REVIEW',
+          conflictWarning:
+            row.status === 'PENDING_REVIEW' ? 'Conflict Detected' : null,
+          createdAt: row.createdAt,
+        })),
+        COUNT: rows.length,
+      };
+    }
+  }
+
+  private async resolveShopperId(userId: string): Promise<string> {
+    const shopper = await this.prisma.shopper.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (shopper?.id) return shopper.id;
+
+    try {
+      const created = await this.prisma.shopper.create({
+        data: { userId },
+        select: { id: true },
+      });
+      return created.id;
+    } catch {
+      throw new BadRequestException('SHOPPER_REQUIRED');
+    }
+  }
+
   async ensureTablesExistProbe(): Promise<boolean> {
     try {
-      await this.prisma.$queryRaw(Prisma.sql`SELECT 1 FROM public.vendor_catering_services LIMIT 0`);
+      await this.prisma.$queryRaw(
+        Prisma.sql`SELECT 1 FROM public.vendor_catering_services LIMIT 0`,
+      );
       return true;
     } catch {
       return false;
