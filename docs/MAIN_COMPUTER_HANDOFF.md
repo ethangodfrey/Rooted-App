@@ -21,7 +21,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/engagement-analytics-dashboard-428e`
+`cursor/b2b-marketplace-phase1-428e`
 
 ## 2. Apply Supabase SQL (required)
 
