@@ -28,6 +28,7 @@ import { WholesaleProductsService } from './wholesale-products.service';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+type SaleModePreference = 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
 
 @Controller('api/vendors/wholesale-products')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
@@ -120,13 +121,14 @@ export class WholesaleProductsController {
    * Hybrid ranking: baseRelevance * connectedBoost * proximityBoost (US-only radius).
    */
   @Get('search')
+  @Roles('vendor', 'shopper')
   async search(
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request & { wholesaleUsGeo?: WholesaleUsGeoContext },
     @Query('q') q?: string,
     @Query('limit') limitRaw?: string,
   ) {
-    const sessionVendorId = this.requireVendor(user);
+    const sessionVendorId = user.vendorId ?? null;
     const geo = req.wholesaleUsGeo;
     const query =
       geo?.q ?? (typeof q === 'string' ? q : '');
@@ -144,13 +146,20 @@ export class WholesaleProductsController {
         : null;
 
     const connectedVendorIds =
-      await this.connections.listAcceptedConnectedVendorIds(sessionVendorId);
+      user.role === 'vendor' && sessionVendorId
+        ? await this.connections.listAcceptedConnectedVendorIds(sessionVendorId)
+        : [];
+    const saleModeFilter: SaleModePreference[] =
+      user.role === 'shopper'
+        ? ['RETAIL_ONLY', 'BOTH']
+        : ['WHOLESALE_ONLY', 'BOTH'];
     const result = await this.discovery.search({
-      sessionVendorId,
+      sessionVendorId: sessionVendorId ?? user.id,
       query,
       connectedVendorIds,
       limit: Number.isFinite(limit) ? limit : 40,
       proximity,
+      saleModePreference: saleModeFilter,
     });
 
     return {
@@ -158,6 +167,8 @@ export class WholesaleProductsController {
         ? 'RADIUS_SEARCH_OPTIMIZED'
         : 'RANKING_ALGORITHM_REFINED',
       SESSION_VENDOR_ID: sessionVendorId,
+      SESSION_ROLE: user.role.toUpperCase(),
+      SALE_MODE_FILTER: saleModeFilter,
       QUERY: query,
       SOURCE: result.SOURCE,
       MULTIPLIER: result.MULTIPLIER,
@@ -176,6 +187,7 @@ export class WholesaleProductsController {
         MOQ: hit.moq,
         UNIT_PRICE_CENTS: hit.unitPriceCents,
         AVAILABLE_QUANTITY: hit.availableQuantity,
+        SALE_MODE_PREFERENCE: hit.saleModePreference,
         STATUS: hit.status,
         BASE_SCORE: hit.baseScore,
         BOOST_APPLIED: hit.boostApplied,
