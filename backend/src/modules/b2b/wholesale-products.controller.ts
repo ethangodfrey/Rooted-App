@@ -13,6 +13,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { WholesaleSaleModePreference } from '@prisma/client';
 import { parseWholesaleProductCreate } from '@vendorly/env-config';
 import type { Request } from 'express';
 
@@ -81,6 +82,7 @@ export class WholesaleProductsController {
       moq?: number;
       unitPriceCents?: number;
       isRetailEnabled?: boolean;
+      saleModePreference?: 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
       retailPrice?: number | null;
     };
     const product = await this.wholesale.updateForVendor(
@@ -94,6 +96,12 @@ export class WholesaleProductsController {
           : {}),
         ...(typeof patch.isRetailEnabled === 'boolean'
           ? { isRetailEnabled: patch.isRetailEnabled }
+          : {}),
+        ...(typeof patch.saleModePreference === 'string'
+          ? {
+              saleModePreference:
+                patch.saleModePreference as WholesaleSaleModePreference,
+            }
           : {}),
         ...(patch.retailPrice === null || typeof patch.retailPrice === 'number'
           ? { retailPrice: patch.retailPrice }
@@ -242,6 +250,7 @@ export class WholesaleProductsController {
     pickupNotes: string | null;
     availableQuantity: number;
     isRetailEnabled?: boolean;
+    saleModePreference?: 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
     retailPrice?: { toString(): string } | number | null;
     status: string;
   }) {
@@ -258,6 +267,7 @@ export class WholesaleProductsController {
       PICKUP_NOTES: product.pickupNotes,
       AVAILABLE_QUANTITY: product.availableQuantity,
       IS_RETAIL_ENABLED: product.isRetailEnabled ?? false,
+      SALE_MODE_PREFERENCE: product.saleModePreference ?? 'WHOLESALE_ONLY',
       RETAIL_PRICE:
         product.retailPrice == null ? null : Number(product.retailPrice),
       STATUS: product.status,
