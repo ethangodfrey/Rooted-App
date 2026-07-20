@@ -98,6 +98,8 @@ model Farmer {
   sellState       String?  @map("sell_state")
   postalCode      String?  @map("postal_code")
   approvalStatus  String   @default("pending") @map("approval_status")
+  /// Phase 75 — B2B peer marketplace wholesale supplier flag.
+  isWholesaleSupplier Boolean @default(false) @map("is_wholesale_supplier")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -116,6 +118,8 @@ model Shopper {
   defaultLocation String? @map("default_location")
 
   orders Order[]
+
+  loyalty ShopperLoyalty?
 
   @@map("shoppers")
 }
@@ -138,6 +142,8 @@ model Vendor {
 
   /// Phase 72 — optional catering provider module
   isCateringProvider    Boolean @default(false) @map("is_catering_provider")
+  /// Phase 75 — B2B peer marketplace wholesale provider flag.
+  isWholesaleProvider   Boolean @default(false) @map("is_wholesale_provider")
 
   /// Phase 24/27 — WGS84 vendor pin + country (default USA in Supabase).
   latitude  Decimal? @db.Decimal(10, 7)
@@ -148,6 +154,7 @@ model Vendor {
   certifications       VendorCertification[]
   cateringService      VendorCateringService?
   cateringInquiries    CateringInquiry[]
+  availabilityBlocks   VendorAvailability[]
   orders               Order[]
   vendorEvents         VendorEvent[]
   posConnections       PosConnection[]
@@ -161,6 +168,7 @@ model Vendor {
   wholesaleProducts           WholesaleProduct[]
   wholesaleOrdersAsBuyer      WholesaleOrder[]           @relation("WholesaleOrderBuyer")
   wholesaleOrdersAsSeller     WholesaleOrder[]           @relation("WholesaleOrderSeller")
+  procurementRequests         B2bProcurementRequest[]
 
   @@index([userId])
   @@index([latitude, longitude])
@@ -204,6 +212,76 @@ model CateringInquiry {
   @@index([vendorId, createdAt(sort: Desc)])
   @@index([shopperId, createdAt(sort: Desc)])
   @@map("catering_inquiries")
+}
+
+/// Phase 75 — peer B2B marketplace bulk listing (farmer/vendor producer).
+model WholesaleListing {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  producerId         String   @map("producer_id") @db.Uuid
+  /// FARMER | VENDOR
+  producerType       String   @default("FARMER") @map("producer_type")
+  itemName           String   @map("item_name")
+  bulkUnitPrice      Decimal  @map("bulk_unit_price") @db.Decimal(12, 2)
+  minOrderQuantity   Int      @default(1) @map("min_order_quantity")
+  /// AVAILABLE | LIMITED | UNAVAILABLE
+  availabilityStatus String   @default("AVAILABLE") @map("availability_status")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  procurementRequests B2bProcurementRequest[]
+
+  @@index([producerType, producerId, createdAt(sort: Desc)])
+  @@map("wholesale_listings")
+}
+
+/// Phase 75 — vendor → farmer bulk procurement / connection request.
+model B2bProcurementRequest {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId          String   @map("vendor_id") @db.Uuid
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  farmerId          String   @map("farmer_id") @db.Uuid
+  listingId         String?  @map("listing_id") @db.Uuid
+  listing           WholesaleListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  message           String?
+  requestedQuantity Int?     @map("requested_quantity")
+  /// PENDING | ACCEPTED | DECLINED | CANCELLED
+  status            String   @default("PENDING")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([vendorId, farmerId, listingId])
+  @@index([vendorId, createdAt(sort: Desc)])
+  @@index([farmerId, createdAt(sort: Desc)])
+  @@map("b2b_procurement_requests")
+}
+
+/// Phase 75 / Phase 2 prep — calendar blocked dates (CATERING | MARKET).
+model VendorAvailability {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  blockedDate DateTime @map("blocked_date") @db.Date
+  /// CATERING | MARKET
+  reason      String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([vendorId, blockedDate, reason])
+  @@index([vendorId, blockedDate])
+  @@map("vendor_availability")
+}
+
+/// Phase 75 / Phase 3 prep — shopper loyalty points summary.
+model ShopperLoyalty {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId      String    @unique @map("shopper_id") @db.Uuid
+  shopper        Shopper   @relation(fields: [shopperId], references: [id], onDelete: Cascade)
+  pointsTotal    Int       @default(0) @map("points_total")
+  lastActionDate DateTime? @map("last_action_date") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([pointsTotal(sort: Desc)])
+  @@map("shopper_loyalty")
 }
 
 /// Phase 11 peer engine statuses (PENDING | ACCEPTED | BLOCKED).

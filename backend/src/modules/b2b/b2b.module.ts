@@ -21,6 +21,8 @@ import { WholesaleOrdersService } from './wholesale-orders.service';
 import { WholesaleProductsController } from './wholesale-products.controller';
 import { WholesaleProductsService } from './wholesale-products.service';
 import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middleware';
+import { B2bMarketplaceController } from './b2b-marketplace.controller';
+import { B2bMarketplaceService } from './b2b-marketplace.service';
 
 @Module({
   imports: [PrismaModule, StripeModule, ElasticsearchModule],
@@ -30,6 +32,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleProductsController,
     WholesaleOrdersController,
     WholesaleInvoicesController,
+    B2bMarketplaceController,
   ],
   providers: [
     VendorConnectionsService,
@@ -40,6 +43,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleInvoiceOverdueScheduler,
     UsWholesaleProximityMiddleware,
     WholesaleRelationshipMiddleware,
+    B2bMarketplaceService,
   ],
   exports: [
     VendorConnectionsService,
@@ -47,6 +51,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleProductsService,
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,
+    B2bMarketplaceService,
   ],
 })
 export class B2bModule implements NestModule {

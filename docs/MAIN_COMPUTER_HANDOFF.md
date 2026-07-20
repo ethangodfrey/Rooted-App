@@ -12,7 +12,8 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 4 | `cursor/vendor-catering-services-428e` | #214 | Optional catering module |
 | 5 | `cursor/meet-the-makers-usda-428e` | #215 | US filter + USDA enrichment |
 | 6 | `cursor/engagement-analytics-dashboard-428e` | #216 | Engagement Performance dashboard |
-| 7 | `cursor/intelligence-automated-reporting-428e` | (open) | Weekly reports + anomaly detection |
+| 7 | `cursor/intelligence-automated-reporting-428e` | #217 | Weekly reports + anomaly detection |
+| 8 | `cursor/b2b-marketplace-phase1-428e` | (open) | B2B peer marketplace Phase 1 + schema prep |
 
 ```powershell
 git fetch origin
@@ -36,12 +37,18 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_engagement_analytics.sql`) — **new** interaction columns + `engagement_metrics`
 5. `docs/supabase/phase74_intelligence_reporting.sql`  
    (or `migrations/20260720_intelligence_reporting.sql`) — `partner_reports` + PERFORMANCE_* notification types
+6. `docs/supabase/phase75_b2b_marketplace.sql`  
+   (or `migrations/20260720_b2b_marketplace.sql`) — wholesale flags, `wholesale_listings`, procurement, availability + loyalty prep
 
-After phase73–74, confirm:
+After phase73–75, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
 select to_regclass('public.partner_reports');
+select to_regclass('public.wholesale_listings');
+select to_regclass('public.b2b_procurement_requests');
+select to_regclass('public.vendor_availability');
+select to_regclass('public.shopper_loyalty');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -92,6 +99,7 @@ npm run test:discovery:meet-the-makers
 npm run test:vendor:catering
 npm run test:analytics:dashboard
 npm run test:intelligence:automated
+npm run test:b2b:marketplace
 
 cd web
 npm run build
@@ -103,6 +111,7 @@ Expected uppercase logs (no emoji):
 - `CATERING_MODULE_INITIALIZED` / `VENDOR_SERVICES_UPDATED`
 - `ANALYTICS_DASHBOARD_INITIALIZED` / `METRICS_SYNC_COMPLETE`
 - `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
+- `B2B_MARKETPLACE_INITIALIZED` / `WHOLESALE_DIRECTORY_ACTIVE`
 
 ## 5. Manual UI smoke (5 minutes)
 
