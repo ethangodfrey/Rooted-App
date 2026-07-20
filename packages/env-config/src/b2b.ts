@@ -43,6 +43,100 @@ export function parseVendorConnectionRequest(
   return { OK: true, DATA: parsed.data };
 }
 
+/** Phase 11 peer engine — PENDING | ACCEPTED | BLOCKED */
+export const vendorPeerConnectionStatusSchema = z.enum([
+  'PENDING',
+  'ACCEPTED',
+  'BLOCKED',
+]);
+
+export type VendorPeerConnectionStatus = z.infer<
+  typeof vendorPeerConnectionStatusSchema
+>;
+
+export const vendorPeerRequestCreateSchema = z
+  .object({
+    recipient_id: z
+      .string({
+        required_error: 'PEER_VALIDATION_ERROR: RECIPIENT_ID REQUIRED',
+        invalid_type_error: 'PEER_VALIDATION_ERROR: RECIPIENT_ID INVALID',
+      })
+      .uuid('PEER_VALIDATION_ERROR: RECIPIENT_ID MUST BE UUID')
+      .optional(),
+    recipientId: z
+      .string({
+        invalid_type_error: 'PEER_VALIDATION_ERROR: RECIPIENT_ID INVALID',
+      })
+      .uuid('PEER_VALIDATION_ERROR: RECIPIENT_ID MUST BE UUID')
+      .optional(),
+  })
+  .strict()
+  .transform((value, ctx) => {
+    const recipientId = value.recipient_id ?? value.recipientId;
+    if (!recipientId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'PEER_VALIDATION_ERROR: RECIPIENT_ID REQUIRED',
+      });
+      return z.NEVER;
+    }
+    return { recipientId };
+  });
+
+export type VendorPeerRequestCreateInput = z.infer<
+  typeof vendorPeerRequestCreateSchema
+>;
+
+export type VendorPeerRequestCreateParseResult =
+  | { OK: true; DATA: VendorPeerRequestCreateInput }
+  | { OK: false; ERROR: string };
+
+export function parseVendorPeerRequestCreate(
+  input: unknown,
+): VendorPeerRequestCreateParseResult {
+  const parsed = vendorPeerRequestCreateSchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'PEER_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}
+
+/** PATCH /api/vendors/requests/:requestId — accept or block. */
+export const vendorPeerRequestUpdateSchema = z
+  .object({
+    status: z.enum(['ACCEPTED', 'BLOCKED'], {
+      required_error: 'PEER_VALIDATION_ERROR: STATUS REQUIRED',
+      invalid_type_error: 'PEER_VALIDATION_ERROR: STATUS MUST BE ACCEPTED OR BLOCKED',
+    }),
+  })
+  .strict();
+
+export type VendorPeerRequestUpdateInput = z.infer<
+  typeof vendorPeerRequestUpdateSchema
+>;
+
+export type VendorPeerRequestUpdateParseResult =
+  | { OK: true; DATA: VendorPeerRequestUpdateInput }
+  | { OK: false; ERROR: string };
+
+export function parseVendorPeerRequestUpdate(
+  input: unknown,
+): VendorPeerRequestUpdateParseResult {
+  const parsed = vendorPeerRequestUpdateSchema.safeParse(input);
+  if (!parsed.success) {
+    const error = parsed.error.issues
+      .map((issue) => issue.message)
+      .join(' | ')
+      .toUpperCase();
+    return { OK: false, ERROR: error || 'PEER_VALIDATION_ERROR' };
+  }
+  return { OK: true, DATA: parsed.data };
+}
+
 const pricingTierSchema = z
   .object({
     minQty: z

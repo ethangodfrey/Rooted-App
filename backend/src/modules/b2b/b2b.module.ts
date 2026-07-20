@@ -11,6 +11,8 @@ import { UsWholesaleProximityMiddleware } from '../search/us-wholesale-proximity
 import { StripeModule } from '../stripe/stripe.module';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
+import { VendorPeerRequestsController } from './vendor-peer-requests.controller';
+import { VendorPeerRequestsService } from './vendor-peer-requests.service';
 import { WholesaleInvoiceOverdueScheduler } from './wholesale-invoice-overdue.scheduler';
 import { WholesaleInvoiceOverdueService } from './wholesale-invoice-overdue.service';
 import { WholesaleInvoicesController } from './wholesale-invoices.controller';
@@ -23,12 +25,14 @@ import { WholesaleProductsService } from './wholesale-products.service';
   imports: [PrismaModule, StripeModule, ElasticsearchModule],
   controllers: [
     VendorConnectionsController,
+    VendorPeerRequestsController,
     WholesaleProductsController,
     WholesaleOrdersController,
     WholesaleInvoicesController,
   ],
   providers: [
     VendorConnectionsService,
+    VendorPeerRequestsService,
     WholesaleProductsService,
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,
@@ -37,6 +41,7 @@ import { WholesaleProductsService } from './wholesale-products.service';
   ],
   exports: [
     VendorConnectionsService,
+    VendorPeerRequestsService,
     WholesaleProductsService,
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,

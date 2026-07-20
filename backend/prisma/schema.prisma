@@ -151,6 +151,8 @@ model Vendor {
   marketRegistrations  VendorMarketRegistration[]
   businessConnectionsSent     VendorBusinessConnection[] @relation("BusinessConnectionSender")
   businessConnectionsReceived VendorBusinessConnection[] @relation("BusinessConnectionReceiver")
+  peerConnectionsRequested    VendorPeerConnection[]     @relation("PeerConnectionRequestor")
+  peerConnectionsReceived     VendorPeerConnection[]     @relation("PeerConnectionRecipient")
   wholesaleProducts           WholesaleProduct[]
   wholesaleOrdersAsBuyer      WholesaleOrder[]           @relation("WholesaleOrderBuyer")
   wholesaleOrdersAsSeller     WholesaleOrder[]           @relation("WholesaleOrderSeller")
@@ -158,6 +160,35 @@ model Vendor {
   @@index([userId])
   @@index([latitude, longitude])
   @@map("vendors")
+}
+
+/// Phase 11 peer engine statuses (PENDING | ACCEPTED | BLOCKED).
+/// Distinct from profile-level vendor_connections (social) and phase54
+/// vendor_business_connections (PENDING | ACCEPTED | DECLINED).
+enum VendorPeerConnectionStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+
+  @@map("vendor_peer_connection_status")
+}
+
+/// Phase 11 wholesale peer connection edge (requestor → recipient).
+model VendorPeerConnection {
+  id          String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestorId String                     @map("requestor_id") @db.Uuid
+  requestor   Vendor                     @relation("PeerConnectionRequestor", fields: [requestorId], references: [id], onDelete: Cascade)
+  recipientId String                     @map("recipient_id") @db.Uuid
+  recipient   Vendor                     @relation("PeerConnectionRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  status      VendorPeerConnectionStatus @default(PENDING)
+  createdAt   DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([requestorId, recipientId])
+  @@index([requestorId, status])
+  @@index([recipientId, status])
+  @@index([createdAt])
+  @@map("vendor_peer_connections")
 }
 
 /// B2B wholesale partnership edge between directory Vendor rows (phase54).
