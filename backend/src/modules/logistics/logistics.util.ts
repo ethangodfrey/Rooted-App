@@ -22,6 +22,27 @@ export function formatFleetTrackingActiveLog(input?: {
   return parts.join(' ');
 }
 
+/** Phase 5 Farmer Fleet Dispatch Dashboard telemetry (no emoji). */
+export function formatFleetUiActiveLog(input?: {
+  acceptedCount?: number;
+  routeCount?: number;
+}): string {
+  const parts = ['FLEET_UI_ACTIVE'];
+  if (input?.acceptedCount != null) parts.push(`ACCEPTED=${input.acceptedCount}`);
+  if (input?.routeCount != null) parts.push(`ROUTES=${input.routeCount}`);
+  return parts.join(' ');
+}
+
+export function formatRouteDispatchInitializedLog(input?: {
+  routeId?: string;
+  stopCount?: number;
+}): string {
+  const parts = ['ROUTE_DISPATCH_INITIALIZED'];
+  if (input?.routeId) parts.push(`ROUTE=${input.routeId}`);
+  if (input?.stopCount != null) parts.push(`STOPS=${input.stopCount}`);
+  return parts.join(' ');
+}
+
 export function normalizeDeliveryRouteStatus(
   value: string | null | undefined,
 ): DeliveryRouteStatus | null {

@@ -1,0 +1,201 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import { ActiveRoutes } from '@/components/farmer/ActiveRoutes';
+import { RoutePlanner } from '@/components/farmer/RoutePlanner';
+import { FieldError } from '@/components/ui/FieldError';
+import {
+  VendorHero,
+  VendorScreen,
+  VendorSection,
+} from '@/components/vendor/vendor-ui';
+import { useAuth } from '@/hooks/use-auth';
+import { isApiConfigured } from '@/lib/api';
+import type { ProcurementRequestItem } from '@/lib/b2b-procurement';
+import {
+  confirmDeliveryDropoff,
+  createDeliveryRoute,
+  fetchAcceptedProcurementForDispatch,
+  fetchMyDeliveryRoutes,
+  formatUsdFromCents,
+  type DeliveryRouteItem,
+} from '@/lib/farmer-logistics';
+import '@/components/ui/ui.css';
+
+export function FarmerLogisticsPage() {
+  const { user } = useAuth();
+  const [accepted, setAccepted] = useState<ProcurementRequestItem[]>([]);
+  const [routes, setRoutes] = useState<DeliveryRouteItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [dispatchDate, setDispatchDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [loading, setLoading] = useState(true);
+  const [dispatching, setDispatching] = useState(false);
+  const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('FLEET_UI_ACTIVE SURFACE=FARMER_DISPATCH');
+    console.log('ROUTE_DISPATCH_INITIALIZED SURFACE=FARMER_LOGISTICS');
+  }, []);
+
+  const load = useCallback(async () => {
+    if (!isApiConfigured) {
+      setError('Backend API is not configured. Set VITE_API_URL.');
+      setLoading(false);
+      return;
+    }
+    if (user?.role && user.role !== 'farmer' && user.role !== 'admin') {
+      setError('Fleet dispatch is available for farmer accounts.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const [acceptedOrders, routeRes] = await Promise.all([
+        fetchAcceptedProcurementForDispatch(),
+        fetchMyDeliveryRoutes(30),
+      ]);
+      setAccepted(acceptedOrders);
+      setRoutes(routeRes.ITEMS ?? []);
+      setSelectedIds((prev) =>
+        prev.filter((id) => acceptedOrders.some((row) => row.id === id)),
+      );
+      console.log(
+        `FLEET_UI_ACTIVE ACCEPTED=${acceptedOrders.length} ROUTES=${routeRes.COUNT ?? 0}`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to load fleet dashboard',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function onToggle(requestId: string) {
+    setSelectedIds((prev) =>
+      prev.includes(requestId)
+        ? prev.filter((id) => id !== requestId)
+        : [...prev, requestId],
+    );
+  }
+
+  async function onCreateRoute() {
+    if (selectedIds.length === 0) return;
+    setDispatching(true);
+    setError(null);
+    setToast(null);
+    try {
+      const res = await createDeliveryRoute({
+        procurementRequestIds: selectedIds,
+        dispatchDate,
+      });
+      setToast(
+        `ROUTE_DISPATCH_INITIALIZED ROUTE=${res.ROUTE_ID.slice(0, 8)} STOPS=${res.COUNT}`,
+      );
+      console.log(
+        `ROUTE_DISPATCH_INITIALIZED ROUTE=${res.ROUTE_ID} STOPS=${res.COUNT}`,
+      );
+      setSelectedIds([]);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Route create failed');
+    } finally {
+      setDispatching(false);
+    }
+  }
+
+  async function onConfirmDropoff(stopId: string) {
+    setConfirmingStopId(stopId);
+    setError(null);
+    setToast(null);
+    try {
+      const res = await confirmDeliveryDropoff(stopId);
+      const net = res.SETTLEMENT?.NET_AMOUNT_CENTS;
+      setToast(
+        `DROPOFF CONFIRMED · FUNDS TRANSFERRED TO AVAILABLE BALANCE${
+          net != null ? ` (${formatUsdFromCents(net)})` : ''
+        }`,
+      );
+      console.log(
+        `FLEET_UI_ACTIVE ACTION=DROPOFF_CONFIRMED STOP=${stopId.slice(0, 8)} NET=${net ?? 0}`,
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Confirm dropoff failed');
+    } finally {
+      setConfirmingStopId(null);
+    }
+  }
+
+  return (
+    <VendorScreen>
+      <VendorHero
+        eyebrow="Phase 5 fleet"
+        title="Fleet Dispatch"
+        subtitle="Group ACCEPTED wholesale orders into a delivery route, then confirm each dropoff to settle escrow into your available balance."
+        pill="FLEET_UI_ACTIVE"
+      />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Link
+          to="/vendor/procurement"
+          className="app-btn app-btn--secondary app-btn--small"
+        >
+          Procurement
+        </Link>
+        <Link
+          to="/vendor/network"
+          className="app-btn app-btn--secondary app-btn--small"
+        >
+          Network
+        </Link>
+      </div>
+
+      {error ? <FieldError message={error} /> : null}
+      {toast ? (
+        <p
+          className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-3 font-mono text-xs uppercase tracking-wide text-emerald-300"
+          role="status"
+        >
+          {toast}
+        </p>
+      ) : null}
+
+      <VendorSection title="Route Planner">
+        <RoutePlanner
+          accepted={accepted}
+          selectedIds={selectedIds}
+          dispatchDate={dispatchDate}
+          loading={loading}
+          dispatching={dispatching}
+          onToggle={onToggle}
+          onDispatchDateChange={setDispatchDate}
+          onCreateRoute={() => void onCreateRoute()}
+        />
+      </VendorSection>
+
+      <VendorSection title="Active Routes">
+        <ActiveRoutes
+          routes={routes}
+          loading={loading}
+          confirmingStopId={confirmingStopId}
+          onConfirmDropoff={(stopId) => void onConfirmDropoff(stopId)}
+        />
+      </VendorSection>
+
+      <p className="mt-4 font-mono text-[10px] uppercase tracking-wide text-white/40">
+        ROUTE_DISPATCH_INITIALIZED · Confirm Dropoff settles wholesale escrow via
+        PaymentClearingService.
+      </p>
+    </VendorScreen>
+  );
+}

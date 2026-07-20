@@ -50,6 +50,14 @@ export function VendorProfilePage() {
         <VendorListPanel>
           <VendorListRow to="/onboarding/specialties" title="Edit specialties" icon="grid" tone="amber" />
           <VendorListRow to="/vendor/procurement" title="Procurement" icon="users" tone="orange" />
+          {user?.role === 'farmer' ? (
+            <VendorListRow
+              to="/farmer/logistics"
+              title="Fleet Dispatch"
+              icon="calendar"
+              tone="sky"
+            />
+          ) : null}
           <VendorListRow to="/vendor/financials" title="Financials" icon="credit-card" tone="emerald" />
           <VendorListRow to="/vendor/loyalty" title="Loyalty & Boosts" icon="badge" tone="amber" />
           <VendorListRow to="/vendor/availability" title="Availability Calendar" icon="calendar" tone="sky" />

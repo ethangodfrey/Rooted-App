@@ -65,6 +65,30 @@ export class LogisticsFulfillmentController implements OnModuleInit {
     });
   }
 
+  @Get('routes')
+  @Roles('farmer', 'admin')
+  async listMyRoutes(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+    @Query('farmerId') farmerIdQuery?: string,
+  ) {
+    let farmerId = farmerIdQuery?.trim();
+    if (user.role === 'admin') {
+      if (!farmerId) throw new BadRequestException('FARMER_ID_REQUIRED');
+    } else {
+      const ownId = await this.fulfillment.resolveFarmerIdForUser(user.id);
+      if (farmerId && farmerId !== ownId) {
+        throw new BadRequestException('FARMER_MISMATCH');
+      }
+      farmerId = ownId;
+    }
+    const parsed = limit ? Number(limit) : 20;
+    return this.fulfillment.listRoutesForFarmer(
+      farmerId,
+      Number.isFinite(parsed) ? parsed : 20,
+    );
+  }
+
   @Get('farmers/:farmerId/routes')
   @Roles('farmer', 'admin')
   async listRoutes(

@@ -72,6 +72,7 @@ import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSetting
 import { VendorAvailabilityPage } from '@/pages/vendor/VendorAvailabilityPage';
 import { VendorLoyaltyPage } from '@/pages/vendor/VendorLoyaltyPage';
 import { VendorFinancialsPage } from '@/pages/vendor/VendorFinancialsPage';
+import { FarmerLogisticsPage } from '@/pages/farmer/FarmerLogisticsPage';
 import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
@@ -222,6 +223,11 @@ export default function App() {
           <Route path="availability" element={<VendorAvailabilityPage />} />
           <Route path="loyalty" element={<VendorLoyaltyPage />} />
           <Route path="financials" element={<VendorFinancialsPage />} />
+        </Route>
+
+        <Route path="/farmer" element={<VendorLayout />}>
+          <Route index element={<Navigate to="logistics" replace />} />
+          <Route path="logistics" element={<FarmerLogisticsPage />} />
         </Route>
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />

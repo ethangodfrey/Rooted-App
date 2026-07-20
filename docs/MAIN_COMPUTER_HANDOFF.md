@@ -21,6 +21,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 13 | `cursor/financial-clearing-escrow-428e` | #228 | Phase 4 Financial Clearing & Escrow |
 | 14 | `cursor/vendor-financial-dashboard-428e` | #229 | Phase 4 Vendor Financial Dashboard + Dynamic Invoicing |
 | 15 | `cursor/fleet-logistics-fulfillment-428e` | #230 | Phase 5 Fleet Logistics & B2B Fulfillment |
+| 16 | `cursor/farmer-fleet-dispatch-ui-428e` | (open) | Phase 5 Farmer Fleet Dispatch Dashboard UI |
 
 ```powershell
 git fetch origin
@@ -28,7 +29,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/fleet-logistics-fulfillment-428e`
+`cursor/farmer-fleet-dispatch-ui-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -133,6 +134,7 @@ npm run test:loyalty:ui-integration
 npm run test:financial:clearing
 npm run test:financial:ui
 npm run test:logistics:fulfillment
+npm run test:logistics:ui
 
 cd web
 npm run build
@@ -152,6 +154,7 @@ Expected uppercase logs (no emoji):
 - `LOYALTY_UI_ACTIVE` / `REWARDS_SYNC_VERIFIED`
 - `FINANCIAL_ENGINE_INITIALIZED` / `ESCROW_LEDGER_ACTIVE`
 - `LOGISTICS_ENGINE_INITIALIZED` / `FLEET_TRACKING_ACTIVE` / `LOGISTICS_FULFILLMENT_VERIFIED`
+- `FLEET_UI_ACTIVE` / `ROUTE_DISPATCH_INITIALIZED` / `LOGISTICS_UI_VERIFIED`
 
 ## 5. Manual UI smoke (5 minutes)
 
@@ -162,6 +165,7 @@ Expected uppercase logs (no emoji):
 4. **Performance** — `/vendor/analytics` → **Performance** tab  
    Post Reach + Inquiries over time charts (empty zeros are OK until traffic + phase73).
 5. **Financials** — `/vendor/financials` wallet + escrow list; Download Invoice on accepted catering (availability) and ACCEPTED procurement rows.
+6. **Fleet Dispatch** — `/farmer/logistics` Route Planner + Active Routes Confirm Dropoff (settles wholesale escrow).
 
 ## 6. Optional: seed / refresh USDA markets
 
