@@ -1,5 +1,6 @@
 import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
 import { LegalLinks } from '@/components/account/LegalLinks';
+import { ActiveCollaborationBadge } from '@/components/makers/ActiveCollaborationBadge';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import {
@@ -38,6 +39,7 @@ export function VendorProfilePage() {
             </p>
             <UserSticker role={stickerRole} />
           </div>
+          <ActiveCollaborationBadge profileId={user?.id} />
           <SpecialtyPills specialties={specialties} style={{ marginBottom: '0.75rem' }} />
           <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">Email</p>
           <p className="m-0 mt-1 text-sm font-semibold text-stone-800">{user?.email}</p>
@@ -46,7 +48,21 @@ export function VendorProfilePage() {
 
       <VendorSection title="Settings">
         <VendorListPanel>
+          <VendorListRow to="/settings" title="Notification preferences" icon="badge" tone="sky" />
           <VendorListRow to="/onboarding/specialties" title="Edit specialties" icon="grid" tone="amber" />
+          <VendorListRow to="/vendor/procurement" title="Procurement" icon="users" tone="orange" />
+          {user?.role === 'farmer' ? (
+            <VendorListRow
+              to="/farmer/logistics"
+              title="Fleet Dispatch"
+              icon="calendar"
+              tone="sky"
+            />
+          ) : null}
+          <VendorListRow to="/vendor/financials" title="Financials" icon="credit-card" tone="emerald" />
+          <VendorListRow to="/vendor/loyalty" title="Loyalty & Boosts" icon="badge" tone="amber" />
+          <VendorListRow to="/vendor/availability" title="Availability Calendar" icon="calendar" tone="sky" />
+          <VendorListRow to="/vendor/catering" title="Catering Settings" icon="clipboard" tone="teal" />
           <VendorListRow to="/vendor/storefront" title="Edit storefront" icon="store" tone="orange" />
           <VendorListRow to="/vendor/preview" title="Preview shop" icon="grid" tone="stone" />
           <VendorListRow to="/vendor/setup" title="Application details" icon="clipboard" tone="stone" />

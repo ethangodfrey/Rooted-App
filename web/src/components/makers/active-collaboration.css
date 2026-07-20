@@ -1,0 +1,111 @@
+.active-collab-badge {
+  display: inline-flex;
+  align-items: center;
+  margin: 0.35rem 0 0;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid #1c1917;
+  background: #fafaf9;
+  color: #1c1917;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.active-collab-badge:hover {
+  background: #1c1917;
+  color: #fafaf9;
+}
+
+.active-collab-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(28, 25, 23, 0.45);
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .active-collab-modal-backdrop {
+    align-items: center;
+  }
+}
+
+.active-collab-modal {
+  width: min(28rem, 100%);
+  max-height: min(80vh, 36rem);
+  overflow: auto;
+  background: #fafaf9;
+  color: #1c1917;
+  border: 1px solid #d6d3d1;
+  padding: 1rem;
+}
+
+.active-collab-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.active-collab-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.active-collab-modal__close {
+  border: 1px solid #d6d3d1;
+  background: transparent;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.active-collab-modal__empty {
+  margin: 0;
+  color: #78716c;
+  font-size: 0.875rem;
+}
+
+.active-collab-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.active-collab-modal__item {
+  border-top: 1px solid #e7e5e4;
+  padding-top: 0.75rem;
+}
+
+.active-collab-modal__media {
+  display: block;
+  width: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+}
+
+.active-collab-modal__caption {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.active-collab-modal__meta {
+  margin: 0.25rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #78716c;
+}
