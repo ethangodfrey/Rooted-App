@@ -21,7 +21,7 @@ import {
   formatEscrowLedgerActiveLog,
   formatFinancialEngineInitializedLog,
   formatFinancialUiActiveLog,
-  formatInvoicingDashboardInitializedLog,
+  formatInvoicingEngineInitializedLog,
 } from './financial.util';
 import { GenerateInvoiceService } from './generate-invoice.service';
 import { PaymentClearingService } from './payment-clearing.service';
@@ -40,7 +40,7 @@ export class FinancialController implements OnModuleInit {
     this.logger.log(formatFinancialEngineInitializedLog());
     this.logger.log(formatEscrowLedgerActiveLog());
     this.logger.log(formatFinancialUiActiveLog());
-    this.logger.log(formatInvoicingDashboardInitializedLog());
+    this.logger.log(formatInvoicingEngineInitializedLog());
   }
 
   /**
@@ -112,7 +112,7 @@ export class FinancialController implements OnModuleInit {
   async cateringInvoiceJson(@Param('inquiryId') inquiryId: string) {
     const invoice = await this.invoices.fromCateringInquiry(inquiryId);
     return {
-      STATUS: 'INVOICING_DASHBOARD_INITIALIZED',
+      STATUS: 'INVOICING_ENGINE_INITIALIZED',
       INVOICE: invoice,
     };
   }
@@ -133,7 +133,7 @@ export class FinancialController implements OnModuleInit {
   async procurementInvoiceJson(@Param('requestId') requestId: string) {
     const invoice = await this.invoices.fromProcurementRequest(requestId);
     return {
-      STATUS: 'INVOICING_DASHBOARD_INITIALIZED',
+      STATUS: 'INVOICING_ENGINE_INITIALIZED',
       INVOICE: invoice,
     };
   }

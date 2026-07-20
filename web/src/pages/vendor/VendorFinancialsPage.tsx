@@ -30,7 +30,7 @@ export function VendorFinancialsPage() {
 
   useEffect(() => {
     console.log('FINANCIAL_UI_ACTIVE SURFACE=VENDOR_WALLET');
-    console.log('INVOICING_DASHBOARD_INITIALIZED SURFACE=VENDOR_FINANCIALS');
+    console.log('INVOICING_ENGINE_INITIALIZED SURFACE=VENDOR_FINANCIALS');
   }, []);
 
   const load = useCallback(async () => {
@@ -109,7 +109,7 @@ export function VendorFinancialsPage() {
       </VendorSection>
 
       <p className="mt-4 font-mono text-[10px] uppercase tracking-wide text-white/40">
-        INVOICING_DASHBOARD_INITIALIZED · Download invoices from accepted catering
+        INVOICING_ENGINE_INITIALIZED · Download invoices from accepted catering
         and wholesale procurement requests.
       </p>
     </VendorScreen>

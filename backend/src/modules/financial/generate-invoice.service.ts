@@ -1,6 +1,6 @@
 /**
  * GenerateInvoiceService — dynamic invoices for catering / B2B procurement.
- * Telemetry: INVOICING_DASHBOARD_INITIALIZED, FINANCIAL_UI_ACTIVE
+ * Telemetry: INVOICING_ENGINE_INITIALIZED, FINANCIAL_UI_ACTIVE
  */
 
 import {
@@ -12,12 +12,16 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import {
+  computePlatformFeeCents,
+  DEFAULT_PLATFORM_FEE_BPS,
+} from '../../common/settlement/platform-fee';
 import { PrismaService } from '../../prisma/prisma.service';
 import { REDEMPTION_RULES } from '../loyalty/loyalty.util';
 import {
   formatCents,
   formatFinancialUiActiveLog,
-  formatInvoicingDashboardInitializedLog,
+  formatInvoicingEngineInitializedLog,
 } from './financial.util';
 
 export type InvoiceLineItem = {
@@ -25,7 +29,7 @@ export type InvoiceLineItem = {
   quantity: number | null;
   unitCents: number | null;
   totalCents: number;
-  kind: 'CHARGE' | 'LOYALTY_VOUCHER' | 'NOTE';
+  kind: 'CHARGE' | 'LOYALTY_VOUCHER' | 'PLATFORM_FEE' | 'NOTE';
 };
 
 export type GeneratedInvoice = {
@@ -43,7 +47,10 @@ export type GeneratedInvoice = {
   SUBTOTAL_CENTS: number;
   LOYALTY_VOUCHER_CENTS: number;
   LOYALTY_POINTS_APPLIED: number;
+  PLATFORM_FEE_CENTS: number;
+  PLATFORM_FEE_BPS: number;
   TOTAL_CENTS: number;
+  VENDOR_NET_CENTS: number;
   HTML: string;
 };
 
@@ -54,7 +61,7 @@ export class GenerateInvoiceService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   onModuleInit(): void {
-    this.logger.log(formatInvoicingDashboardInitializedLog());
+    this.logger.log(formatInvoicingEngineInitializedLog());
     this.logger.log(formatFinancialUiActiveLog());
   }
 
@@ -94,6 +101,10 @@ export class GenerateInvoiceService implements OnModuleInit {
     const voucher = Number(row.voucher_cents_applied) || 0;
     const loyaltyPoints =
       voucher > 0 ? REDEMPTION_RULES.VOUCHER_5.points : 0;
+    const due = Math.max(0, deposit - voucher);
+    const platformFee = computePlatformFeeCents(due, DEFAULT_PLATFORM_FEE_BPS);
+    const vendorNet = Math.max(0, due - platformFee);
+
     const lines: InvoiceLineItem[] = [
       {
         label: 'Catering deposit',
@@ -113,6 +124,13 @@ export class GenerateInvoiceService implements OnModuleInit {
       });
     }
     lines.push({
+      label: `Platform fee (${DEFAULT_PLATFORM_FEE_BPS / 100}%)`,
+      quantity: 1,
+      unitCents: platformFee,
+      totalCents: platformFee,
+      kind: 'PLATFORM_FEE',
+    });
+    lines.push({
       label: `Inquiry note: ${row.message.slice(0, 120)}`,
       quantity: null,
       unitCents: null,
@@ -120,7 +138,6 @@ export class GenerateInvoiceService implements OnModuleInit {
       kind: 'NOTE',
     });
 
-    const total = Math.max(0, deposit - voucher);
     const invoice = this.buildInvoice({
       source: 'CATERING_INQUIRY',
       sourceId: row.id,
@@ -132,13 +149,15 @@ export class GenerateInvoiceService implements OnModuleInit {
       subtotalCents: deposit,
       loyaltyVoucherCents: voucher,
       loyaltyPointsApplied: loyaltyPoints,
-      totalCents: total,
+      platformFeeCents: platformFee,
+      totalCents: due,
+      vendorNetCents: vendorNet,
       eventDate:
         row.event_date != null ? String(row.event_date).slice(0, 10) : null,
     });
 
     this.logger.log(
-      `INVOICING_DASHBOARD_INITIALIZED ACTION=CATERING INVOICE=${invoice.INVOICE_ID}`,
+      `INVOICING_ENGINE_INITIALIZED ACTION=CATERING INVOICE=${invoice.INVOICE_ID}`,
     );
     return invoice;
   }
@@ -181,6 +200,8 @@ export class GenerateInvoiceService implements OnModuleInit {
     const qty = row.requested_quantity != null ? Number(row.requested_quantity) : 1;
     const unit = row.bulk_unit_price != null ? Math.round(Number(row.bulk_unit_price) * 100) : 0;
     const subtotal = Math.max(0, qty * unit);
+    const platformFee = computePlatformFeeCents(subtotal, DEFAULT_PLATFORM_FEE_BPS);
+    const vendorNet = Math.max(0, subtotal - platformFee);
 
     const lines: InvoiceLineItem[] = [
       {
@@ -189,6 +210,13 @@ export class GenerateInvoiceService implements OnModuleInit {
         unitCents: unit,
         totalCents: subtotal,
         kind: 'CHARGE',
+      },
+      {
+        label: `Platform fee (${DEFAULT_PLATFORM_FEE_BPS / 100}%)`,
+        quantity: 1,
+        unitCents: platformFee,
+        totalCents: platformFee,
+        kind: 'PLATFORM_FEE',
       },
     ];
     if (row.message?.trim()) {
@@ -212,12 +240,14 @@ export class GenerateInvoiceService implements OnModuleInit {
       subtotalCents: subtotal,
       loyaltyVoucherCents: 0,
       loyaltyPointsApplied: 0,
+      platformFeeCents: platformFee,
       totalCents: subtotal,
+      vendorNetCents: vendorNet,
       eventDate: null,
     });
 
     this.logger.log(
-      `INVOICING_DASHBOARD_INITIALIZED ACTION=PROCUREMENT INVOICE=${invoice.INVOICE_ID}`,
+      `INVOICING_ENGINE_INITIALIZED ACTION=PROCUREMENT INVOICE=${invoice.INVOICE_ID}`,
     );
     return invoice;
   }
@@ -233,7 +263,9 @@ export class GenerateInvoiceService implements OnModuleInit {
     subtotalCents: number;
     loyaltyVoucherCents: number;
     loyaltyPointsApplied: number;
+    platformFeeCents: number;
     totalCents: number;
+    vendorNetCents: number;
     eventDate: string | null;
   }): GeneratedInvoice {
     const issuedAt = new Date().toISOString();
@@ -245,7 +277,7 @@ export class GenerateInvoiceService implements OnModuleInit {
     });
 
     return {
-      STATUS: 'INVOICING_DASHBOARD_INITIALIZED',
+      STATUS: 'INVOICING_ENGINE_INITIALIZED',
       INVOICE_ID: invoiceId,
       SOURCE: input.source,
       SOURCE_ID: input.sourceId,
@@ -259,7 +291,10 @@ export class GenerateInvoiceService implements OnModuleInit {
       SUBTOTAL_CENTS: input.subtotalCents,
       LOYALTY_VOUCHER_CENTS: input.loyaltyVoucherCents,
       LOYALTY_POINTS_APPLIED: input.loyaltyPointsApplied,
+      PLATFORM_FEE_CENTS: input.platformFeeCents,
+      PLATFORM_FEE_BPS: DEFAULT_PLATFORM_FEE_BPS,
       TOTAL_CENTS: input.totalCents,
+      VENDOR_NET_CENTS: input.vendorNetCents,
       HTML: html,
     };
   }
@@ -275,7 +310,9 @@ export class GenerateInvoiceService implements OnModuleInit {
     subtotalCents: number;
     loyaltyVoucherCents: number;
     loyaltyPointsApplied: number;
+    platformFeeCents: number;
     totalCents: number;
+    vendorNetCents: number;
     issuedAt: string;
     eventDate: string | null;
   }): string {
@@ -332,10 +369,12 @@ export class GenerateInvoiceService implements OnModuleInit {
     <div>SUBTOTAL ${formatCents(input.subtotalCents)}</div>
     <div>LOYALTY POINTS APPLIED (REDEMPTIONSERVICE) ${input.loyaltyPointsApplied}</div>
     <div>LOYALTY VOUCHER −${formatCents(input.loyaltyVoucherCents)}</div>
-    <div class="total">TOTAL ${formatCents(input.totalCents)}</div>
+    <div>PLATFORM FEE −${formatCents(input.platformFeeCents)}</div>
+    <div class="total">AMOUNT DUE ${formatCents(input.totalCents)}</div>
+    <div>VENDOR NET ${formatCents(input.vendorNetCents)}</div>
   </div>
   <p style="margin-top:2rem;font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.08em;">
-    INVOICING_DASHBOARD_INITIALIZED · FINANCIAL_UI_ACTIVE
+    INVOICING_ENGINE_INITIALIZED · FINANCIAL_UI_ACTIVE
   </p>
 </body>
 </html>`;

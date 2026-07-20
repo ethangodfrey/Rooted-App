@@ -102,7 +102,7 @@ export function VendorProcurementPage() {
     try {
       await downloadProcurementInvoiceHtml(requestId);
       console.log(
-        `INVOICING_DASHBOARD_INITIALIZED ACTION=DOWNLOAD_PROCUREMENT ID=${requestId.slice(0, 8)}`,
+        `INVOICING_ENGINE_INITIALIZED ACTION=DOWNLOAD_PROCUREMENT ID=${requestId.slice(0, 8)}`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invoice download failed');

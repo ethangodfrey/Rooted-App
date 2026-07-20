@@ -49,7 +49,10 @@ export type GeneratedInvoice = {
   SUBTOTAL_CENTS: number;
   LOYALTY_VOUCHER_CENTS: number;
   LOYALTY_POINTS_APPLIED: number;
+  PLATFORM_FEE_CENTS: number;
+  PLATFORM_FEE_BPS: number;
   TOTAL_CENTS: number;
+  VENDOR_NET_CENTS: number;
 };
 
 export function formatUsdFromCents(cents: number): string {

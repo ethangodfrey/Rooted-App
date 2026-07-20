@@ -6,15 +6,19 @@
  *
  * Success lines (uppercase, no emoji):
  *   FINANCIAL_UI_ACTIVE
- *   INVOICING_DASHBOARD_INITIALIZED
+ *   INVOICING_ENGINE_INITIALIZED
  *   FINANCIAL_UI_VERIFIED
  */
 
 import {
+  computePlatformFeeCents,
+  DEFAULT_PLATFORM_FEE_BPS,
+} from '../backend/src/common/settlement/platform-fee';
+import {
   applyVoucherToAmount,
   formatCents,
   formatFinancialUiActiveLog,
-  formatInvoicingDashboardInitializedLog,
+  formatInvoicingEngineInitializedLog,
   normalizeFinancialStatus,
 } from '../backend/src/modules/financial/financial.util';
 import { REDEMPTION_RULES } from '../backend/src/modules/loyalty/loyalty.util';
@@ -27,21 +31,33 @@ function log(message: string): void {
   console.log(message);
 }
 
-/** Mirrors GenerateInvoiceService loyalty line itemization. */
-function buildLoyaltyInvoiceLine(voucherCents: number): {
-  label: string;
+/** Mirrors GenerateInvoiceService loyalty + platform fee itemization. */
+function buildInvoiceBreakdown(input: {
+  amountCents: number;
+  voucherCents: number;
+}): {
+  loyaltyLabel: string;
   loyaltyPointsApplied: number;
+  platformFeeCents: number;
   totalCents: number;
+  vendorNetCents: number;
 } {
+  const clearing = applyVoucherToAmount(input);
   const loyaltyPointsApplied =
-    voucherCents > 0 ? REDEMPTION_RULES.VOUCHER_5.points : 0;
+    clearing.voucherCents > 0 ? REDEMPTION_RULES.VOUCHER_5.points : 0;
+  const platformFeeCents = computePlatformFeeCents(
+    clearing.netAmountCents,
+    DEFAULT_PLATFORM_FEE_BPS,
+  );
   return {
-    label:
-      voucherCents > 0
+    loyaltyLabel:
+      clearing.voucherCents > 0
         ? `Loyalty points applied via RedemptionService (${loyaltyPointsApplied} pts, VOUCHER_5)`
         : 'No loyalty applied',
     loyaltyPointsApplied,
-    totalCents: -Math.max(0, voucherCents),
+    platformFeeCents,
+    totalCents: clearing.netAmountCents,
+    vendorNetCents: Math.max(0, clearing.netAmountCents - platformFeeCents),
   };
 }
 
@@ -55,7 +71,7 @@ const TRANSACTIONS_PATH = '/api/financial/vendors/:vendorId/transactions';
 
 function main(): void {
   log(formatFinancialUiActiveLog({ availableCents: 9500 }));
-  log(formatInvoicingDashboardInitializedLog());
+  log(formatInvoicingEngineInitializedLog());
 
   assert(FINANCIAL_ROUTE === '/vendor/financials', 'ROUTE_FAIL');
   assert(BALANCE_PATH.includes('vendors'), 'BALANCE_PATH_FAIL');
@@ -69,24 +85,28 @@ function main(): void {
   assert(normalizeFinancialStatus('HELD_IN_ESCROW') === 'HELD_IN_ESCROW', 'HELD_FAIL');
   assert(normalizeFinancialStatus('SETTLED') === 'SETTLED', 'SETTLED_FAIL');
 
-  const clearing = applyVoucherToAmount({
+  const breakdown = buildInvoiceBreakdown({
     amountCents: 10000,
     voucherCents: 500,
   });
-  assert(clearing.netAmountCents === 9500, 'NET_FAIL');
-  assert(formatCents(clearing.netAmountCents) === '$95.00', 'FORMAT_FAIL');
-
-  const loyaltyLine = buildLoyaltyInvoiceLine(500);
-  assert(loyaltyLine.loyaltyPointsApplied === 500, 'LOYALTY_POINTS_FAIL');
-  assert(loyaltyLine.totalCents === -500, 'LOYALTY_VOUCHER_LINE_FAIL');
+  assert(breakdown.loyaltyPointsApplied === 500, 'LOYALTY_POINTS_FAIL');
   assert(
-    loyaltyLine.label.includes('RedemptionService'),
+    breakdown.loyaltyLabel.includes('RedemptionService'),
     'LOYALTY_LABEL_FAIL',
   );
+  assert(breakdown.totalCents === 9500, 'TOTAL_DUE_FAIL');
+  assert(breakdown.platformFeeCents === 475, 'PLATFORM_FEE_FAIL');
+  assert(breakdown.vendorNetCents === 9025, 'VENDOR_NET_FAIL');
+  assert(formatCents(breakdown.platformFeeCents) === '$4.75', 'FEE_FORMAT_FAIL');
   assert(REDEMPTION_RULES.VOUCHER_5.voucherCents === 500, 'VOUCHER_RULE_FAIL');
+  assert(DEFAULT_PLATFORM_FEE_BPS === 500, 'BPS_FAIL');
 
-  const emptyLoyalty = buildLoyaltyInvoiceLine(0);
+  const emptyLoyalty = buildInvoiceBreakdown({
+    amountCents: 10000,
+    voucherCents: 0,
+  });
   assert(emptyLoyalty.loyaltyPointsApplied === 0, 'EMPTY_POINTS_FAIL');
+  assert(emptyLoyalty.platformFeeCents === 500, 'GROSS_FEE_FAIL');
 
   // Escrow UI buckets
   const ledger = [

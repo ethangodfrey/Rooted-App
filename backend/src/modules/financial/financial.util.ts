@@ -40,8 +40,13 @@ export function formatFinancialUiActiveLog(input?: {
   return 'FINANCIAL_UI_ACTIVE';
 }
 
+export function formatInvoicingEngineInitializedLog(): string {
+  return 'INVOICING_ENGINE_INITIALIZED SERVICE=GenerateInvoiceService';
+}
+
+/** @deprecated Prefer formatInvoicingEngineInitializedLog */
 export function formatInvoicingDashboardInitializedLog(): string {
-  return 'INVOICING_DASHBOARD_INITIALIZED SERVICE=GenerateInvoiceService';
+  return formatInvoicingEngineInitializedLog();
 }
 
 export function normalizeFinancialStatus(

@@ -187,7 +187,7 @@ export function VendorAvailabilityPage() {
     try {
       await downloadCateringInvoiceHtml(inquiryId);
       console.log(
-        `INVOICING_DASHBOARD_INITIALIZED ACTION=DOWNLOAD_CATERING ID=${inquiryId.slice(0, 8)}`,
+        `INVOICING_ENGINE_INITIALIZED ACTION=DOWNLOAD_CATERING ID=${inquiryId.slice(0, 8)}`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invoice download failed');
