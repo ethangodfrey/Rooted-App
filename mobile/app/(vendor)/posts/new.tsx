@@ -27,6 +27,11 @@ export default function NewPostScreen() {
       media_type: values.media_type ?? 'image',
       product_id: values.product_id,
       event_id: values.event_id,
+      posting_mode: values.posting_mode ?? 'SELF',
+      contributor_type: 'VENDOR',
+      content_type:
+        values.media_type === 'video' ? 'VIDEO' : values.media_url ? 'PHOTO' : 'TEXT',
+      co_approval_status: values.posting_mode === 'PARTNERSHIP' ? 'PENDING' : 'NONE',
       ...(values.publish_at ? { publish_at: values.publish_at } : {}),
     });
     setSaving(false);

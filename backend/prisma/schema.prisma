@@ -771,24 +771,61 @@ model AnalyticsSnapshot {
 }
 
 model Post {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vendorId          String   @map("vendor_id") @db.Uuid
-  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  eventId           String?  @map("event_id") @db.Uuid
-  productId         String?  @map("product_id") @db.Uuid
-  postType          String   @map("post_type")
-  caption           String
-  content           String?
-  mediaUrl          String?  @map("media_url")
-  mediaType         String   @default("image") @map("media_type")
-  videoThumbnailUrl String?  @map("video_thumbnail_url")
-  moderationStatus  String?  @map("moderation_status")
-  publishAt         DateTime @default(now()) @map("publish_at") @db.Timestamptz(6)
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId                 String   @map("vendor_id") @db.Uuid
+  vendor                   Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  eventId                  String?  @map("event_id") @db.Uuid
+  productId                String?  @map("product_id") @db.Uuid
+  postType                 String   @map("post_type")
+  caption                  String
+  content                  String?
+  mediaUrl                 String?  @map("media_url")
+  mediaType                String   @default("image") @map("media_type")
+  videoThumbnailUrl        String?  @map("video_thumbnail_url")
+  moderationStatus         String?  @map("moderation_status")
+  /// Dual-posting primary author (profile / farmer / vendor id).
+  contributorId            String?  @map("contributor_id") @db.Uuid
+  contributorType          String?  @map("contributor_type")
+  /// TEXT | PHOTO | VIDEO
+  contentType              String   @default("TEXT") @map("content_type")
+  /// SELF | PARTNERSHIP
+  postingMode              String   @default("SELF") @map("posting_mode")
+  partnershipConnectionId  String?  @map("partnership_connection_id") @db.Uuid
+  partnerContributorId     String?  @map("partner_contributor_id") @db.Uuid
+  partnerContributorType   String?  @map("partner_contributor_type")
+  /// NONE | PENDING | APPROVED | REJECTED | APPENDED
+  coApprovalStatus         String   @default("NONE") @map("co_approval_status")
+  cdnMediaUrl              String?  @map("cdn_media_url")
+  mediaCompressed          Boolean  @default(false) @map("media_compressed")
+  contributionMetadata     Json     @default("{}") @map("contribution_metadata")
+  publishAt                DateTime @default(now()) @map("publish_at") @db.Timestamptz(6)
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  contributions            PostContribution[]
 
   @@index([vendorId])
   @@index([createdAt(sort: Desc)])
+  @@index([contributorId, contributorType])
   @@map("posts")
+}
+
+/// Appendable dual-posting contribution rows (create / co-approve / append / reject).
+model PostContribution {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId          String   @map("post_id") @db.Uuid
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  contributorId   String   @map("contributor_id") @db.Uuid
+  contributorType String   @map("contributor_type")
+  contentType     String   @default("TEXT") @map("content_type")
+  body            String?
+  mediaUrl        String?  @map("media_url")
+  cdnMediaUrl     String?  @map("cdn_media_url")
+  mediaCompressed Boolean  @default(false) @map("media_compressed")
+  action          String
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@map("post_contributions")
 }
 
 model VendorCertification {

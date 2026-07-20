@@ -1,6 +1,10 @@
 import { supabase } from '@/lib/supabase'
 
-export type NotificationType = 'ORDER_STATUS' | 'CONNECTION_REQUEST' | 'SYSTEM_ALERT'
+export type NotificationType =
+  | 'ORDER_STATUS'
+  | 'CONNECTION_REQUEST'
+  | 'SYSTEM_ALERT'
+  | 'CONTENT_CONTRIBUTION'
 
 export type NotificationLog = {
   id: string

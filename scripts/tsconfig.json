@@ -11,5 +11,10 @@
     "ignoreDeprecations": "6.0",
     "types": ["node"]
   },
-  "include": ["./**/*.ts", "../backend/src/modules/admin-agent/local-network-seed.runner.ts"]
+  "include": [
+    "./**/*.ts",
+    "../backend/src/modules/admin-agent/local-network-seed.runner.ts",
+    "../backend/src/modules/content/content-contribution.util.ts",
+    "../backend/src/modules/content/content-media-cdn.util.ts"
+  ]
 }

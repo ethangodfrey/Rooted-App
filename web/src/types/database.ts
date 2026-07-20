@@ -497,6 +497,17 @@ export interface Post {
   media_type: PostMediaType;
   video_thumbnail_url: string | null;
   moderation_status?: 'unreviewed' | 'approved' | 'flagged' | 'removed';
+  contributor_id?: string | null;
+  contributor_type?: 'FARMER' | 'VENDOR' | null;
+  content_type?: 'TEXT' | 'PHOTO' | 'VIDEO' | null;
+  posting_mode?: 'SELF' | 'PARTNERSHIP' | null;
+  partnership_connection_id?: string | null;
+  partner_contributor_id?: string | null;
+  partner_contributor_type?: 'FARMER' | 'VENDOR' | null;
+  co_approval_status?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'APPENDED' | null;
+  cdn_media_url?: string | null;
+  media_compressed?: boolean | null;
+  contribution_metadata?: Record<string, unknown> | null;
   publish_at: string;
   created_at: string;
 }
