@@ -50,6 +50,67 @@ export function formatLoyaltyTickProcessedLog(input: {
   return `LOYALTY_TICK_PROCESSED SHOPPER=${input.shopperId} ACTION=${input.action} POINTS=${input.points} BOOSTED=${input.boosted ? '1' : '0'}`;
 }
 
+/** Phase 3 Shopper Loyalty UI telemetry (no emoji). */
+export function formatLoyaltyUiActiveLog(input?: {
+  pointsTotal?: number;
+}): string {
+  if (input?.pointsTotal != null) {
+    return `LOYALTY_UI_ACTIVE POINTS=${input.pointsTotal}`;
+  }
+  return 'LOYALTY_UI_ACTIVE';
+}
+
+export function formatRewardsSyncVerifiedLog(input?: {
+  boosts?: number;
+}): string {
+  if (input?.boosts != null) {
+    return `REWARDS_SYNC_VERIFIED BOOSTS=${input.boosts}`;
+  }
+  return 'REWARDS_SYNC_VERIFIED';
+}
+
+/**
+ * Next redemption tier progress from current points.
+ * Returns the nearest unpaid tier (VOUCHER_5 then EARLY_ACCESS).
+ */
+export function nextRedemptionProgress(pointsTotal: number): {
+  currentPoints: number;
+  nextTier: RedemptionTier | null;
+  nextPoints: number | null;
+  progressRatio: number;
+  label: string | null;
+} {
+  const points = Math.max(0, Math.floor(pointsTotal));
+  const voucher = REDEMPTION_RULES.VOUCHER_5.points;
+  const early = REDEMPTION_RULES.EARLY_ACCESS_CATERING.points;
+
+  if (points < voucher) {
+    return {
+      currentPoints: points,
+      nextTier: 'VOUCHER_5',
+      nextPoints: voucher,
+      progressRatio: Math.min(1, points / voucher),
+      label: REDEMPTION_RULES.VOUCHER_5.label,
+    };
+  }
+  if (points < early) {
+    return {
+      currentPoints: points,
+      nextTier: 'EARLY_ACCESS_CATERING',
+      nextPoints: early,
+      progressRatio: Math.min(1, points / early),
+      label: REDEMPTION_RULES.EARLY_ACCESS_CATERING.label,
+    };
+  }
+  return {
+    currentPoints: points,
+    nextTier: null,
+    nextPoints: null,
+    progressRatio: 1,
+    label: 'ALL TIERS UNLOCKED',
+  };
+}
+
 export function basePointsForAction(action: LoyaltyActionType): number {
   if (action === 'REDEMPTION') return 0;
   return LOYALTY_ACTION_POINTS[action];

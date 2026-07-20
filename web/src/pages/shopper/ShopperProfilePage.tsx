@@ -87,6 +87,12 @@ export function ShopperProfilePage() {
       </section>
 
       <section style={{ marginBottom: '1.5rem' }}>
+        <Link to="/shopper/rewards" className="app-btn app-btn--primary app-btn--small">
+          Rewards
+        </Link>
+      </section>
+
+      <section style={{ marginBottom: '1.5rem' }}>
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="app-eyebrow" style={{ margin: 0 }}>
             My schedule

@@ -55,12 +55,14 @@ export async function submitCateringInquiry(input: {
   message: string;
   guestCount?: number | null;
   eventDate?: string | null;
+  redemptionTier?: string | null;
 }): Promise<{
   STATUS: string;
   INQUIRY_ID: string;
   INQUIRY_STATUS?: string;
   CONFLICT_DETECTED?: boolean;
   CONFLICT_WARNING?: string | null;
+  REDEMPTION?: unknown;
 }> {
   return api.post('/api/catering/inquiries', input);
 }

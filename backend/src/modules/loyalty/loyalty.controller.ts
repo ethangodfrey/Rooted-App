@@ -7,6 +7,7 @@ import {
   OnModuleInit,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -14,9 +15,14 @@ import { CurrentUser, Roles } from '../../common/auth/decorators';
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import { SupabaseAuthGuard } from '../../common/auth/supabase-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
-import { formatRewardsLogicPrecisionSetLog } from './loyalty.util';
+import {
+  formatLoyaltyUiActiveLog,
+  formatRewardsLogicPrecisionSetLog,
+  formatRewardsSyncVerifiedLog,
+} from './loyalty.util';
 import { PrecisionRewardsService } from './precision-rewards.service';
 import { RedemptionRulesService } from './redemption-rules.service';
+import { RedemptionService } from './redemption.service';
 
 @Controller('api/loyalty')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
@@ -25,11 +31,14 @@ export class LoyaltyController implements OnModuleInit {
 
   constructor(
     private readonly rewards: PrecisionRewardsService,
-    private readonly redemption: RedemptionRulesService,
+    private readonly redemptionRules: RedemptionRulesService,
+    private readonly redemption: RedemptionService,
   ) {}
 
   onModuleInit(): void {
     this.logger.log(formatRewardsLogicPrecisionSetLog());
+    this.logger.log(formatLoyaltyUiActiveLog());
+    this.logger.log(formatRewardsSyncVerifiedLog());
   }
 
   @Get('balance')
@@ -42,9 +51,22 @@ export class LoyaltyController implements OnModuleInit {
   @Roles('shopper', 'vendor', 'farmer', 'admin')
   async tiers() {
     return {
-      STATUS: 'REWARDS_LOGIC_PRECISION_SET',
-      TIERS: this.redemption.listTiers(),
+      STATUS: 'LOYALTY_UI_ACTIVE',
+      TIERS: this.redemptionRules.listTiers(),
     };
+  }
+
+  /**
+   * Active Double Points boosts for shopper rewards dashboard.
+   */
+  @Get('boosts')
+  @Roles('shopper', 'vendor', 'farmer', 'admin')
+  async boosts(@Query('limit') limitRaw?: string) {
+    const limit =
+      limitRaw != null && limitRaw !== '' ? Number(limitRaw) : undefined;
+    return this.rewards.listActiveBoosts(
+      limit != null && Number.isFinite(limit) ? limit : 40,
+    );
   }
 
   @Post('tick')
@@ -73,15 +95,36 @@ export class LoyaltyController implements OnModuleInit {
   @Roles('shopper', 'admin')
   async redeem(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { vendorId?: string; tier?: string },
+    @Body()
+    body: {
+      vendorId?: string;
+      tier?: string;
+      eventDate?: string | null;
+    },
   ) {
     if (!body.vendorId?.trim()) throw new BadRequestException('VENDOR_ID_REQUIRED');
     if (!body.tier?.trim()) throw new BadRequestException('TIER_REQUIRED');
+    // When eventDate is provided (catering path), hard-block on availability.
+    if (body.eventDate?.trim()) {
+      return this.redemption.redeemForInquiry({
+        userId: user.id,
+        vendorId: body.vendorId,
+        tierRaw: body.tier,
+        eventDate: body.eventDate,
+      });
+    }
     return this.rewards.redeem({
       userId: user.id,
       vendorId: body.vendorId,
       tierRaw: body.tier,
     });
+  }
+
+  @Get('vendor/status')
+  @Roles('vendor', 'farmer', 'admin')
+  async vendorStatus(@CurrentUser() user: AuthenticatedUser) {
+    if (!user.vendorId) throw new BadRequestException('VENDOR_REQUIRED');
+    return this.rewards.getVendorRewardsStatus(user.vendorId);
   }
 
   @Put('vendor/opt-in')
@@ -117,6 +160,16 @@ export class LoyaltyController implements OnModuleInit {
       microFeeCentsPerBonusPoint: body.microFeeCentsPerBonusPoint,
       label: body.label,
     });
+  }
+
+  @Put('vendor/boost/toggle')
+  @Roles('vendor', 'farmer', 'admin')
+  async toggleBoost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { enabled?: boolean },
+  ) {
+    if (!user.vendorId) throw new BadRequestException('VENDOR_REQUIRED');
+    return this.rewards.toggleBoost(user.vendorId, Boolean(body.enabled));
   }
 
   @Post('vendor/fund')

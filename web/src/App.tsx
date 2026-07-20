@@ -67,8 +67,10 @@ import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { ShopperMeetTheMakersPage } from '@/pages/shopper/ShopperMeetTheMakersPage';
+import { ShopperRewardsPage } from '@/pages/shopper/ShopperRewardsPage';
 import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSettingsPage';
 import { VendorAvailabilityPage } from '@/pages/vendor/VendorAvailabilityPage';
+import { VendorLoyaltyPage } from '@/pages/vendor/VendorLoyaltyPage';
 import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
@@ -150,6 +152,7 @@ export default function App() {
           <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
           <Route path="/shopper/feed" element={<Navigate to="/following" replace />} />
           <Route path="/shopper/profile" element={<ShopperProfilePage />} />
+          <Route path="/shopper/rewards" element={<ShopperRewardsPage />} />
           <Route path="/shopper/cart" element={<ShopperCartPage />} />
         </Route>
 
@@ -216,6 +219,7 @@ export default function App() {
           <Route path="profile" element={<VendorProfilePage />} />
           <Route path="catering" element={<VendorCateringSettingsPage />} />
           <Route path="availability" element={<VendorAvailabilityPage />} />
+          <Route path="loyalty" element={<VendorLoyaltyPage />} />
         </Route>
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />

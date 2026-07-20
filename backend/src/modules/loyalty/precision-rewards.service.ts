@@ -13,8 +13,10 @@ import {
   applyBoost,
   basePointsForAction,
   formatLoyaltyTickProcessedLog,
+  formatLoyaltyUiActiveLog,
   formatRewardsLogicPrecisionSetLog,
   microFeeCents,
+  nextRedemptionProgress,
   normalizeLoyaltyAction,
   type LoyaltyActionType,
 } from './loyalty.util';
@@ -35,8 +37,10 @@ export class PrecisionRewardsService implements OnModuleInit {
   async getBalanceForUser(userId: string) {
     const shopperId = await this.resolveShopperId(userId);
     const row = await this.ensureLoyaltyRow(shopperId);
+    const progress = nextRedemptionProgress(row.pointsTotal);
+    this.logger.log(formatLoyaltyUiActiveLog({ pointsTotal: row.pointsTotal }));
     return {
-      STATUS: 'REWARDS_LOGIC_PRECISION_SET',
+      STATUS: 'LOYALTY_UI_ACTIVE',
       SHOPPER_ID: shopperId,
       POINTS_TOTAL: row.pointsTotal,
       RSVP_POINTS: row.rsvpPoints,
@@ -45,6 +49,10 @@ export class PrecisionRewardsService implements OnModuleInit {
       BOOSTED_POINTS: row.boostedPoints,
       LAST_ACTION_DATE: row.lastActionDate,
       TIERS: this.redemption.listTiers(),
+      NEXT_TIER: progress.nextTier,
+      NEXT_POINTS: progress.nextPoints,
+      PROGRESS_RATIO: progress.progressRatio,
+      NEXT_LABEL: progress.label,
     };
   }
 
@@ -205,6 +213,143 @@ export class PrecisionRewardsService implements OnModuleInit {
     return {
       STATUS: 'REWARDS_LOGIC_PRECISION_SET',
       FUNDED_CENTS: amount,
+    };
+  }
+
+  async listActiveBoosts(limit = 40) {
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    try {
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          vendor_id: string;
+          label: string;
+          multiplier: number | string;
+          starts_at: Date;
+          ends_at: Date;
+          business_name: string | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          b.id,
+          b.vendor_id,
+          b.label,
+          b.multiplier,
+          b.starts_at,
+          b.ends_at,
+          v.business_name
+        FROM public.vendor_rewards_boost b
+        JOIN public.vendors v ON v.id = b.vendor_id
+        WHERE b.is_active = true
+          AND b.starts_at <= NOW()
+          AND b.ends_at >= NOW()
+          AND v.rewards_opt_in = true
+        ORDER BY b.starts_at DESC
+        LIMIT ${safeLimit}
+      `);
+
+      this.logger.log(`REWARDS_SYNC_VERIFIED BOOSTS=${rows.length}`);
+      return {
+        STATUS: 'REWARDS_SYNC_VERIFIED',
+        ITEMS: rows.map((row) => ({
+          id: row.id,
+          vendorId: row.vendor_id,
+          vendorName: row.business_name,
+          label: row.label,
+          multiplier: Number(row.multiplier) || 2,
+          startsAt: row.starts_at,
+          endsAt: row.ends_at,
+        })),
+        COUNT: rows.length,
+      };
+    } catch {
+      return { STATUS: 'REWARDS_SYNC_VERIFIED', ITEMS: [], COUNT: 0 };
+    }
+  }
+
+  async getVendorRewardsStatus(vendorId: string) {
+    const vendor = await this.prisma.$queryRaw<
+      Array<{
+        rewards_opt_in: boolean;
+        rewards_boost_balance_cents: number | string;
+      }>
+    >(Prisma.sql`
+      SELECT rewards_opt_in, rewards_boost_balance_cents
+      FROM public.vendors
+      WHERE id = ${vendorId}::uuid
+      LIMIT 1
+    `);
+    if (!vendor[0]) throw new NotFoundException('VENDOR_NOT_FOUND');
+
+    const active = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        label: string;
+        multiplier: number | string;
+        ends_at: Date;
+      }>
+    >(Prisma.sql`
+      SELECT id, label, multiplier, ends_at
+      FROM public.vendor_rewards_boost
+      WHERE vendor_id = ${vendorId}::uuid
+        AND is_active = true
+        AND starts_at <= NOW()
+        AND ends_at >= NOW()
+      ORDER BY starts_at DESC
+      LIMIT 5
+    `);
+
+    return {
+      STATUS: 'LOYALTY_UI_ACTIVE',
+      REWARDS_OPT_IN: Boolean(vendor[0].rewards_opt_in),
+      BOOST_BALANCE_CENTS: Number(vendor[0].rewards_boost_balance_cents) || 0,
+      BOOST_ACTIVE: active.length > 0,
+      ACTIVE_BOOSTS: active.map((row) => ({
+        id: row.id,
+        label: row.label,
+        multiplier: Number(row.multiplier) || 2,
+        endsAt: row.ends_at,
+      })),
+    };
+  }
+
+  /**
+   * Toggle Double Points boost window for vendor.
+   * Activating creates a 14-day DOUBLE_POINTS boost (and opts vendor in).
+   * Deactivating marks current active boosts inactive.
+   */
+  async toggleBoost(vendorId: string, enabled: boolean) {
+    if (enabled) {
+      await this.setRewardsOptIn(vendorId, true);
+      const endsAt = new Date();
+      endsAt.setUTCDate(endsAt.getUTCDate() + 14);
+      const created = await this.createBoost({
+        vendorId,
+        endsAt: endsAt.toISOString(),
+        startsAt: new Date().toISOString(),
+        multiplier: 2,
+        microFeeCentsPerBonusPoint: 1,
+        label: 'DOUBLE_POINTS',
+      });
+      this.logger.log(`LOYALTY_UI_ACTIVE ACTION=BOOST_ON VENDOR=${vendorId}`);
+      return {
+        STATUS: 'LOYALTY_UI_ACTIVE',
+        BOOST_ACTIVE: true,
+        BOOST_ID: created.BOOST_ID,
+      };
+    }
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.vendor_rewards_boost
+      SET is_active = false, updated_at = NOW()
+      WHERE vendor_id = ${vendorId}::uuid
+        AND is_active = true
+        AND ends_at >= NOW()
+    `);
+    this.logger.log(`LOYALTY_UI_ACTIVE ACTION=BOOST_OFF VENDOR=${vendorId}`);
+    return {
+      STATUS: 'LOYALTY_UI_ACTIVE',
+      BOOST_ACTIVE: false,
     };
   }
 

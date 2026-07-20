@@ -9,6 +9,8 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
+import { PrecisionRewardsService } from '../loyalty/precision-rewards.service';
+import { RedemptionService } from '../loyalty/redemption.service';
 import {
   assertCateringGuestRange,
   formatCateringModuleInitializedLog,
@@ -29,6 +31,8 @@ export type CreateInquiryBody = {
   message: string;
   guestCount?: number | null;
   eventDate?: string | null;
+  /** VOUCHER_5 | EARLY_ACCESS_CATERING — optional loyalty redemption. */
+  redemptionTier?: string | null;
 };
 
 @Injectable()
@@ -38,6 +42,8 @@ export class VendorCateringService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly availability: AvailabilityService,
+    private readonly redemption: RedemptionService,
+    private readonly rewards: PrecisionRewardsService,
   ) {}
 
   onModuleInit(): void {
@@ -172,6 +178,18 @@ export class VendorCateringService implements OnModuleInit {
     let status = 'OPEN';
     let conflictDetected = false;
     let conflictWarning: string | null = null;
+    let redemptionResult: Record<string, unknown> | null = null;
+
+    const redemptionTier = body.redemptionTier?.trim() || null;
+    if (redemptionTier) {
+      // Hard-block redemptions when the event date is BLOCKED.
+      redemptionResult = await this.redemption.redeemForInquiry({
+        userId: shopperUserId,
+        vendorId: body.vendorId,
+        tierRaw: redemptionTier,
+        eventDate: eventDateRaw,
+      });
+    }
 
     if (eventDateRaw) {
       const check = await this.availability.checkAvailability(
@@ -257,12 +275,25 @@ export class VendorCateringService implements OnModuleInit {
       `VENDOR_SERVICES_UPDATED ACTION=INQUIRY VENDOR=${body.vendorId} SHOPPER=${shopperId} INQUIRY=${row.id} STATUS=${status}`,
     );
 
+    // Reciprocal loyalty tick for completed catering inquiry (+50, boostable).
+    try {
+      await this.rewards.processTick({
+        userId: shopperUserId,
+        actionRaw: 'CATERING_INQUIRY',
+        vendorId: body.vendorId,
+        referenceId: row.id,
+      });
+    } catch {
+      // Loyalty schema may be absent — inquiry still succeeds.
+    }
+
     return {
       STATUS: 'VENDOR_SERVICES_UPDATED',
       INQUIRY_ID: row.id,
       INQUIRY_STATUS: status,
       CONFLICT_DETECTED: conflictDetected,
       CONFLICT_WARNING: conflictWarning,
+      REDEMPTION: redemptionResult,
     };
   }
 

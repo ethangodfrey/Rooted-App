@@ -17,6 +17,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 9 | `cursor/precision-rewards-loyalty-428e` | #219 | Precision Rewards loyalty logic |
 | 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
 | 11 | `cursor/availability-scheduling-428e` | #226 | Automated Availability Scheduling |
+| 12 | `cursor/shopper-loyalty-ui-428e` | (open) | Phase 3 Shopper Loyalty UI |
 
 ```powershell
 git fetch origin
@@ -24,7 +25,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/availability-scheduling-428e`
+`cursor/shopper-loyalty-ui-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -116,6 +117,7 @@ npm run test:b2b:marketplace
 npm run test:b2b:dashboard
 npm run test:availability:scheduling
 npm run test:loyalty:precision
+npm run test:loyalty:ui-integration
 
 cd web
 npm run build
@@ -131,6 +133,7 @@ Expected uppercase logs (no emoji):
 - `PROCUREMENT_DASHBOARD_INITIALIZED` / `WHOLESALE_UI_ACTIVE`
 - `SCHEDULING_ENGINE_INITIALIZED` / `AVAILABILITY_SYNC_ACTIVE`
 - `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
+- `LOYALTY_UI_ACTIVE` / `REWARDS_SYNC_VERIFIED`
 
 ## 5. Manual UI smoke (5 minutes)
 

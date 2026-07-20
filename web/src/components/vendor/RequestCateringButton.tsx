@@ -24,6 +24,7 @@ export function RequestCateringButton({
   const [message, setMessage] = useState('');
   const [guestCount, setGuestCount] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [redemptionTier, setRedemptionTier] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -116,15 +117,22 @@ export function RequestCateringButton({
         message: message.trim(),
         guestCount: guestCount ? Number(guestCount) : null,
         eventDate: eventDate || null,
+        redemptionTier: redemptionTier || null,
       });
       setDone(true);
-      setDoneNote(
-        result.CONFLICT_DETECTED
-          ? result.CONFLICT_WARNING ??
-              'Conflict Detected — inquiry flagged PENDING_REVIEW for the vendor.'
-          : null,
-      );
+      const notes: string[] = [];
+      if (result.CONFLICT_DETECTED) {
+        notes.push(
+          result.CONFLICT_WARNING ??
+            'Conflict Detected — inquiry flagged PENDING_REVIEW for the vendor.',
+        );
+      }
+      if (result.REDEMPTION) {
+        notes.push('Reward applied — points deducted.');
+      }
+      setDoneNote(notes.length ? notes.join(' ') : null);
       console.log(`VENDOR_SERVICES_UPDATED ACTION=INQUIRY VENDOR=${vendorId}`);
+      console.log('REWARDS_SYNC_VERIFIED ACTION=INQUIRY_COMPLETE');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send inquiry.');
     } finally {
@@ -142,6 +150,7 @@ export function RequestCateringButton({
           setDone(false);
           setDoneNote(null);
           setError(null);
+          setRedemptionTier('');
         }}
       >
         Request Catering
@@ -202,6 +211,23 @@ export function RequestCateringButton({
                       onChange={(e) => setEventDate(e.target.value)}
                     />
                   </div>
+                </div>
+                <div className="app-input-group">
+                  <label>Apply reward (optional)</label>
+                  <select
+                    className="app-input"
+                    value={redemptionTier}
+                    onChange={(e) => setRedemptionTier(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    <option value="VOUCHER_5">$5 Voucher (500 pts)</option>
+                    <option value="EARLY_ACCESS_CATERING">
+                      Early Access (1000 pts)
+                    </option>
+                  </select>
+                  <p className="mt-1 text-xs text-white/50">
+                    Requires an event date. Blocked dates hard-block redemption.
+                  </p>
                 </div>
                 {dateWarning ? (
                   <p
