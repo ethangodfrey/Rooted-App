@@ -200,7 +200,7 @@ export class PartnerReportService implements OnModuleInit {
       SET
         email_status = ${emailStatus},
         email_sent_at = CASE WHEN ${emailStatus} = 'SENT' THEN NOW() ELSE email_sent_at END,
-        notification_id = ${notificationId}::uuid,
+        notification_id = COALESCE(${notificationId}::uuid, notification_id),
         updated_at = NOW()
       WHERE id = ${reportId}::uuid
     `);

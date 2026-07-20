@@ -12,6 +12,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 4 | `cursor/vendor-catering-services-428e` | #214 | Optional catering module |
 | 5 | `cursor/meet-the-makers-usda-428e` | #215 | US filter + USDA enrichment |
 | 6 | `cursor/engagement-analytics-dashboard-428e` | #216 | Engagement Performance dashboard |
+| 7 | `cursor/intelligence-automated-reporting-428e` | (open) | Weekly reports + anomaly detection |
 
 ```powershell
 git fetch origin
@@ -36,10 +37,11 @@ In the Supabase SQL editor, apply **in order** if not already applied:
 5. `docs/supabase/phase74_intelligence_reporting.sql`  
    (or `migrations/20260720_intelligence_reporting.sql`) — `partner_reports` + PERFORMANCE_* notification types
 
-After phase73, confirm:
+After phase73–74, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
+select to_regclass('public.partner_reports');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -48,6 +50,14 @@ where table_schema = 'public' and table_name = 'catering_inquiries'
   and column_name in ('interaction_events', 'view_count', 'click_count');
 ```
 
+Optional email delivery for weekly/anomaly reports:
+
+```env
+RESEND_API_KEY=
+PARTNER_REPORT_FROM_EMAIL=reports@yourdomain.com
+```
+
+Without `RESEND_API_KEY`, reports still store + dashboard-notify; email status is `SKIPPED`.
 ## 3. Environment on the main machine
 
 ### Root `.env` (already expected for market seeding)
@@ -81,6 +91,7 @@ npx tsc --noEmit
 npm run test:discovery:meet-the-makers
 npm run test:vendor:catering
 npm run test:analytics:dashboard
+npm run test:intelligence:automated
 
 cd web
 npm run build
@@ -91,6 +102,7 @@ Expected uppercase logs (no emoji):
 - `DISCOVERY_INTERFACE_INITIALIZED` / `PARTNERSHIP_FEED_SYNCED` / `USDA_MARKET_DATA_SYNCED`
 - `CATERING_MODULE_INITIALIZED` / `VENDOR_SERVICES_UPDATED`
 - `ANALYTICS_DASHBOARD_INITIALIZED` / `METRICS_SYNC_COMPLETE`
+- `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
 
 ## 5. Manual UI smoke (5 minutes)
 
