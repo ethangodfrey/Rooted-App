@@ -220,13 +220,63 @@ export class PaymentClearingService implements OnModuleInit {
     `);
     const row = rows[0];
     return {
-      STATUS: 'FINANCIAL_ENGINE_INITIALIZED',
+      STATUS: 'FINANCIAL_UI_ACTIVE',
       VENDOR_ID: vendorId,
       AVAILABLE_CENTS: Number(row?.available_cents) || 0,
       ESCROW_HELD_CENTS: Number(row?.escrow_held_cents) || 0,
       LOYALTY_LIABILITY_CENTS: Number(row?.loyalty_liability_cents) || 0,
       MICRO_FEE_CENTS: Number(row?.micro_fee_cents) || 0,
     };
+  }
+
+  async listTransactionsForVendor(vendorId: string, limit = 40) {
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    try {
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          amount_cents: number | string;
+          voucher_cents: number | string;
+          net_amount_cents: number | string;
+          status: string;
+          transaction_type: string;
+          reference_id: string | null;
+          created_at: Date;
+        }>
+      >(Prisma.sql`
+        SELECT
+          id,
+          amount_cents,
+          voucher_cents,
+          net_amount_cents,
+          status::text AS status,
+          transaction_type::text AS transaction_type,
+          reference_id,
+          created_at
+        FROM public.financial_transactions
+        WHERE destination_id = ${vendorId}::uuid
+        ORDER BY created_at DESC
+        LIMIT ${safeLimit}
+      `);
+
+      this.logger.log(`FINANCIAL_UI_ACTIVE TX_COUNT=${rows.length}`);
+      return {
+        STATUS: 'FINANCIAL_UI_ACTIVE',
+        ITEMS: rows.map((row) => ({
+          id: row.id,
+          amountCents: Number(row.amount_cents) || 0,
+          voucherCents: Number(row.voucher_cents) || 0,
+          netAmountCents: Number(row.net_amount_cents) || 0,
+          status: row.status,
+          transactionType: row.transaction_type,
+          referenceId: row.reference_id,
+          createdAt: row.created_at,
+        })),
+        COUNT: rows.length,
+      };
+    } catch {
+      return { STATUS: 'FINANCIAL_UI_ACTIVE', ITEMS: [], COUNT: 0 };
+    }
   }
 
   private async loadInquiry(inquiryId: string): Promise<{

@@ -19,6 +19,7 @@ import {
   type ProcurementRequestItem,
   type WholesaleListingItem,
 } from '@/lib/b2b-procurement';
+import { downloadProcurementInvoiceHtml } from '@/lib/vendor-financials';
 import '@/components/ui/ui.css';
 
 export function VendorProcurementPage() {
@@ -30,6 +31,7 @@ export function VendorProcurementPage() {
   const [category, setCategory] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [invoiceBusyId, setInvoiceBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
@@ -94,6 +96,21 @@ export function VendorProcurementPage() {
     }
   }
 
+  async function onDownloadInvoice(requestId: string) {
+    setInvoiceBusyId(requestId);
+    setError(null);
+    try {
+      await downloadProcurementInvoiceHtml(requestId);
+      console.log(
+        `INVOICING_DASHBOARD_INITIALIZED ACTION=DOWNLOAD_PROCUREMENT ID=${requestId.slice(0, 8)}`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invoice download failed');
+    } finally {
+      setInvoiceBusyId(null);
+    }
+  }
+
   return (
     <VendorScreen>
       <VendorHero
@@ -106,6 +123,9 @@ export function VendorProcurementPage() {
       <div className="mb-4 flex flex-wrap gap-2">
         <Link to="/vendor/network" className="app-btn app-btn--secondary app-btn--small">
           Business network
+        </Link>
+        <Link to="/vendor/financials" className="app-btn app-btn--secondary app-btn--small">
+          Financials
         </Link>
       </div>
 
@@ -229,9 +249,23 @@ export function VendorProcurementPage() {
                     {new Date(row.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-orange-300">
-                  {formatProcurementStatusLabel(row.status)}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-orange-300">
+                    {formatProcurementStatusLabel(row.status)}
+                  </span>
+                  {row.status === 'ACCEPTED' ? (
+                    <button
+                      type="button"
+                      className="app-btn app-btn--secondary app-btn--small"
+                      disabled={invoiceBusyId === row.id}
+                      onClick={() => void onDownloadInvoice(row.id)}
+                    >
+                      {invoiceBusyId === row.id
+                        ? 'Opening…'
+                        : 'Download Invoice'}
+                    </button>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

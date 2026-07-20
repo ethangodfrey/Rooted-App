@@ -30,6 +30,20 @@ export function formatEscrowLedgerActiveLog(input?: {
   return parts.join(' ');
 }
 
+/** Phase 4 Vendor Financial Dashboard telemetry (no emoji). */
+export function formatFinancialUiActiveLog(input?: {
+  availableCents?: number;
+}): string {
+  if (input?.availableCents != null) {
+    return `FINANCIAL_UI_ACTIVE AVAILABLE_CENTS=${input.availableCents}`;
+  }
+  return 'FINANCIAL_UI_ACTIVE';
+}
+
+export function formatInvoicingDashboardInitializedLog(): string {
+  return 'INVOICING_DASHBOARD_INITIALIZED SERVICE=GenerateInvoiceService';
+}
+
 export function normalizeFinancialStatus(
   value: string | null | undefined,
 ): FinancialTransactionStatus | null {
@@ -75,4 +89,8 @@ export function applyVoucherToAmount(input: {
     voucherCents: applied,
     netAmountCents: amount - applied,
   };
+}
+
+export function formatCents(cents: number): string {
+  return `$${(Math.max(0, cents) / 100).toFixed(2)}`;
 }

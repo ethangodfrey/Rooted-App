@@ -379,12 +379,15 @@ export class VendorCateringService implements OnModuleInit {
           status: string;
           conflict_detected: boolean | null;
           conflict_warning: string | null;
+          deposit_cents: number | string | null;
+          voucher_cents_applied: number | string | null;
           created_at: Date;
         }>
       >(Prisma.sql`
         SELECT
           id, message, guest_count, event_date, status,
-          conflict_detected, conflict_warning, created_at
+          conflict_detected, conflict_warning,
+          deposit_cents, voucher_cents_applied, created_at
         FROM public.catering_inquiries
         WHERE vendor_id = ${vendorId}::uuid
         ORDER BY
@@ -406,6 +409,8 @@ export class VendorCateringService implements OnModuleInit {
           status: row.status,
           conflictDetected: Boolean(row.conflict_detected),
           conflictWarning: row.conflict_warning,
+          depositCents: Number(row.deposit_cents) || 0,
+          voucherCentsApplied: Number(row.voucher_cents_applied) || 0,
           createdAt: row.created_at,
         })),
         COUNT: rows.length,
@@ -437,6 +442,8 @@ export class VendorCateringService implements OnModuleInit {
           conflictDetected: row.status === 'PENDING_REVIEW',
           conflictWarning:
             row.status === 'PENDING_REVIEW' ? 'Conflict Detected' : null,
+          depositCents: 0,
+          voucherCentsApplied: 0,
           createdAt: row.createdAt,
         })),
         COUNT: rows.length,

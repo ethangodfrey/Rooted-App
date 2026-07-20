@@ -75,6 +75,8 @@ export type CateringInquiryItem = {
   status: string;
   conflictDetected: boolean;
   conflictWarning: string | null;
+  depositCents?: number;
+  voucherCentsApplied?: number;
   createdAt: string;
 };
 
@@ -82,4 +84,19 @@ export async function fetchVendorCateringInquiries(
   vendorId: string,
 ): Promise<{ STATUS: string; ITEMS: CateringInquiryItem[]; COUNT: number }> {
   return api.get(`/api/catering/vendors/${vendorId}/inquiries`);
+}
+
+export async function acceptCateringInquiry(
+  inquiryId: string,
+  depositCents: number,
+): Promise<{ STATUS: string; ACTION: string; INQUIRY_ID: string }> {
+  return api.post(`/api/catering/inquiries/${inquiryId}/accept`, {
+    depositCents,
+  });
+}
+
+export async function fulfillCateringInquiry(
+  inquiryId: string,
+): Promise<{ STATUS: string; ACTION: string; INQUIRY_ID: string }> {
+  return api.post(`/api/catering/inquiries/${inquiryId}/fulfill`);
 }

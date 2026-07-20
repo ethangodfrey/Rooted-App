@@ -3,10 +3,12 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Logger,
   OnModuleInit,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -17,7 +19,10 @@ import { RolesGuard } from '../../common/auth/roles.guard';
 import {
   formatEscrowLedgerActiveLog,
   formatFinancialEngineInitializedLog,
+  formatFinancialUiActiveLog,
+  formatInvoicingDashboardInitializedLog,
 } from './financial.util';
+import { GenerateInvoiceService } from './generate-invoice.service';
 import { PaymentClearingService } from './payment-clearing.service';
 
 @Controller('api/financial')
@@ -25,11 +30,16 @@ import { PaymentClearingService } from './payment-clearing.service';
 export class FinancialController implements OnModuleInit {
   private readonly logger = new Logger(FinancialController.name);
 
-  constructor(private readonly clearing: PaymentClearingService) {}
+  constructor(
+    private readonly clearing: PaymentClearingService,
+    private readonly invoices: GenerateInvoiceService,
+  ) {}
 
   onModuleInit(): void {
     this.logger.log(formatFinancialEngineInitializedLog());
     this.logger.log(formatEscrowLedgerActiveLog());
+    this.logger.log(formatFinancialUiActiveLog());
+    this.logger.log(formatInvoicingDashboardInitializedLog());
   }
 
   /**
@@ -38,9 +48,7 @@ export class FinancialController implements OnModuleInit {
    */
   @Post('escrow/hold')
   @Roles('vendor', 'farmer', 'admin')
-  async hold(
-    @Body() body: { inquiryId?: string; amountCents?: number },
-  ) {
+  async hold(@Body() body: { inquiryId?: string; amountCents?: number }) {
     if (!body.inquiryId?.trim()) {
       throw new BadRequestException('INQUIRY_ID_REQUIRED');
     }
@@ -76,5 +84,61 @@ export class FinancialController implements OnModuleInit {
       }
     }
     return this.clearing.getVendorBalance(vendorId);
+  }
+
+  @Get('vendors/:vendorId/transactions')
+  @Roles('vendor', 'farmer', 'admin')
+  async transactions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('vendorId') vendorId: string,
+    @Query('limit') limit?: string,
+  ) {
+    if (!vendorId?.trim()) throw new BadRequestException('VENDOR_ID_REQUIRED');
+    if (!user.vendorId || user.vendorId !== vendorId) {
+      if (user.role !== 'admin') {
+        throw new BadRequestException('VENDOR_MISMATCH');
+      }
+    }
+    const parsed = limit ? Number(limit) : 40;
+    return this.clearing.listTransactionsForVendor(
+      vendorId,
+      Number.isFinite(parsed) ? parsed : 40,
+    );
+  }
+
+  @Get('invoices/catering/:inquiryId')
+  @Roles('vendor', 'farmer', 'shopper', 'admin')
+  async cateringInvoiceJson(@Param('inquiryId') inquiryId: string) {
+    const invoice = await this.invoices.fromCateringInquiry(inquiryId);
+    return {
+      STATUS: 'INVOICING_DASHBOARD_INITIALIZED',
+      INVOICE: invoice,
+    };
+  }
+
+  @Get('invoices/catering/:inquiryId/html')
+  @Roles('vendor', 'farmer', 'shopper', 'admin')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async cateringInvoiceHtml(@Param('inquiryId') inquiryId: string) {
+    const invoice = await this.invoices.fromCateringInquiry(inquiryId);
+    return invoice.HTML;
+  }
+
+  @Get('invoices/procurement/:requestId')
+  @Roles('vendor', 'farmer', 'admin')
+  async procurementInvoiceJson(@Param('requestId') requestId: string) {
+    const invoice = await this.invoices.fromProcurementRequest(requestId);
+    return {
+      STATUS: 'INVOICING_DASHBOARD_INITIALIZED',
+      INVOICE: invoice,
+    };
+  }
+
+  @Get('invoices/procurement/:requestId/html')
+  @Roles('vendor', 'farmer', 'admin')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async procurementInvoiceHtml(@Param('requestId') requestId: string) {
+    const invoice = await this.invoices.fromProcurementRequest(requestId);
+    return invoice.HTML;
   }
 }

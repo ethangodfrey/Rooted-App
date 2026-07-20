@@ -16,9 +16,12 @@ import {
   type AvailabilityBlock,
 } from '@/lib/vendor-availability';
 import {
+  acceptCateringInquiry,
   fetchVendorCateringInquiries,
+  fulfillCateringInquiry,
   type CateringInquiryItem,
 } from '@/lib/vendor-catering';
+import { downloadCateringInvoiceHtml } from '@/lib/vendor-financials';
 import '@/components/ui/ui.css';
 
 function addDays(isoDate: string, days: number): string {
@@ -40,7 +43,10 @@ export function VendorAvailabilityPage() {
   const [inquiries, setInquiries] = useState<CateringInquiryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [invoiceBusyId, setInvoiceBusyId] = useState<string | null>(null);
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('SCHEDULING_ENGINE_INITIALIZED SURFACE=VENDOR_CALENDAR');
@@ -135,6 +141,60 @@ export function VendorAvailabilityPage() {
   const conflictInquiries = inquiries.filter(
     (i) => i.conflictDetected || i.status === 'PENDING_REVIEW',
   );
+  const actionableInquiries = inquiries.filter(
+    (i) =>
+      i.status === 'PENDING' ||
+      i.status === 'PENDING_REVIEW' ||
+      i.status === 'ACCEPTED' ||
+      i.status === 'FULFILLED',
+  );
+
+  async function onAccept(inquiryId: string) {
+    setActionBusyId(inquiryId);
+    setError(null);
+    setFlash(null);
+    try {
+      await acceptCateringInquiry(inquiryId, 10000);
+      setFlash(`INQUIRY_ACCEPTED ${inquiryId.slice(0, 8)}`);
+      console.log('FINANCIAL_UI_ACTIVE ACTION=INQUIRY_ACCEPTED');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Accept failed');
+    } finally {
+      setActionBusyId(null);
+    }
+  }
+
+  async function onFulfill(inquiryId: string) {
+    setActionBusyId(inquiryId);
+    setError(null);
+    setFlash(null);
+    try {
+      await fulfillCateringInquiry(inquiryId);
+      setFlash(`INQUIRY_FULFILLED ${inquiryId.slice(0, 8)}`);
+      console.log('FINANCIAL_UI_ACTIVE ACTION=INQUIRY_FULFILLED');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Fulfill failed');
+    } finally {
+      setActionBusyId(null);
+    }
+  }
+
+  async function onDownloadInvoice(inquiryId: string) {
+    setInvoiceBusyId(inquiryId);
+    setError(null);
+    try {
+      await downloadCateringInvoiceHtml(inquiryId);
+      console.log(
+        `INVOICING_DASHBOARD_INITIALIZED ACTION=DOWNLOAD_CATERING ID=${inquiryId.slice(0, 8)}`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invoice download failed');
+    } finally {
+      setInvoiceBusyId(null);
+    }
+  }
 
   return (
     <VendorScreen>
@@ -149,9 +209,17 @@ export function VendorAvailabilityPage() {
         <Link to="/vendor/catering" className="app-btn app-btn--secondary app-btn--small">
           Catering settings
         </Link>
+        <Link to="/vendor/financials" className="app-btn app-btn--secondary app-btn--small">
+          Financials
+        </Link>
       </div>
 
       {error ? <FieldError message={error} /> : null}
+      {flash ? (
+        <p className="mb-4 font-mono text-xs uppercase tracking-wide text-emerald-300">
+          {flash}
+        </p>
+      ) : null}
 
       <VendorSection title="Calendar">
         <div className="mb-3 flex items-center justify-between gap-2">
@@ -262,6 +330,73 @@ export function VendorAvailabilityPage() {
                   {row.eventDate ? `Event ${row.eventDate} · ` : ''}
                   {row.message.slice(0, 140)}
                 </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </VendorSection>
+
+      <VendorSection title="Catering orders & invoices">
+        {actionableInquiries.length === 0 ? (
+          <p className="app-subtitle">
+            No catering inquiries yet. Accepted and fulfilled orders get a Download Invoice
+            action that itemizes RedemptionService loyalty points.
+          </p>
+        ) : (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {actionableInquiries.map((row) => (
+              <li
+                key={row.id}
+                className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 font-mono text-[11px] font-bold uppercase tracking-widest text-orange-300">
+                      {row.status}
+                    </p>
+                    <p className="m-0 mt-1 text-sm text-zinc-50">
+                      {row.eventDate ? `Event ${row.eventDate} · ` : ''}
+                      {row.message.slice(0, 140)}
+                    </p>
+                    {(row.voucherCentsApplied ?? 0) > 0 ? (
+                      <p className="m-0 mt-1 font-mono text-[10px] uppercase tracking-wide text-sky-300/90">
+                        Loyalty voucher −${((row.voucherCentsApplied ?? 0) / 100).toFixed(2)}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {row.status === 'PENDING' || row.status === 'PENDING_REVIEW' ? (
+                      <VendorPrimaryButton
+                        type="button"
+                        disabled={actionBusyId === row.id}
+                        onClick={() => void onAccept(row.id)}
+                      >
+                        {actionBusyId === row.id ? 'Accepting…' : 'Accept ($100)'}
+                      </VendorPrimaryButton>
+                    ) : null}
+                    {row.status === 'ACCEPTED' ? (
+                      <VendorPrimaryButton
+                        type="button"
+                        disabled={actionBusyId === row.id}
+                        onClick={() => void onFulfill(row.id)}
+                      >
+                        {actionBusyId === row.id ? 'Settling…' : 'Mark fulfilled'}
+                      </VendorPrimaryButton>
+                    ) : null}
+                    {row.status === 'ACCEPTED' || row.status === 'FULFILLED' ? (
+                      <button
+                        type="button"
+                        className="app-btn app-btn--secondary app-btn--small"
+                        disabled={invoiceBusyId === row.id}
+                        onClick={() => void onDownloadInvoice(row.id)}
+                      >
+                        {invoiceBusyId === row.id
+                          ? 'Opening…'
+                          : 'Download Invoice'}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
