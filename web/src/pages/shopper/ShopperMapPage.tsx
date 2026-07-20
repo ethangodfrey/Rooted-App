@@ -37,6 +37,7 @@ import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 import '@/components/map/events-map.css';
 import { MapListSkeleton } from '@/components/map/MapListSkeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const EventsMap = lazy(() =>
   import('@/components/map/EventsMap').then((module) => ({ default: module.EventsMap })),
@@ -359,12 +360,16 @@ export function ShopperMapPage() {
         placeholder="Search by ZIP, city, or market name"
       />
 
-      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Map filters">
+      <div
+        className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        role="group"
+        aria-label="Map filters"
+      >
         <button
           type="button"
           onClick={() => setSnapOnly((prev) => !prev)}
           aria-pressed={snapOnly}
-          className={`inline-flex items-center rounded-lg border px-3 py-2 text-[11px] font-bold tracking-wide transition ${
+          className={`inline-flex shrink-0 items-center rounded-lg border px-3 py-2 text-[11px] font-bold tracking-wide transition ${
             snapOnly
               ? 'border-emerald-500/70 bg-emerald-950 text-emerald-300 shadow-[0_0_0_1px_rgba(52,211,153,0.25)]'
               : 'border-emerald-800 bg-emerald-950/50 text-emerald-300/90'
@@ -376,7 +381,7 @@ export function ShopperMapPage() {
           type="button"
           onClick={() => setSpecialtyFilter(null)}
           aria-pressed={specialtyFilter === null}
-          className={`inline-flex items-center border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wide ${
+          className={`inline-flex shrink-0 items-center border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wide ${
             specialtyFilter === null
               ? 'border-zinc-700 bg-zinc-950 text-zinc-100'
               : 'border-zinc-800 bg-transparent text-zinc-500'
@@ -392,7 +397,7 @@ export function ShopperMapPage() {
               setSpecialtyFilter((prev) => (prev === tag ? null : tag))
             }
             aria-pressed={specialtyFilter === tag}
-            className={`inline-flex items-center border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wide ${
+            className={`inline-flex shrink-0 items-center border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wide ${
               specialtyFilter === tag
                 ? 'border-zinc-600 bg-zinc-950 text-zinc-100'
                 : 'border-zinc-800 bg-transparent text-zinc-500'
@@ -429,9 +434,7 @@ export function ShopperMapPage() {
             <Suspense
               fallback={
                 <div className="events-map-panel">
-                  <div className="events-map-frame app-loading">
-                    <div className="app-spinner" />
-                  </div>
+                  <Skeleton className="events-map-frame h-[50vh] min-h-[280px] w-full md:h-[60vh] md:min-h-[360px]" />
                 </div>
               }
             >

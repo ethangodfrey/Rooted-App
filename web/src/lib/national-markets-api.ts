@@ -1,3 +1,4 @@
+import { coordsFrom } from '@/lib/geo';
 import type { NearbyNationalMarket } from '@/types/pos-transactions';
 
 function tenantWebApiBase(): string | null {
@@ -24,6 +25,7 @@ function mapRpcRow(row: {
   longitude: number | null;
   distance_miles: number;
 }): NearbyNationalMarket {
+  const coords = coordsFrom({ latitude: row.latitude, longitude: row.longitude });
   return {
     id: row.id,
     marketName: row.market_name,
@@ -32,8 +34,8 @@ function mapRpcRow(row: {
     state: row.state,
     zipCode: row.zip_code,
     operatingSchedules: row.operating_schedules ?? [],
-    latitude: row.latitude != null ? Number(row.latitude) : null,
-    longitude: row.longitude != null ? Number(row.longitude) : null,
+    latitude: coords?.latitude ?? null,
+    longitude: coords?.longitude ?? null,
     distanceMiles: row.distance_miles,
   };
 }

@@ -5,7 +5,11 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { Prisma, WholesaleProductStatus } from '@prisma/client';
+import {
+  Prisma,
+  WholesaleProductStatus,
+  WholesaleSaleModePreference,
+} from '@prisma/client';
 import type { WholesaleProductCreateInput } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -25,7 +29,38 @@ export class WholesaleProductsService implements OnModuleInit {
     this.logger.log('PRODUCT_RETAIL_ENDPOINT_ACTIVE');
   }
 
+  private resolveSalePreference(input: {
+    saleModePreference?: WholesaleSaleModePreference | null;
+    isRetailEnabled?: boolean | null;
+  }): WholesaleSaleModePreference {
+    if (input.saleModePreference) return input.saleModePreference;
+    if (input.isRetailEnabled) return WholesaleSaleModePreference.BOTH;
+    return WholesaleSaleModePreference.WHOLESALE_ONLY;
+  }
+
+  private requiresRetailPrice(mode: WholesaleSaleModePreference): boolean {
+    return (
+      mode === WholesaleSaleModePreference.RETAIL_ONLY ||
+      mode === WholesaleSaleModePreference.BOTH
+    );
+  }
+
   async create(vendorId: string, input: WholesaleProductCreateInput) {
+    const saleModePreference = this.resolveSalePreference({
+      saleModePreference: (input as { saleModePreference?: WholesaleSaleModePreference })
+        .saleModePreference,
+      isRetailEnabled: input.isRetailEnabled,
+    });
+    const isRetailEnabled = this.requiresRetailPrice(saleModePreference);
+    if (
+      isRetailEnabled &&
+      (input.retailPrice == null || Number(input.retailPrice) <= 0)
+    ) {
+      throw new ForbiddenException(
+        'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE REQUIRED FOR RETAIL_OR_BOTH_MODE',
+      );
+    }
+
     const created = await this.prisma.wholesaleProduct.create({
       data: {
         vendorId,
@@ -39,7 +74,8 @@ export class WholesaleProductsService implements OnModuleInit {
         freightNotes: input.freightNotes ?? null,
         pickupNotes: input.pickupNotes ?? null,
         availableQuantity: input.availableQuantity ?? 0,
-        isRetailEnabled: input.isRetailEnabled ?? false,
+        isRetailEnabled,
+        saleModePreference,
         retailPrice:
           input.retailPrice == null
             ? null
@@ -49,7 +85,10 @@ export class WholesaleProductsService implements OnModuleInit {
     });
 
     this.logger.log(
-      `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity} RETAIL=${created.isRetailEnabled ? '1' : '0'}`,
+      `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity} RETAIL=${created.isRetailEnabled ? '1' : '0'} SALE_MODE=${created.saleModePreference}`,
+    );
+    this.logger.log(
+      `VENDOR_SALE_PREFERENCE_SYNCED SKU=${created.id} SALE_MODE=${created.saleModePreference}`,
     );
     await this.syncProductToSearchIndex(created);
     return created;
@@ -85,6 +124,7 @@ export class WholesaleProductsService implements OnModuleInit {
       moq?: number;
       unitPriceCents?: number;
       isRetailEnabled?: boolean;
+      saleModePreference?: WholesaleSaleModePreference;
       retailPrice?: number | null;
     },
   ) {
@@ -104,6 +144,35 @@ export class WholesaleProductsService implements OnModuleInit {
       throw new ForbiddenException('B2B_ERROR: CROSS_TENANT_FORBIDDEN');
     }
 
+    const current = await this.prisma.wholesaleProduct.findUnique({
+      where: { id: productId },
+      select: {
+        saleModePreference: true,
+        isRetailEnabled: true,
+        retailPrice: true,
+      },
+    });
+    if (!current) {
+      throw new NotFoundException('WHOLESALE_ERROR: PRODUCT_NOT_FOUND');
+    }
+    const resolvedSaleMode = this.resolveSalePreference({
+      saleModePreference:
+        patch.saleModePreference ?? current.saleModePreference,
+      isRetailEnabled:
+        patch.isRetailEnabled ?? current.isRetailEnabled,
+    });
+    const resolvedRetailEnabled = this.requiresRetailPrice(resolvedSaleMode);
+    const resolvedRetailPrice =
+      patch.retailPrice !== undefined ? patch.retailPrice : Number(current.retailPrice);
+    if (
+      resolvedRetailEnabled &&
+      (resolvedRetailPrice == null || Number(resolvedRetailPrice) <= 0)
+    ) {
+      throw new ForbiddenException(
+        'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE REQUIRED FOR RETAIL_OR_BOTH_MODE',
+      );
+    }
+
     const updated = await this.prisma.wholesaleProduct.update({
       where: { id: productId },
       data: {
@@ -112,9 +181,8 @@ export class WholesaleProductsService implements OnModuleInit {
         ...(patch.unitPriceCents !== undefined
           ? { unitPriceCents: patch.unitPriceCents }
           : {}),
-        ...(patch.isRetailEnabled !== undefined
-          ? { isRetailEnabled: patch.isRetailEnabled }
-          : {}),
+        isRetailEnabled: resolvedRetailEnabled,
+        saleModePreference: resolvedSaleMode,
         ...(patch.retailPrice !== undefined
           ? {
               retailPrice:
@@ -131,6 +199,12 @@ export class WholesaleProductsService implements OnModuleInit {
         `RETAIL_SALE_MODE_ENABLED SKU=${updated.id} RETAIL_PRICE=${updated.retailPrice?.toString() ?? 'NULL'}`,
       );
     }
+    this.logger.log(
+      `CATALOG_MODE_UPDATED SKU=${updated.id} SALE_MODE=${updated.saleModePreference}`,
+    );
+    this.logger.log(
+      `VENDOR_SALE_PREFERENCE_SYNCED SKU=${updated.id} SALE_MODE=${updated.saleModePreference}`,
+    );
 
     await this.syncProductToSearchIndex(updated);
     return updated;

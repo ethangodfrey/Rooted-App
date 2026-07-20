@@ -1,8 +1,37 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PosTransactionRow } from '@/types/pos-transactions';
 
-import { posLedgerRangeStart, summarizePosTransactions } from './pos-transactions';
+import { fetchPosTransactions, posLedgerRangeStart, summarizePosTransactions } from './pos-transactions';
+
+const mockLimit = vi.fn();
+const mockGte = vi.fn();
+const mockOrder = vi.fn();
+const mockEq = vi.fn();
+const mockSelect = vi.fn();
+const mockFrom = vi.fn();
+
+function createAwaitableQuery(result: { data: unknown; error: { message: string } | null }) {
+  const query = {
+    gte: mockGte,
+    limit: mockLimit,
+    then(
+      onFulfilled: (value: typeof result) => unknown,
+      onRejected?: (reason: unknown) => unknown,
+    ) {
+      return Promise.resolve(result).then(onFulfilled, onRejected);
+    },
+  };
+  mockGte.mockReturnValue(query);
+  mockLimit.mockReturnValue(query);
+  return query;
+}
+
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockFrom(...args),
+  },
+}));
 
 function txn(overrides: Partial<PosTransactionRow> = {}): PosTransactionRow {
   return {
@@ -135,5 +164,87 @@ describe('summarizePosTransactions', () => {
     expect(byProvider.get('clover')).toMatchObject({ count: 1, netTotal: 200 });
 
     vi.useRealTimers();
+  });
+});
+
+describe('fetchPosTransactions normalization', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const query = createAwaitableQuery({ data: [], error: null });
+    mockOrder.mockReturnValue(query);
+    mockEq.mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ select: mockSelect });
+  });
+
+  it('coerces string money fields to integer cents and derives net totals', async () => {
+    mockOrder.mockReturnValue(
+      createAwaitableQuery({
+        data: [
+          {
+            id: 'txn-raw',
+            vendor_id: 'vendor-1',
+            provider: 'square',
+            external_transaction_id: 'ext-raw',
+            gross_amount: '1500',
+            platform_fee: '75',
+            net_amount: undefined,
+            currency: 'USD',
+            sold_at: '2026-07-10T15:00:00.000Z',
+            raw_payload: { source: 'square' },
+            created_at: '2026-07-10T15:00:00.000Z',
+            updated_at: '2026-07-10T15:00:00.000Z',
+          },
+        ],
+        error: null,
+      }),
+    );
+
+    const rows = await fetchPosTransactions('vendor-1');
+
+    expect(rows[0]).toMatchObject({
+      gross_amount: 1500,
+      platform_fee: 75,
+      net_amount: 1425,
+      provider: 'square',
+    });
+  });
+
+  it('defaults invalid money values to zero cents', async () => {
+    mockOrder.mockReturnValue(
+      createAwaitableQuery({
+        data: [
+          {
+            id: 'txn-bad',
+            gross_amount: 'not-a-number',
+            platform_fee: null,
+            net_amount: 'also-bad',
+            sold_at: '',
+          },
+        ],
+        error: null,
+      }),
+    );
+
+    const rows = await fetchPosTransactions('vendor-1');
+
+    expect(rows[0]).toMatchObject({
+      gross_amount: 0,
+      platform_fee: 0,
+      net_amount: 0,
+      currency: 'USD',
+      raw_payload: {},
+    });
+  });
+
+  it('throws when Supabase returns an error', async () => {
+    mockOrder.mockReturnValue(
+      createAwaitableQuery({
+        data: null,
+        error: { message: 'permission denied' },
+      }),
+    );
+
+    await expect(fetchPosTransactions('vendor-1')).rejects.toThrow('permission denied');
   });
 });

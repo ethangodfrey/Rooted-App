@@ -38,8 +38,10 @@ export function VendorHero({
           {eyebrow}
         </p>
       ) : null}
-      <h1 className="m-0 mt-1 text-3xl font-extrabold tracking-tight md:text-5xl">{title}</h1>
-      {subtitle ? <p className="m-0 mt-2 text-sm font-medium leading-relaxed text-white/70">{subtitle}</p> : null}
+      <h1 className="m-0 mt-1 break-words text-3xl font-extrabold tracking-tight md:text-5xl">{title}</h1>
+      {subtitle ? (
+        <p className="m-0 mt-2 break-words text-sm font-medium leading-relaxed text-white/70">{subtitle}</p>
+      ) : null}
       {pill ? (
         <span className="mt-3 inline-block rounded-lg border border-orange-400/30 bg-orange-500/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-orange-300">
           {pill}

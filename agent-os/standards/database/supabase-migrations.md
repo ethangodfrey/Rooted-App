@@ -45,6 +45,22 @@ docs/supabase/phase50_user_role_stickers.sql # shopper|vendor sticker roles; nul
 docs/supabase/phase51_network_and_stickers.sql # profiles enum, follows, network_connections
 docs/supabase/phase52_profile_specialties.sql # vendor_specialties + farmer_specialties
 docs/supabase/migrations/20260717_b2b_connections.sql # vendor_connections + B2B threads
+docs/supabase/phase53_nationwide_directory_geo.sql # markets.directory_slug + operating_hours + geo indexes
+docs/supabase/phase54_b2b_wholesale_marketplace.sql # vendor_business_connections + wholesale_products
+docs/supabase/phase55_market_theme_branding.sql # markets theme_* colors for tenant injection
+docs/supabase/phase56_wholesale_order_drafts.sql # wholesale_orders + wholesale_order_items drafts
+docs/supabase/phase57_wholesale_order_acceptance.sql # accept/reject + available_quantity reservation
+docs/supabase/phase58_wholesale_fulfillment_tracking.sql # ORDER_SHIPPED_IN_TRANSIT + carrier tracking
+docs/supabase/phase59_wholesale_delivery_settlement.sql # ORDER_DELIVERY_CONFIRMED + settlement ledger
+docs/supabase/phase60_wholesale_invoices_net_terms.sql # wholesale_invoices Net-30 billing
+docs/supabase/phase61_invoice_reconciliation.sql # paid_at + seller reconcile-to-PAID
+docs/supabase/phase62a_invoice_status_enum.sql # add PENDING/OVERDUE enum values (run alone)
+docs/supabase/phase62b_invoice_pending_backfill.sql # ISSUED→PENDING backfill (after 62a)
+docs/supabase/phase63_wholesale_stripe_payments.sql # PAYMENT_SETTLED + Stripe PaymentIntent columns
+docs/supabase/phase64_vendor_peer_connections.sql # vendor_peer_connections wholesale peer edges
+docs/supabase/phase65_wholesale_retail_pricing.sql # is_retail_enabled + retail_price on wholesale_products
+docs/supabase/phase68a_orders_partitioning_strategy.sql # orders monthly RANGE strategy registry
+docs/supabase/phase68b_orders_partition_migration_safe.sql # preferred orders partition cutover
 docs/supabase/farmers_markets_directory.sql
 ```
 
@@ -73,6 +89,11 @@ Phase50 leaves `users.role` NULL until onboarding sticker selection (`shopper`|`
 Phase51 creates `profiles` (`profile_role` enum shopper|vendor|farmer), `farmers`, `follows` (`followed_profile_id`), and `network_connections` (`pending`|`connected`); syncs sticker fields into `users`.
 Phase52 adds `vendor_specialties` / `farmer_specialties` text arrays on `profiles` (mirrored to `users`) for B2B discovery filters.
 `20260717_b2b_connections.sql` creates `vendor_connections` (pending|connected|ignored) with unordered unique pairs and opens B2B `conversation_threads` on accept.
+Phase53 adds nationwide directory geo columns and indexes on `markets`.
+Phase54–63 cover the B2B wholesale marketplace (catalog, orders, fulfillment, invoices, Stripe payments). See `docs/VENDORLY_MIGRATION.md`.
+Phase64 adds `vendor_peer_connections` (wholesale peer edges; distinct from profile `vendor_connections`).
+Phase65 adds retail sale fields on `wholesale_products`.
+Phase68a registers monthly RANGE partitioning strategy for `orders` / `order_items`; phase68b performs cutover. Ops runbook: `docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`.
 `farmers_markets_directory.sql` adds `public.farmers_markets` (PostGIS directory + GiST) for seedable national directory rows; complements `national_farmers_markets`. Seed with `npm run markets:seed-directory`.
 
 ## Key RPCs
