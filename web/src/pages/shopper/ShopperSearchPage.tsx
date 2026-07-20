@@ -45,6 +45,7 @@ export function ShopperSearchPage() {
   const { coords } = useUserCoords();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<UnifiedSearchFilter>('all');
+  const [cateringOnly, setCateringOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<UnifiedSearchResults>(EMPTY_RESULTS);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => readRecentSearches());
@@ -103,7 +104,9 @@ export function ShopperSearchPage() {
     setLoading(true);
     const handle = setTimeout(async () => {
       try {
-        const data = await runUnifiedSearch(trimmed, filter, searchCoords);
+        const data = await runUnifiedSearch(trimmed, filter, searchCoords, {
+          cateringOnly,
+        });
         if (cancelled) return;
         setResults(data);
         if (unifiedSearchTotal(data) > 0) {
@@ -121,7 +124,7 @@ export function ShopperSearchPage() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [trimmed, filter, active, searchCoords]);
+  }, [trimmed, filter, active, searchCoords, cateringOnly]);
 
   const total = unifiedSearchTotal(results);
 
@@ -146,6 +149,13 @@ export function ShopperSearchPage() {
               {f.label}
             </button>
           ))}
+          <button
+            type="button"
+            className={`app-chip${cateringOnly ? ' app-chip--selected' : ''}`}
+            onClick={() => setCateringOnly((prev) => !prev)}
+          >
+            Available for Catering
+          </button>
         </div>
       ) : null}
 
@@ -232,9 +242,17 @@ export function ShopperSearchPage() {
                   <div className="app-row-icon">🏪</div>
                   <div className="app-row-body">
                     <p className="app-row-title">{vendor.business_name ?? 'Vendor'}</p>
-                    {vendor.category || formatDistanceKm(vendor.distance_km) ? (
+                    {vendor.category ||
+                    formatDistanceKm(vendor.distance_km) ||
+                    vendor.is_catering_provider ? (
                       <p className="app-row-meta">
-                        {[vendor.category, formatDistanceKm(vendor.distance_km)].filter(Boolean).join(' · ')}
+                        {[
+                          vendor.category,
+                          formatDistanceKm(vendor.distance_km),
+                          vendor.is_catering_provider ? 'Available for Catering' : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                     ) : null}
                   </div>

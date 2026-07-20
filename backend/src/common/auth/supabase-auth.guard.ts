@@ -11,7 +11,7 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AppRole, AuthenticatedUser } from './auth.types';
 
-const APP_ROLES: AppRole[] = ['shopper', 'vendor', 'admin'];
+const APP_ROLES: AppRole[] = ['shopper', 'vendor', 'farmer', 'admin'];
 /** Vendorly uses `customer` in Supabase; backend routes accept it as shopper. */
 const DB_ROLES: string[] = [...APP_ROLES, 'customer'];
 
@@ -107,7 +107,7 @@ export class SupabaseAuthGuard implements CanActivate {
     const role: AppRole = dbUser.role === 'customer' ? 'shopper' : (dbUser.role as AppRole);
 
     let vendorId: string | undefined;
-    if (role === 'vendor') {
+    if (role === 'vendor' || role === 'farmer') {
       const vendor = await this.prisma.vendor.findFirst({
         where: { userId: id },
         select: { id: true },

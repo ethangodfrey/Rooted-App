@@ -17,7 +17,7 @@ const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
   shopper: '/explore',
   vendor: '/vendor/storefront',
   chef: '/chef/dashboard',
-  admin: '/admin/vendors',
+  admin: '/admin/dashboard',
 };
 
 const SHOPPER_SCREEN_TITLES: Record<string, string> = {

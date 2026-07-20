@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useAuth } from '@/hooks/use-auth';
 import '@/components/ui/ui.css';
 
@@ -7,11 +8,6 @@ export function ChefProfilePage() {
   const { user, chef, signOut } = useAuth();
 
   const displayEmail = user?.email ?? '—';
-  const initials = (chef?.display_name || displayEmail || '?')
-    .toString()
-    .trim()
-    .charAt(0)
-    .toUpperCase();
 
   return (
     <div className="app-screen">
@@ -20,19 +16,15 @@ export function ChefProfilePage() {
 
       <div className="app-card profile-summary-card">
         <div className="app-row">
-          {chef?.profile_photo_url ? (
-            <img
-              src={chef.profile_photo_url}
-              alt=""
-              className="profile-avatar profile-avatar--small"
-            />
-          ) : (
-            <div className="profile-avatar profile-avatar--small profile-avatar--placeholder">
-              {initials}
-            </div>
-          )}
-          <div className="app-row-body">
-            <p className="app-row-title">{chef?.display_name?.trim() || 'Chef'}</p>
+          <FallbackImage
+            src={chef?.profile_photo_url}
+            alt=""
+            variant="avatar"
+            label={chef?.display_name ?? displayEmail}
+            className="profile-avatar profile-avatar--small"
+          />
+          <div className="app-row-body min-w-0">
+            <p className="app-row-title truncate">{chef?.display_name?.trim() || 'Chef'}</p>
             <p className="app-row-meta">{displayEmail}</p>
             {chef ? (
               <p className="app-row-meta">

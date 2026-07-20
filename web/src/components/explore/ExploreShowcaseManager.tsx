@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+
 import {
   EXPLORE_CONTENT_TYPE_LABEL,
   EXPLORE_CONTENT_TYPES,
@@ -160,8 +163,10 @@ export function ExploreShowcaseManager({
 
       <h2 style={{ fontSize: '1.125rem', margin: '0 0 0.75rem' }}>Your showcase posts</h2>
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
+        <div className="app-list flex flex-col gap-3" aria-busy aria-label="Loading showcase posts">
+          {Array.from({ length: 3 }, (_, index) => (
+            <SkeletonCard key={index} height={72} />
+          ))}
         </div>
       ) : items.length === 0 ? (
         <p className="app-row-meta">No showcase posts yet.</p>
@@ -169,15 +174,13 @@ export function ExploreShowcaseManager({
         <div className="app-list">
           {items.map((item) => (
             <div key={item.id} className="app-card app-row saved-vendor-row">
-              {item.media_urls?.[0] ? (
-                <img
-                  src={item.media_urls[0]}
-                  alt=""
-                  style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }}
-                />
-              ) : (
-                <div className="app-row-icon">✨</div>
-              )}
+              <FallbackImage
+                src={item.media_urls?.[0]}
+                alt=""
+                variant="product"
+                style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }}
+                fallbackIcon={<span style={{ fontSize: '1.25rem' }}>✨</span>}
+              />
               <div className="app-row-body">
                 <p className="app-row-title">
                   {item.title || EXPLORE_CONTENT_TYPE_LABEL[item.content_type]}

@@ -94,19 +94,30 @@ export function useVendorStorefront(vendorId: string | undefined): UseVendorStor
         }
 
         setVendor(vendorRes.data as Vendor);
-        setProducts((productsRes.data as MenuProduct[] | null) ?? []);
 
-        const markets = ((marketsRes.data ?? []) as unknown as {
-          event: Omit<VendorUpcomingMarket, 'distanceLabel'> | null;
-        }[])
-          .map((row) => row.event)
-          .filter((event): event is Omit<VendorUpcomingMarket, 'distanceLabel'> => Boolean(event))
-          .map((event) => ({
-            ...event,
-            distanceLabel: null as string | null,
-          }));
+        if (productsRes.error) {
+          setError(productsRes.error.message);
+          setProducts([]);
+        } else {
+          setProducts((productsRes.data as MenuProduct[] | null) ?? []);
+        }
 
-        setUpcomingMarkets(markets);
+        if (marketsRes.error) {
+          setError((current) => current ?? marketsRes.error!.message);
+          setUpcomingMarkets([]);
+        } else {
+          const markets = ((marketsRes.data ?? []) as unknown as {
+            event: Omit<VendorUpcomingMarket, 'distanceLabel'> | null;
+          }[])
+            .map((row) => row.event)
+            .filter((event): event is Omit<VendorUpcomingMarket, 'distanceLabel'> => Boolean(event))
+            .map((event) => ({
+              ...event,
+              distanceLabel: null as string | null,
+            }));
+
+          setUpcomingMarkets(markets);
+        }
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load vendor');
