@@ -84,12 +84,23 @@ export class WholesaleOrdersService {
   async createDraft(
     sessionVendorId: string,
     input: WholesaleOrderDraftCreateInput,
+    options: {
+      pricingMode?: 'TIERED_WHOLESALE_PRICING' | 'STANDARD';
+      peerConnectionId?: string | null;
+    } = {},
   ) {
     if (input.buyer_vendor_id !== sessionVendorId) {
       this.logger.warn(
         `CROSS_TENANT_LEAK_BLOCKED ACTION=ORDER_DRAFT SESSION=${sessionVendorId} BUYER=${input.buyer_vendor_id}`,
       );
       throw new ForbiddenException('B2B_ERROR: BUYER_VENDOR_MISMATCH');
+    }
+
+    const pricingMode = options.pricingMode ?? 'STANDARD';
+    if (pricingMode === 'TIERED_WHOLESALE_PRICING') {
+      this.logger.log(
+        `TIERED_WHOLESALE_PRICING BUYER=${input.buyer_vendor_id} SELLER=${input.seller_vendor_id} PEER=${options.peerConnectionId ?? 'NONE'}`,
+      );
     }
 
     if (input.buyer_vendor_id === input.seller_vendor_id) {

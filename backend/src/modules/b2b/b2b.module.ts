@@ -20,6 +20,7 @@ import { WholesaleOrdersController } from './wholesale-orders.controller';
 import { WholesaleOrdersService } from './wholesale-orders.service';
 import { WholesaleProductsController } from './wholesale-products.controller';
 import { WholesaleProductsService } from './wholesale-products.service';
+import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middleware';
 
 @Module({
   imports: [PrismaModule, StripeModule, ElasticsearchModule],
@@ -38,6 +39,7 @@ import { WholesaleProductsService } from './wholesale-products.service';
     WholesaleInvoiceOverdueService,
     WholesaleInvoiceOverdueScheduler,
     UsWholesaleProximityMiddleware,
+    WholesaleRelationshipMiddleware,
   ],
   exports: [
     VendorConnectionsService,
@@ -54,6 +56,12 @@ export class B2bModule implements NestModule {
       .forRoutes({
         path: 'api/vendors/wholesale-products/search',
         method: RequestMethod.GET,
+      });
+    consumer
+      .apply(WholesaleRelationshipMiddleware)
+      .forRoutes({
+        path: 'api/vendors/orders/drafts',
+        method: RequestMethod.POST,
       });
   }
 }

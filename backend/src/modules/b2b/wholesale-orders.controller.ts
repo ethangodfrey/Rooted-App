@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Req,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import {
   parseWholesaleOrderFulfillment,
   parseWholesaleOrderSettlement,
 } from '@vendorly/env-config';
+import type { Request } from 'express';
 
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
@@ -21,6 +23,10 @@ import { RolesGuard } from '../../common/auth/roles.guard';
 import { SupabaseAuthGuard } from '../../common/auth/supabase-auth.guard';
 import { resolveInvoiceDisplayStatus } from './wholesale-invoice.util';
 import { WholesaleOrdersService } from './wholesale-orders.service';
+import type {
+  RequestWithWholesalePricing,
+  WholesalePricingMode,
+} from './wholesale-relationship.middleware';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -34,11 +40,13 @@ export class WholesaleOrdersController {
   /**
    * POST /api/vendors/orders/drafts
    * Initialize a multi-tenant wholesale order draft from validated line items.
+   * WholesaleRelationshipMiddleware flags ACCEPTED peers as TIERED_WHOLESALE_PRICING.
    */
   @Post('drafts')
   @HttpCode(201)
   async createDraft(
     @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request & RequestWithWholesalePricing,
     @Body() body: unknown,
   ) {
     const vendorId = this.requireVendor(user);
@@ -47,9 +55,16 @@ export class WholesaleOrdersController {
       throw new BadRequestException(parsed.ERROR);
     }
 
-    const order = await this.orders.createDraft(vendorId, parsed.DATA);
+    const pricingMode: WholesalePricingMode =
+      req.wholesalePricingMode ?? 'STANDARD';
+    const order = await this.orders.createDraft(vendorId, parsed.DATA, {
+      pricingMode,
+      peerConnectionId: req.wholesalePeerConnectionId ?? null,
+    });
     return {
       STATUS: 'ORDER_DRAFT_INITIALIZED',
+      PRICING_MODE: pricingMode,
+      PEER_CONNECTION_ID: req.wholesalePeerConnectionId ?? null,
       ORDER: this.serializeOrder(order),
     };
   }
