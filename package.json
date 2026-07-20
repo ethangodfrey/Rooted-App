@@ -56,6 +56,7 @@
     "test:logistics:ui": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-logistics-ui.ts",
     "test:payments:stripe": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-payments-stripe.ts",
     "test:payments:ui": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-payments-ui.ts",
+    "test:admin:dashboard": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-admin-dashboard.ts",
     "test:wholesale:pricing": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-pricing.ts",
     "test:wholesale:order-draft": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-draft.ts",
     "test:wholesale:acceptance": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-acceptance.ts",

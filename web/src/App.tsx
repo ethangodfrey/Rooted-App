@@ -8,6 +8,7 @@ import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
 import { AdminCommunityEventsPage } from '@/pages/admin/AdminCommunityEventsPage';
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
+import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
@@ -267,6 +268,8 @@ export default function App() {
         <Route path="/chef/credentials" element={<ChefCredentialsPage />} />
 
         <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
