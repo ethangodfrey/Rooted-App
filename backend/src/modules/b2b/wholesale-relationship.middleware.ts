@@ -27,6 +27,7 @@ const UUID_RE =
 /**
  * Checks vendor_peer_connections for the buyer/seller pair on wholesale drafts.
  * ACCEPTED relationships flag the transaction for TIERED_WHOLESALE_PRICING.
+ * sale_mode=RETAIL bypasses peer status entirely (RETAIL_SALE).
  */
 @Injectable()
 export class WholesaleRelationshipMiddleware implements NestMiddleware {
@@ -41,6 +42,16 @@ export class WholesaleRelationshipMiddleware implements NestMiddleware {
   ): Promise<void> {
     try {
       const body = (req.body ?? {}) as Record<string, unknown>;
+      const saleModeRaw =
+        typeof body.sale_mode === 'string' ? body.sale_mode.trim().toUpperCase() : '';
+      if (saleModeRaw === 'RETAIL') {
+        req.wholesalePricingMode = 'RETAIL_SALE';
+        req.wholesalePeerConnectionId = null;
+        this.logger.log('RETAIL_SALE_MODE_ENABLED');
+        next();
+        return;
+      }
+
       const buyerVendorId =
         typeof body.buyer_vendor_id === 'string' ? body.buyer_vendor_id.trim() : '';
       const sellerVendorId =
