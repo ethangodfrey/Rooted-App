@@ -237,6 +237,13 @@ export const wholesaleProductCreateSchema = z
       .max(1_000_000_000, 'WHOLESALE_VALIDATION_ERROR: AVAILABLE_QUANTITY TOO LARGE')
       .optional(),
     isRetailEnabled: z.boolean().optional().default(false),
+    saleModePreference: z
+      .enum(['WHOLESALE_ONLY', 'RETAIL_ONLY', 'BOTH'], {
+        invalid_type_error:
+          'WHOLESALE_VALIDATION_ERROR: SALE_MODE_PREFERENCE INVALID',
+      })
+      .optional()
+      .default('WHOLESALE_ONLY'),
     retailPrice: z.coerce
       .number({
         invalid_type_error: 'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE INVALID',
@@ -248,10 +255,15 @@ export const wholesaleProductCreateSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
-    if (value.isRetailEnabled && (value.retailPrice == null || value.retailPrice <= 0)) {
+    const retailExpected =
+      value.saleModePreference === 'RETAIL_ONLY' ||
+      value.saleModePreference === 'BOTH' ||
+      value.isRetailEnabled;
+    if (retailExpected && (value.retailPrice == null || value.retailPrice <= 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE REQUIRED WHEN RETAIL ENABLED',
+        message:
+          'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE REQUIRED FOR RETAIL_OR_BOTH_MODE',
         path: ['retailPrice'],
       });
     }

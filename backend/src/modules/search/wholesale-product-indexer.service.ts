@@ -15,6 +15,7 @@ export type WholesaleProductIndexDocument = {
   moq: number;
   unitPriceCents: number;
   availableQuantity: number;
+  saleModePreference: 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
   status: string;
   updatedAt: string;
   /** Free-text vendor.country — validated to US before index write. */
@@ -58,6 +59,7 @@ export class WholesaleProductIndexerService implements OnModuleInit {
       moq: { type: 'integer' as const },
       unit_price_cents: { type: 'integer' as const },
       available_quantity: { type: 'integer' as const },
+      sale_mode_preference: { type: 'keyword' as const },
       status: { type: 'keyword' as const },
       updated_at: { type: 'date' as const },
       country_code: { type: 'keyword' as const },
@@ -80,6 +82,7 @@ export class WholesaleProductIndexerService implements OnModuleInit {
           properties: {
             country_code: properties.country_code,
             location: properties.location,
+            sale_mode_preference: properties.sale_mode_preference,
           },
         });
         this.logger.log(
@@ -132,6 +135,7 @@ export class WholesaleProductIndexerService implements OnModuleInit {
         moq: doc.moq,
         unit_price_cents: doc.unitPriceCents,
         available_quantity: doc.availableQuantity,
+        sale_mode_preference: doc.saleModePreference,
         status: doc.status,
         updated_at: doc.updatedAt,
         country_code: geo.COUNTRY_CODE,
@@ -151,7 +155,7 @@ export class WholesaleProductIndexerService implements OnModuleInit {
         refresh: false,
       });
       this.logger.log(
-        `ELASTICSEARCH_SYNC_COMPLETED ID=${doc.id} VENDOR=${doc.vendorId} INDEX=${this.elastic.wholesaleIndex()} COUNTRY_CODE=${US_COUNTRY_CODE} HAS_GEO=${geo.LATITUDE != null ? '1' : '0'}`,
+        `ELASTICSEARCH_SYNC_COMPLETED ID=${doc.id} VENDOR=${doc.vendorId} INDEX=${this.elastic.wholesaleIndex()} COUNTRY_CODE=${US_COUNTRY_CODE} SALE_MODE=${doc.saleModePreference} HAS_GEO=${geo.LATITUDE != null ? '1' : '0'}`,
       );
       return { SYNCED: true, SKIPPED_REASON: null };
     } catch (err) {
