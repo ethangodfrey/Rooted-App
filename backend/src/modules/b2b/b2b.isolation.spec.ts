@@ -133,7 +133,16 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
         status: 'ACTIVE',
         updatedAt: new Date('2026-07-19T00:00:00.000Z'),
       });
-      const prisma = { wholesaleProduct: { create } };
+      const prisma = {
+        wholesaleProduct: { create },
+        vendor: {
+          findUnique: jest.fn().mockResolvedValue({
+            latitude: 39.7392,
+            longitude: -104.9903,
+            country: 'USA',
+          }),
+        },
+      };
       const indexer = {
         indexProduct: jest.fn().mockResolvedValue({
           SYNCED: true,
@@ -155,6 +164,7 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
         pricingTiers: [],
         freightNotes: null,
         pickupNotes: null,
+        isRetailEnabled: false,
       });
 
       expect(create).toHaveBeenCalledWith(
@@ -186,7 +196,16 @@ describe('B2B MULTI-TENANT DATA ISOLATION', () => {
         status: 'ACTIVE',
         updatedAt: new Date('2026-07-19T00:00:00.000Z'),
       });
-      const prisma = { wholesaleProduct: { findUnique, update } };
+      const prisma = {
+        wholesaleProduct: { findUnique, update },
+        vendor: {
+          findUnique: jest.fn().mockResolvedValue({
+            latitude: 39.7392,
+            longitude: -104.9903,
+            country: 'USA',
+          }),
+        },
+      };
       const indexer = {
         indexProduct: jest.fn().mockResolvedValue({
           SYNCED: true,

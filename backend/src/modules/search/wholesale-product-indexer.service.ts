@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import { ElasticsearchClientService } from './elasticsearch-client.service';
+import { elasticsearchRoutingKey } from './partition-aware-indexing.util';
 import {
   US_COUNTRY_CODE,
   validateUsWholesaleIndexGeo,
@@ -144,14 +145,16 @@ export class WholesaleProductIndexerService implements OnModuleInit {
         };
       }
 
+      const routing = elasticsearchRoutingKey(doc.vendorId);
       await client.index({
         index: this.elastic.wholesaleIndex(),
         id: doc.id,
+        routing,
         document,
         refresh: false,
       });
       this.logger.log(
-        `ELASTICSEARCH_SYNC_COMPLETED ID=${doc.id} VENDOR=${doc.vendorId} INDEX=${this.elastic.wholesaleIndex()} COUNTRY_CODE=${US_COUNTRY_CODE} HAS_GEO=${geo.LATITUDE != null ? '1' : '0'}`,
+        `ELASTICSEARCH_SYNC_COMPLETED ID=${doc.id} VENDOR=${doc.vendorId} ROUTING=${routing} INDEX=${this.elastic.wholesaleIndex()} COUNTRY_CODE=${US_COUNTRY_CODE} HAS_GEO=${geo.LATITUDE != null ? '1' : '0'}`,
       );
       return { SYNCED: true, SKIPPED_REASON: null };
     } catch (err) {
