@@ -21,6 +21,10 @@ import {
   type PaymentsOnboardStatus,
 } from '@/lib/payments-onboarding';
 import {
+  formatEscrowFrozenActiveLog,
+  raiseDispute,
+} from '@/lib/disputes';
+import {
   fetchVendorBalance,
   fetchVendorTransactions,
   type FinancialTransactionItem,
@@ -40,6 +44,7 @@ export function VendorFinancialsPage() {
   const [loading, setLoading] = useState(true);
   const [onboardLoading, setOnboardLoading] = useState(true);
   const [linking, setLinking] = useState(false);
+  const [reportingId, setReportingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -182,6 +187,30 @@ export function VendorFinancialsPage() {
     }
   }
 
+  async function handleReportIssue(transactionId: string) {
+    const reason = window.prompt(
+      'Describe the issue with this escrow hold (catering / delivery):',
+      'Delivery or catering issue — please review escrow.',
+    );
+    if (!reason?.trim()) return;
+    setReportingId(transactionId);
+    setError(null);
+    try {
+      const res = await raiseDispute({ transactionId, reason: reason.trim() });
+      console.log(
+        formatEscrowFrozenActiveLog({
+          transactionId: res.TRANSACTION_ID,
+          disputeId: res.DISPUTE_ID,
+        }),
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to raise dispute');
+    } finally {
+      setReportingId(null);
+    }
+  }
+
   return (
     <VendorScreen>
       <VendorHero
@@ -227,7 +256,12 @@ export function VendorFinancialsPage() {
       </VendorSection>
 
       <VendorSection title="Escrow & Payouts">
-        <EscrowPayouts items={transactions} loading={loading} />
+        <EscrowPayouts
+          items={transactions}
+          loading={loading}
+          reportingId={reportingId}
+          onReportIssue={(transactionId) => void handleReportIssue(transactionId)}
+        />
       </VendorSection>
 
       <p className="mt-4 font-mono text-[10px] uppercase tracking-wide text-white/40">

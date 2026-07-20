@@ -373,7 +373,7 @@ model FinancialTransaction {
   amountCents     Int      @map("amount_cents")
   voucherCents    Int      @default(0) @map("voucher_cents")
   netAmountCents  Int      @map("net_amount_cents")
-  /// PENDING | HELD_IN_ESCROW | SETTLED | REFUNDED
+  /// PENDING | HELD_IN_ESCROW | FROZEN | SETTLED | REFUNDED
   status          String   @default("PENDING")
   /// WHOLESALE | CATERING_DEPOSIT | LOYALTY_BOOST
   transactionType String   @map("transaction_type")
@@ -382,10 +382,33 @@ model FinancialTransaction {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  disputes Dispute[]
+
   @@index([status, createdAt(sort: Desc)])
   @@index([referenceId, transactionType])
   @@index([destinationId, createdAt(sort: Desc)])
   @@map("financial_transactions")
+}
+
+/// Phase 81 — Dispute Resolution Engine.
+model Dispute {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transactionId   String   @map("transaction_id") @db.Uuid
+  transaction     FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  initiatorId     String   @map("initiator_id") @db.Uuid
+  reason          String
+  /// OPEN | IN_REVIEW | RESOLVED_REFUNDED | RESOLVED_RELEASED
+  status          String   @default("OPEN")
+  resolutionNotes String?  @map("resolution_notes")
+  resolvedBy      String?  @map("resolved_by") @db.Uuid
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([transactionId, createdAt(sort: Desc)])
+  @@map("disputes")
 }
 
 /// Phase 78 — vendor internal digital wallet.

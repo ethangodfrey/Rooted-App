@@ -10,6 +10,7 @@ export type DeliveryStopItem = {
   vendorId: string;
   dropoffOrder: number;
   status: string;
+  escrowTransactionId?: string | null;
 };
 
 export type DeliveryRouteItem = {

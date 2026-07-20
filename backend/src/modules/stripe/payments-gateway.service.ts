@@ -185,6 +185,31 @@ export class PaymentsGatewayService implements OnModuleInit {
     }
 
     const escrow = await this.clearing.holdInEscrow(referenceId, amountCents);
+    const paymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent && typeof session.payment_intent === 'object'
+          ? session.payment_intent.id
+          : null;
+    const transactionId =
+      escrow &&
+      typeof escrow === 'object' &&
+      'TRANSACTION_ID' in escrow &&
+      typeof (escrow as { TRANSACTION_ID?: string }).TRANSACTION_ID === 'string'
+        ? (escrow as { TRANSACTION_ID: string }).TRANSACTION_ID
+        : null;
+    if (paymentIntentId && transactionId) {
+      await this.prisma.$executeRaw(Prisma.sql`
+        UPDATE public.financial_transactions
+        SET
+          metadata = COALESCE(metadata, '{}'::jsonb) || ${JSON.stringify({
+            stripe_payment_intent_id: paymentIntentId,
+            stripe_checkout_session_id: session.id,
+          })}::jsonb,
+          updated_at = NOW()
+        WHERE id = ${transactionId}::uuid
+      `);
+    }
     this.logger.log(
       formatPaymentWebhooksActiveLog({
         eventType: 'checkout.session.completed',

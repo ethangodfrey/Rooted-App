@@ -30,6 +30,7 @@ import { IntelligenceModule } from './modules/intelligence/intelligence.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { FinancialModule } from './modules/financial/financial.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -64,6 +65,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     HealthModule,
     AdminAgentModule,
     AdminDashboardModule,
+    DisputesModule,
     CheckoutModule,
     OrdersModule,
     MediaModule,

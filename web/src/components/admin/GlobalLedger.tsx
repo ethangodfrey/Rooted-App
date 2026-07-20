@@ -20,6 +20,7 @@ type GlobalLedgerProps = {
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
   { value: 'HELD_IN_ESCROW', label: 'Held in escrow' },
+  { value: 'FROZEN', label: 'Frozen' },
   { value: 'SETTLED', label: 'Settled' },
   { value: 'PENDING', label: 'Pending' },
   { value: 'REFUNDED', label: 'Refunded' },

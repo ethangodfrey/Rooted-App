@@ -22,6 +22,10 @@ import {
   type DeliveryRouteItem,
 } from '@/lib/farmer-logistics';
 import {
+  formatEscrowFrozenActiveLog,
+  raiseDispute,
+} from '@/lib/disputes';
+import {
   fetchPaymentsOnboardStatus,
   formatBankLinkInitializedLog,
   formatStripeOnboardingActiveLog,
@@ -47,6 +51,7 @@ export function FarmerLogisticsPage() {
   const [linking, setLinking] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
+  const [reportingId, setReportingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -236,6 +241,34 @@ export function FarmerLogisticsPage() {
     }
   }
 
+  async function onReportIssue(escrowTransactionId: string) {
+    const reason = window.prompt(
+      'Describe the delivery issue (this freezes escrow until admin review):',
+      'Delivery dispute — please freeze escrow.',
+    );
+    if (!reason?.trim()) return;
+    setReportingId(escrowTransactionId);
+    setError(null);
+    try {
+      const res = await raiseDispute({
+        transactionId: escrowTransactionId,
+        reason: reason.trim(),
+      });
+      console.log(
+        formatEscrowFrozenActiveLog({
+          transactionId: res.TRANSACTION_ID,
+          disputeId: res.DISPUTE_ID,
+        }),
+      );
+      setToast(`ESCROW_FROZEN_ACTIVE DISPUTE=${res.DISPUTE_ID.slice(0, 8)}`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to raise dispute');
+    } finally {
+      setReportingId(null);
+    }
+  }
+
   return (
     <VendorScreen>
       <VendorHero
@@ -296,7 +329,9 @@ export function FarmerLogisticsPage() {
           routes={routes}
           loading={loading}
           confirmingStopId={confirmingStopId}
+          reportingId={reportingId}
           onConfirmDropoff={(stopId) => void onConfirmDropoff(stopId)}
+          onReportIssue={(txId) => void onReportIssue(txId)}
         />
       </VendorSection>
 

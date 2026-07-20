@@ -5,7 +5,9 @@ type ActiveRoutesProps = {
   routes: DeliveryRouteItem[];
   loading?: boolean;
   confirmingStopId?: string | null;
+  reportingId?: string | null;
   onConfirmDropoff: (stopId: string) => void;
+  onReportIssue?: (escrowTransactionId: string) => void;
 };
 
 function stopTone(status: string): string {
@@ -22,7 +24,9 @@ export function ActiveRoutes({
   routes,
   loading,
   confirmingStopId,
+  reportingId,
   onConfirmDropoff,
+  onReportIssue,
 }: ActiveRoutesProps) {
   if (loading) {
     return (
@@ -91,21 +95,35 @@ export function ActiveRoutes({
                       {stop.procurementRequestId.slice(0, 8)}
                     </p>
                   </div>
-                  {stop.status === 'PENDING' ? (
-                    <VendorPrimaryButton
-                      type="button"
-                      disabled={confirmingStopId === stop.id}
-                      onClick={() => onConfirmDropoff(stop.id)}
-                    >
-                      {confirmingStopId === stop.id
-                        ? 'Confirming…'
-                        : 'Confirm Dropoff'}
-                    </VendorPrimaryButton>
-                  ) : stop.status === 'DELIVERED' ? (
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-emerald-300/90">
-                      Funds settled
-                    </span>
-                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {stop.status === 'PENDING' && stop.escrowTransactionId && onReportIssue ? (
+                      <button
+                        type="button"
+                        className="app-btn app-btn--secondary app-btn--small"
+                        disabled={reportingId === stop.escrowTransactionId}
+                        onClick={() => onReportIssue(stop.escrowTransactionId!)}
+                      >
+                        {reportingId === stop.escrowTransactionId
+                          ? 'Reporting…'
+                          : 'Report Issue'}
+                      </button>
+                    ) : null}
+                    {stop.status === 'PENDING' ? (
+                      <VendorPrimaryButton
+                        type="button"
+                        disabled={confirmingStopId === stop.id}
+                        onClick={() => onConfirmDropoff(stop.id)}
+                      >
+                        {confirmingStopId === stop.id
+                          ? 'Confirming…'
+                          : 'Confirm Dropoff'}
+                      </VendorPrimaryButton>
+                    ) : stop.status === 'DELIVERED' ? (
+                      <span className="font-mono text-[10px] uppercase tracking-wide text-emerald-300/90">
+                        Funds settled
+                      </span>
+                    ) : null}
+                  </div>
                 </li>
               ))}
           </ol>

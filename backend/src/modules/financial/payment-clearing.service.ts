@@ -314,6 +314,9 @@ export class PaymentClearingService implements OnModuleInit {
       LIMIT 1
     `);
     if (!tx[0]) throw new NotFoundException('TRANSACTION_NOT_FOUND');
+    if (tx[0].status === 'FROZEN') {
+      throw new BadRequestException('ESCROW_FROZEN');
+    }
     if (tx[0].status !== 'HELD_IN_ESCROW') {
       throw new BadRequestException('ESCROW_NOT_HELD');
     }
@@ -387,6 +390,9 @@ export class PaymentClearingService implements OnModuleInit {
       LIMIT 1
     `);
     if (!tx[0]) throw new NotFoundException('TRANSACTION_NOT_FOUND');
+    if (tx[0].status === 'FROZEN') {
+      throw new BadRequestException('ESCROW_FROZEN');
+    }
     if (tx[0].status !== 'HELD_IN_ESCROW') {
       throw new BadRequestException('ESCROW_NOT_HELD');
     }
@@ -453,6 +459,151 @@ export class PaymentClearingService implements OnModuleInit {
       ESCROW_HELD_CENTS: Number(row?.escrow_held_cents) || 0,
       LOYALTY_LIABILITY_CENTS: Number(row?.loyalty_liability_cents) || 0,
       MICRO_FEE_CENTS: Number(row?.micro_fee_cents) || 0,
+    };
+  }
+
+  /**
+   * Reverse a FROZEN escrow hold to REFUNDED and release held wallet balance.
+   * Stripe charge reversal is orchestrated by DisputeService when a PI is known.
+   */
+  async refund(transactionId: string) {
+    if (!transactionId?.trim()) {
+      throw new BadRequestException('TRANSACTION_ID_REQUIRED');
+    }
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        status: string;
+        net_amount_cents: number | string;
+        destination_id: string | null;
+        transaction_type: string;
+        metadata: unknown;
+      }>
+    >(Prisma.sql`
+      SELECT
+        id,
+        status::text AS status,
+        net_amount_cents,
+        destination_id,
+        transaction_type::text AS transaction_type,
+        metadata
+      FROM public.financial_transactions
+      WHERE id = ${transactionId}::uuid
+      LIMIT 1
+    `);
+    if (!rows[0]) throw new NotFoundException('TRANSACTION_NOT_FOUND');
+    const tx = rows[0];
+    if (tx.status === 'REFUNDED') {
+      return {
+        STATUS: 'ESCROW_LEDGER_ACTIVE',
+        ACTION: 'REFUNDED',
+        TRANSACTION_ID: tx.id,
+        NET_AMOUNT_CENTS: Number(tx.net_amount_cents) || 0,
+        ALREADY_REFUNDED: true,
+        METADATA: tx.metadata,
+      };
+    }
+    if (tx.status !== 'FROZEN' && tx.status !== 'HELD_IN_ESCROW') {
+      throw new BadRequestException('ESCROW_NOT_REFUNDABLE');
+    }
+
+    const net = Number(tx.net_amount_cents) || 0;
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.financial_transactions
+      SET
+        status = 'REFUNDED'::public.financial_transaction_status,
+        updated_at = NOW()
+      WHERE id = ${tx.id}::uuid
+    `);
+
+    if (tx.destination_id && tx.transaction_type === 'WHOLESALE') {
+      await this.ensureFarmerBalance(tx.destination_id);
+      await this.prisma.$executeRaw(Prisma.sql`
+        UPDATE public.farmer_balances
+        SET
+          escrow_held_cents = GREATEST(0, escrow_held_cents - ${net}),
+          updated_at = NOW()
+        WHERE farmer_id = ${tx.destination_id}::uuid
+      `);
+    } else if (tx.destination_id) {
+      await this.ensureVendorBalance(tx.destination_id);
+      await this.prisma.$executeRaw(Prisma.sql`
+        UPDATE public.vendor_balances
+        SET
+          escrow_held_cents = GREATEST(0, escrow_held_cents - ${net}),
+          updated_at = NOW()
+        WHERE vendor_id = ${tx.destination_id}::uuid
+      `);
+    }
+
+    this.logger.log(
+      formatEscrowLedgerActiveLog({
+        transactionId: tx.id,
+        status: 'REFUNDED',
+        netCents: net,
+      }),
+    );
+
+    return {
+      STATUS: 'ESCROW_LEDGER_ACTIVE',
+      ACTION: 'REFUNDED',
+      TRANSACTION_ID: tx.id,
+      NET_AMOUNT_CENTS: net,
+      TRANSACTION_TYPE: tx.transaction_type,
+      DESTINATION_ID: tx.destination_id,
+      METADATA: tx.metadata,
+      ALREADY_REFUNDED: false,
+    };
+  }
+
+  /** Unfreeze a FROZEN escrow row back to HELD_IN_ESCROW (dismiss dispute). */
+  async unfreezeEscrow(transactionId: string) {
+    if (!transactionId?.trim()) {
+      throw new BadRequestException('TRANSACTION_ID_REQUIRED');
+    }
+    const rows = await this.prisma.$queryRaw<
+      Array<{ id: string; status: string; net_amount_cents: number | string }>
+    >(Prisma.sql`
+      SELECT id, status::text AS status, net_amount_cents
+      FROM public.financial_transactions
+      WHERE id = ${transactionId}::uuid
+      LIMIT 1
+    `);
+    if (!rows[0]) throw new NotFoundException('TRANSACTION_NOT_FOUND');
+    if (rows[0].status === 'HELD_IN_ESCROW') {
+      return {
+        STATUS: 'ESCROW_LEDGER_ACTIVE',
+        ACTION: 'HELD_IN_ESCROW',
+        TRANSACTION_ID: rows[0].id,
+        ALREADY_HELD: true,
+      };
+    }
+    if (rows[0].status !== 'FROZEN') {
+      throw new BadRequestException('ESCROW_NOT_FROZEN');
+    }
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.financial_transactions
+      SET
+        status = 'HELD_IN_ESCROW'::public.financial_transaction_status,
+        updated_at = NOW()
+      WHERE id = ${rows[0].id}::uuid
+    `);
+
+    this.logger.log(
+      formatEscrowLedgerActiveLog({
+        transactionId: rows[0].id,
+        status: 'HELD_IN_ESCROW',
+        netCents: Number(rows[0].net_amount_cents) || 0,
+      }),
+    );
+
+    return {
+      STATUS: 'ESCROW_LEDGER_ACTIVE',
+      ACTION: 'HELD_IN_ESCROW',
+      TRANSACTION_ID: rows[0].id,
+      ALREADY_HELD: false,
     };
   }
 

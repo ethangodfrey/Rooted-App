@@ -25,6 +25,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 17 | `cursor/stripe-payments-gateway-428e` | #232 | Phase 6 Stripe Connect Payment Gateway |
 | 18 | `cursor/stripe-onboarding-ui-428e` | #233 | Phase 6 Stripe Connect Onboarding UI |
 | 19 | `cursor/admin-platform-dashboard-428e` | #234 | Phase 7 Platform Admin Dashboard |
+| 20 | `cursor/dispute-resolution-engine-428e` | (open) | Phase 8 Dispute Resolution Engine |
 
 ```powershell
 git fetch origin
@@ -32,7 +33,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/admin-platform-dashboard-428e`
+`cursor/dispute-resolution-engine-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -60,8 +61,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_fleet_logistics.sql`) — delivery_routes, delivery_stops, farmer_balances
 11. `docs/supabase/phase80_stripe_payments_gateway.sql`  
    (or `migrations/20260720_stripe_payments_gateway.sql`) — vendors/farmers.stripe_account_id
+12. `docs/supabase/phase81_dispute_resolution.sql`  
+   (or `migrations/20260720_dispute_resolution.sql`) — disputes + FROZEN escrow status
 
-After phase73–80, confirm:
+After phase73–81, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -81,6 +84,7 @@ select to_regclass('public.vendor_balances');
 select to_regclass('public.delivery_routes');
 select to_regclass('public.delivery_stops');
 select to_regclass('public.farmer_balances');
+select to_regclass('public.disputes');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'farmers'
   and column_name = 'stripe_account_id';

@@ -6,6 +6,7 @@
 export type FinancialTransactionStatus =
   | 'PENDING'
   | 'HELD_IN_ESCROW'
+  | 'FROZEN'
   | 'SETTLED'
   | 'REFUNDED';
 
@@ -56,6 +57,7 @@ export function normalizeFinancialStatus(
   if (
     upper === 'PENDING' ||
     upper === 'HELD_IN_ESCROW' ||
+    upper === 'FROZEN' ||
     upper === 'SETTLED' ||
     upper === 'REFUNDED'
   ) {

@@ -70,6 +70,25 @@ export class StripeService implements OnModuleInit {
     return this.client;
   }
 
+  /** Best-effort PaymentIntent refund for dispute resolution. */
+  async refundPaymentIntent(
+    paymentIntentId: string,
+    amountCents?: number,
+  ): Promise<{ id: string; status: string }> {
+    const stripe = this.requireClient();
+    const params: Stripe.RefundCreateParams = {
+      payment_intent: paymentIntentId,
+    };
+    if (amountCents != null && Number.isFinite(amountCents) && amountCents > 0) {
+      params.amount = Math.floor(amountCents);
+    }
+    const refund = await stripe.refunds.create(params);
+    this.logger.log(
+      `STRIPE_REFUND_CREATED REFUND=${refund.id} PI=${paymentIntentId} STATUS=${refund.status}`,
+    );
+    return { id: refund.id, status: refund.status ?? 'unknown' };
+  }
+
   /** Stripe Connect Express onboarding link for a vendor. */
   async createVendorConnectLink(vendorId: string, returnUrl: string, refreshUrl: string) {
     const stripe = this.requireClient();

@@ -323,17 +323,21 @@ export class LogisticsFulfillmentService implements OnModuleInit {
           vendor_id: string;
           dropoff_order: number;
           status: string;
+          escrow_transaction_id: string | null;
         }>
       >(Prisma.sql`
         SELECT
-          id,
-          procurement_request_id,
-          vendor_id,
-          dropoff_order,
-          status::text AS status
-        FROM public.delivery_stops
-        WHERE route_id = ${route.id}::uuid
-        ORDER BY dropoff_order ASC
+          s.id,
+          s.procurement_request_id,
+          s.vendor_id,
+          s.dropoff_order,
+          s.status::text AS status,
+          r.escrow_transaction_id
+        FROM public.delivery_stops s
+        JOIN public.b2b_procurement_requests r
+          ON r.id = s.procurement_request_id
+        WHERE s.route_id = ${route.id}::uuid
+        ORDER BY s.dropoff_order ASC
       `);
       items.push({
         id: route.id,
@@ -346,6 +350,7 @@ export class LogisticsFulfillmentService implements OnModuleInit {
           vendorId: stop.vendor_id,
           dropoffOrder: stop.dropoff_order,
           status: stop.status,
+          escrowTransactionId: stop.escrow_transaction_id,
         })),
       });
     }

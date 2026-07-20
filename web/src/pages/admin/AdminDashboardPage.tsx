@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ActiveFleet } from '@/components/admin/ActiveFleet';
+import { DisputeQueue } from '@/components/admin/DisputeQueue';
 import { GlobalLedger } from '@/components/admin/GlobalLedger';
 import { PlatformMetricsBanner } from '@/components/admin/PlatformMetricsBanner';
 import { FieldError } from '@/components/ui/FieldError';
@@ -17,20 +18,33 @@ import {
   type AdminLedgerResponse,
   type AdminTelemetry,
 } from '@/lib/admin-dashboard';
+import {
+  approveDisputeRefund,
+  dismissDispute,
+  fetchAdminDisputeQueue,
+  formatDisputeEngineInitializedLog,
+  type DisputeItem,
+} from '@/lib/disputes';
 import '@/components/ui/ui.css';
 
+type DashboardTab = 'overview' | 'disputes' | 'fleet';
+
 /**
- * Phase 7 Platform Admin Dashboard.
+ * Phase 7–8 Platform Admin Dashboard + Dispute Queue.
  * Route: /admin/dashboard — AdminLayout enforces role === admin.
  */
 export function AdminDashboardPage() {
   const { user } = useAuth();
+  const [tab, setTab] = useState<DashboardTab>('overview');
   const [telemetry, setTelemetry] = useState<AdminTelemetry | null>(null);
   const [ledger, setLedger] = useState<AdminLedgerResponse | null>(null);
   const [routes, setRoutes] = useState<AdminFleetRoute[]>([]);
+  const [disputes, setDisputes] = useState<DisputeItem[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [loadingLedger, setLoadingLedger] = useState(true);
   const [loadingFleet, setLoadingFleet] = useState(true);
+  const [loadingDisputes, setLoadingDisputes] = useState(true);
+  const [actingDisputeId, setActingDisputeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -41,6 +55,7 @@ export function AdminDashboardPage() {
   useEffect(() => {
     console.log(formatSystemTelemetryInitializedLog());
     console.log(formatAdminDashboardActiveLog());
+    console.log(formatDisputeEngineInitializedLog());
   }, []);
 
   const loadMetrics = useCallback(async () => {
@@ -89,6 +104,25 @@ export function AdminDashboardPage() {
     }
   }, []);
 
+  const loadDisputes = useCallback(async () => {
+    if (!isApiConfigured) {
+      setLoadingDisputes(false);
+      return;
+    }
+    setLoadingDisputes(true);
+    try {
+      const data = await fetchAdminDisputeQueue(50);
+      setDisputes(data.ITEMS ?? []);
+      console.log(`DISPUTE_ENGINE_INITIALIZED QUEUE=${data.COUNT ?? 0}`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to load dispute queue',
+      );
+    } finally {
+      setLoadingDisputes(false);
+    }
+  }, []);
+
   const loadLedger = useCallback(async () => {
     if (!isApiConfigured) {
       setLoadingLedger(false);
@@ -117,7 +151,8 @@ export function AdminDashboardPage() {
   useEffect(() => {
     void loadMetrics();
     void loadFleet();
-  }, [loadMetrics, loadFleet]);
+    void loadDisputes();
+  }, [loadMetrics, loadFleet, loadDisputes]);
 
   useEffect(() => {
     void loadLedger();
@@ -133,6 +168,34 @@ export function AdminDashboardPage() {
     setPage(1);
   }
 
+  async function onApproveRefund(disputeId: string) {
+    setActingDisputeId(disputeId);
+    setError(null);
+    try {
+      await approveDisputeRefund(disputeId, 'APPROVE_REFUND');
+      console.log(`DISPUTE_ENGINE_INITIALIZED ACTION=RESOLVED_REFUNDED ID=${disputeId}`);
+      await Promise.all([loadDisputes(), loadLedger(), loadMetrics()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Refund failed');
+    } finally {
+      setActingDisputeId(null);
+    }
+  }
+
+  async function onDismiss(disputeId: string) {
+    setActingDisputeId(disputeId);
+    setError(null);
+    try {
+      await dismissDispute(disputeId, { notes: 'DISMISS_DISPUTE', settle: false });
+      console.log(`DISPUTE_ENGINE_INITIALIZED ACTION=RESOLVED_RELEASED ID=${disputeId}`);
+      await Promise.all([loadDisputes(), loadLedger(), loadMetrics()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Dismiss failed');
+    } finally {
+      setActingDisputeId(null);
+    }
+  }
+
   if (user?.role && user.role !== 'admin') {
     return (
       <div className="app-screen">
@@ -144,60 +207,92 @@ export function AdminDashboardPage() {
     );
   }
 
+  const tabs: Array<{ id: DashboardTab; label: string }> = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'disputes', label: `Dispute Queue (${disputes.length})` },
+    { id: 'fleet', label: 'Active Fleet' },
+  ];
+
   return (
     <div className="app-screen" style={{ maxWidth: 1100 }}>
-      <p className="app-eyebrow">Phase 7 admin</p>
+      <p className="app-eyebrow">Phase 7–8 admin</p>
       <h1 className="app-title">Platform Dashboard</h1>
       <p className="ft-subhead" style={{ marginBottom: '1.25rem' }}>
-        Cross-tenant GMV, escrow, ledger, and in-transit fleet for marketplace
+        Cross-tenant GMV, escrow, disputes, and in-transit fleet for marketplace
         operators.
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">
+        {tabs.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={
+              tab === item.id
+                ? 'app-btn app-btn--primary app-btn--small'
+                : 'app-btn app-btn--secondary app-btn--small'
+            }
+            onClick={() => setTab(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
         <Link to="/admin/vendors" className="app-btn app-btn--secondary app-btn--small">
           Vendors
-        </Link>
-        <Link to="/admin/orders" className="app-btn app-btn--secondary app-btn--small">
-          Orders
-        </Link>
-        <Link to="/admin/more" className="app-btn app-btn--secondary app-btn--small">
-          Systems
         </Link>
       </div>
 
       {error ? <FieldError message={error} /> : null}
 
-      <PlatformMetricsBanner telemetry={telemetry} loading={loadingMetrics} />
+      {tab === 'overview' ? (
+        <>
+          <PlatformMetricsBanner telemetry={telemetry} loading={loadingMetrics} />
+          <section className="mb-8">
+            <h2 className="app-section-title">Global Ledger</h2>
+            <GlobalLedger
+              ledger={ledger}
+              loading={loadingLedger}
+              statusFilter={statusFilter}
+              typeFilter={typeFilter}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onStatusFilter={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+              onTypeFilter={(value) => {
+                setTypeFilter(value);
+                setPage(1);
+              }}
+              onSort={onSort}
+              onPage={setPage}
+            />
+          </section>
+        </>
+      ) : null}
 
-      <section className="mb-8">
-        <h2 className="app-section-title">Global Ledger</h2>
-        <GlobalLedger
-          ledger={ledger}
-          loading={loadingLedger}
-          statusFilter={statusFilter}
-          typeFilter={typeFilter}
-          sortBy={sortBy}
-          sortDir={sortDir}
-          onStatusFilter={(value) => {
-            setStatusFilter(value);
-            setPage(1);
-          }}
-          onTypeFilter={(value) => {
-            setTypeFilter(value);
-            setPage(1);
-          }}
-          onSort={onSort}
-          onPage={setPage}
-        />
-      </section>
+      {tab === 'disputes' ? (
+        <section className="mb-8">
+          <h2 className="app-section-title">Dispute Queue</h2>
+          <DisputeQueue
+            items={disputes}
+            loading={loadingDisputes}
+            actingId={actingDisputeId}
+            onApproveRefund={(id) => void onApproveRefund(id)}
+            onDismiss={(id) => void onDismiss(id)}
+          />
+        </section>
+      ) : null}
 
-      <section>
-        <h2 className="app-section-title">Active Fleet</h2>
-        <ActiveFleet routes={routes} loading={loadingFleet} />
-      </section>
+      {tab === 'fleet' ? (
+        <section>
+          <h2 className="app-section-title">Active Fleet</h2>
+          <ActiveFleet routes={routes} loading={loadingFleet} />
+        </section>
+      ) : null}
 
       <p className="mt-6 font-mono text-[10px] uppercase tracking-wide text-white/40">
-        ADMIN_DASHBOARD_ACTIVE · SYSTEM_TELEMETRY_INITIALIZED
+        ADMIN_DASHBOARD_ACTIVE · DISPUTE_ENGINE_INITIALIZED
       </p>
     </div>
   );
