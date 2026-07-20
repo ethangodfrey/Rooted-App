@@ -20,6 +20,18 @@ import { PosModule } from './modules/pos/pos.module';
 import { StripeModule } from './modules/stripe/stripe.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { B2bModule } from './modules/b2b/b2b.module';
+import { LogisticsModule } from './modules/logistics/logistics.module';
+import { ContentModule } from './modules/content/content.module';
+import { DiscoveryModule } from './modules/discovery/discovery.module';
+import { AvailabilityModule } from './modules/availability/availability.module';
+import { CateringModule } from './modules/catering/catering.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { IntelligenceModule } from './modules/intelligence/intelligence.module';
+import { LoyaltyModule } from './modules/loyalty/loyalty.module';
+import { FinancialModule } from './modules/financial/financial.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -27,6 +39,8 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // Root `.env` holds USDA_API_KEY (same source as scripts/seedMarkets.ts).
+      envFilePath: ['.env', '../.env'],
       validate: nestConfigValidate,
     }),
     ScheduleModule.forRoot(),
@@ -51,6 +65,9 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     ObservabilityModule,
     HealthModule,
     AdminAgentModule,
+    AdminDashboardModule,
+    DisputesModule,
+    NotificationsModule,
     CheckoutModule,
     OrdersModule,
     MediaModule,
@@ -59,6 +76,15 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     StripeModule,
     TenantsModule,
     B2bModule,
+    LogisticsModule,
+    ContentModule,
+    DiscoveryModule,
+    AvailabilityModule,
+    CateringModule,
+    AnalyticsModule,
+    IntelligenceModule,
+    LoyaltyModule,
+    FinancialModule,
   ],
 })
 export class AppModule {}

@@ -229,8 +229,21 @@ export interface Vendor {
   preorder_payment_policy?: 'pickup_only' | 'stripe_only' | 'pickup_or_stripe';
   /** Phase 49 — booth accepts SNAP/EBT (discovery) */
   accepts_snap_ebt?: boolean;
+  /** Phase 72 — optional catering provider */
+  is_catering_provider?: boolean;
   latitude?: number | null;
   longitude?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorCateringService {
+  id: string;
+  vendor_id: string;
+  service_description: string;
+  min_guests: number;
+  max_guests: number;
+  price_range_estimate: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -497,6 +510,17 @@ export interface Post {
   media_type: PostMediaType;
   video_thumbnail_url: string | null;
   moderation_status?: 'unreviewed' | 'approved' | 'flagged' | 'removed';
+  contributor_id?: string | null;
+  contributor_type?: 'FARMER' | 'VENDOR' | null;
+  content_type?: 'TEXT' | 'PHOTO' | 'VIDEO' | null;
+  posting_mode?: 'SELF' | 'PARTNERSHIP' | null;
+  partnership_connection_id?: string | null;
+  partner_contributor_id?: string | null;
+  partner_contributor_type?: 'FARMER' | 'VENDOR' | null;
+  co_approval_status?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'APPENDED' | null;
+  cdn_media_url?: string | null;
+  media_compressed?: boolean | null;
+  contribution_metadata?: Record<string, unknown> | null;
   publish_at: string;
   created_at: string;
 }

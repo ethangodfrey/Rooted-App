@@ -1,6 +1,4 @@
-import { useState } from 'react';
-
-import { categoryVisual } from '@/lib/category-visuals';
+import { FallbackImage } from './FallbackImage';
 
 interface ProductThumbProps {
   src?: string | null;
@@ -17,14 +15,11 @@ export function ProductThumb({
   large = false,
   className = '',
 }: ProductThumbProps) {
-  const [failed, setFailed] = useState(false);
-  const visual = categoryVisual(category);
-
   const sharedStyle = large
     ? {
         width: '100%',
         maxHeight: 280,
-        aspectRatio: '16 / 10',
+        aspectRatio: '16 / 10' as const,
         borderRadius: 16,
         marginBottom: '1rem',
       }
@@ -34,33 +29,17 @@ export function ProductThumb({
         borderRadius: size >= 56 ? 12 : 8,
       };
 
-  if (src && !failed) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className={className}
-        onError={() => setFailed(true)}
-        style={{
-          ...sharedStyle,
-          objectFit: 'cover',
-          flexShrink: 0,
-          background: 'var(--color-line, #e8e8e8)',
-        }}
-      />
-    );
-  }
-
   return (
-    <div
-      className={`app-thumb-fallback ${className}`.trim()}
+    <FallbackImage
+      src={src}
+      variant="product"
+      category={category}
+      className={className}
       style={{
         ...sharedStyle,
-        fontSize: large ? '3rem' : size * 0.42,
+        objectFit: 'cover',
+        flexShrink: 0,
       }}
-      aria-hidden="true"
-    >
-      <span className="app-thumb-fallback__icon">{visual.emoji}</span>
-    </div>
+    />
   );
 }

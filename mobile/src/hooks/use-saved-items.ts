@@ -59,23 +59,62 @@ export function useSavedItems() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('saved_items')
-      .select('*')
-      .eq('customer_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('saved_items')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) {
+        setItems([]);
+      } else {
+        setItems((data ?? []) as SavedItem[]);
+      }
+    } catch {
       setItems([]);
-    } else {
-      setItems((data ?? []) as SavedItem[]);
+    } finally {
+      setLoaded(true);
     }
-    setLoaded(true);
   }, [user?.id]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let cancelled = false;
+
+    async function load() {
+      if (!user?.id) {
+        setItems([]);
+        setLoaded(true);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('saved_items')
+          .select('*')
+          .eq('customer_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (cancelled) return;
+
+        if (error) {
+          setItems([]);
+        } else {
+          setItems((data ?? []) as SavedItem[]);
+        }
+      } catch {
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const isSaved = useCallback(
     (itemType: SavedItemType, itemId: string) =>
@@ -92,52 +131,54 @@ export function useSavedItems() {
       );
 
       setPending(true);
-      if (existing) {
-        const previous = items;
-        setItems((current) => current.filter((row) => row.id !== existing.id));
-        const { error } = await supabase.from('saved_items').delete().eq('id', existing.id);
-        setPending(false);
-        if (error) {
-          setItems(previous);
+      try {
+        if (existing) {
+          const previous = items;
+          setItems((current) => current.filter((row) => row.id !== existing.id));
+          const { error } = await supabase.from('saved_items').delete().eq('id', existing.id);
+          if (error) {
+            setItems(previous);
+          }
+          return;
         }
-        return;
+
+        const optimistic: SavedItem = {
+          id: `temp-${ref.itemType}-${ref.itemId}`,
+          customer_id: user.id,
+          item_type: ref.itemType,
+          vendor_id: ref.itemType === 'vendor' ? ref.itemId : null,
+          chef_id: ref.itemType === 'chef' ? ref.itemId : null,
+          product_id: ref.itemType === 'product' ? ref.itemId : null,
+          service_id: ref.itemType === 'service' ? ref.itemId : null,
+          event_id: ref.itemType === 'event' ? ref.itemId : null,
+          created_at: new Date().toISOString(),
+        };
+        const previous = items;
+        setItems((current) => [optimistic, ...current]);
+
+        const insertRow: Record<string, string> = {
+          customer_id: user.id,
+          item_type: ref.itemType,
+          [column]: value,
+        };
+
+        const { data, error } = await supabase
+          .from('saved_items')
+          .insert(insertRow)
+          .select('*')
+          .maybeSingle();
+
+        if (error || !data) {
+          setItems(previous);
+          return;
+        }
+
+        setItems((current) =>
+          current.map((row) => (row.id === optimistic.id ? (data as SavedItem) : row)),
+        );
+      } finally {
+        setPending(false);
       }
-
-      const optimistic: SavedItem = {
-        id: `temp-${ref.itemType}-${ref.itemId}`,
-        customer_id: user.id,
-        item_type: ref.itemType,
-        vendor_id: ref.itemType === 'vendor' ? ref.itemId : null,
-        chef_id: ref.itemType === 'chef' ? ref.itemId : null,
-        product_id: ref.itemType === 'product' ? ref.itemId : null,
-        service_id: ref.itemType === 'service' ? ref.itemId : null,
-        event_id: ref.itemType === 'event' ? ref.itemId : null,
-        created_at: new Date().toISOString(),
-      };
-      const previous = items;
-      setItems((current) => [optimistic, ...current]);
-
-      const insertRow: Record<string, string> = {
-        customer_id: user.id,
-        item_type: ref.itemType,
-        [column]: value,
-      };
-
-      const { data, error } = await supabase
-        .from('saved_items')
-        .insert(insertRow)
-        .select('*')
-        .maybeSingle();
-
-      setPending(false);
-      if (error || !data) {
-        setItems(previous);
-        return;
-      }
-
-      setItems((current) =>
-        current.map((row) => (row.id === optimistic.id ? (data as SavedItem) : row)),
-      );
     },
     [items, user?.id],
   );

@@ -34,6 +34,11 @@ describe('formatPrice', () => {
   it('handles negative amounts', () => {
     expect(formatPrice(-500)).toBe('$-5.00');
   });
+
+  it('formats NaN and non-finite values as zero dollars', () => {
+    expect(formatPrice(Number.NaN)).toBe('$NaN');
+    expect(formatPrice(Number.POSITIVE_INFINITY)).toBe('$Infinity');
+  });
 });
 
 describe('formatEventDate', () => {
@@ -63,6 +68,20 @@ describe('formatRelativeTime', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
     expect(formatRelativeTime('2026-07-10T11:45:00.000Z')).toBe('15m ago');
+    vi.useRealTimers();
+  });
+
+  it('returns hours ago for same-day timestamps', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
+    expect(formatRelativeTime('2026-07-10T09:00:00.000Z')).toBe('3h ago');
+    vi.useRealTimers();
+  });
+
+  it('returns days ago for timestamps within a week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
+    expect(formatRelativeTime('2026-07-08T12:00:00.000Z')).toBe('2d ago');
     vi.useRealTimers();
   });
 

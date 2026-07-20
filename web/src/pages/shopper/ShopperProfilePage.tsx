@@ -6,13 +6,17 @@ import { LegalLinks } from '@/components/account/LegalLinks';
 import { ProfilePhoto } from '@/components/ui/ProfilePhoto';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
+import { isApiConfigured } from '@/lib/api';
 import { fetchFollowedVendors, type FollowedVendor } from '@/lib/follows';
+import { fetchPersonalSchedule, type ScheduleItem } from '@/lib/meet-the-makers';
+import { marketPath } from '@/lib/market-routes';
 import '@/components/ui/ui.css';
 import '@/components/ui/user-sticker.css';
 
 export function ShopperProfilePage() {
   const { user, session, shopper, signOut } = useAuth();
   const [followed, setFollowed] = useState<FollowedVendor[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
 
   const displayEmail = user?.email ?? session?.user?.email ?? '—';
   const initials = (user?.name || displayEmail || '?').toString().trim().charAt(0).toUpperCase();
@@ -26,6 +30,16 @@ export function ShopperProfilePage() {
       .then(setFollowed)
       .catch(() => setFollowed([]));
   }, [user?.id, session?.user?.id]);
+
+  useEffect(() => {
+    if (!isApiConfigured) {
+      setSchedule([]);
+      return;
+    }
+    void fetchPersonalSchedule()
+      .then((res) => setSchedule(res.ITEMS ?? []))
+      .catch(() => setSchedule([]));
+  }, []);
 
   return (
     <div className="app-screen app-screen--narrow app-screen--titled">
@@ -69,6 +83,44 @@ export function ShopperProfilePage() {
               </span>
             ))}
           </div>
+        )}
+      </section>
+
+      <section style={{ marginBottom: '1.5rem' }}>
+        <Link to="/shopper/rewards" className="app-btn app-btn--primary app-btn--small">
+          Rewards
+        </Link>
+      </section>
+
+      <section style={{ marginBottom: '1.5rem' }}>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="app-eyebrow" style={{ margin: 0 }}>
+            My schedule
+          </p>
+          <Link to="/shopper/meet-the-makers" className="text-sm font-semibold text-orange-400">
+            Meet the Makers
+          </Link>
+        </div>
+        {schedule.length === 0 ? (
+          <p className="app-row-meta">
+            No RSVPs yet —{' '}
+            <Link to="/shopper/meet-the-makers">browse partnership posts</Link>
+          </p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {schedule.map((item) => (
+              <li key={item.id} style={{ marginBottom: '0.5rem' }}>
+                <Link to={marketPath(item.eventId)} className="app-row-title">
+                  {item.eventName ?? 'Market event'}
+                </Link>
+                <p className="app-row-meta">
+                  {item.eventStart
+                    ? new Date(item.eventStart).toLocaleString()
+                    : 'RSVP'}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
@@ -132,6 +184,13 @@ export function ShopperProfilePage() {
           <div>
             <p className="app-profile-big-card__title">Settings</p>
             <p className="app-profile-big-card__meta">Profile, ZIP, and preferences</p>
+          </div>
+        </Link>
+
+        <Link to="/settings" className="app-profile-big-card">
+          <div>
+            <p className="app-profile-big-card__title">Notification preferences</p>
+            <p className="app-profile-big-card__meta">Email and SMS alerts</p>
           </div>
         </Link>
       </div>

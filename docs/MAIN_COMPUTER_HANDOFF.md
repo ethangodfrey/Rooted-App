@@ -1,0 +1,215 @@
+# Main computer handoff — July 20, 2026 cloud agent work
+
+Checklist for when you are back on the main machine. Cloud agents already committed/pushed these stacked PRs; local work is mostly **merge review**, **Supabase SQL**, and **env/deploy** confirmation.
+
+## 1. Pull and review the PR stack (in order)
+
+| Order | Branch | PR | What it adds |
+|------:|--------|----|--------------|
+| 1 | `cursor/dual-posting-content-428e` | #211 | Dual-posting / `post_contributions` |
+| 2 | `cursor/dual-posting-observability-428e` | #212 | Dual-posting health/metrics |
+| 3 | `cursor/meet-the-makers-discovery-428e` | #213 | Meet the Makers feed + RSVP |
+| 4 | `cursor/vendor-catering-services-428e` | #214 | Optional catering module |
+| 5 | `cursor/meet-the-makers-usda-428e` | #215 | US filter + USDA enrichment |
+| 6 | `cursor/engagement-analytics-dashboard-428e` | #216 | Engagement Performance dashboard |
+| 7 | `cursor/intelligence-automated-reporting-428e` | #217 | Weekly reports + anomaly detection |
+| 8 | `cursor/b2b-marketplace-phase1-428e` | #218 | B2B peer marketplace Phase 1 + schema prep |
+| 9 | `cursor/precision-rewards-loyalty-428e` | #219 | Precision Rewards loyalty logic |
+| 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
+| 11 | `cursor/availability-scheduling-428e` | #226 | Automated Availability Scheduling |
+| 12 | `cursor/shopper-loyalty-ui-428e` | #227 | Phase 3 Shopper Loyalty UI |
+| 13 | `cursor/financial-clearing-escrow-428e` | #228 | Phase 4 Financial Clearing & Escrow |
+| 14 | `cursor/vendor-financial-dashboard-428e` | #229 | Phase 4 Vendor Financial Dashboard + Dynamic Invoicing |
+| 15 | `cursor/fleet-logistics-fulfillment-428e` | #230 | Phase 5 Fleet Logistics & B2B Fulfillment |
+| 16 | `cursor/farmer-fleet-dispatch-ui-428e` | #231 | Phase 5 Farmer Fleet Dispatch Dashboard UI |
+| 17 | `cursor/stripe-payments-gateway-428e` | #232 | Phase 6 Stripe Connect Payment Gateway |
+| 18 | `cursor/stripe-onboarding-ui-428e` | #233 | Phase 6 Stripe Connect Onboarding UI |
+| 19 | `cursor/admin-platform-dashboard-428e` | #234 | Phase 7 Platform Admin Dashboard |
+| 20 | `cursor/dispute-resolution-engine-428e` | #235 | Phase 8 Dispute Resolution Engine |
+| 21 | `cursor/notification-engine-428e` | #236 | Phase 9 Automated Notification Engine |
+| 22 | `cursor/platform-e2e-smoke-428e` | #237 | Final Platform E2E Golden-Path Smoke Test |
+
+```powershell
+git fetch origin
+# Review each PR on GitHub, then merge bottom-up (or merge the tip if you squash-merge the stack).
+```
+
+Tip of stack (includes everything above once merged):  
+`cursor/platform-e2e-smoke-428e`
+
+## 2. Apply Supabase SQL (required)
+
+In the Supabase SQL editor, apply **in order** if not already applied:
+
+1. `docs/supabase/phase70_dual_posting_content.sql`  
+   (or `docs/supabase/migrations/20260720_dual_posting_content.sql`)
+2. `docs/supabase/phase71_meet_the_makers.sql`  
+   (or `migrations/20260720_meet_the_makers.sql`) — `user_events` + alert radius
+3. `docs/supabase/phase72_vendor_catering.sql`  
+   (or `migrations/20260720_vendor_catering.sql`)
+4. `docs/supabase/phase73_engagement_analytics.sql`  
+   (or `migrations/20260720_engagement_analytics.sql`) — **new** interaction columns + `engagement_metrics`
+5. `docs/supabase/phase74_intelligence_reporting.sql`  
+   (or `migrations/20260720_intelligence_reporting.sql`) — `partner_reports` + PERFORMANCE_* notification types
+6. `docs/supabase/phase75_b2b_marketplace.sql`  
+   (or `migrations/20260720_b2b_marketplace.sql`) — wholesale flags, `wholesale_listings`, procurement, availability + loyalty prep
+7. `docs/supabase/phase76_precision_rewards.sql`  
+   (or `migrations/20260720_precision_rewards.sql`) — action points, boosts, redemptions
+8. `docs/supabase/phase77_availability_scheduling.sql`  
+   (or `migrations/20260720_availability_scheduling.sql`) — PENDING_REVIEW + conflict flags on catering inquiries
+9. `docs/supabase/phase78_financial_clearing.sql`  
+   (or `migrations/20260720_financial_clearing.sql`) — financial_transactions + vendor_balances escrow ledger
+10. `docs/supabase/phase79_fleet_logistics.sql`  
+   (or `migrations/20260720_fleet_logistics.sql`) — delivery_routes, delivery_stops, farmer_balances
+11. `docs/supabase/phase80_stripe_payments_gateway.sql`  
+   (or `migrations/20260720_stripe_payments_gateway.sql`) — vendors/farmers.stripe_account_id
+12. `docs/supabase/phase81_dispute_resolution.sql`  
+   (or `migrations/20260720_dispute_resolution.sql`) — disputes + FROZEN escrow status
+13. `docs/supabase/phase82_notification_engine.sql`  
+   (or `migrations/20260720_notification_engine.sql`) — notifications_log + notification_preferences
+
+After phase73–82, confirm:
+
+```sql
+select to_regclass('public.engagement_metrics');
+select to_regclass('public.partner_reports');
+select to_regclass('public.wholesale_listings');
+select to_regclass('public.b2b_procurement_requests');
+select to_regclass('public.vendor_availability');
+select to_regclass('public.shopper_loyalty');
+select to_regclass('public.vendor_rewards_boost');
+select to_regclass('public.loyalty_action_ledger');
+select to_regclass('public.loyalty_redemptions');
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'catering_inquiries'
+  and column_name in ('conflict_detected', 'conflict_warning');
+select to_regclass('public.financial_transactions');
+select to_regclass('public.vendor_balances');
+select to_regclass('public.delivery_routes');
+select to_regclass('public.delivery_stops');
+select to_regclass('public.farmer_balances');
+select to_regclass('public.disputes');
+select to_regclass('public.notifications_log');
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'users'
+  and column_name = 'notification_preferences';
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'farmers'
+  and column_name = 'stripe_account_id';
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'vendors'
+  and column_name = 'stripe_account_id';
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'post_contributions'
+  and column_name in ('interaction_events', 'view_count', 'click_count');
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'catering_inquiries'
+  and column_name in ('interaction_events', 'view_count', 'click_count');
+```
+
+Optional email delivery for weekly/anomaly reports:
+
+```env
+RESEND_API_KEY=
+PARTNER_REPORT_FROM_EMAIL=reports@yourdomain.com
+```
+
+Without `RESEND_API_KEY`, reports still store + dashboard-notify; email status is `SKIPPED`.
+## 3. Environment on the main machine
+
+### Root `.env` (already expected for market seeding)
+
+```env
+USDA_API_KEY=<your existing key>
+```
+
+Meet the Makers Nest API now loads **both** `backend/.env` and root `../.env`.  
+You should **not** need a second key — just ensure the root value is present where you already keep it for `npm run markets:usda:seed`.
+
+On API boot you should see one of:
+
+- `USDA_API_KEY_LOADED SOURCE=ENV`
+- `USDA_API_KEY_MISSING SOURCE=ENV` (fix path if missing)
+
+### Deploy envs (Railway / Vercel)
+
+- Backend: same `USDA_API_KEY` if you want live USDA state-directory sync (hours via `listinginfo` still work without it).
+- Web: existing `VITE_API_URL` / Supabase vars unchanged.
+- No new public client secrets for analytics.
+
+## 4. Local verify after pull
+
+```powershell
+cd Rooted-App   # or your repo path
+git pull
+
+npm run build
+npx tsc --noEmit
+npm run test:discovery:meet-the-makers
+npm run test:vendor:catering
+npm run test:analytics:dashboard
+npm run test:intelligence:automated
+npm run test:b2b:marketplace
+npm run test:b2b:dashboard
+npm run test:availability:scheduling
+npm run test:loyalty:precision
+npm run test:loyalty:ui-integration
+npm run test:financial:clearing
+npm run test:financial:ui
+npm run test:logistics:fulfillment
+npm run test:logistics:ui
+npm run test:payments:stripe
+
+cd web
+npm run build
+```
+
+Expected uppercase logs (no emoji):
+
+- `DISCOVERY_INTERFACE_INITIALIZED` / `PARTNERSHIP_FEED_SYNCED` / `USDA_MARKET_DATA_SYNCED`
+- `CATERING_MODULE_INITIALIZED` / `VENDOR_SERVICES_UPDATED`
+- `ANALYTICS_DASHBOARD_INITIALIZED` / `METRICS_SYNC_COMPLETE`
+- `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
+- `B2B_MARKETPLACE_INITIALIZED` / `WHOLESALE_DIRECTORY_ACTIVE`
+- `FINANCIAL_UI_ACTIVE` / `INVOICING_ENGINE_INITIALIZED` / `FINANCIAL_UI_VERIFIED`
+- `PROCUREMENT_DASHBOARD_INITIALIZED` / `WHOLESALE_UI_ACTIVE`
+- `SCHEDULING_ENGINE_INITIALIZED` / `AVAILABILITY_SYNC_ACTIVE`
+- `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
+- `LOYALTY_UI_ACTIVE` / `REWARDS_SYNC_VERIFIED`
+- `FINANCIAL_ENGINE_INITIALIZED` / `ESCROW_LEDGER_ACTIVE`
+- `LOGISTICS_ENGINE_INITIALIZED` / `FLEET_TRACKING_ACTIVE` / `LOGISTICS_FULFILLMENT_VERIFIED`
+- `FLEET_UI_ACTIVE` / `ROUTE_DISPATCH_INITIALIZED` / `LOGISTICS_UI_VERIFIED`
+- `STRIPE_GATEWAY_INITIALIZED` / `PAYMENT_WEBHOOKS_ACTIVE` / `PAYMENTS_STRIPE_VERIFIED`
+
+## 5. Manual UI smoke (5 minutes)
+
+1. **Meet the Makers** — `/shopper/meet-the-makers`  
+   US partnership posts, hours when USDA-enriched, RSVP → shows on shopper schedule.
+2. **Active Collaboration** badge on vendor/farmer profile → modal of US joint posts.
+3. **Catering** — `/vendor/catering` toggle + public “Request Catering” if enabled.
+4. **Performance** — `/vendor/analytics` → **Performance** tab  
+   Post Reach + Inquiries over time charts (empty zeros are OK until traffic + phase73).
+5. **Financials** — `/vendor/financials` wallet + escrow list; Download Invoice on accepted catering (availability) and ACCEPTED procurement rows.
+6. **Fleet Dispatch** — `/farmer/logistics` Route Planner + Active Routes Confirm Dropoff (settles wholesale escrow).
+
+## 6. Optional: seed / refresh USDA markets
+
+Only if directory data is stale:
+
+```powershell
+npm run markets:usda:seed
+# then your usual schedules/import/apply pipeline from docs/US_FARMERS_MARKET_API_SETUP.md
+```
+
+## 7. Do not forget
+
+- [ ] Merge PR stack (or tip) after review  
+- [ ] Apply phase70 → phase80 in Supabase  
+- [ ] Confirm `USDA_API_KEY` in root `.env` (and Railway if used)  
+- [ ] Redeploy backend after merge so `/api/discovery/*`, `/api/catering/*`, `/api/analytics/summary` are live  
+- [ ] Redeploy web so Performance tab + Meet the Makers page ship  
+- [ ] Paste phase73 into Supabase if someone already pasted only phase72 earlier  
+
+## Cloud agent note
+
+This workspace’s scrubbed `.env` did **not** contain `USDA_API_KEY`; your main machine / production secrets should. Cloud verify logged `USDA_API_KEY_MISSING` there — that is expected for the agent sandbox, not a signal that your laptop key is gone.

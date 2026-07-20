@@ -11,7 +11,7 @@ export const SHOPPER_TABS: AppTab[] = [
     to: '/explore',
     label: 'Explore',
     icon: 'map',
-    matchPaths: ['/shopper/map', '/shopper/explore', '/shopper/home', '/shopper/events', '/shopper/search'],
+    matchPaths: ['/shopper/map', '/shopper/explore', '/shopper/home', '/shopper/events', '/shopper/search', '/shopper/meet-the-makers'],
   },
   {
     to: '/inbox',
