@@ -28,7 +28,7 @@ export function ShopperProfileEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'email', string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'email' | 'phone', string>>>({});
 
   useEffect(() => {
     setName(user?.name ?? '');
@@ -72,7 +72,7 @@ export function ShopperProfileEditPage() {
     setError(null);
     setMessage(null);
 
-    const nextFieldErrors: Partial<Record<'name' | 'email', string>> = {};
+    const nextFieldErrors: Partial<Record<'name' | 'email' | 'phone', string>> = {};
     const trimmedName = name.trim();
     if (!trimmedName) {
       nextFieldErrors.name = 'Name is required.';
@@ -80,6 +80,10 @@ export function ShopperProfileEditPage() {
     const trimmedEmail = email.trim();
     if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       nextFieldErrors.email = 'Enter a valid email address.';
+    }
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !/^[\d\s()+-]{7,20}$/.test(trimmedPhone)) {
+      nextFieldErrors.phone = 'Enter a valid phone number.';
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {
@@ -214,11 +218,21 @@ export function ShopperProfileEditPage() {
         <label htmlFor="phone">Phone</label>
         <input
           id="phone"
-          className="app-input"
+          className={`app-input${fieldErrors.phone ? ' app-input--invalid' : ''}`}
           type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          aria-invalid={Boolean(fieldErrors.phone)}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            setFieldErrors((prev) => {
+              if (!prev.phone) return prev;
+              const next = { ...prev };
+              delete next.phone;
+              return next;
+            });
+          }}
         />
+        <FieldError message={fieldErrors.phone} />
       </div>
 
       <h2 style={{ fontSize: '1.125rem', margin: '1.5rem 0 0.75rem' }}>Saved vendors</h2>
