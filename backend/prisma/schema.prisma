@@ -207,6 +207,9 @@ model CateringInquiry {
   guestCount        Int?      @map("guest_count")
   eventDate         DateTime? @map("event_date") @db.Date
   status            String    @default("OPEN")
+  /// Phase 77 — true when event_date conflicts with vendor_availability.
+  conflictDetected  Boolean   @default(false) @map("conflict_detected")
+  conflictWarning   String?   @map("conflict_warning")
   /// Phase 73 — append-only VIEW/CLICK interaction payloads.
   interactionEvents Json      @default("[]") @map("interaction_events")
   viewCount         Int       @default(0) @map("view_count")

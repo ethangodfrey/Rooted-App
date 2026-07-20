@@ -138,6 +138,11 @@ export function VendorCateringSettingsPage() {
         ← Profile
       </Link>
       <VendorHero eyebrow="Settings" title="Catering Settings" />
+      <div className="mb-4">
+        <Link to="/vendor/availability" className="app-btn app-btn--secondary app-btn--small">
+          Availability Calendar
+        </Link>
+      </div>
 
       {loading ? (
         <div className="app-loading">

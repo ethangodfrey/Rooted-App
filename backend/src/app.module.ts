@@ -23,6 +23,7 @@ import { B2bModule } from './modules/b2b/b2b.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
 import { ContentModule } from './modules/content/content.module';
 import { DiscoveryModule } from './modules/discovery/discovery.module';
+import { AvailabilityModule } from './modules/availability/availability.module';
 import { CateringModule } from './modules/catering/catering.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntelligenceModule } from './modules/intelligence/intelligence.module';
@@ -71,6 +72,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     LogisticsModule,
     ContentModule,
     DiscoveryModule,
+    AvailabilityModule,
     CateringModule,
     AnalyticsModule,
     IntelligenceModule,

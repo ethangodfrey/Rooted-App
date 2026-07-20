@@ -55,6 +55,29 @@ export async function submitCateringInquiry(input: {
   message: string;
   guestCount?: number | null;
   eventDate?: string | null;
-}): Promise<{ STATUS: string; INQUIRY_ID: string }> {
+}): Promise<{
+  STATUS: string;
+  INQUIRY_ID: string;
+  INQUIRY_STATUS?: string;
+  CONFLICT_DETECTED?: boolean;
+  CONFLICT_WARNING?: string | null;
+}> {
   return api.post('/api/catering/inquiries', input);
+}
+
+export type CateringInquiryItem = {
+  id: string;
+  message: string;
+  guestCount: number | null;
+  eventDate: string | null;
+  status: string;
+  conflictDetected: boolean;
+  conflictWarning: string | null;
+  createdAt: string;
+};
+
+export async function fetchVendorCateringInquiries(
+  vendorId: string,
+): Promise<{ STATUS: string; ITEMS: CateringInquiryItem[]; COUNT: number }> {
+  return api.get(`/api/catering/vendors/${vendorId}/inquiries`);
 }

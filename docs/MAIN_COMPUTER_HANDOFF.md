@@ -16,6 +16,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 8 | `cursor/b2b-marketplace-phase1-428e` | #218 | B2B peer marketplace Phase 1 + schema prep |
 | 9 | `cursor/precision-rewards-loyalty-428e` | #219 | Precision Rewards loyalty logic |
 | 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
+| 11 | `cursor/availability-scheduling-428e` | (open) | Automated Availability Scheduling |
 
 ```powershell
 git fetch origin
@@ -23,7 +24,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/vendor-procurement-dashboard-428e`
+`cursor/availability-scheduling-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -43,8 +44,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_b2b_marketplace.sql`) — wholesale flags, `wholesale_listings`, procurement, availability + loyalty prep
 7. `docs/supabase/phase76_precision_rewards.sql`  
    (or `migrations/20260720_precision_rewards.sql`) — action points, boosts, redemptions
+8. `docs/supabase/phase77_availability_scheduling.sql`  
+   (or `migrations/20260720_availability_scheduling.sql`) — PENDING_REVIEW + conflict flags on catering inquiries
 
-After phase73–76, confirm:
+After phase73–77, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -56,6 +59,9 @@ select to_regclass('public.shopper_loyalty');
 select to_regclass('public.vendor_rewards_boost');
 select to_regclass('public.loyalty_action_ledger');
 select to_regclass('public.loyalty_redemptions');
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'catering_inquiries'
+  and column_name in ('conflict_detected', 'conflict_warning');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -108,6 +114,7 @@ npm run test:analytics:dashboard
 npm run test:intelligence:automated
 npm run test:b2b:marketplace
 npm run test:b2b:dashboard
+npm run test:availability:scheduling
 npm run test:loyalty:precision
 
 cd web
@@ -122,6 +129,7 @@ Expected uppercase logs (no emoji):
 - `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
 - `B2B_MARKETPLACE_INITIALIZED` / `WHOLESALE_DIRECTORY_ACTIVE`
 - `PROCUREMENT_DASHBOARD_INITIALIZED` / `WHOLESALE_UI_ACTIVE`
+- `SCHEDULING_ENGINE_INITIALIZED` / `AVAILABILITY_SYNC_ACTIVE`
 - `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
 
 ## 5. Manual UI smoke (5 minutes)
@@ -145,7 +153,7 @@ npm run markets:usda:seed
 ## 7. Do not forget
 
 - [ ] Merge PR stack (or tip) after review  
-- [ ] Apply phase70 → phase76 in Supabase  
+- [ ] Apply phase70 → phase77 in Supabase  
 - [ ] Confirm `USDA_API_KEY` in root `.env` (and Railway if used)  
 - [ ] Redeploy backend after merge so `/api/discovery/*`, `/api/catering/*`, `/api/analytics/summary` are live  
 - [ ] Redeploy web so Performance tab + Meet the Makers page ship  

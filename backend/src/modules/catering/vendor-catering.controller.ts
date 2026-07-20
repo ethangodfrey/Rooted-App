@@ -73,4 +73,20 @@ export class VendorCateringController implements OnModuleInit {
   ) {
     return this.catering.createInquiry(user.id, body);
   }
+
+  @Get('vendors/:vendorId/inquiries')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('vendor', 'farmer', 'admin')
+  async listInquiries(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('vendorId') vendorId: string,
+  ) {
+    if (!vendorId?.trim()) throw new BadRequestException('VENDOR_ID_REQUIRED');
+    if (!user.vendorId || user.vendorId !== vendorId) {
+      if (user.role !== 'admin') {
+        throw new BadRequestException('VENDOR_MISMATCH');
+      }
+    }
+    return this.catering.listInquiriesForVendor(vendorId);
+  }
 }
