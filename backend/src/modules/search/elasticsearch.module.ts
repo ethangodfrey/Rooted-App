@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ElasticsearchClientService } from './elasticsearch-client.service';
+import { PartitionAwareOrderIndexerScheduler } from './partition-aware-order-indexer.scheduler';
 import { PartitionAwareOrderIndexerService } from './partition-aware-order-indexer.service';
 import { WholesaleDiscoverySearchService } from './wholesale-discovery-search.service';
 import { WholesaleProductIndexerService } from './wholesale-product-indexer.service';
@@ -12,6 +13,7 @@ import { WholesaleProductIndexerService } from './wholesale-product-indexer.serv
     ElasticsearchClientService,
     WholesaleProductIndexerService,
     PartitionAwareOrderIndexerService,
+    PartitionAwareOrderIndexerScheduler,
     WholesaleDiscoverySearchService,
   ],
   exports: [
