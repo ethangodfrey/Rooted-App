@@ -136,6 +136,9 @@ model Vendor {
   /// Phase 49 — booth accepts SNAP/EBT (discovery)
   acceptsSnapEbt        Boolean @default(false) @map("accepts_snap_ebt")
 
+  /// Phase 72 — optional catering provider module
+  isCateringProvider    Boolean @default(false) @map("is_catering_provider")
+
   /// Phase 24/27 — WGS84 vendor pin + country (default USA in Supabase).
   latitude  Decimal? @db.Decimal(10, 7)
   longitude Decimal? @db.Decimal(10, 7)
@@ -143,6 +146,8 @@ model Vendor {
 
   posts                Post[]
   certifications       VendorCertification[]
+  cateringService      VendorCateringService?
+  cateringInquiries    CateringInquiry[]
   orders               Order[]
   vendorEvents         VendorEvent[]
   posConnections       PosConnection[]
@@ -160,6 +165,40 @@ model Vendor {
   @@index([userId])
   @@index([latitude, longitude])
   @@map("vendors")
+}
+
+/// Phase 72 — one catering services summary row per vendor.
+model VendorCateringService {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId             String   @unique @map("vendor_id") @db.Uuid
+  vendor               Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  serviceDescription   String   @default("") @map("service_description")
+  minGuests            Int      @default(1) @map("min_guests")
+  maxGuests            Int      @default(50) @map("max_guests")
+  priceRangeEstimate   String?  @map("price_range_estimate")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([vendorId])
+  @@map("vendor_catering_services")
+}
+
+/// Phase 72 — shopper catering inquiry / contact request.
+model CateringInquiry {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId   String   @map("vendor_id") @db.Uuid
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  shopperId  String   @map("shopper_id") @db.Uuid
+  message    String
+  guestCount Int?     @map("guest_count")
+  eventDate  DateTime? @map("event_date") @db.Date
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([vendorId, createdAt(sort: Desc)])
+  @@index([shopperId, createdAt(sort: Desc)])
+  @@map("catering_inquiries")
 }
 
 /// Phase 11 peer engine statuses (PENDING | ACCEPTED | BLOCKED).

@@ -49,6 +49,7 @@ export function VendorProfilePage() {
       <VendorSection title="Settings">
         <VendorListPanel>
           <VendorListRow to="/onboarding/specialties" title="Edit specialties" icon="grid" tone="amber" />
+          <VendorListRow to="/vendor/catering" title="Catering Settings" icon="clipboard" tone="teal" />
           <VendorListRow to="/vendor/storefront" title="Edit storefront" icon="store" tone="orange" />
           <VendorListRow to="/vendor/preview" title="Preview shop" icon="grid" tone="stone" />
           <VendorListRow to="/vendor/setup" title="Application details" icon="clipboard" tone="stone" />

@@ -123,8 +123,11 @@ export function ShopperExplorePage() {
               }`}
               aria-pressed={snapOnly}
             >
-              🌾 Accepts SNAP / EBT
+              Accepts SNAP / EBT
             </button>
+            <a href="/shopper/search" className="explore-swipe__chip">
+              Available for Catering
+            </a>
             {RADIUS_OPTIONS.filter(
               (miles) =>
                 miles >= EXPLORE_FEED_MIN_RADIUS_MILES && miles <= EXPLORE_FEED_MAX_RADIUS_MILES,

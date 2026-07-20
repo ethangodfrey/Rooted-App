@@ -229,8 +229,21 @@ export interface Vendor {
   preorder_payment_policy?: 'pickup_only' | 'stripe_only' | 'pickup_or_stripe';
   /** Phase 49 — booth accepts SNAP/EBT (discovery) */
   accepts_snap_ebt?: boolean;
+  /** Phase 72 — optional catering provider */
+  is_catering_provider?: boolean;
   latitude?: number | null;
   longitude?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorCateringService {
+  id: string;
+  vendor_id: string;
+  service_description: string;
+  min_guests: number;
+  max_guests: number;
+  price_range_estimate: string | null;
   created_at: string;
   updated_at: string;
 }

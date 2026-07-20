@@ -67,6 +67,7 @@ import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { ShopperMeetTheMakersPage } from '@/pages/shopper/ShopperMeetTheMakersPage';
+import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSettingsPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
@@ -210,6 +211,7 @@ export default function App() {
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
+          <Route path="catering" element={<VendorCateringSettingsPage />} />
         </Route>
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />

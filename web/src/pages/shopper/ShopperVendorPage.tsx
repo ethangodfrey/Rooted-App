@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
 import { ActiveCollaborationBadge } from '@/components/makers/ActiveCollaborationBadge';
+import { VendorCateringBanner } from '@/components/vendor/VendorCateringBanner';
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
@@ -241,6 +242,10 @@ export function ShopperVendorPage() {
       </div>
 
       <div className="px-4 py-5">
+        <VendorCateringBanner
+          vendorId={id}
+          vendorName={vendor.business_name}
+        />
         {distanceLabel ? (
           <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500 tabular-nums">
             {distanceLabel} away

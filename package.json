@@ -71,6 +71,7 @@
     "test:discovery:latency-benchmark": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-latency-benchmark.ts",
     "test:discovery:production-sync-cron": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-production-sync-cron.ts",
     "test:discovery:meet-the-makers": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-meet-the-makers.ts",
+    "test:vendor:catering": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-vendor-catering.ts",
     "test:content:dual-posting": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-content-dual-posting.ts",
     "test:content:dual-posting-observability": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-content-dual-posting-observability.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",

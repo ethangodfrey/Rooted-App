@@ -18,6 +18,7 @@
     "../backend/src/modules/content/content-media-cdn.util.ts",
     "../backend/src/modules/content/content-dual-posting-metrics.util.ts",
     "../backend/src/modules/discovery/alert-radius.util.ts",
-    "../backend/src/modules/discovery/meet-the-makers.ranking.util.ts"
+    "../backend/src/modules/discovery/meet-the-makers.ranking.util.ts",
+    "../backend/src/modules/catering/vendor-catering.util.ts"
   ]
 }
