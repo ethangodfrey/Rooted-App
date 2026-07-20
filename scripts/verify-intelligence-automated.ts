@@ -70,8 +70,8 @@ function main(): void {
 
   const drop = detectAnomaly({
     metricType: 'INQUIRY',
-    currentRate: averageDailyRate(3, 1),
-    baselineRate: averageDailyRate(100, 30),
+    currentRate: averageDailyRate(2, 1),
+    baselineRate: averageDailyRate(300, 30),
   });
   assert(drop?.direction === 'DROP', 'DROP_DETECT_FAIL');
   assert((drop?.changePct ?? 0) <= -40, 'DROP_PCT_FAIL');
