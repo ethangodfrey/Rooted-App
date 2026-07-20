@@ -80,6 +80,8 @@ export class WholesaleProductsController {
       name?: string;
       moq?: number;
       unitPriceCents?: number;
+      isRetailEnabled?: boolean;
+      retailPrice?: number | null;
     };
     const product = await this.wholesale.updateForVendor(
       vendorId,
@@ -89,6 +91,12 @@ export class WholesaleProductsController {
         ...(typeof patch.moq === 'number' ? { moq: patch.moq } : {}),
         ...(typeof patch.unitPriceCents === 'number'
           ? { unitPriceCents: patch.unitPriceCents }
+          : {}),
+        ...(typeof patch.isRetailEnabled === 'boolean'
+          ? { isRetailEnabled: patch.isRetailEnabled }
+          : {}),
+        ...(patch.retailPrice === null || typeof patch.retailPrice === 'number'
+          ? { retailPrice: patch.retailPrice }
           : {}),
       },
     );
@@ -224,6 +232,8 @@ export class WholesaleProductsController {
     freightNotes: string | null;
     pickupNotes: string | null;
     availableQuantity: number;
+    isRetailEnabled?: boolean;
+    retailPrice?: { toString(): string } | number | null;
     status: string;
   }) {
     return {
@@ -238,6 +248,9 @@ export class WholesaleProductsController {
       FREIGHT_NOTES: product.freightNotes,
       PICKUP_NOTES: product.pickupNotes,
       AVAILABLE_QUANTITY: product.availableQuantity,
+      IS_RETAIL_ENABLED: product.isRetailEnabled ?? false,
+      RETAIL_PRICE:
+        product.retailPrice == null ? null : Number(product.retailPrice),
       STATUS: product.status,
     };
   }

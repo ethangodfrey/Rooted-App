@@ -236,8 +236,26 @@ export const wholesaleProductCreateSchema = z
       )
       .max(1_000_000_000, 'WHOLESALE_VALIDATION_ERROR: AVAILABLE_QUANTITY TOO LARGE')
       .optional(),
+    isRetailEnabled: z.boolean().optional().default(false),
+    retailPrice: z.coerce
+      .number({
+        invalid_type_error: 'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE INVALID',
+      })
+      .nonnegative('WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE MUST BE NONNEGATIVE')
+      .max(1_000_000, 'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE TOO LARGE')
+      .optional()
+      .nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.isRetailEnabled && (value.retailPrice == null || value.retailPrice <= 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'WHOLESALE_VALIDATION_ERROR: RETAIL_PRICE REQUIRED WHEN RETAIL ENABLED',
+        path: ['retailPrice'],
+      });
+    }
+  });
 
 export type WholesaleProductCreateInput = z.infer<
   typeof wholesaleProductCreateSchema

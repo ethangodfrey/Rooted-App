@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Prisma, WholesaleProductStatus } from '@prisma/client';
 import type { WholesaleProductCreateInput } from '@vendorly/env-config';
@@ -11,13 +12,18 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WholesaleProductIndexerService } from '../search/wholesale-product-indexer.service';
 
 @Injectable()
-export class WholesaleProductsService {
+export class WholesaleProductsService implements OnModuleInit {
   private readonly logger = new Logger(WholesaleProductsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly indexer: WholesaleProductIndexerService,
   ) {}
+
+  onModuleInit(): void {
+    this.logger.log('RETAIL_SALE_MODE_ENABLED');
+    this.logger.log('PRODUCT_RETAIL_ENDPOINT_ACTIVE');
+  }
 
   async create(vendorId: string, input: WholesaleProductCreateInput) {
     const created = await this.prisma.wholesaleProduct.create({
@@ -33,12 +39,17 @@ export class WholesaleProductsService {
         freightNotes: input.freightNotes ?? null,
         pickupNotes: input.pickupNotes ?? null,
         availableQuantity: input.availableQuantity ?? 0,
+        isRetailEnabled: input.isRetailEnabled ?? false,
+        retailPrice:
+          input.retailPrice == null
+            ? null
+            : new Prisma.Decimal(input.retailPrice),
         status: WholesaleProductStatus.ACTIVE,
       },
     });
 
     this.logger.log(
-      `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity}`,
+      `WHOLESALE_SKU_INDEXED ID=${created.id} VENDOR=${vendorId} UNIT=${created.packagingUnit} MOQ=${created.moq} AVAILABLE=${created.availableQuantity} RETAIL=${created.isRetailEnabled ? '1' : '0'}`,
     );
     await this.syncProductToSearchIndex(created);
     return created;
@@ -69,7 +80,13 @@ export class WholesaleProductsService {
   async updateForVendor(
     sessionVendorId: string,
     productId: string,
-    patch: { name?: string; moq?: number; unitPriceCents?: number },
+    patch: {
+      name?: string;
+      moq?: number;
+      unitPriceCents?: number;
+      isRetailEnabled?: boolean;
+      retailPrice?: number | null;
+    },
   ) {
     const existing = await this.prisma.wholesaleProduct.findUnique({
       where: { id: productId },
@@ -95,8 +112,25 @@ export class WholesaleProductsService {
         ...(patch.unitPriceCents !== undefined
           ? { unitPriceCents: patch.unitPriceCents }
           : {}),
+        ...(patch.isRetailEnabled !== undefined
+          ? { isRetailEnabled: patch.isRetailEnabled }
+          : {}),
+        ...(patch.retailPrice !== undefined
+          ? {
+              retailPrice:
+                patch.retailPrice == null
+                  ? null
+                  : new Prisma.Decimal(patch.retailPrice),
+            }
+          : {}),
       },
     });
+
+    if (updated.isRetailEnabled) {
+      this.logger.log(
+        `RETAIL_SALE_MODE_ENABLED SKU=${updated.id} RETAIL_PRICE=${updated.retailPrice?.toString() ?? 'NULL'}`,
+      );
+    }
 
     await this.syncProductToSearchIndex(updated);
     return updated;
