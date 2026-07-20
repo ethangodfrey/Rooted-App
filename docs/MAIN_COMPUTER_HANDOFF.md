@@ -125,6 +125,7 @@ npm run test:availability:scheduling
 npm run test:loyalty:precision
 npm run test:loyalty:ui-integration
 npm run test:financial:clearing
+npm run test:financial:ui
 
 cd web
 npm run build
@@ -137,6 +138,7 @@ Expected uppercase logs (no emoji):
 - `ANALYTICS_DASHBOARD_INITIALIZED` / `METRICS_SYNC_COMPLETE`
 - `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
 - `B2B_MARKETPLACE_INITIALIZED` / `WHOLESALE_DIRECTORY_ACTIVE`
+- `FINANCIAL_UI_ACTIVE` / `INVOICING_DASHBOARD_INITIALIZED` / `FINANCIAL_UI_VERIFIED`
 - `PROCUREMENT_DASHBOARD_INITIALIZED` / `WHOLESALE_UI_ACTIVE`
 - `SCHEDULING_ENGINE_INITIALIZED` / `AVAILABILITY_SYNC_ACTIVE`
 - `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
@@ -151,6 +153,7 @@ Expected uppercase logs (no emoji):
 3. **Catering** — `/vendor/catering` toggle + public “Request Catering” if enabled.
 4. **Performance** — `/vendor/analytics` → **Performance** tab  
    Post Reach + Inquiries over time charts (empty zeros are OK until traffic + phase73).
+5. **Financials** — `/vendor/financials` wallet + escrow list; Download Invoice on accepted catering (availability) and ACCEPTED procurement rows.
 
 ## 6. Optional: seed / refresh USDA markets
 

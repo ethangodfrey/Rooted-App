@@ -3,14 +3,15 @@ import {
   Body,
   Controller,
   Get,
-  Header,
   Logger,
   OnModuleInit,
   Param,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
@@ -118,10 +119,13 @@ export class FinancialController implements OnModuleInit {
 
   @Get('invoices/catering/:inquiryId/html')
   @Roles('vendor', 'farmer', 'shopper', 'admin')
-  @Header('Content-Type', 'text/html; charset=utf-8')
-  async cateringInvoiceHtml(@Param('inquiryId') inquiryId: string) {
+  async cateringInvoiceHtml(
+    @Param('inquiryId') inquiryId: string,
+    @Res() res: Response,
+  ) {
     const invoice = await this.invoices.fromCateringInquiry(inquiryId);
-    return invoice.HTML;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(invoice.HTML);
   }
 
   @Get('invoices/procurement/:requestId')
@@ -136,9 +140,12 @@ export class FinancialController implements OnModuleInit {
 
   @Get('invoices/procurement/:requestId/html')
   @Roles('vendor', 'farmer', 'admin')
-  @Header('Content-Type', 'text/html; charset=utf-8')
-  async procurementInvoiceHtml(@Param('requestId') requestId: string) {
+  async procurementInvoiceHtml(
+    @Param('requestId') requestId: string,
+    @Res() res: Response,
+  ) {
     const invoice = await this.invoices.fromProcurementRequest(requestId);
-    return invoice.HTML;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(invoice.HTML);
   }
 }
