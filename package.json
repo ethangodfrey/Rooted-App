@@ -3,6 +3,7 @@
   "private": true,
   "description": "Vendorly monorepo tooling (market seed scripts)",
   "scripts": {
+    "build": "npm run build --prefix packages/env-config && npm run build --prefix backend",
     "markets:baseline": "npx tsx scripts/exportBaselineMarketsCsv.ts",
     "markets:cities": "npx tsx scripts/fetchCityMarketsCsv.ts",
     "markets:fetch": "npx tsx scripts/fetchMarketsFromOsm.ts --mode deep --cities 40",
@@ -66,6 +67,9 @@
     "test:wholesale:logistics-shipping-options": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-logistics-shipping-options.ts",
     "test:orders:partition-strategy": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-orders-partition-strategy.ts",
     "test:orders:partition-migration": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-orders-partition-migration.ts",
+    "test:discovery:partition-indexing": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-partition-indexing.ts",
+    "test:discovery:latency-benchmark": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-latency-benchmark.ts",
+    "test:discovery:production-sync-cron": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-production-sync-cron.ts",
     "test:deploy:resilience": "ts-node scripts/verify-rolling-deploy.ts",
     "test:deploy:resilience:live": "ts-node scripts/live-stack-smoke.ts",
     "verify:ingress": "ts-node scripts/verify-ingress-cutover.ts",
