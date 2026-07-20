@@ -20,7 +20,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 12 | `cursor/shopper-loyalty-ui-428e` | #227 | Phase 3 Shopper Loyalty UI |
 | 13 | `cursor/financial-clearing-escrow-428e` | #228 | Phase 4 Financial Clearing & Escrow |
 | 14 | `cursor/vendor-financial-dashboard-428e` | #229 | Phase 4 Vendor Financial Dashboard + Dynamic Invoicing |
-| 15 | `cursor/fleet-logistics-fulfillment-428e` | (open) | Phase 5 Fleet Logistics & B2B Fulfillment |
+| 15 | `cursor/fleet-logistics-fulfillment-428e` | #230 | Phase 5 Fleet Logistics & B2B Fulfillment |
 
 ```powershell
 git fetch origin
