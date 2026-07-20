@@ -246,6 +246,10 @@ model WholesaleProduct {
   pickupNotes     String?                @map("pickup_notes")
   /// Units available for wholesale reservation (phase57).
   availableQuantity Int                  @default(0) @map("available_quantity")
+  /// Phase 65 — optional retail / consumer sale independent of wholesale MOQ.
+  isRetailEnabled   Boolean              @default(false) @map("is_retail_enabled")
+  /// Retail unit price in USD (decimal dollars); null until retail is configured.
+  retailPrice       Decimal?             @map("retail_price") @db.Decimal(12, 4)
   status          WholesaleProductStatus @default(ACTIVE)
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -253,6 +257,7 @@ model WholesaleProduct {
 
   @@index([vendorId, status])
   @@index([vendorId, name])
+  @@index([vendorId, isRetailEnabled])
   @@map("wholesale_products")
 }
 
