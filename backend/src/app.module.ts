@@ -20,6 +20,7 @@ import { PosModule } from './modules/pos/pos.module';
 import { StripeModule } from './modules/stripe/stripe.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { B2bModule } from './modules/b2b/b2b.module';
+import { LogisticsModule } from './modules/logistics/logistics.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -59,6 +60,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     StripeModule,
     TenantsModule,
     B2bModule,
+    LogisticsModule,
   ],
 })
 export class AppModule {}
