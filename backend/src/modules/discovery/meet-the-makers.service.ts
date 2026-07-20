@@ -9,6 +9,7 @@ import {
 import {
   enrichUsdaListingHours,
   fetchUsdaFarmersMarketsByState,
+  formatUsdaApiKeyStatusLog,
   formatUsdaMarketDataSyncedLog,
   isUsMarketContext,
   normalizeUsStateAbbr,
@@ -40,6 +41,7 @@ export class MeetTheMakersService implements OnModuleInit {
 
   onModuleInit(): void {
     this.logger.log(formatDiscoveryInterfaceInitializedLog());
+    this.logger.log(formatUsdaApiKeyStatusLog());
   }
 
   async getFeed(input: {

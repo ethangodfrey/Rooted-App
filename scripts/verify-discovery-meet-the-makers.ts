@@ -17,6 +17,7 @@ import {
   isWithinAlertRadiusKm,
 } from '../backend/src/modules/discovery/alert-radius.util';
 import {
+  formatUsdaApiKeyStatusLog,
   formatUsdaMarketDataSyncedLog,
   isUsMarketContext,
   normalizeUsStateAbbr,
@@ -182,6 +183,7 @@ function main(): void {
     }),
   );
   log(formatUsdaMarketDataSyncedLog({ enriched: 1, directoryHits: 12 }));
+  log(formatUsdaApiKeyStatusLog());
 
   log('MEET_THE_MAKERS_VERIFIED');
 }

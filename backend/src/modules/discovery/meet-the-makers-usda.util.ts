@@ -94,6 +94,10 @@ export function isUsMarketContext(input: {
   return normalizeUsStateAbbr(input.eventState) != null;
 }
 
+/**
+ * Resolve USDA_API_KEY from process env (root `.env` / Nest ConfigModule).
+ * Same variable used by `scripts/seedMarkets.ts` — do not introduce a second key.
+ */
 export function getUsdaApiKey(): string | null {
   const key = process.env.USDA_API_KEY?.trim().replace(/\r$/, '') ?? '';
   const placeholders = new Set([
@@ -102,6 +106,12 @@ export function getUsdaApiKey(): string | null {
     'your_usda_api_key_here',
   ]);
   return placeholders.has(key) ? null : key;
+}
+
+export function formatUsdaApiKeyStatusLog(): string {
+  return getUsdaApiKey()
+    ? 'USDA_API_KEY_LOADED SOURCE=ENV'
+    : 'USDA_API_KEY_MISSING SOURCE=ENV';
 }
 
 function toFiniteNumber(value: unknown): number | null {

@@ -31,6 +31,8 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // Root `.env` holds USDA_API_KEY (same source as scripts/seedMarkets.ts).
+      envFilePath: ['.env', '../.env'],
       validate: nestConfigValidate,
     }),
     ScheduleModule.forRoot(),
