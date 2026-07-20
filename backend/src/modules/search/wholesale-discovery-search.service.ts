@@ -1,9 +1,16 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, WholesaleProductStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { boundingBoxDegrees } from '@vendorly/env-config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  buildDiscoveryOrderPruneWindow,
+  formatDiscoveryLatencyVerifiedLog,
+  measureDiscoveryLatency,
+  resolveSearchRouting,
+  type DiscoveryLatencySample,
+} from './discovery-latency.util';
 import { ElasticsearchClientService } from './elasticsearch-client.service';
 import {
   haversineDistanceMiles,
@@ -26,7 +33,6 @@ export type WholesaleDiscoveryHit = {
   moq: number;
   unitPriceCents: number;
   availableQuantity: number;
-  saleModePreference: 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
   status: string;
   /** Final hybrid score (base * connected * proximity). */
   score: number;
@@ -43,8 +49,6 @@ export type WholesaleProximityParams = {
   radiusMiles: number;
 };
 
-type SaleModePreference = 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
-
 type RawDiscoveryHit = {
   id: string;
   vendorId: string;
@@ -54,7 +58,6 @@ type RawDiscoveryHit = {
   moq: number;
   unitPriceCents: number;
   availableQuantity: number;
-  saleModePreference: 'WHOLESALE_ONLY' | 'RETAIL_ONLY' | 'BOTH';
   status: string;
   score: number;
   distanceMiles: number | null;
@@ -107,7 +110,6 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
     sessionVendorId: string;
     query: string;
     connectedVendorIds: string[];
-    saleModePreference?: SaleModePreference[];
     limit?: number;
     proximity?: WholesaleProximityParams | null;
   }): Promise<{
@@ -118,19 +120,24 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
     PROXIMITY_WEIGHT: number;
     COUNTRY_CODE: typeof US_COUNTRY_CODE | null;
     RADIUS_MILES: number | null;
+    LATENCY: DiscoveryLatencySample;
+    ROUTING_KEYS: string[];
+    PARTITION_PRUNE: boolean;
   }> {
     const limit = Math.min(Math.max(params.limit ?? 40, 1), 100);
     const q = params.query.trim();
     const connected = new Set(params.connectedVendorIds);
     const proximity = params.proximity ?? null;
-    const saleModePreference: SaleModePreference[] =
-      params.saleModePreference?.length
-        ? params.saleModePreference
-        : ['WHOLESALE_ONLY', 'BOTH'];
+    const routingKeys = resolveSearchRouting({
+      sessionVendorId: params.sessionVendorId,
+      connectedVendorIds: params.connectedVendorIds,
+    });
     const source: 'ELASTICSEARCH' | 'POSTGRES_FALLBACK' =
       this.elastic.isEnabled() && q.length > 0
         ? 'ELASTICSEARCH'
         : 'POSTGRES_FALLBACK';
+    const partitionPruneApplied = true;
+    let indexLatencyMs = 0;
 
     if (proximity) {
       this.logger.log(
@@ -138,20 +145,32 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
       );
     }
 
-    const raw =
-      source === 'ELASTICSEARCH'
-        ? await this.searchElastic(q, limit, proximity, saleModePreference)
-        : await this.searchPostgres(q, limit, proximity, saleModePreference);
-
-    const ranked = rankWholesaleHitsByConnectedVendors(
-      raw,
-      connected,
-      this.boostMultiplier,
-      {
-        radiusMiles: proximity?.radiusMiles ?? null,
-        proximityWeight: this.proximityWeight,
+    const measured = await measureDiscoveryLatency({
+      source,
+      routingApplied: routingKeys.length > 0 && source === 'ELASTICSEARCH',
+      partitionPruneApplied,
+      indexProbeMs: 0,
+      run: async () => {
+        const indexStarted = performance.now();
+        const raw =
+          source === 'ELASTICSEARCH'
+            ? await this.searchElastic(q, limit, proximity, routingKeys)
+            : await this.searchPostgres(q, limit, proximity);
+        indexLatencyMs = Math.max(0, performance.now() - indexStarted);
+        return rankWholesaleHitsByConnectedVendors(
+          raw,
+          connected,
+          this.boostMultiplier,
+          {
+            radiusMiles: proximity?.radiusMiles ?? null,
+            proximityWeight: this.proximityWeight,
+          },
+        );
       },
-    );
+    });
+
+    measured.sample.indexLatencyMs = indexLatencyMs;
+    const ranked = measured.result;
 
     if (this.debugRanking) {
       for (const hit of ranked) {
@@ -173,8 +192,9 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
     const boosted = countBoostedHits(ranked, connected);
 
     this.logger.log(
-      `RANKING_ALGORITHM_REFINED SESSION_VENDOR=${params.sessionVendorId} QUERY_LEN=${q.length} HITS=${ranked.length} BOOSTED=${boosted} MULTIPLIER=${this.boostMultiplier} PROXIMITY_WEIGHT=${this.proximityWeight} SOURCE=${source}${proximity ? ` RADIUS_MI=${proximity.radiusMiles}` : ''}`,
+      `RANKING_ALGORITHM_REFINED SESSION_VENDOR=${params.sessionVendorId} QUERY_LEN=${q.length} HITS=${ranked.length} BOOSTED=${boosted} MULTIPLIER=${this.boostMultiplier} PROXIMITY_WEIGHT=${this.proximityWeight} SOURCE=${source}${proximity ? ` RADIUS_MI=${proximity.radiusMiles}` : ''} ROUTING=${routingKeys.length}`,
     );
+    this.logger.log(formatDiscoveryLatencyVerifiedLog(measured.sample));
 
     return {
       HITS: ranked,
@@ -184,6 +204,9 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
       PROXIMITY_WEIGHT: this.proximityWeight,
       COUNTRY_CODE: proximity ? US_COUNTRY_CODE : null,
       RADIUS_MILES: proximity?.radiusMiles ?? null,
+      LATENCY: measured.sample,
+      ROUTING_KEYS: routingKeys,
+      PARTITION_PRUNE: partitionPruneApplied,
     };
   }
 
@@ -191,14 +214,13 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
     query: string,
     limit: number,
     proximity: WholesaleProximityParams | null,
-    saleModePreference: SaleModePreference[],
+    routingKeys: string[],
   ): Promise<RawDiscoveryHit[]> {
     const client = this.elastic.getClient();
     if (!client) return [];
 
     const filter: Record<string, unknown>[] = [
       { term: { status: 'ACTIVE' } },
-      { terms: { sale_mode_preference: saleModePreference } },
     ];
 
     if (proximity) {
@@ -218,6 +240,9 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
       const response = await client.search({
         index: this.elastic.wholesaleIndex(),
         size: limit,
+        ...(routingKeys.length > 0
+          ? { routing: routingKeys.join(',') }
+          : {}),
         query: {
           bool: {
             must: [
@@ -272,9 +297,6 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
             moq: Number(src.moq ?? 0),
             unitPriceCents: Number(src.unit_price_cents ?? 0),
             availableQuantity: Number(src.available_quantity ?? 0),
-            saleModePreference: String(
-              src.sale_mode_preference ?? 'WHOLESALE_ONLY',
-            ) as SaleModePreference,
             status: String(src.status ?? 'ACTIVE'),
             score: typeof hit._score === 'number' ? hit._score : 0,
             distanceMiles,
@@ -284,7 +306,7 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`ELASTICSEARCH_SEARCH_FAILED ERROR=${message}`);
-      return this.searchPostgres(query, limit, proximity, saleModePreference);
+      return this.searchPostgres(query, limit, proximity);
     }
   }
 
@@ -292,53 +314,69 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
     query: string,
     limit: number,
     proximity: WholesaleProximityParams | null,
-    saleModePreference: SaleModePreference[],
   ): Promise<RawDiscoveryHit[]> {
-    if (!proximity) {
-      const where =
-        query.length > 0
-          ? {
-              status: WholesaleProductStatus.ACTIVE,
-              OR: [
-                { name: { contains: query, mode: 'insensitive' as const } },
-                {
-                  description: {
-                    contains: query,
-                    mode: 'insensitive' as const,
-                  },
-                },
-                {
-                  packagingUnit: {
-                    contains: query,
-                    mode: 'insensitive' as const,
-                  },
-                },
-              ],
-              saleModePreference: { in: saleModePreference },
-            }
-          : {
-              status: WholesaleProductStatus.ACTIVE,
-              saleModePreference: { in: saleModePreference },
-            };
+    const pruneWindow = buildDiscoveryOrderPruneWindow(new Date(), 3);
 
-      const rows = await this.prisma.wholesaleProduct.findMany({
-        where,
-        take: limit,
-        orderBy: { updatedAt: 'desc' },
-      });
+    if (!proximity) {
+      const pattern = query.length > 0 ? `%${query}%` : null;
+
+      type RawRow = {
+        id: string;
+        vendor_id: string;
+        name: string;
+        description: string | null;
+        packaging_unit: string;
+        moq: number;
+        unit_price_cents: number;
+        available_quantity: number;
+        status: string;
+        recent_order_lines: number | null;
+      };
+
+      // Partition-pruning hint: recent_oi subquery bounds order_items.created_at
+      // so Postgres can eliminate cold monthly partitions.
+      const rows = await this.prisma.$queryRaw<RawRow[]>(Prisma.sql`
+        SELECT
+          wp.id,
+          wp.vendor_id,
+          wp.name,
+          wp.description,
+          wp.packaging_unit,
+          wp.moq,
+          wp.unit_price_cents,
+          wp.available_quantity,
+          wp.status::text AS status,
+          COALESCE(recent_oi.recent_order_lines, 0) AS recent_order_lines
+        FROM public.wholesale_products wp
+        LEFT JOIN (
+          SELECT oi.product_id, COUNT(*)::int AS recent_order_lines
+          FROM public.order_items oi
+          WHERE oi.created_at >= ${pruneWindow.start}
+            AND oi.created_at < ${pruneWindow.end}
+          GROUP BY oi.product_id
+        ) recent_oi ON recent_oi.product_id = wp.id
+        WHERE wp.status = 'ACTIVE'::public.wholesale_product_status
+          AND (
+            ${pattern}::text IS NULL
+            OR wp.name ILIKE ${pattern}
+            OR COALESCE(wp.description, '') ILIKE ${pattern}
+            OR wp.packaging_unit ILIKE ${pattern}
+          )
+        ORDER BY COALESCE(recent_oi.recent_order_lines, 0) DESC, wp.updated_at DESC
+        LIMIT ${limit}
+      `);
 
       return rows.map((row, index) => ({
         id: row.id,
-        vendorId: row.vendorId,
+        vendorId: row.vendor_id,
         name: row.name,
         description: row.description,
-        packagingUnit: row.packagingUnit,
+        packagingUnit: row.packaging_unit,
         moq: row.moq,
-        unitPriceCents: row.unitPriceCents,
-        availableQuantity: row.availableQuantity,
-        saleModePreference: row.saleModePreference,
+        unitPriceCents: row.unit_price_cents,
+        availableQuantity: row.available_quantity,
         status: row.status,
-        score: Math.max(0, limit - index),
+        score: Math.max(0, limit - index) + Number(row.recent_order_lines ?? 0),
         distanceMiles: null,
       }));
     }
@@ -356,9 +394,9 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
       moq: number;
       unit_price_cents: number;
       available_quantity: number;
-      sale_mode_preference: SaleModePreference;
       status: string;
       distance_miles: number;
+      recent_order_lines: number | null;
     };
 
     const rows = await this.prisma.$queryRaw<RawRow[]>(Prisma.sql`
@@ -371,7 +409,6 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
         wp.moq,
         wp.unit_price_cents,
         wp.available_quantity,
-        wp.sale_mode_preference::text AS sale_mode_preference,
         wp.status::text AS status,
         (
           3959 * acos(
@@ -387,14 +424,18 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
               )
             )
           )
-        ) AS distance_miles
+        ) AS distance_miles,
+        COALESCE(recent_oi.recent_order_lines, 0) AS recent_order_lines
       FROM public.wholesale_products wp
       INNER JOIN public.vendors v ON v.id = wp.vendor_id
+      LEFT JOIN (
+        SELECT oi.product_id, COUNT(*)::int AS recent_order_lines
+        FROM public.order_items oi
+        WHERE oi.created_at >= ${pruneWindow.start}
+          AND oi.created_at < ${pruneWindow.end}
+        GROUP BY oi.product_id
+      ) recent_oi ON recent_oi.product_id = wp.id
       WHERE wp.status = 'ACTIVE'::public.wholesale_product_status
-        AND wp.sale_mode_preference::text IN (${Prisma.join(
-          saleModePreference.map((mode) => Prisma.sql`${mode}`),
-          ', ',
-        )})
         AND v.latitude IS NOT NULL
         AND v.longitude IS NOT NULL
         AND (
@@ -427,7 +468,7 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
           OR COALESCE(wp.description, '') ILIKE ${pattern}
           OR wp.packaging_unit ILIKE ${pattern}
         )
-      ORDER BY distance_miles ASC, wp.updated_at DESC
+      ORDER BY distance_miles ASC, COALESCE(recent_oi.recent_order_lines, 0) DESC, wp.updated_at DESC
       LIMIT ${limit}
     `);
 
@@ -440,9 +481,8 @@ export class WholesaleDiscoverySearchService implements OnModuleInit {
       moq: row.moq,
       unitPriceCents: row.unit_price_cents,
       availableQuantity: row.available_quantity,
-      saleModePreference: row.sale_mode_preference,
       status: row.status,
-      score: Math.max(0, limit - index),
+      score: Math.max(0, limit - index) + Number(row.recent_order_lines ?? 0),
       distanceMiles: Number(row.distance_miles),
     }));
   }

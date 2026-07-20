@@ -21,7 +21,18 @@ import { StripeModule } from './modules/stripe/stripe.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { B2bModule } from './modules/b2b/b2b.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
+import { ContentModule } from './modules/content/content.module';
+import { DiscoveryModule } from './modules/discovery/discovery.module';
+import { AvailabilityModule } from './modules/availability/availability.module';
+import { CateringModule } from './modules/catering/catering.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { IntelligenceModule } from './modules/intelligence/intelligence.module';
+import { LoyaltyModule } from './modules/loyalty/loyalty.module';
+import { FinancialModule } from './modules/financial/financial.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SupplierAnalyticsModule } from './modules/supplier-analytics/supplier-analytics.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -53,6 +64,9 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     ObservabilityModule,
     HealthModule,
     AdminAgentModule,
+    AdminDashboardModule,
+    DisputesModule,
+    NotificationsModule,
     CheckoutModule,
     OrdersModule,
     MediaModule,
@@ -62,7 +76,15 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     TenantsModule,
     B2bModule,
     LogisticsModule,
-    NotificationsModule,
+    ContentModule,
+    DiscoveryModule,
+    AvailabilityModule,
+    CateringModule,
+    AnalyticsModule,
+    IntelligenceModule,
+    LoyaltyModule,
+    FinancialModule,
+    SupplierAnalyticsModule,
   ],
 })
 export class AppModule {}

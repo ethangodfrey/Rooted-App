@@ -9,6 +9,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ElasticsearchModule } from '../search/elasticsearch.module';
 import { UsWholesaleProximityMiddleware } from '../search/us-wholesale-proximity.middleware';
 import { StripeModule } from '../stripe/stripe.module';
+import { B2bMarketplaceController } from './b2b-marketplace.controller';
+import { B2bMarketplaceService } from './b2b-marketplace.service';
 import { CatalogBulkImportController } from './catalog-bulk-import.controller';
 import { CatalogBulkImportService } from './catalog-bulk-import.service';
 import { VendorConnectionsController } from './vendor-connections.controller';
@@ -32,6 +34,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleProductsController,
     WholesaleOrdersController,
     WholesaleInvoicesController,
+    B2bMarketplaceController,
     CatalogBulkImportController,
   ],
   providers: [
@@ -43,6 +46,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleInvoiceOverdueScheduler,
     UsWholesaleProximityMiddleware,
     WholesaleRelationshipMiddleware,
+    B2bMarketplaceService,
     CatalogBulkImportService,
   ],
   exports: [
@@ -51,6 +55,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleProductsService,
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,
+    B2bMarketplaceService,
     CatalogBulkImportService,
   ],
 })

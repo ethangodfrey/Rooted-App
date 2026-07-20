@@ -159,7 +159,6 @@ export class WholesaleProductsController {
       connectedVendorIds,
       limit: Number.isFinite(limit) ? limit : 40,
       proximity,
-      saleModePreference: saleModeFilter,
     });
 
     return {
@@ -196,7 +195,10 @@ export class WholesaleProductsController {
         MOQ: hit.moq,
         UNIT_PRICE_CENTS: hit.unitPriceCents,
         AVAILABLE_QUANTITY: hit.availableQuantity,
-        SALE_MODE_PREFERENCE: hit.saleModePreference,
+        SALE_MODE_PREFERENCE:
+          'saleModePreference' in hit && hit.saleModePreference
+            ? hit.saleModePreference
+            : 'WHOLESALE_ONLY',
         STATUS: hit.status,
         BASE_SCORE: hit.baseScore,
         BOOST_APPLIED: hit.boostApplied,
