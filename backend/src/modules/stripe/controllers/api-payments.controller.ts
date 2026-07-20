@@ -2,10 +2,12 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpCode,
   Logger,
   OnModuleInit,
   Post,
+  Query,
   Req,
   ServiceUnavailableException,
   UseGuards,
@@ -23,6 +25,11 @@ import {
   formatPaymentWebhooksActiveLog,
   formatStripeGatewayInitializedLog,
 } from '../payments-gateway.util';
+import { StripeOnboardingService } from '../stripe-onboarding.service';
+import {
+  formatBankLinkInitializedLog,
+  formatStripeOnboardingActiveLog,
+} from '../stripe-onboarding.util';
 import { StripeService } from '../stripe.service';
 
 @Controller('api/payments')
@@ -32,12 +39,15 @@ export class ApiPaymentsController implements OnModuleInit {
   constructor(
     private readonly stripe: StripeService,
     private readonly payments: PaymentsGatewayService,
+    private readonly onboarding: StripeOnboardingService,
     private readonly config: ConfigService,
   ) {}
 
   onModuleInit(): void {
     this.logger.log(formatStripeGatewayInitializedLog());
     this.logger.log(formatPaymentWebhooksActiveLog());
+    this.logger.log(formatStripeOnboardingActiveLog());
+    this.logger.log(formatBankLinkInitializedLog());
   }
 
   @Post('connect-vendor')
@@ -53,6 +63,53 @@ export class ApiPaymentsController implements OnModuleInit {
       dto.returnUrl ?? `${webBase}/vendor/settings/payments?stripe=return`,
       dto.refreshUrl ?? `${webBase}/vendor/settings/payments?stripe=refresh`,
     );
+  }
+
+  /**
+   * POST /api/payments/onboard
+   * Stripe Connect Account Link for the signed-in vendor or farmer.
+   */
+  @Post('onboard')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('vendor', 'farmer', 'admin')
+  async onboard(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateConnectLinkDto,
+  ) {
+    return this.onboarding.createOnboardingLink(user, {
+      returnUrl: dto.returnUrl,
+      refreshUrl: dto.refreshUrl,
+      action: 'ONBOARD',
+    });
+  }
+
+  /**
+   * GET /api/payments/onboard/refresh
+   * Re-issue an Account Link when the user drops off Stripe hosted onboarding.
+   */
+  @Get('onboard/refresh')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('vendor', 'farmer', 'admin')
+  async onboardRefresh(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('returnUrl') returnUrl?: string,
+    @Query('refreshUrl') refreshUrl?: string,
+  ) {
+    return this.onboarding.refreshOnboardingLink(user, {
+      returnUrl,
+      refreshUrl,
+    });
+  }
+
+  /**
+   * GET /api/payments/onboard/status
+   * Whether stripe_account_id is present (Payouts Enabled badge).
+   */
+  @Get('onboard/status')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('vendor', 'farmer', 'admin')
+  async onboardStatus(@CurrentUser() user: AuthenticatedUser) {
+    return this.onboarding.getOnboardingStatus(user);
   }
 
   /**

@@ -23,6 +23,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 15 | `cursor/fleet-logistics-fulfillment-428e` | #230 | Phase 5 Fleet Logistics & B2B Fulfillment |
 | 16 | `cursor/farmer-fleet-dispatch-ui-428e` | #231 | Phase 5 Farmer Fleet Dispatch Dashboard UI |
 | 17 | `cursor/stripe-payments-gateway-428e` | #232 | Phase 6 Stripe Connect Payment Gateway |
+| 18 | `cursor/stripe-onboarding-ui-428e` | (open) | Phase 6 Stripe Connect Onboarding UI |
 
 ```powershell
 git fetch origin
@@ -30,7 +31,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/stripe-payments-gateway-428e`
+`cursor/stripe-onboarding-ui-428e`
 
 ## 2. Apply Supabase SQL (required)
 

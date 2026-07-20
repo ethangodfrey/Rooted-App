@@ -9,6 +9,7 @@ import { StripeCheckoutController } from './controllers/stripe-checkout.controll
 import { StripeConnectController } from './controllers/stripe-connect.controller';
 import { StripeWebhooksController } from './controllers/stripe-webhooks.controller';
 import { PaymentsGatewayService } from './payments-gateway.service';
+import { StripeOnboardingService } from './stripe-onboarding.service';
 import { StripeService } from './stripe.service';
 
 @Module({
@@ -21,7 +22,7 @@ import { StripeService } from './stripe.service';
     StripeCheckoutController,
     StripeWebhooksController,
   ],
-  providers: [StripeService, PaymentsGatewayService],
-  exports: [StripeService, PaymentsGatewayService],
+  providers: [StripeService, PaymentsGatewayService, StripeOnboardingService],
+  exports: [StripeService, PaymentsGatewayService, StripeOnboardingService],
 })
 export class StripeModule {}

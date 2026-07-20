@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { ActiveRoutes } from '@/components/farmer/ActiveRoutes';
 import { RoutePlanner } from '@/components/farmer/RoutePlanner';
+import { StripeBankLinkBanner } from '@/components/payments/StripeBankLinkBanner';
 import { FieldError } from '@/components/ui/FieldError';
 import {
   VendorHero,
@@ -20,17 +21,30 @@ import {
   formatUsdFromCents,
   type DeliveryRouteItem,
 } from '@/lib/farmer-logistics';
+import {
+  fetchPaymentsOnboardStatus,
+  formatBankLinkInitializedLog,
+  formatStripeOnboardingActiveLog,
+  refreshPaymentsOnboarding,
+  startPaymentsOnboarding,
+  type PaymentsOnboardStatus,
+} from '@/lib/payments-onboarding';
 import '@/components/ui/ui.css';
 
 export function FarmerLogisticsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const stripeReturn = searchParams.get('stripe');
   const [accepted, setAccepted] = useState<ProcurementRequestItem[]>([]);
   const [routes, setRoutes] = useState<DeliveryRouteItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dispatchDate, setDispatchDate] = useState(
     () => new Date().toISOString().slice(0, 10),
   );
+  const [onboard, setOnboard] = useState<PaymentsOnboardStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onboardLoading, setOnboardLoading] = useState(true);
+  const [linking, setLinking] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +53,29 @@ export function FarmerLogisticsPage() {
   useEffect(() => {
     console.log('FLEET_UI_ACTIVE SURFACE=FARMER_DISPATCH');
     console.log('ROUTE_DISPATCH_INITIALIZED SURFACE=FARMER_LOGISTICS');
+    console.log(formatStripeOnboardingActiveLog({ role: 'farmer' }));
+  }, []);
+
+  const loadOnboard = useCallback(async () => {
+    if (!isApiConfigured) {
+      setOnboardLoading(false);
+      return;
+    }
+    setOnboardLoading(true);
+    try {
+      const status = await fetchPaymentsOnboardStatus();
+      setOnboard(status);
+      console.log(
+        formatStripeOnboardingActiveLog({
+          role: status.ROLE,
+          accountId: status.STRIPE_ACCOUNT_ID,
+        }),
+      );
+    } catch {
+      setOnboard(null);
+    } finally {
+      setOnboardLoading(false);
+    }
   }, []);
 
   const load = useCallback(async () => {
@@ -80,12 +117,75 @@ export function FarmerLogisticsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    void loadOnboard();
+  }, [loadOnboard]);
+
+  useEffect(() => {
+    if (stripeReturn !== 'return' && stripeReturn !== 'refresh') return;
+    void loadOnboard();
+    if (stripeReturn === 'refresh' && isApiConfigured) {
+      void (async () => {
+        try {
+          setLinking(true);
+          const origin = window.location.origin;
+          const result = await refreshPaymentsOnboarding({
+            returnUrl: `${origin}/farmer/logistics?stripe=return`,
+            refreshUrl: `${origin}/farmer/logistics?stripe=refresh`,
+          });
+          console.log(
+            formatBankLinkInitializedLog({
+              action: 'REFRESH',
+              role: result.ROLE,
+            }),
+          );
+          window.location.assign(result.URL || result.url || '');
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to refresh Stripe onboarding',
+          );
+          setLinking(false);
+        }
+      })();
+    }
+  }, [stripeReturn, loadOnboard]);
+
   function onToggle(requestId: string) {
     setSelectedIds((prev) =>
       prev.includes(requestId)
         ? prev.filter((id) => id !== requestId)
         : [...prev, requestId],
     );
+  }
+
+  async function handleLinkBank() {
+    if (!isApiConfigured) {
+      setError('Backend API is not configured. Set VITE_API_URL.');
+      return;
+    }
+    setLinking(true);
+    setError(null);
+    try {
+      const origin = window.location.origin;
+      const result = await startPaymentsOnboarding({
+        returnUrl: `${origin}/farmer/logistics?stripe=return`,
+        refreshUrl: `${origin}/farmer/logistics?stripe=refresh`,
+      });
+      console.log(
+        formatBankLinkInitializedLog({
+          action: 'ONBOARD',
+          role: result.ROLE,
+        }),
+      );
+      window.location.assign(result.URL || result.url || '');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to start bank linking',
+      );
+      setLinking(false);
+    }
   }
 
   async function onCreateRoute() {
@@ -169,6 +269,14 @@ export function FarmerLogisticsPage() {
           {toast}
         </p>
       ) : null}
+
+      <StripeBankLinkBanner
+        surface="FARMER_LOGISTICS"
+        payoutsEnabled={Boolean(onboard?.PAYOUTS_ENABLED)}
+        loading={onboardLoading}
+        linking={linking}
+        onLinkBank={() => void handleLinkBank()}
+      />
 
       <VendorSection title="Route Planner">
         <RoutePlanner
