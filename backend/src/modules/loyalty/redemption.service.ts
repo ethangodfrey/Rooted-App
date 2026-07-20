@@ -87,4 +87,34 @@ export class RedemptionService implements OnModuleInit {
       TIER: tier as RedemptionTier,
     };
   }
+
+  /**
+   * Resolve an active $5 voucher (VOUCHER_5) for shopper↔vendor to apply at clearing.
+   * Returns cents to deduct (0 if none).
+   */
+  async resolveActiveVoucherCents(input: {
+    shopperId: string;
+    vendorId: string;
+  }): Promise<{ voucherCents: number; redemptionId: string | null }> {
+    try {
+      const rows = await this.rewards.findActiveVoucherRedemption({
+        shopperId: input.shopperId,
+        vendorId: input.vendorId,
+      });
+      if (!rows) {
+        return { voucherCents: 0, redemptionId: null };
+      }
+      const quote = this.rules.quote('VOUCHER_5');
+      return {
+        voucherCents: quote.voucherCents ?? 500,
+        redemptionId: rows.id,
+      };
+    } catch {
+      return { voucherCents: 0, redemptionId: null };
+    }
+  }
+
+  async markVoucherUsed(redemptionId: string): Promise<void> {
+    await this.rewards.markRedemptionUsed(redemptionId);
+  }
 }

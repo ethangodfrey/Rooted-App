@@ -18,6 +18,7 @@ import { SupabaseAuthGuard } from '../../common/auth/supabase-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import {
   VendorCateringService,
+  type AcceptInquiryBody,
   type CreateInquiryBody,
   type UpsertCateringBody,
 } from './vendor-catering.service';
@@ -88,5 +89,30 @@ export class VendorCateringController implements OnModuleInit {
       }
     }
     return this.catering.listInquiriesForVendor(vendorId);
+  }
+
+  @Post('inquiries/:inquiryId/accept')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('vendor', 'farmer', 'admin')
+  async acceptInquiry(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('inquiryId') inquiryId: string,
+    @Body() body: AcceptInquiryBody,
+  ) {
+    if (!user.vendorId) throw new BadRequestException('VENDOR_REQUIRED');
+    if (!inquiryId?.trim()) throw new BadRequestException('INQUIRY_ID_REQUIRED');
+    return this.catering.acceptInquiry(user.vendorId, inquiryId, body);
+  }
+
+  @Post('inquiries/:inquiryId/fulfill')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('vendor', 'farmer', 'admin')
+  async fulfillInquiry(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('inquiryId') inquiryId: string,
+  ) {
+    if (!user.vendorId) throw new BadRequestException('VENDOR_REQUIRED');
+    if (!inquiryId?.trim()) throw new BadRequestException('INQUIRY_ID_REQUIRED');
+    return this.catering.fulfillInquiry(user.vendorId, inquiryId);
   }
 }

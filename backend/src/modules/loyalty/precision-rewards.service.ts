@@ -353,6 +353,36 @@ export class PrecisionRewardsService implements OnModuleInit {
     };
   }
 
+  async findActiveVoucherRedemption(input: {
+    shopperId: string;
+    vendorId: string;
+  }): Promise<{ id: string } | null> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT id
+        FROM public.loyalty_redemptions
+        WHERE shopper_id = ${input.shopperId}::uuid
+          AND vendor_id = ${input.vendorId}::uuid
+          AND tier = 'VOUCHER_5'::public.loyalty_redemption_tier
+          AND status = 'ACTIVE'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      return rows[0] ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async markRedemptionUsed(redemptionId: string): Promise<void> {
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.loyalty_redemptions
+      SET status = 'USED', updated_at = NOW()
+      WHERE id = ${redemptionId}::uuid
+        AND status = 'ACTIVE'
+    `);
+  }
+
   async redeem(input: {
     userId: string;
     vendorId: string;

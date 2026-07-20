@@ -18,6 +18,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
 | 11 | `cursor/availability-scheduling-428e` | #226 | Automated Availability Scheduling |
 | 12 | `cursor/shopper-loyalty-ui-428e` | #227 | Phase 3 Shopper Loyalty UI |
+| 13 | `cursor/financial-clearing-escrow-428e` | (open) | Phase 4 Financial Clearing & Escrow |
 
 ```powershell
 git fetch origin
@@ -25,7 +26,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/shopper-loyalty-ui-428e`
+`cursor/financial-clearing-escrow-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -47,8 +48,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_precision_rewards.sql`) — action points, boosts, redemptions
 8. `docs/supabase/phase77_availability_scheduling.sql`  
    (or `migrations/20260720_availability_scheduling.sql`) — PENDING_REVIEW + conflict flags on catering inquiries
+9. `docs/supabase/phase78_financial_clearing.sql`  
+   (or `migrations/20260720_financial_clearing.sql`) — financial_transactions + vendor_balances escrow ledger
 
-After phase73–77, confirm:
+After phase73–78, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -63,6 +66,8 @@ select to_regclass('public.loyalty_redemptions');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'catering_inquiries'
   and column_name in ('conflict_detected', 'conflict_warning');
+select to_regclass('public.financial_transactions');
+select to_regclass('public.vendor_balances');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -118,6 +123,7 @@ npm run test:b2b:dashboard
 npm run test:availability:scheduling
 npm run test:loyalty:precision
 npm run test:loyalty:ui-integration
+npm run test:financial:clearing
 
 cd web
 npm run build
@@ -134,6 +140,7 @@ Expected uppercase logs (no emoji):
 - `SCHEDULING_ENGINE_INITIALIZED` / `AVAILABILITY_SYNC_ACTIVE`
 - `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
 - `LOYALTY_UI_ACTIVE` / `REWARDS_SYNC_VERIFIED`
+- `FINANCIAL_ENGINE_INITIALIZED` / `ESCROW_LEDGER_ACTIVE`
 
 ## 5. Manual UI smoke (5 minutes)
 
@@ -156,7 +163,7 @@ npm run markets:usda:seed
 ## 7. Do not forget
 
 - [ ] Merge PR stack (or tip) after review  
-- [ ] Apply phase70 → phase77 in Supabase  
+- [ ] Apply phase70 → phase78 in Supabase  
 - [ ] Confirm `USDA_API_KEY` in root `.env` (and Railway if used)  
 - [ ] Redeploy backend after merge so `/api/discovery/*`, `/api/catering/*`, `/api/analytics/summary` are live  
 - [ ] Redeploy web so Performance tab + Meet the Makers page ship  

@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
+import { PaymentClearingService } from '../financial/payment-clearing.service';
 import { PrecisionRewardsService } from '../loyalty/precision-rewards.service';
 import { RedemptionService } from '../loyalty/redemption.service';
 import {
@@ -35,6 +36,10 @@ export type CreateInquiryBody = {
   redemptionTier?: string | null;
 };
 
+export type AcceptInquiryBody = {
+  depositCents?: number;
+};
+
 @Injectable()
 export class VendorCateringService implements OnModuleInit {
   private readonly logger = new Logger(VendorCateringService.name);
@@ -44,6 +49,7 @@ export class VendorCateringService implements OnModuleInit {
     private readonly availability: AvailabilityService,
     private readonly redemption: RedemptionService,
     private readonly rewards: PrecisionRewardsService,
+    private readonly clearing: PaymentClearingService,
   ) {}
 
   onModuleInit(): void {
@@ -294,6 +300,71 @@ export class VendorCateringService implements OnModuleInit {
       CONFLICT_DETECTED: conflictDetected,
       CONFLICT_WARNING: conflictWarning,
       REDEMPTION: redemptionResult,
+    };
+  }
+
+  /**
+   * Vendor accepts inquiry → hold catering deposit in escrow (applies loyalty voucher).
+   */
+  async acceptInquiry(
+    vendorId: string,
+    inquiryId: string,
+    body: AcceptInquiryBody,
+  ) {
+    const deposit = Math.floor(Number(body.depositCents ?? 0));
+    if (!Number.isFinite(deposit) || deposit < 1) {
+      throw new BadRequestException('DEPOSIT_CENTS_REQUIRED');
+    }
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{ id: string; vendor_id: string; status: string }>
+    >(Prisma.sql`
+      SELECT id, vendor_id, status
+      FROM public.catering_inquiries
+      WHERE id = ${inquiryId}::uuid
+      LIMIT 1
+    `);
+    if (!rows[0]) throw new NotFoundException('INQUIRY_NOT_FOUND');
+    if (rows[0].vendor_id !== vendorId) {
+      throw new BadRequestException('VENDOR_MISMATCH');
+    }
+
+    const escrow = await this.clearing.holdInEscrow(inquiryId, deposit);
+    this.logger.log(
+      `VENDOR_SERVICES_UPDATED ACTION=INQUIRY_ACCEPTED INQUIRY=${inquiryId} ESCROW=${escrow.TRANSACTION_ID}`,
+    );
+    return {
+      STATUS: 'VENDOR_SERVICES_UPDATED',
+      ACTION: 'ACCEPTED',
+      INQUIRY_ID: inquiryId,
+      ESCROW: escrow,
+    };
+  }
+
+  /** Vendor marks inquiry fulfilled → release escrow to vendor wallet. */
+  async fulfillInquiry(vendorId: string, inquiryId: string) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ id: string; vendor_id: string; status: string }>
+    >(Prisma.sql`
+      SELECT id, vendor_id, status
+      FROM public.catering_inquiries
+      WHERE id = ${inquiryId}::uuid
+      LIMIT 1
+    `);
+    if (!rows[0]) throw new NotFoundException('INQUIRY_NOT_FOUND');
+    if (rows[0].vendor_id !== vendorId) {
+      throw new BadRequestException('VENDOR_MISMATCH');
+    }
+
+    const released = await this.clearing.releaseEscrow(inquiryId);
+    this.logger.log(
+      `VENDOR_SERVICES_UPDATED ACTION=INQUIRY_FULFILLED INQUIRY=${inquiryId}`,
+    );
+    return {
+      STATUS: 'VENDOR_SERVICES_UPDATED',
+      ACTION: 'FULFILLED',
+      INQUIRY_ID: inquiryId,
+      ESCROW: released,
     };
   }
 

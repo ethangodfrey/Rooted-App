@@ -28,6 +28,7 @@ import { CateringModule } from './modules/catering/catering.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntelligenceModule } from './modules/intelligence/intelligence.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
+import { FinancialModule } from './modules/financial/financial.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -77,6 +78,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     AnalyticsModule,
     IntelligenceModule,
     LoyaltyModule,
+    FinancialModule,
   ],
 })
 export class AppModule {}

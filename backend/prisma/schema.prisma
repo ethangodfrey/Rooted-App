@@ -161,6 +161,7 @@ model Vendor {
   availabilityBlocks   VendorAvailability[]
   rewardsBoosts        VendorRewardsBoost[]
   loyaltyRedemptions   LoyaltyRedemption[]
+  vendorBalance        VendorBalance?
   orders               Order[]
   vendorEvents         VendorEvent[]
   posConnections       PosConnection[]
@@ -210,6 +211,10 @@ model CateringInquiry {
   /// Phase 77 — true when event_date conflicts with vendor_availability.
   conflictDetected  Boolean   @default(false) @map("conflict_detected")
   conflictWarning   String?   @map("conflict_warning")
+  /// Phase 78 — catering deposit escrow fields (integer cents).
+  depositCents         Int?    @map("deposit_cents")
+  voucherCentsApplied  Int     @default(0) @map("voucher_cents_applied")
+  escrowTransactionId  String? @map("escrow_transaction_id") @db.Uuid
   /// Phase 73 — append-only VIEW/CLICK interaction payloads.
   interactionEvents Json      @default("[]") @map("interaction_events")
   viewCount         Int       @default(0) @map("view_count")
@@ -356,6 +361,44 @@ model LoyaltyRedemption {
   @@index([shopperId, createdAt(sort: Desc)])
   @@index([vendorId, createdAt(sort: Desc)])
   @@map("loyalty_redemptions")
+}
+
+/// Phase 78 — platform capital ledger (escrow / settlement).
+model FinancialTransaction {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId        String?  @map("source_id") @db.Uuid
+  destinationId   String?  @map("destination_id") @db.Uuid
+  amountCents     Int      @map("amount_cents")
+  voucherCents    Int      @default(0) @map("voucher_cents")
+  netAmountCents  Int      @map("net_amount_cents")
+  /// PENDING | HELD_IN_ESCROW | SETTLED | REFUNDED
+  status          String   @default("PENDING")
+  /// WHOLESALE | CATERING_DEPOSIT | LOYALTY_BOOST
+  transactionType String   @map("transaction_type")
+  referenceId     String?  @map("reference_id") @db.Uuid
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([referenceId, transactionType])
+  @@index([destinationId, createdAt(sort: Desc)])
+  @@map("financial_transactions")
+}
+
+/// Phase 78 — vendor internal digital wallet.
+model VendorBalance {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId              String   @unique @map("vendor_id") @db.Uuid
+  vendor                Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  availableCents        Int      @default(0) @map("available_cents")
+  escrowHeldCents       Int      @default(0) @map("escrow_held_cents")
+  loyaltyLiabilityCents Int      @default(0) @map("loyalty_liability_cents")
+  microFeeCents         Int      @default(0) @map("micro_fee_cents")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("vendor_balances")
 }
 
 /// Phase 11 peer engine statuses (PENDING | ACCEPTED | BLOCKED).
