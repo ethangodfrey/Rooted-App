@@ -24,6 +24,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StripeService } from '../stripe/stripe.service';
 import { aggregateSupplierArMetrics } from './wholesale-ar-metrics.util';
 import { resolveInvoiceDisplayStatus } from './wholesale-invoice.util';
+import { retailPriceToCents } from './wholesale-relationship.util';
 
 const NET_TERMS_DAYS = 30;
 
@@ -85,7 +86,7 @@ export class WholesaleOrdersService {
     sessionVendorId: string,
     input: WholesaleOrderDraftCreateInput,
     options: {
-      pricingMode?: 'TIERED_WHOLESALE_PRICING' | 'STANDARD';
+      pricingMode?: 'TIERED_WHOLESALE_PRICING' | 'STANDARD' | 'RETAIL_SALE';
       peerConnectionId?: string | null;
     } = {},
   ) {
@@ -96,10 +97,20 @@ export class WholesaleOrdersService {
       throw new ForbiddenException('B2B_ERROR: BUYER_VENDOR_MISMATCH');
     }
 
-    const pricingMode = options.pricingMode ?? 'STANDARD';
+    const saleMode = input.sale_mode ?? 'WHOLESALE';
+    const pricingMode =
+      saleMode === 'RETAIL'
+        ? 'RETAIL_SALE'
+        : (options.pricingMode ?? 'STANDARD');
+
     if (pricingMode === 'TIERED_WHOLESALE_PRICING') {
       this.logger.log(
         `TIERED_WHOLESALE_PRICING BUYER=${input.buyer_vendor_id} SELLER=${input.seller_vendor_id} PEER=${options.peerConnectionId ?? 'NONE'}`,
+      );
+    }
+    if (pricingMode === 'RETAIL_SALE') {
+      this.logger.log(
+        `RETAIL_SALE_MODE_ENABLED BUYER=${input.buyer_vendor_id} SELLER=${input.seller_vendor_id}`,
       );
     }
 
@@ -127,25 +138,28 @@ export class WholesaleOrdersService {
       throw new NotFoundException('WHOLESALE_ORDER_ERROR: SELLER_VENDOR_NOT_FOUND');
     }
 
-    const connection = await this.prisma.vendorBusinessConnection.findFirst({
-      where: {
-        status: VendorBusinessConnectionStatus.ACCEPTED,
-        OR: [
-          {
-            senderVendorId: input.buyer_vendor_id,
-            receiverVendorId: input.seller_vendor_id,
-          },
-          {
-            senderVendorId: input.seller_vendor_id,
-            receiverVendorId: input.buyer_vendor_id,
-          },
-        ],
-      },
-      select: { id: true },
-    });
+    // Retail drafts skip peer ACCEPTED requirement (independent of connections).
+    if (saleMode !== 'RETAIL') {
+      const connection = await this.prisma.vendorBusinessConnection.findFirst({
+        where: {
+          status: VendorBusinessConnectionStatus.ACCEPTED,
+          OR: [
+            {
+              senderVendorId: input.buyer_vendor_id,
+              receiverVendorId: input.seller_vendor_id,
+            },
+            {
+              senderVendorId: input.seller_vendor_id,
+              receiverVendorId: input.buyer_vendor_id,
+            },
+          ],
+        },
+        select: { id: true },
+      });
 
-    if (!connection) {
-      throw new ForbiddenException('B2B_ERROR: ACCEPTED_CONNECTION_REQUIRED');
+      if (!connection) {
+        throw new ForbiddenException('B2B_ERROR: ACCEPTED_CONNECTION_REQUIRED');
+      }
     }
 
     const skuIds = [...new Set(input.items.map((item) => item.product_sku_id))];
@@ -173,6 +187,32 @@ export class WholesaleOrdersService {
       const product = productById.get(item.product_sku_id);
       if (!product) {
         throw new BadRequestException('WHOLESALE_ORDER_ERROR: PRODUCT_SKU_INVALID');
+      }
+
+      if (saleMode === 'RETAIL') {
+        if (!product.isRetailEnabled) {
+          throw new BadRequestException(
+            `RETAIL_SALE_ERROR: SKU_NOT_RETAIL_ENABLED SKU=${product.id}`,
+          );
+        }
+        const retailCents = retailPriceToCents(product.retailPrice);
+        if (retailCents == null || retailCents <= 0) {
+          throw new BadRequestException(
+            `RETAIL_SALE_ERROR: RETAIL_PRICE_MISSING SKU=${product.id}`,
+          );
+        }
+        if (item.negotiated_tier_unit_price !== retailCents) {
+          throw new BadRequestException(
+            `WHOLESALE_ORDER_ERROR: RETAIL_PRICE_MISMATCH SKU=${product.id} EXPECTED=${retailCents} GOT=${item.negotiated_tier_unit_price}`,
+          );
+        }
+        lineRows.push({
+          productSkuId: product.id,
+          quantity: item.quantity,
+          negotiatedTierUnitPrice: retailCents,
+          lineTotalCents: retailCents * item.quantity,
+        });
+        continue;
       }
 
       if (item.quantity < product.moq) {
@@ -207,7 +247,7 @@ export class WholesaleOrdersService {
     );
 
     this.logger.log(
-      `WHOLESALE_PAYLOAD_VALID BUYER=${input.buyer_vendor_id} SELLER=${input.seller_vendor_id} LINES=${lineRows.length} SUBTOTAL_CENTS=${subtotalCents}`,
+      `${saleMode === 'RETAIL' ? 'RETAIL' : 'WHOLESALE'}_PAYLOAD_VALID BUYER=${input.buyer_vendor_id} SELLER=${input.seller_vendor_id} LINES=${lineRows.length} SUBTOTAL_CENTS=${subtotalCents}`,
     );
 
     const created = await this.prisma.wholesaleOrder.create({

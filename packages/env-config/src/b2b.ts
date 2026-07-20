@@ -329,6 +329,8 @@ export const wholesaleOrderDraftCreateSchema = z
           'WHOLESALE_ORDER_VALIDATION_ERROR: SELLER_VENDOR_ID INVALID',
       })
       .uuid('WHOLESALE_ORDER_VALIDATION_ERROR: SELLER_VENDOR_ID MUST BE UUID'),
+    /** WHOLESALE (default) requires peer ACCEPTED + MOQ; RETAIL uses retailPrice. */
+    sale_mode: z.enum(['WHOLESALE', 'RETAIL']).optional().default('WHOLESALE'),
     items: z
       .array(wholesaleOrderDraftItemSchema)
       .min(1, 'WHOLESALE_ORDER_VALIDATION_ERROR: ITEMS REQUIRED')
