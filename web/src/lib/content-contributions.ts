@@ -53,3 +53,9 @@ export async function submitPartnerContributionAction(
 ): Promise<{ STATUS: string }> {
   return api.post('/api/content/contributions/partner-action', payload);
 }
+
+export async function recordPartnerUiReceived(
+  postIds: string[],
+): Promise<{ STATUS: string }> {
+  return api.post('/api/content/contributions/partner-ui-received', { postIds });
+}

@@ -15,6 +15,7 @@
     "./**/*.ts",
     "../backend/src/modules/admin-agent/local-network-seed.runner.ts",
     "../backend/src/modules/content/content-contribution.util.ts",
-    "../backend/src/modules/content/content-media-cdn.util.ts"
+    "../backend/src/modules/content/content-media-cdn.util.ts",
+    "../backend/src/modules/content/content-dual-posting-metrics.util.ts"
   ]
 }

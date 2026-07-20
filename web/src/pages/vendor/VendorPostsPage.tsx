@@ -16,7 +16,7 @@ import {
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
-import { submitPartnerContributionAction } from '@/lib/content-contributions';
+import { submitPartnerContributionAction, recordPartnerUiReceived } from '@/lib/content-contributions';
 import { formatRelativeTime } from '@/lib/format';
 import { POST_TYPE_LABEL } from '@/lib/post-type';
 import { supabase } from '@/lib/supabase';
@@ -64,7 +64,14 @@ export function VendorPostsPage() {
           .eq('posting_mode', 'PARTNERSHIP')
           .eq('co_approval_status', 'PENDING')
           .order('created_at', { ascending: false });
-        setPending((pendingRows as PendingPartnershipPost[]) ?? []);
+        const pendingList = (pendingRows as PendingPartnershipPost[]) ?? [];
+        setPending(pendingList);
+
+        if (isApiConfigured && pendingList.length > 0) {
+          void recordPartnerUiReceived(pendingList.map((row) => row.id)).catch(
+            () => undefined,
+          );
+        }
       }
 
       setLoading(false);

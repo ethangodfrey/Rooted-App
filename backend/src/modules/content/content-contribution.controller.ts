@@ -12,6 +12,7 @@ import type { AuthenticatedUser } from '../../common/auth/auth.types';
 import { SupabaseAuthGuard } from '../../common/auth/supabase-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { ContentContributionService } from './content-contribution.service';
+import { ContentDualPostingHealthService } from './content-dual-posting-health.service';
 import type { ContributorType, PostingMode } from './content-contribution.util';
 
 type CreateBody = {
@@ -24,6 +25,9 @@ type CreateBody = {
   partnershipConnectionId?: string | null;
   authorType?: ContributorType;
   postType?: string;
+  mediaWidthPx?: number | null;
+  mediaHeightPx?: number | null;
+  mediaSizeBytes?: number | null;
 };
 
 type PartnerActionBody = {
@@ -33,6 +37,13 @@ type PartnerActionBody = {
   mediaUrl?: string | null;
   contentKind?: 'text' | 'image' | 'video' | 'photo';
   partnerType?: ContributorType;
+  mediaWidthPx?: number | null;
+  mediaHeightPx?: number | null;
+  mediaSizeBytes?: number | null;
+};
+
+type PartnerUiReceivedBody = {
+  postIds: string[];
 };
 
 @Controller('api/content/contributions')
@@ -40,7 +51,10 @@ type PartnerActionBody = {
 export class ContentContributionController {
   private readonly logger = new Logger(ContentContributionController.name);
 
-  constructor(private readonly contributions: ContentContributionService) {}
+  constructor(
+    private readonly contributions: ContentContributionService,
+    private readonly health: ContentDualPostingHealthService,
+  ) {}
 
   @Post()
   @Roles('vendor', 'farmer', 'admin')
@@ -78,6 +92,9 @@ export class ContentContributionController {
       partnerType: body.partnerType,
       partnershipConnectionId: body.partnershipConnectionId,
       postType: body.postType,
+      mediaWidthPx: body.mediaWidthPx,
+      mediaHeightPx: body.mediaHeightPx,
+      mediaSizeBytes: body.mediaSizeBytes,
     });
 
     this.logger.log(
@@ -109,12 +126,55 @@ export class ContentContributionController {
       body: body.body,
       mediaUrl: body.mediaUrl,
       contentKind: body.contentKind,
+      mediaWidthPx: body.mediaWidthPx,
+      mediaHeightPx: body.mediaHeightPx,
+      mediaSizeBytes: body.mediaSizeBytes,
     });
 
     return {
       ...result,
       CO_APPROVAL: result.STATUS,
       STATUS: 'CONTENT_CONTRIBUTION_SYNCED',
+    };
+  }
+
+  @Post('partner-ui-received')
+  @Roles('vendor', 'farmer', 'admin')
+  async partnerUiReceived(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: PartnerUiReceivedBody,
+  ) {
+    const postIds = Array.isArray(body.postIds)
+      ? body.postIds.filter((id) => typeof id === 'string' && id.trim())
+      : [];
+    if (postIds.length === 0) {
+      throw new BadRequestException('POST_IDS_REQUIRED');
+    }
+
+    const samples = [];
+    for (const postId of postIds.slice(0, 20)) {
+      samples.push(
+        await this.contributions.recordPartnerUiReceived({
+          postId,
+          partnerId: user.id,
+        }),
+      );
+    }
+
+    return {
+      STATUS: 'DUAL_POSTING_METRIC_CAPTURED',
+      SAMPLES: samples,
+    };
+  }
+
+  @Post('health/sync')
+  @Roles('admin')
+  async syncHealth() {
+    const result = await this.health.validateSyncHealth();
+    return {
+      ...result,
+      HEALTH_STATUS: result.STATUS,
+      STATUS: 'LATENCY_THRESHOLD_VALIDATED',
     };
   }
 }
