@@ -9,6 +9,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ElasticsearchModule } from '../search/elasticsearch.module';
 import { UsWholesaleProximityMiddleware } from '../search/us-wholesale-proximity.middleware';
 import { StripeModule } from '../stripe/stripe.module';
+import { CatalogBulkImportController } from './catalog-bulk-import.controller';
+import { CatalogBulkImportService } from './catalog-bulk-import.service';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
 import { VendorPeerRequestsController } from './vendor-peer-requests.controller';
@@ -21,8 +23,6 @@ import { WholesaleOrdersService } from './wholesale-orders.service';
 import { WholesaleProductsController } from './wholesale-products.controller';
 import { WholesaleProductsService } from './wholesale-products.service';
 import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middleware';
-import { B2bMarketplaceController } from './b2b-marketplace.controller';
-import { B2bMarketplaceService } from './b2b-marketplace.service';
 
 @Module({
   imports: [PrismaModule, StripeModule, ElasticsearchModule],
@@ -32,7 +32,7 @@ import { B2bMarketplaceService } from './b2b-marketplace.service';
     WholesaleProductsController,
     WholesaleOrdersController,
     WholesaleInvoicesController,
-    B2bMarketplaceController,
+    CatalogBulkImportController,
   ],
   providers: [
     VendorConnectionsService,
@@ -43,7 +43,7 @@ import { B2bMarketplaceService } from './b2b-marketplace.service';
     WholesaleInvoiceOverdueScheduler,
     UsWholesaleProximityMiddleware,
     WholesaleRelationshipMiddleware,
-    B2bMarketplaceService,
+    CatalogBulkImportService,
   ],
   exports: [
     VendorConnectionsService,
@@ -51,7 +51,7 @@ import { B2bMarketplaceService } from './b2b-marketplace.service';
     WholesaleProductsService,
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,
-    B2bMarketplaceService,
+    CatalogBulkImportService,
   ],
 })
 export class B2bModule implements NestModule {
