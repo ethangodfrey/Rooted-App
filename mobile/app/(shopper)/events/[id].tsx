@@ -85,10 +85,18 @@ export default function EventDetailScreen() {
       if (!vendorRes.error && vendorRes.data) {
         const list = vendorRes.data
           .map((row) => {
-            const vendor = (row as { vendors: AttendingVendor | AttendingVendor[] }).vendors;
+            const vendor = (
+              row as {
+                vendors:
+                  | (AttendingVendor & { approval_status?: string })
+                  | (AttendingVendor & { approval_status?: string })[];
+              }
+            ).vendors;
             return Array.isArray(vendor) ? vendor[0] : vendor;
           })
-          .filter((v): v is AttendingVendor => Boolean(v));
+          .filter((v): v is AttendingVendor & { approval_status?: string } => Boolean(v))
+          .filter((v) => !v.approval_status || v.approval_status === 'approved')
+          .map(({ approval_status: _omit, ...vendor }) => vendor);
         setVendors(list);
       }
       setLoading(false);
@@ -264,7 +272,9 @@ export default function EventDetailScreen() {
                 <PressableCard
                   key={vendor.id}
                   className="flex-row items-center justify-between"
-                  onPress={() => router.push(`/(shopper)/vendors/${vendor.id}`)}>
+                  onPress={() =>
+                    router.push(`/(shopper)/vendors/${vendor.id}?market=${encodeURIComponent(String(id))}`)
+                  }>
                   <View className="flex-1 pr-3">
                     <Text variant="body" className="font-semibold">
                       {vendor.business_name ?? 'Vendor'}

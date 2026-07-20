@@ -39,6 +39,21 @@ model User {
   @@map("users")
 }
 
+/// Shopper location-aware notification preferences (phase 69).
+/// FK in SQL targets profiles(id); ids align with auth.users / users.
+model UserSettings {
+  userId             String    @id @map("user_id") @db.Uuid
+  enableMarketAlerts Boolean   @default(true) @map("enable_market_alerts")
+  alertRadiusKm      Decimal   @default(25.00) @map("alert_radius_km") @db.Decimal(8, 2)
+  lastLatitude       Decimal?  @map("last_latitude") @db.Decimal(10, 7)
+  lastLongitude      Decimal?  @map("last_longitude") @db.Decimal(10, 7)
+  lastLocationAt     DateTime? @map("last_location_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_settings")
+}
+
 /// Vision profiles table — permanent sticker enum shopper|vendor|farmer.
 model Profile {
   id               String   @id @db.Uuid

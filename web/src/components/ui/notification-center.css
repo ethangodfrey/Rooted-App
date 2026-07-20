@@ -151,6 +151,30 @@
   text-transform: uppercase;
 }
 
+.notification-dropdown__title--link {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-dropdown__title--link:hover {
+  text-decoration: underline;
+}
+
+.notification-dropdown__deeplink {
+  margin: 0 0 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
 .notification-dropdown__body {
   margin: 0 0 0.45rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

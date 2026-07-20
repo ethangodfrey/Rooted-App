@@ -90,6 +90,7 @@
     "test:discovery:partition-indexing": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-partition-indexing.ts",
     "test:discovery:latency-benchmark": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-latency-benchmark.ts",
     "test:discovery:production-sync-cron": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-discovery-production-sync-cron.ts",
+    "test:notifications:market-alerts": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-location-aware-notifications.ts",
     "test:health:partition-integrity": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-health-partition-integrity.ts",
     "test:health:search-latency": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-health-search-latency.ts",
     "test:health:scheduler-reliability": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-health-scheduler-reliability.ts",

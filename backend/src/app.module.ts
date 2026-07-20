@@ -21,7 +21,7 @@ import { StripeModule } from './modules/stripe/stripe.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { B2bModule } from './modules/b2b/b2b.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
-import { SupplierAnalyticsModule } from './modules/supplier-analytics/supplier-analytics.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -62,7 +62,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     TenantsModule,
     B2bModule,
     LogisticsModule,
-    SupplierAnalyticsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

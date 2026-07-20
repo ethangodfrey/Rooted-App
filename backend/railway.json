@@ -21,7 +21,8 @@
     "production": {
       "variables": {
         "PORT": "4000",
-        "PUBLIC_BASE_URL": "https://api.vendorlymarketplace.app"
+        "PUBLIC_BASE_URL": "https://api.vendorlymarketplace.app",
+        "MARKET_ALERT_CRON_ENABLED": "true"
       },
       "deploy": {
         "healthcheckPath": "/api/health",

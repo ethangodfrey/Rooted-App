@@ -4,8 +4,6 @@ import { Link } from 'react-router-dom';
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { EventThumb } from '@/components/events/EventThumb';
 import { WeekStrip } from '@/components/events/WeekStrip';
-import { FallbackImage } from '@/components/ui/FallbackImage';
-import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 import { useMarketDetail } from '@/hooks/use-market-detail';
 import { useNow } from '@/hooks/use-now';
 import { useUserCoords } from '@/hooks/use-user-coords';
@@ -23,7 +21,7 @@ import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
-import { marketPath } from '@/lib/market-routes';
+import { marketPath, vendorPath } from '@/lib/market-routes';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
@@ -282,42 +280,26 @@ export function ShopperEventsPage() {
                     <div className="markets-preview__vendors">
                       <p className="ft-label">Local vendor roster</p>
                       {preview.loading ? (
-                        <div className="flex flex-col gap-3" aria-busy aria-label="Loading vendors">
-                          {Array.from({ length: 4 }, (_, index) => (
-                            <div key={index} className="markets-preview__vendor-row">
-                              <Skeleton style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
-                              <div className="min-w-0 flex-1">
-                                <SkeletonText width="60%" height={14} />
-                                <div style={{ marginTop: 6 }}>
-                                  <SkeletonText width="40%" height={12} />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <p className="ft-subhead">Loading vendors…</p>
                       ) : preview.vendors.length === 0 ? (
                         <p className="ft-subhead">No approved vendors listed for this market yet.</p>
                       ) : (
                         preview.vendors.slice(0, 8).map((vendor) => (
-                          <div key={vendor.id} className="markets-preview__vendor-row">
-                            <FallbackImage
-                              src={vendor.logo_url}
-                              alt=""
-                              variant="vendor-logo"
-                              label={vendor.business_name ?? 'Vendor'}
-                              category={vendor.category}
-                              style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }}
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="app-row-title truncate" style={{ fontSize: '0.875rem' }}>
+                          <Link
+                            key={vendor.id}
+                            to={vendorPath(vendor.id, selectedEvent.id)}
+                            className="markets-preview__vendor-row markets-preview__vendor-row--link"
+                          >
+                            <div>
+                              <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
                                 {vendor.business_name ?? 'Vendor'}
                               </p>
-                              <p className="ft-subhead truncate">
+                              <p className="ft-subhead">
                                 {vendor.category ?? vendor.product_summary ?? 'Local maker'}
                               </p>
                             </div>
-                            <span className="markets-split__distance shrink-0">On site</span>
-                          </div>
+                            <span className="markets-split__distance">View profile</span>
+                          </Link>
                         ))
                       )}
                     </div>
