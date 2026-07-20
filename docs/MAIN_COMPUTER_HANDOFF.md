@@ -25,7 +25,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 17 | `cursor/stripe-payments-gateway-428e` | #232 | Phase 6 Stripe Connect Payment Gateway |
 | 18 | `cursor/stripe-onboarding-ui-428e` | #233 | Phase 6 Stripe Connect Onboarding UI |
 | 19 | `cursor/admin-platform-dashboard-428e` | #234 | Phase 7 Platform Admin Dashboard |
-| 20 | `cursor/dispute-resolution-engine-428e` | (open) | Phase 8 Dispute Resolution Engine |
+| 20 | `cursor/dispute-resolution-engine-428e` | #235 | Phase 8 Dispute Resolution Engine |
 
 ```powershell
 git fetch origin
