@@ -35,7 +35,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/platform-e2e-smoke-428e`
+`main` (landed via #237 tip merge + follow-up open PRs; restore fix #238)
 
 ## 2. Apply Supabase SQL (required)
 
