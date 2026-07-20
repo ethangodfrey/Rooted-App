@@ -416,5 +416,149 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         grossAmount: 0,
       });
     });
+
+    it('normalizes string cent amounts from Square money fields', () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-string-cents',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: '2450', currency: 'USD' },
+        line_items: [
+          {
+            uid: 'li-1',
+            name: 'Honey',
+            quantity: '2',
+            gross_sales_money: { amount: '2450' },
+          },
+        ],
+      });
+
+      expect(txn).toMatchObject({
+        grossAmount: 2450,
+        lineItems: [{ grossAmount: 2450, quantity: 2 }],
+      });
+    });
+
+    it('treats missing Square money fields as zero cents', () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-empty-money',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        line_items: [],
+      });
+
+      expect(txn.grossAmount).toBe(0);
+      expect(txn.netAmount).toBe(0);
+    });
+  });
+
+  describe('Stripe checkout success mutates stripe_pending orders end-to-end', () => {
+    it('finalizes inventory and marks the order paid_online on success payloads', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-success',
+          total: 1800,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_success',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-success',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_success_e2e',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_success',
+            payment_intent: 'pi_success',
+            metadata: {
+              order_id: 'order-success',
+              customer_user_id: 'user-success',
+            },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).toHaveBeenCalledWith(
+        expect.anything(),
+        'order-success',
+        'user-success',
+      );
+      expect(fake.orders[0]).toMatchObject({
+        payment_status: 'paid_online',
+        stripe_payment_intent_id: 'pi_success',
+      });
+    });
+
+    it('leaves stripe_pending orders unchanged when session id does not match', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-mismatch',
+          total: 1200,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_expected',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-mismatch',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_mismatch',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_wrong_session',
+            payment_intent: 'pi_wrong',
+            metadata: {
+              order_id: 'order-mismatch',
+              customer_user_id: 'user-mismatch',
+            },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
+      expect(fake.orders[0].stripe_payment_intent_id).toBeNull();
+    });
   });
 });
