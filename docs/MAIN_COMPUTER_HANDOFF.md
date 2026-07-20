@@ -20,6 +20,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 12 | `cursor/shopper-loyalty-ui-428e` | #227 | Phase 3 Shopper Loyalty UI |
 | 13 | `cursor/financial-clearing-escrow-428e` | #228 | Phase 4 Financial Clearing & Escrow |
 | 14 | `cursor/vendor-financial-dashboard-428e` | #229 | Phase 4 Vendor Financial Dashboard + Dynamic Invoicing |
+| 15 | `cursor/fleet-logistics-fulfillment-428e` | (open) | Phase 5 Fleet Logistics & B2B Fulfillment |
 
 ```powershell
 git fetch origin
@@ -27,7 +28,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/vendor-financial-dashboard-428e`
+`cursor/fleet-logistics-fulfillment-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -51,8 +52,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_availability_scheduling.sql`) — PENDING_REVIEW + conflict flags on catering inquiries
 9. `docs/supabase/phase78_financial_clearing.sql`  
    (or `migrations/20260720_financial_clearing.sql`) — financial_transactions + vendor_balances escrow ledger
+10. `docs/supabase/phase79_fleet_logistics.sql`  
+   (or `migrations/20260720_fleet_logistics.sql`) — delivery_routes, delivery_stops, farmer_balances
 
-After phase73–78, confirm:
+After phase73–79, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -69,6 +72,9 @@ where table_schema = 'public' and table_name = 'catering_inquiries'
   and column_name in ('conflict_detected', 'conflict_warning');
 select to_regclass('public.financial_transactions');
 select to_regclass('public.vendor_balances');
+select to_regclass('public.delivery_routes');
+select to_regclass('public.delivery_stops');
+select to_regclass('public.farmer_balances');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -126,6 +132,7 @@ npm run test:loyalty:precision
 npm run test:loyalty:ui-integration
 npm run test:financial:clearing
 npm run test:financial:ui
+npm run test:logistics:fulfillment
 
 cd web
 npm run build
@@ -144,6 +151,7 @@ Expected uppercase logs (no emoji):
 - `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
 - `LOYALTY_UI_ACTIVE` / `REWARDS_SYNC_VERIFIED`
 - `FINANCIAL_ENGINE_INITIALIZED` / `ESCROW_LEDGER_ACTIVE`
+- `LOGISTICS_ENGINE_INITIALIZED` / `FLEET_TRACKING_ACTIVE` / `LOGISTICS_FULFILLMENT_VERIFIED`
 
 ## 5. Manual UI smoke (5 minutes)
 
@@ -167,7 +175,7 @@ npm run markets:usda:seed
 ## 7. Do not forget
 
 - [ ] Merge PR stack (or tip) after review  
-- [ ] Apply phase70 → phase78 in Supabase  
+- [ ] Apply phase70 → phase79 in Supabase  
 - [ ] Confirm `USDA_API_KEY` in root `.env` (and Railway if used)  
 - [ ] Redeploy backend after merge so `/api/discovery/*`, `/api/catering/*`, `/api/analytics/summary` are live  
 - [ ] Redeploy web so Performance tab + Meet the Makers page ship  

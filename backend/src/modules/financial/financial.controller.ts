@@ -65,11 +65,14 @@ export class FinancialController implements OnModuleInit {
    */
   @Post('escrow/release')
   @Roles('vendor', 'farmer', 'admin')
-  async release(@Body() body: { inquiryId?: string }) {
-    if (!body.inquiryId?.trim()) {
-      throw new BadRequestException('INQUIRY_ID_REQUIRED');
+  async release(@Body() body: { inquiryId?: string; procurementRequestId?: string }) {
+    if (!body.inquiryId?.trim() && !body.procurementRequestId?.trim()) {
+      throw new BadRequestException('RELEASE_REF_REQUIRED');
     }
-    return this.clearing.releaseEscrow(body.inquiryId);
+    return this.clearing.releaseEscrow({
+      inquiryId: body.inquiryId,
+      procurementRequestId: body.procurementRequestId,
+    });
   }
 
   @Get('vendors/:vendorId/balance')

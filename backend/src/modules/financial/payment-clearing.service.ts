@@ -131,9 +131,123 @@ export class PaymentClearingService implements OnModuleInit {
   }
 
   /**
-   * Disburse escrow to vendor available balance after event fulfillment.
+   * Disburse escrow after fulfillment.
+   * Catering: pass inquiry id string (legacy) or `{ inquiryId }`.
+   * B2B wholesale: pass `{ procurementRequestId }` (farmer available balance).
    */
-  async releaseEscrow(inquiryId: string) {
+  async releaseEscrow(
+    input:
+      | string
+      | {
+          inquiryId?: string;
+          procurementRequestId?: string;
+        },
+  ) {
+    if (typeof input === 'string') {
+      return this.releaseCateringEscrow(input);
+    }
+    if (input.procurementRequestId?.trim()) {
+      return this.releaseWholesaleEscrow(input.procurementRequestId);
+    }
+    if (input.inquiryId?.trim()) {
+      return this.releaseCateringEscrow(input.inquiryId);
+    }
+    throw new BadRequestException('RELEASE_REF_REQUIRED');
+  }
+
+  /**
+   * Lock wholesale funds when an ACCEPTED procurement is staged on a delivery route.
+   * Destination is the farmer wallet (farmer_balances).
+   */
+  async holdWholesaleEscrow(procurementRequestId: string, amountCents: number) {
+    if (!procurementRequestId?.trim()) {
+      throw new BadRequestException('PROCUREMENT_REQUEST_ID_REQUIRED');
+    }
+    const amount = Math.floor(Number(amountCents));
+    if (!Number.isFinite(amount) || amount < 1) {
+      throw new BadRequestException('AMOUNT_INVALID');
+    }
+
+    const request = await this.loadProcurement(procurementRequestId);
+    if (request.status !== 'ACCEPTED') {
+      throw new BadRequestException('PROCUREMENT_NOT_ACCEPTED');
+    }
+    if (request.escrow_transaction_id) {
+      return {
+        STATUS: 'ESCROW_LEDGER_ACTIVE',
+        ACTION: 'HELD_IN_ESCROW',
+        TRANSACTION_ID: request.escrow_transaction_id,
+        PROCUREMENT_REQUEST_ID: procurementRequestId,
+        AMOUNT_CENTS: Number(request.deposit_cents) || amount,
+        NET_AMOUNT_CENTS: Number(request.deposit_cents) || amount,
+        ALREADY_HELD: true,
+      };
+    }
+
+    await this.ensureFarmerBalance(request.farmer_id);
+
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      INSERT INTO public.financial_transactions (
+        source_id, destination_id, amount_cents, voucher_cents, net_amount_cents,
+        status, transaction_type, reference_id, metadata
+      ) VALUES (
+        ${request.vendor_id}::uuid,
+        ${request.farmer_id}::uuid,
+        ${amount},
+        0,
+        ${amount},
+        'HELD_IN_ESCROW'::public.financial_transaction_status,
+        'WHOLESALE'::public.financial_transaction_type,
+        ${procurementRequestId}::uuid,
+        ${JSON.stringify({
+          procurementRequestId,
+          layout: 'B2B_WHOLESALE',
+        })}::jsonb
+      )
+      RETURNING id
+    `);
+
+    const txId = rows[0]?.id;
+    if (!txId) throw new BadRequestException('ESCROW_CREATE_FAILED');
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.farmer_balances
+      SET
+        escrow_held_cents = escrow_held_cents + ${amount},
+        updated_at = NOW()
+      WHERE farmer_id = ${request.farmer_id}::uuid
+    `);
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.b2b_procurement_requests
+      SET
+        deposit_cents = ${amount},
+        escrow_transaction_id = ${txId}::uuid,
+        updated_at = NOW()
+      WHERE id = ${procurementRequestId}::uuid
+    `);
+
+    this.logger.log(
+      formatEscrowLedgerActiveLog({
+        transactionId: txId,
+        status: 'HELD_IN_ESCROW',
+        netCents: amount,
+      }),
+    );
+
+    return {
+      STATUS: 'ESCROW_LEDGER_ACTIVE',
+      ACTION: 'HELD_IN_ESCROW',
+      TRANSACTION_ID: txId,
+      PROCUREMENT_REQUEST_ID: procurementRequestId,
+      AMOUNT_CENTS: amount,
+      NET_AMOUNT_CENTS: amount,
+      ALREADY_HELD: false,
+    };
+  }
+
+  /** Disburse catering escrow to vendor available balance after event fulfillment. */
+  private async releaseCateringEscrow(inquiryId: string) {
     if (!inquiryId?.trim()) throw new BadRequestException('INQUIRY_ID_REQUIRED');
 
     const inquiry = await this.loadInquiry(inquiryId);
@@ -199,6 +313,74 @@ export class PaymentClearingService implements OnModuleInit {
       ACTION: 'SETTLED',
       TRANSACTION_ID: tx[0].id,
       INQUIRY_ID: inquiryId,
+      NET_AMOUNT_CENTS: net,
+    };
+  }
+
+  /** Disburse wholesale escrow into farmer available balance after dropoff. */
+  private async releaseWholesaleEscrow(procurementRequestId: string) {
+    if (!procurementRequestId?.trim()) {
+      throw new BadRequestException('PROCUREMENT_REQUEST_ID_REQUIRED');
+    }
+
+    const request = await this.loadProcurement(procurementRequestId);
+    if (!request.escrow_transaction_id) {
+      throw new BadRequestException('ESCROW_NOT_FOUND');
+    }
+
+    const tx = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        status: string;
+        net_amount_cents: number | string;
+        destination_id: string | null;
+      }>
+    >(Prisma.sql`
+      SELECT id, status::text AS status, net_amount_cents, destination_id
+      FROM public.financial_transactions
+      WHERE id = ${request.escrow_transaction_id}::uuid
+      LIMIT 1
+    `);
+    if (!tx[0]) throw new NotFoundException('TRANSACTION_NOT_FOUND');
+    if (tx[0].status !== 'HELD_IN_ESCROW') {
+      throw new BadRequestException('ESCROW_NOT_HELD');
+    }
+
+    const net = Number(tx[0].net_amount_cents) || 0;
+    const farmerId = tx[0].destination_id ?? request.farmer_id;
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.financial_transactions
+      SET
+        status = 'SETTLED'::public.financial_transaction_status,
+        updated_at = NOW()
+      WHERE id = ${tx[0].id}::uuid
+    `);
+
+    await this.ensureFarmerBalance(farmerId);
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.farmer_balances
+      SET
+        escrow_held_cents = GREATEST(0, escrow_held_cents - ${net}),
+        available_cents = available_cents + ${net},
+        updated_at = NOW()
+      WHERE farmer_id = ${farmerId}::uuid
+    `);
+
+    this.logger.log(
+      formatEscrowLedgerActiveLog({
+        transactionId: tx[0].id,
+        status: 'SETTLED',
+        netCents: net,
+      }),
+    );
+
+    return {
+      STATUS: 'ESCROW_LEDGER_ACTIVE',
+      ACTION: 'SETTLED',
+      TRANSACTION_ID: tx[0].id,
+      PROCUREMENT_REQUEST_ID: procurementRequestId,
+      FARMER_ID: farmerId,
       NET_AMOUNT_CENTS: net,
     };
   }
@@ -304,11 +486,48 @@ export class PaymentClearingService implements OnModuleInit {
     return rows[0];
   }
 
+  private async loadProcurement(procurementRequestId: string): Promise<{
+    id: string;
+    vendor_id: string;
+    farmer_id: string;
+    status: string;
+    deposit_cents: number | string | null;
+    escrow_transaction_id: string | null;
+  }> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        vendor_id: string;
+        farmer_id: string;
+        status: string;
+        deposit_cents: number | string | null;
+        escrow_transaction_id: string | null;
+      }>
+    >(Prisma.sql`
+      SELECT
+        id, vendor_id, farmer_id, status,
+        deposit_cents, escrow_transaction_id
+      FROM public.b2b_procurement_requests
+      WHERE id = ${procurementRequestId}::uuid
+      LIMIT 1
+    `);
+    if (!rows[0]) throw new NotFoundException('PROCUREMENT_REQUEST_NOT_FOUND');
+    return rows[0];
+  }
+
   private async ensureVendorBalance(vendorId: string): Promise<void> {
     await this.prisma.$executeRaw(Prisma.sql`
       INSERT INTO public.vendor_balances (vendor_id)
       VALUES (${vendorId}::uuid)
       ON CONFLICT (vendor_id) DO NOTHING
+    `);
+  }
+
+  private async ensureFarmerBalance(farmerId: string): Promise<void> {
+    await this.prisma.$executeRaw(Prisma.sql`
+      INSERT INTO public.farmer_balances (farmer_id)
+      VALUES (${farmerId}::uuid)
+      ON CONFLICT (farmer_id) DO NOTHING
     `);
   }
 }

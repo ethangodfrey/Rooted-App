@@ -6,20 +6,28 @@ import {
 } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { FinancialModule } from '../financial/financial.module';
+import { LogisticsFulfillmentController } from './logistics-fulfillment.controller';
+import { LogisticsFulfillmentService } from './logistics-fulfillment.service';
 import { LogisticsShippingController } from './logistics-shipping.controller';
 import { LogisticsService } from './logistics.service';
 import { RegionalFreightCarrierClient } from './regional-freight-carrier.client';
 import { UsLogisticsRouteMiddleware } from './us-logistics-route.middleware';
 
 @Module({
-  imports: [PrismaModule],
-  controllers: [LogisticsShippingController],
+  imports: [PrismaModule, FinancialModule],
+  controllers: [LogisticsShippingController, LogisticsFulfillmentController],
   providers: [
     LogisticsService,
+    LogisticsFulfillmentService,
     RegionalFreightCarrierClient,
     UsLogisticsRouteMiddleware,
   ],
-  exports: [LogisticsService, RegionalFreightCarrierClient],
+  exports: [
+    LogisticsService,
+    LogisticsFulfillmentService,
+    RegionalFreightCarrierClient,
+  ],
 })
 export class LogisticsModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
