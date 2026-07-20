@@ -17,7 +17,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 9 | `cursor/precision-rewards-loyalty-428e` | #219 | Precision Rewards loyalty logic |
 | 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
 | 11 | `cursor/availability-scheduling-428e` | #226 | Automated Availability Scheduling |
-| 12 | `cursor/shopper-loyalty-ui-428e` | (open) | Phase 3 Shopper Loyalty UI |
+| 12 | `cursor/shopper-loyalty-ui-428e` | #227 | Phase 3 Shopper Loyalty UI |
 
 ```powershell
 git fetch origin
