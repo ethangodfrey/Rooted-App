@@ -15,7 +15,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 7 | `cursor/intelligence-automated-reporting-428e` | #217 | Weekly reports + anomaly detection |
 | 8 | `cursor/b2b-marketplace-phase1-428e` | #218 | B2B peer marketplace Phase 1 + schema prep |
 | 9 | `cursor/precision-rewards-loyalty-428e` | #219 | Precision Rewards loyalty logic |
-| 10 | `cursor/vendor-procurement-dashboard-428e` | (open) | Vendor Procurement Dashboard |
+| 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
 
 ```powershell
 git fetch origin
