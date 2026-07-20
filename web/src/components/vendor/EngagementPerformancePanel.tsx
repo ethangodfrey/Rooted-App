@@ -6,6 +6,10 @@ import {
   type EngagementAnalyticsSummary,
   type EngagementSeriesPoint,
 } from '@/lib/engagement-analytics';
+import {
+  fetchPartnerReports,
+  type PartnerReportItem,
+} from '@/lib/partner-reports';
 import './engagement-performance.css';
 
 function maxCount(series: EngagementSeriesPoint[]): number {
@@ -45,6 +49,7 @@ export function EngagementPerformancePanel({
   days = 30,
 }: EngagementPerformancePanelProps) {
   const [data, setData] = useState<EngagementAnalyticsSummary | null>(null);
+  const [reports, setReports] = useState<PartnerReportItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,14 +61,23 @@ export function EngagementPerformancePanel({
     }
     setLoading(true);
     try {
-      const summary = await fetchEngagementAnalyticsSummary(days);
+      const [summary, reportRes] = await Promise.all([
+        fetchEngagementAnalyticsSummary(days),
+        fetchPartnerReports(8).catch(() => ({
+          ITEMS: [] as PartnerReportItem[],
+        })),
+      ]);
       setData(summary);
+      setReports(reportRes.ITEMS ?? []);
       setError(null);
       console.log(
         `METRICS_SYNC_COMPLETE ENTITY=${summary.ENTITY_ID} DAYS=${summary.DAYS} TOTAL=${summary.TOTALS.postReach + summary.TOTALS.inquiries + summary.TOTALS.rsvps}`,
       );
+      console.log('ANOMALY_DETECTION_ACTIVE SURFACE=PERFORMANCE_PANEL');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load engagement metrics');
+      setError(
+        err instanceof Error ? err.message : 'Unable to load engagement metrics',
+      );
       setData(null);
     } finally {
       setLoading(false);
@@ -72,6 +86,7 @@ export function EngagementPerformancePanel({
 
   useEffect(() => {
     console.log('ANALYTICS_DASHBOARD_INITIALIZED SURFACE=ENGAGEMENT');
+    console.log('REPORTING_ENGINE_INITIALIZED SURFACE=PERFORMANCE_PANEL');
     void load();
   }, [load]);
 
@@ -107,7 +122,9 @@ export function EngagementPerformancePanel({
         </article>
         <article className="engagement-perf__metric">
           <p className="engagement-perf__metric-label">Collaborations</p>
-          <p className="engagement-perf__metric-value">{data.TOTALS.collaborations}</p>
+          <p className="engagement-perf__metric-value">
+            {data.TOTALS.collaborations}
+          </p>
         </article>
       </div>
 
@@ -128,11 +145,42 @@ export function EngagementPerformancePanel({
         </section>
       </div>
 
+      <section className="engagement-perf__chart" style={{ marginTop: '1rem' }}>
+        <h3 className="engagement-perf__chart-title">Intelligence reports</h3>
+        <p className="engagement-perf__chart-copy">
+          Weekly summaries and anomaly alerts from the reporting engine.
+        </p>
+        {reports.length === 0 ? (
+          <p className="engagement-perf__empty">NO REPORTS YET</p>
+        ) : (
+          <ul className="engagement-perf__report-list">
+            {reports.map((report) => (
+              <li key={report.id} className="engagement-perf__report-item">
+                <p className="engagement-perf__report-type">
+                  {report.reportType}
+                  {report.reportType === 'WEEKLY'
+                    ? ` · ${report.periodStart}–${report.periodEnd}`
+                    : ''}
+                </p>
+                <pre className="engagement-perf__report-body">
+                  {report.summaryText}
+                </pre>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <p className="engagement-perf__meta">
         {data.POSTS.COUNT} posts · {data.POSTS.PARTNERSHIP_COUNT} partnerships ·{' '}
-        {data.CATERING.INQUIRY_COUNT} catering inquiries ({data.CATERING.OPEN_COUNT} open)
+        {data.CATERING.INQUIRY_COUNT} catering inquiries (
+        {data.CATERING.OPEN_COUNT} open)
       </p>
-      <button type="button" className="pos-telemetry__btn" onClick={() => void load()}>
+      <button
+        type="button"
+        className="pos-telemetry__btn"
+        onClick={() => void load()}
+      >
         [ REFRESH PERFORMANCE ]
       </button>
     </div>

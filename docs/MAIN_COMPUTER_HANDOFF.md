@@ -33,6 +33,8 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_vendor_catering.sql`)
 4. `docs/supabase/phase73_engagement_analytics.sql`  
    (or `migrations/20260720_engagement_analytics.sql`) — **new** interaction columns + `engagement_metrics`
+5. `docs/supabase/phase74_intelligence_reporting.sql`  
+   (or `migrations/20260720_intelligence_reporting.sql`) — `partner_reports` + PERFORMANCE_* notification types
 
 After phase73, confirm:
 

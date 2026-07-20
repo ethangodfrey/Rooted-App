@@ -126,3 +126,35 @@
   font-size: 0.8rem;
   color: #57534e;
 }
+
+.engagement-perf__report-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.engagement-perf__report-item {
+  border-top: 1px solid #e7e5e4;
+  padding-top: 0.65rem;
+}
+
+.engagement-perf__report-type {
+  margin: 0 0 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.engagement-perf__report-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #1c1917;
+}

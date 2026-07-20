@@ -5,6 +5,8 @@ export type NotificationType =
   | 'CONNECTION_REQUEST'
   | 'SYSTEM_ALERT'
   | 'CONTENT_CONTRIBUTION'
+  | 'PERFORMANCE_REPORT'
+  | 'PERFORMANCE_ANOMALY'
 
 export type NotificationLog = {
   id: string

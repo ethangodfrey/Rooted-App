@@ -912,6 +912,32 @@ model EngagementMetric {
   @@map("engagement_metrics")
 }
 
+/// Phase 74 — automated weekly / anomaly partner performance reports.
+model PartnerReport {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId       String    @map("entity_id") @db.Uuid
+  /// FARMER | VENDOR
+  entityType     String    @map("entity_type")
+  userId         String    @map("user_id") @db.Uuid
+  periodStart    DateTime  @map("period_start") @db.Date
+  periodEnd      DateTime  @map("period_end") @db.Date
+  /// WEEKLY | ANOMALY
+  reportType     String    @default("WEEKLY") @map("report_type")
+  summaryText    String    @map("summary_text")
+  metrics        Json      @default("{}")
+  emailTo        String?   @map("email_to")
+  /// PENDING | SENT | SKIPPED | FAILED
+  emailStatus    String    @default("PENDING") @map("email_status")
+  emailSentAt    DateTime? @map("email_sent_at") @db.Timestamptz(6)
+  notificationId String?   @map("notification_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([entityId, createdAt(sort: Desc)])
+  @@map("partner_reports")
+}
+
 model VendorCertification {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   vendorId       String    @map("vendor_id") @db.Uuid
