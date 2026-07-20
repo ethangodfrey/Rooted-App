@@ -8,6 +8,7 @@ import {
   loadPosTelemetrySuite,
   type PosTelemetrySuite,
 } from '@/lib/pos-analytics';
+import '@/components/vendor/engagement-performance.css';
 import './pos-analytics.css';
 
 function barWidth(value: number, max: number): string {
