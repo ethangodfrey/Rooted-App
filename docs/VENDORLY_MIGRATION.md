@@ -85,9 +85,15 @@ docs/supabase/phase61_invoice_reconciliation.sql # paid_at + seller reconcile-to
 docs/supabase/phase62a_invoice_status_enum.sql # add PENDING/OVERDUE enum values (run alone)
 docs/supabase/phase62b_invoice_pending_backfill.sql # ISSUED→PENDING backfill + sweep index (after 62a)
 docs/supabase/phase63_wholesale_stripe_payments.sql # PAYMENT_SETTLED + invoice Stripe PaymentIntent columns
+docs/supabase/phase64_vendor_peer_connections.sql # vendor_peer_connections PENDING/ACCEPTED/BLOCKED (wholesale peer edges)
+docs/supabase/phase65_wholesale_retail_pricing.sql # wholesale_products is_retail_enabled + retail_price
+docs/supabase/phase68a_orders_partitioning_strategy.sql # orders/order_items monthly RANGE strategy registry (no data move)
+docs/supabase/phase68b_orders_partition_migration_safe.sql # preferred orders partition cutover (resumes partial runs)
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).
+
+**Wholesale discovery + orders partitioning:** see [`docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`](WHOLESALE_DISCOVERY_AND_PARTITIONING.md) for Elasticsearch ranking, partition indexer cron, logistics shipping-options API, and phase68 cutover troubleshooting.
 
 Optional (any time after `phase1_auth.sql`):
 
@@ -157,6 +163,30 @@ Nominatim logic, ~1.1s rate limit, idempotent skip-if-coords) geocodes existing
 vendors/chefs that have an address but no `latitude`. At the time of writing only
 1 vendor existed (already geocoded) and 0 chefs, so it was a no-op; it ends with
 `refresh_search_index()`.
+
+`phase64` adds **wholesale peer connections** on directory `vendors` ids
+(`vendor_peer_connections`: `requestor_id` / `recipient_id`, status
+`PENDING` | `ACCEPTED` | `BLOCKED`). Distinct from profile-level
+`vendor_connections` (phase51 / `20260717_b2b_connections.sql`). Nest exposes
+`POST/PATCH /api/vendors/requests`; accepted peers feed `CONNECTED_WHOLESALERS`
+discovery ranking in `WholesaleDiscoverySearchService`.
+
+`phase65` adds optional **retail sale mode** on `wholesale_products`
+(`is_retail_enabled`, `retail_price`). When enabled, buyers can draft orders at
+retail unit price without peer `ACCEPTED` status or wholesale MOQ gates.
+
+`phase68a` registers the **monthly RANGE partitioning strategy** for
+`orders` and `order_items` (`partition_strategy_registry`, `orders_partition_bounds`,
+`maintain_orders_partitions`). Partition key = `created_at`; composite PK =
+`(id, created_at)`; `order_items.order_created_at` supports the partitioned FK.
+No data is moved in 68a.
+
+`phase68b` performs the **partition cutover**: renames legacy tables, creates
+monthly child partitions + DEFAULT catch-alls, copies data with resilient
+optional-column mapping, and rebuilds partition-pruning indexes. Prefer
+`phase68b_orders_partition_migration_safe.sql` (idempotent / resumable). See
+[`docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`](WHOLESALE_DISCOVERY_AND_PARTITIONING.md)
+for maintenance (`maintain_orders_partitions`) and troubleshooting.
 
 See also `docs/VENDORLY_ENHANCED_PLAN.md` for enhanced-plan gap tracker.
 
