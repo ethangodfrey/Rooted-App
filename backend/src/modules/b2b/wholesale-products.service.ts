@@ -274,6 +274,7 @@ export class WholesaleProductsService implements OnModuleInit {
     moq: number;
     unitPriceCents: number;
     availableQuantity: number;
+    saleModePreference: WholesaleSaleModePreference;
     status: string;
     updatedAt: Date;
   }): Promise<void> {
@@ -296,6 +297,7 @@ export class WholesaleProductsService implements OnModuleInit {
       moq: product.moq,
       unitPriceCents: product.unitPriceCents,
       availableQuantity: product.availableQuantity,
+      saleModePreference: product.saleModePreference,
       status: product.status,
       updatedAt: product.updatedAt.toISOString(),
       country: vendor?.country ?? 'USA',
