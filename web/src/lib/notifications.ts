@@ -1,6 +1,11 @@
+import { marketPath, vendorPath } from '@/lib/market-routes'
 import { supabase } from '@/lib/supabase'
 
-export type NotificationType = 'ORDER_STATUS' | 'CONNECTION_REQUEST' | 'SYSTEM_ALERT'
+export type NotificationType =
+  | 'ORDER_STATUS'
+  | 'CONNECTION_REQUEST'
+  | 'SYSTEM_ALERT'
+  | 'MARKET_ALERT'
 
 export type NotificationLog = {
   id: string
@@ -10,6 +15,9 @@ export type NotificationLog = {
   notification_type: NotificationType
   is_read: boolean
   created_at: string
+  market_id?: string | null
+  deep_link?: string | null
+  payload?: Record<string, unknown> | null
 }
 
 export async function fetchNotificationLogs(
@@ -18,12 +26,24 @@ export async function fetchNotificationLogs(
 ): Promise<NotificationLog[]> {
   const { data, error } = await supabase
     .from('notification_logs')
-    .select('id, user_id, title, body, notification_type, is_read, created_at')
+    .select(
+      'id, user_id, title, body, notification_type, is_read, created_at, market_id, deep_link, payload',
+    )
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    // Backward compatible select when phase69 columns are not applied yet.
+    const fallback = await supabase
+      .from('notification_logs')
+      .select('id, user_id, title, body, notification_type, is_read, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (fallback.error) throw new Error(fallback.error.message)
+    return (fallback.data ?? []) as NotificationLog[]
+  }
   return (data ?? []) as NotificationLog[]
 }
 
@@ -51,4 +71,25 @@ export function formatNotificationTimestamp(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   }).toUpperCase()
+}
+
+/** Resolve deep link for notification interaction (prefers market_id payload). */
+export function resolveNotificationDeepLink(item: NotificationLog): string | null {
+  if (item.deep_link && item.deep_link.startsWith('/')) {
+    return item.deep_link
+  }
+  const payloadMarket =
+    item.payload && typeof item.payload.market_id === 'string'
+      ? item.payload.market_id
+      : null
+  const marketId = item.market_id ?? payloadMarket
+  if (marketId) return marketPath(marketId)
+
+  const payloadVendor =
+    item.payload && typeof item.payload.vendor_id === 'string'
+      ? item.payload.vendor_id
+      : null
+  if (payloadVendor) return vendorPath(payloadVendor, marketId ?? undefined)
+
+  return null
 }

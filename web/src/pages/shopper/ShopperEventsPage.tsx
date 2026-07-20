@@ -21,7 +21,7 @@ import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { distanceMiles, formatDistance } from '@/lib/geo';
-import { marketPath } from '@/lib/market-routes';
+import { marketPath, vendorPath } from '@/lib/market-routes';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
@@ -285,7 +285,11 @@ export function ShopperEventsPage() {
                         <p className="ft-subhead">No approved vendors listed for this market yet.</p>
                       ) : (
                         preview.vendors.slice(0, 8).map((vendor) => (
-                          <div key={vendor.id} className="markets-preview__vendor-row">
+                          <Link
+                            key={vendor.id}
+                            to={vendorPath(vendor.id, selectedEvent.id)}
+                            className="markets-preview__vendor-row markets-preview__vendor-row--link"
+                          >
                             <div>
                               <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
                                 {vendor.business_name ?? 'Vendor'}
@@ -294,8 +298,8 @@ export function ShopperEventsPage() {
                                 {vendor.category ?? vendor.product_summary ?? 'Local maker'}
                               </p>
                             </div>
-                            <span className="markets-split__distance">On site</span>
-                          </div>
+                            <span className="markets-split__distance">View profile</span>
+                          </Link>
                         ))
                       )}
                     </div>

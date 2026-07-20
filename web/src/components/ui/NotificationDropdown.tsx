@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import {
   formatNotificationTimestamp,
+  resolveNotificationDeepLink,
   type NotificationLog,
 } from '@/lib/notifications'
 
@@ -14,6 +15,7 @@ type Props = {
   error?: string | null
   onMarkAllRead: () => Promise<void> | void
   onMarkOneRead?: (id: string) => Promise<void> | void
+  onOpenDeepLink?: (deepLink: string) => void
 }
 
 export function NotificationDropdown({
@@ -23,6 +25,7 @@ export function NotificationDropdown({
   error = null,
   onMarkAllRead,
   onMarkOneRead,
+  onOpenDeepLink,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -52,6 +55,17 @@ export function NotificationDropdown({
       await onMarkAllRead()
     } finally {
       setBusy(false)
+    }
+  }
+
+  function handleOpenItem(item: NotificationLog) {
+    const deepLink = resolveNotificationDeepLink(item)
+    if (onMarkOneRead && !item.is_read) {
+      void onMarkOneRead(item.id)
+    }
+    if (deepLink && onOpenDeepLink) {
+      onOpenDeepLink(deepLink)
+      setOpen(false)
     }
   }
 
@@ -95,34 +109,50 @@ export function NotificationDropdown({
             <p className="notification-dropdown__empty">NO NOTIFICATIONS</p>
           ) : (
             <ul className="notification-dropdown__list">
-              {items.map((item) => (
-                <li key={item.id} className="notification-dropdown__item">
-                  <div className="notification-dropdown__item-top">
-                    <span className="notification-dropdown__type">
-                      {item.notification_type}
-                    </span>
-                    {!item.is_read ? (
-                      <span className="notification-dropdown__unread">UNREAD</span>
-                    ) : null}
-                  </div>
-                  <p className="notification-dropdown__title">{item.title}</p>
-                  <p className="notification-dropdown__body">{item.body}</p>
-                  <div className="notification-dropdown__item-foot">
-                    <time dateTime={item.created_at}>
-                      {formatNotificationTimestamp(item.created_at)}
-                    </time>
-                    {!item.is_read && onMarkOneRead ? (
+              {items.map((item) => {
+                const deepLink = resolveNotificationDeepLink(item)
+                return (
+                  <li key={item.id} className="notification-dropdown__item">
+                    <div className="notification-dropdown__item-top">
+                      <span className="notification-dropdown__type">
+                        {item.notification_type}
+                      </span>
+                      {!item.is_read ? (
+                        <span className="notification-dropdown__unread">UNREAD</span>
+                      ) : null}
+                    </div>
+                    {deepLink ? (
                       <button
                         type="button"
-                        className="notification-dropdown__mark-one"
-                        onClick={() => void onMarkOneRead(item.id)}
+                        className="notification-dropdown__title notification-dropdown__title--link"
+                        onClick={() => handleOpenItem(item)}
                       >
-                        [ MARK AS READ ]
+                        {item.title}
                       </button>
+                    ) : (
+                      <p className="notification-dropdown__title">{item.title}</p>
+                    )}
+                    <p className="notification-dropdown__body">{item.body}</p>
+                    {deepLink ? (
+                      <p className="notification-dropdown__deeplink">{deepLink}</p>
                     ) : null}
-                  </div>
-                </li>
-              ))}
+                    <div className="notification-dropdown__item-foot">
+                      <time dateTime={item.created_at}>
+                        {formatNotificationTimestamp(item.created_at)}
+                      </time>
+                      {!item.is_read && onMarkOneRead ? (
+                        <button
+                          type="button"
+                          className="notification-dropdown__mark-one"
+                          onClick={() => void onMarkOneRead(item.id)}
+                        >
+                          [ MARK AS READ ]
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
