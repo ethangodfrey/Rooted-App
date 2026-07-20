@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
+import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 import { createCheckout } from '@/lib/checkout-api';
 import { useNow } from '@/hooks/use-now';
 import { formatEventDisplayFullDate, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
+
+type ReserveField = 'eventId' | 'quantity';
 
 export function ShopperReservePage() {
   const { productId } = useParams<{ productId: string }>();
@@ -32,6 +36,7 @@ export function ShopperReservePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ReserveField, string>>>({});
 
   useEffect(() => {
     async function load() {
@@ -48,11 +53,38 @@ export function ShopperReservePage() {
     load();
   }, [productId]);
 
+  function clearFieldError(field: ReserveField) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function handleSubmit() {
+    const nextFieldErrors: Partial<Record<ReserveField, string>> = {};
+
     if (!eventId) {
-      setError('Select an event for pickup.');
+      nextFieldErrors.eventId = 'Select an event for pickup.';
+    }
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      nextFieldErrors.quantity = 'Quantity must be at least 1.';
+    } else {
+      const selected = options.find((opt) => opt.event?.id === eventId);
+      if (selected && quantity > selected.available_quantity_presale) {
+        nextFieldErrors.quantity = `Only ${selected.available_quantity_presale} available for this event.`;
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
+
+    setFieldErrors({});
     setSubmitting(true);
     setError(null);
     try {
@@ -72,7 +104,20 @@ export function ShopperReservePage() {
     }
   }
 
-  if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
+  if (loading) {
+    return (
+      <div className="app-screen app-screen--narrow" aria-busy aria-label="Loading reservation">
+        <Skeleton style={{ width: 96, height: 16, marginBottom: 16 }} />
+        <SkeletonText width="70%" height={28} />
+        <SkeletonText width="45%" height={16} />
+        <div className="mt-6 flex flex-col gap-4">
+          <Skeleton style={{ height: 48, width: '100%' }} />
+          <Skeleton style={{ height: 48, width: '100%' }} />
+          <Skeleton style={{ height: 88, width: '100%' }} />
+        </div>
+      </div>
+    );
+  }
   if (!product) return <div className="app-empty">Product not found.</div>;
 
   const total = product.price * quantity;
@@ -85,7 +130,16 @@ export function ShopperReservePage() {
 
       <div className="app-input-group">
         <label htmlFor="event">Pickup event</label>
-        <select id="event" className="app-select" value={eventId} onChange={(e) => setEventId(e.target.value)}>
+        <select
+          id="event"
+          className={`app-select${fieldErrors.eventId ? ' app-input--invalid' : ''}`}
+          value={eventId}
+          aria-invalid={Boolean(fieldErrors.eventId)}
+          onChange={(e) => {
+            setEventId(e.target.value);
+            clearFieldError('eventId');
+          }}
+        >
           <option value="">Select event</option>
           {options.map((opt) => (
             <option key={opt.event?.id} value={opt.event?.id}>
@@ -93,11 +147,24 @@ export function ShopperReservePage() {
             </option>
           ))}
         </select>
+        <FieldError message={fieldErrors.eventId} />
       </div>
 
       <div className="app-input-group">
         <label htmlFor="qty">Quantity</label>
-        <input id="qty" className="app-input" type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+        <input
+          id="qty"
+          className={`app-input${fieldErrors.quantity ? ' app-input--invalid' : ''}`}
+          type="number"
+          min={1}
+          value={quantity}
+          aria-invalid={Boolean(fieldErrors.quantity)}
+          onChange={(e) => {
+            setQuantity(Number(e.target.value));
+            clearFieldError('quantity');
+          }}
+        />
+        <FieldError message={fieldErrors.quantity} />
       </div>
 
       <div className="app-input-group">

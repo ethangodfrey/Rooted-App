@@ -210,6 +210,60 @@ export class WholesaleProductsService implements OnModuleInit {
     return updated;
   }
 
+  /**
+   * Catalog CSV ingress upsert — match ACTIVE SKU by name, else create.
+   * Caller must already enforce US country_code.
+   */
+  async upsertCatalogImportRow(
+    vendorId: string,
+    input: {
+      name: string;
+      packagingUnit: string;
+      weightLbs: number;
+      moq: number;
+      unitPriceCents: number;
+      availableQuantity: number;
+    },
+  ): Promise<{ ACTION: 'INSERTED' | 'UPDATED'; PRODUCT_ID: string }> {
+    const existing = await this.prisma.wholesaleProduct.findFirst({
+      where: {
+        vendorId,
+        name: input.name,
+        status: WholesaleProductStatus.ACTIVE,
+      },
+      select: { id: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (existing) {
+      const updated = await this.prisma.wholesaleProduct.update({
+        where: { id: existing.id },
+        data: {
+          moq: input.moq,
+          unitPriceCents: input.unitPriceCents,
+          availableQuantity: input.availableQuantity,
+          packagingUnit: input.packagingUnit,
+          weightLbs: new Prisma.Decimal(input.weightLbs),
+        },
+      });
+      await this.syncProductToSearchIndex(updated);
+      return { ACTION: 'UPDATED', PRODUCT_ID: updated.id };
+    }
+
+    const created = await this.create(vendorId, {
+      name: input.name,
+      packagingUnit: input.packagingUnit,
+      weightLbs: input.weightLbs,
+      moq: input.moq,
+      unitPriceCents: input.unitPriceCents,
+      pricingTiers: [],
+      availableQuantity: input.availableQuantity,
+      isRetailEnabled: false,
+      retailPrice: null,
+    });
+    return { ACTION: 'INSERTED', PRODUCT_ID: created.id };
+  }
+
   /** Load vendor geo and push to ES (US-only validation inside indexer). */
   private async syncProductToSearchIndex(product: {
     id: string;

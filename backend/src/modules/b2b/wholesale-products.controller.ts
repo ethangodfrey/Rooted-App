@@ -178,6 +178,15 @@ export class WholesaleProductsController {
       CONNECTED_WHOLESALERS: connectedVendorIds,
       BOOSTED_COUNT: result.BOOSTED_COUNT,
       COUNT: result.HITS.length,
+      ROUTING_KEYS: result.ROUTING_KEYS,
+      PARTITION_PRUNE: result.PARTITION_PRUNE,
+      LATENCY: {
+        QUERY_MS: Number(result.LATENCY.queryLatencyMs.toFixed(2)),
+        INDEX_MS: Number(result.LATENCY.indexLatencyMs.toFixed(2)),
+        SOURCE: result.LATENCY.source,
+        ROUTING: result.LATENCY.routingApplied,
+        PRUNE: result.LATENCY.partitionPruneApplied,
+      },
       PRODUCTS: result.HITS.map((hit) => ({
         ID: hit.id,
         VENDOR_ID: hit.vendorId,

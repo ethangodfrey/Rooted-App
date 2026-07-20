@@ -15,6 +15,7 @@ export type AuthRedirectPath =
   | '/vendor/network'
   | '/chef/setup'
   | '/chef/dashboard'
+  | '/admin/dashboard'
   | '/admin/vendors';
 
 export function getAppOrigin(): string {
@@ -93,7 +94,7 @@ export function resolveAuthRedirect(
   }
 
   if (role === 'admin') {
-    return '/admin/vendors';
+    return '/admin/dashboard';
   }
 
   return '/login';

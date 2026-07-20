@@ -3,7 +3,7 @@ import { getApiBaseUrl, isApiUrlConfigured, isExplicitPublicApiUrl } from '@/lib
 
 export const isApiConfigured = isApiUrlConfigured();
 
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -63,5 +63,6 @@ export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
+  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   del: <T>(path: string) => request<T>('DELETE', path),
 };

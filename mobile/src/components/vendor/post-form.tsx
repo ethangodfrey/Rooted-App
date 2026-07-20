@@ -25,6 +25,8 @@ export interface PostFormValues {
   event_id: string | null;
   /** ISO string when scheduled for the future; null = publish now / not scheduled. */
   publish_at: string | null;
+  /** SELF = post as yourself; PARTNERSHIP = on behalf of partnership. */
+  posting_mode: 'SELF' | 'PARTNERSHIP';
 }
 
 interface PostFormProps {
@@ -101,6 +103,9 @@ export function PostForm({
   const [scheduleEnabled, setScheduleEnabled] = useState(initialScheduled);
   const [scheduledFor, setScheduledFor] = useState<Date>(
     initialScheduled ? new Date(initial!.publish_at!) : oneHourFromNow(),
+  );
+  const [partnershipMode, setPartnershipMode] = useState(
+    initial?.posting_mode === 'PARTNERSHIP',
   );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,6 +199,7 @@ export function PostForm({
       product_id: productId,
       event_id: eventId,
       publish_at: publishAt,
+      posting_mode: partnershipMode ? 'PARTNERSHIP' : 'SELF',
     });
   }
 
@@ -223,6 +229,22 @@ export function PostForm({
         }
         minHeight={112}
       />
+
+      <View className="mb-5 flex-row items-center justify-between rounded-xl bg-honeydew px-3 py-3">
+        <View className="mr-3 flex-1">
+          <Text className="text-sm font-semibold text-ink">On Behalf of Partnership</Text>
+          <Text variant="caption" className="mt-0.5 text-ink/70">
+            {partnershipMode
+              ? 'Posting for a joint farmer/vendor project'
+              : 'Posting as yourself'}
+          </Text>
+        </View>
+        <Switch
+          value={partnershipMode}
+          onValueChange={setPartnershipMode}
+          accessibilityLabel="Toggle On Behalf of Partnership"
+        />
+      </View>
 
       {mediaKind === 'video' ? (
         <>

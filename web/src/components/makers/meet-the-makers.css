@@ -1,0 +1,133 @@
+.meet-makers__header {
+  margin-bottom: 1.25rem;
+}
+
+.meet-makers__title {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.meet-makers__lede {
+  margin: 0 0 0.75rem;
+  color: #57534e;
+  font-size: 0.9rem;
+}
+
+.meet-makers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.meet-makers__card {
+  border: 1px solid #e7e5e4;
+  background: #fafaf9;
+  overflow: hidden;
+}
+
+.meet-makers__media {
+  display: block;
+  width: 100%;
+  max-height: 12rem;
+  object-fit: cover;
+}
+
+.meet-makers__body {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.meet-makers__badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.meet-makers__us-badge,
+.meet-makers__usda-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid #1c1917;
+  padding: 0.15rem 0.4rem;
+  color: #1c1917;
+  background: transparent;
+}
+
+.meet-makers__usda-badge {
+  border-color: #57534e;
+  color: #57534e;
+}
+
+.meet-makers__partners {
+  margin: 0 0 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.meet-makers__event {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #44403c;
+}
+
+.meet-makers__hours {
+  margin: 0.35rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: #57534e;
+}
+
+.meet-makers__caption {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #1c1917;
+}
+
+.meet-makers__meta {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  color: #78716c;
+}
+
+.meet-makers__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.meet-makers__link {
+  font-size: 0.8rem;
+  color: #1c1917;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.meet-makers__rsvp {
+  margin-left: auto;
+  border: 1px solid #1c1917;
+  background: #1c1917;
+  color: #fafaf9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.meet-makers__rsvp:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

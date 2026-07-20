@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import type { AuthenticatedUser } from '../../common/auth/auth.types';
+import { buildCompressedMediaResult } from '../content/content-media-cdn.util';
 import type { CreateVendorUploadDto } from './dto/create-vendor-upload.dto';
 
 const BUCKET = 'vendor-media-feed';
@@ -19,6 +20,9 @@ export interface VendorUploadToken {
   token: string;
   signedUrl: string;
   publicUrl: string;
+  /** CDN / render URL with compression params for images. */
+  cdnPublicUrl: string;
+  mediaCompressed: boolean;
 }
 
 @Injectable()
@@ -50,12 +54,18 @@ export class VendorMediaService {
     }
 
     const { data: publicData } = this.admin.storage.from(BUCKET).getPublicUrl(path);
+    const compressed = buildCompressedMediaResult({
+      publicUrl: publicData.publicUrl,
+      kind: dto.mediaType,
+    });
     return {
       bucket: BUCKET,
       path,
       token: data.token,
       signedUrl: data.signedUrl,
-      publicUrl: publicData.publicUrl,
+      publicUrl: compressed.mediaUrl,
+      cdnPublicUrl: compressed.cdnMediaUrl,
+      mediaCompressed: compressed.mediaCompressed,
     };
   }
 
