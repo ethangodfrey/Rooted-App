@@ -39,6 +39,18 @@ function baseCandidate(
     eventName: 'Saturday Market',
     eventLatitude: 40.01,
     eventLongitude: -75.01,
+    vendorCountry: 'US',
+    eventCity: null,
+    eventState: null,
+    eventAddress: null,
+    eventHoursSummary: null,
+    externalSource: null,
+    externalId: null,
+    isUsMarket: true,
+    usdaListingId: null,
+    usdaDirectory: null,
+    usdaHoursSummary: null,
+    usdaSeasonLabel: null,
     ...overrides,
   };
 }

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +13,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeWebhookErrorMessage } from '../../common/observability/sanitize-error.util';
 import { computePlatformFeeCents, resolvePlatformFeeBps } from '../../common/settlement/platform-fee';
 import { CheckoutInventoryService } from '../checkout/checkout-inventory.service';
+import {
+  formatPaymentWebhooksActiveLog,
+  formatStripeGatewayInitializedLog,
+} from './payments-gateway.util';
 import {
   STRIPE_CHECKOUT_CANCEL_PATH,
   STRIPE_CHECKOUT_SUCCESS_PATH,
@@ -26,7 +31,7 @@ export interface CheckoutStripeSessionResult {
 }
 
 @Injectable()
-export class StripeService {
+export class StripeService implements OnModuleInit {
   private readonly logger = new Logger(StripeService.name);
   private readonly client: Stripe | null;
   private readonly webhookSecret: string;
@@ -39,6 +44,13 @@ export class StripeService {
     const secretKey = this.config.get<string>('STRIPE_SECRET_KEY', '').trim();
     this.client = secretKey ? new Stripe(secretKey) : null;
     this.webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET', '').trim();
+  }
+
+  onModuleInit(): void {
+    this.logger.log(formatStripeGatewayInitializedLog());
+    if (this.webhookSecret) {
+      this.logger.log(formatPaymentWebhooksActiveLog());
+    }
   }
 
   isConfigured(): boolean {

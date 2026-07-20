@@ -56,7 +56,7 @@ export class FinancialController implements OnModuleInit {
     if (body.amountCents == null) {
       throw new BadRequestException('AMOUNT_CENTS_REQUIRED');
     }
-    return this.clearing.holdInEscrow(body.inquiryId, Number(body.amountCents));
+    return this.clearing.holdCateringEscrow(body.inquiryId, Number(body.amountCents));
   }
 
   /**

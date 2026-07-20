@@ -22,6 +22,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 14 | `cursor/vendor-financial-dashboard-428e` | #229 | Phase 4 Vendor Financial Dashboard + Dynamic Invoicing |
 | 15 | `cursor/fleet-logistics-fulfillment-428e` | #230 | Phase 5 Fleet Logistics & B2B Fulfillment |
 | 16 | `cursor/farmer-fleet-dispatch-ui-428e` | #231 | Phase 5 Farmer Fleet Dispatch Dashboard UI |
+| 17 | `cursor/stripe-payments-gateway-428e` | (open) | Phase 6 Stripe Connect Payment Gateway |
 
 ```powershell
 git fetch origin
@@ -29,7 +30,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/farmer-fleet-dispatch-ui-428e`
+`cursor/stripe-payments-gateway-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -55,8 +56,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_financial_clearing.sql`) — financial_transactions + vendor_balances escrow ledger
 10. `docs/supabase/phase79_fleet_logistics.sql`  
    (or `migrations/20260720_fleet_logistics.sql`) — delivery_routes, delivery_stops, farmer_balances
+11. `docs/supabase/phase80_stripe_payments_gateway.sql`  
+   (or `migrations/20260720_stripe_payments_gateway.sql`) — vendors/farmers.stripe_account_id
 
-After phase73–79, confirm:
+After phase73–80, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -76,6 +79,12 @@ select to_regclass('public.vendor_balances');
 select to_regclass('public.delivery_routes');
 select to_regclass('public.delivery_stops');
 select to_regclass('public.farmer_balances');
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'farmers'
+  and column_name = 'stripe_account_id';
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'vendors'
+  and column_name = 'stripe_account_id';
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -135,6 +144,7 @@ npm run test:financial:clearing
 npm run test:financial:ui
 npm run test:logistics:fulfillment
 npm run test:logistics:ui
+npm run test:payments:stripe
 
 cd web
 npm run build
@@ -155,6 +165,7 @@ Expected uppercase logs (no emoji):
 - `FINANCIAL_ENGINE_INITIALIZED` / `ESCROW_LEDGER_ACTIVE`
 - `LOGISTICS_ENGINE_INITIALIZED` / `FLEET_TRACKING_ACTIVE` / `LOGISTICS_FULFILLMENT_VERIFIED`
 - `FLEET_UI_ACTIVE` / `ROUTE_DISPATCH_INITIALIZED` / `LOGISTICS_UI_VERIFIED`
+- `STRIPE_GATEWAY_INITIALIZED` / `PAYMENT_WEBHOOKS_ACTIVE` / `PAYMENTS_STRIPE_VERIFIED`
 
 ## 5. Manual UI smoke (5 minutes)
 
@@ -179,7 +190,7 @@ npm run markets:usda:seed
 ## 7. Do not forget
 
 - [ ] Merge PR stack (or tip) after review  
-- [ ] Apply phase70 → phase79 in Supabase  
+- [ ] Apply phase70 → phase80 in Supabase  
 - [ ] Confirm `USDA_API_KEY` in root `.env` (and Railway if used)  
 - [ ] Redeploy backend after merge so `/api/discovery/*`, `/api/catering/*`, `/api/analytics/summary` are live  
 - [ ] Redeploy web so Performance tab + Meet the Makers page ship  

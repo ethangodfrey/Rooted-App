@@ -35,10 +35,45 @@ export class PaymentClearingService implements OnModuleInit {
   }
 
   /**
-   * Lock deposit funds when a catering inquiry is ACCEPTED.
+   * Lock funds for a paid reference (catering inquiry OR B2B procurement).
+   * Used by Stripe checkout.session.completed → internal escrow ledger sync.
+   */
+  async holdInEscrow(referenceId: string, amountCents: number) {
+    if (!referenceId?.trim()) throw new BadRequestException('REFERENCE_ID_REQUIRED');
+    const amount = Math.floor(Number(amountCents));
+    if (!Number.isFinite(amount) || amount < 1) {
+      throw new BadRequestException('AMOUNT_INVALID');
+    }
+
+    const inquiry = await this.findInquiry(referenceId);
+    if (inquiry) {
+      return this.holdCateringEscrow(referenceId, amount);
+    }
+
+    const procurement = await this.findProcurement(referenceId);
+    if (procurement) {
+      if (procurement.status !== 'ACCEPTED' && procurement.status !== 'PENDING') {
+        throw new BadRequestException('PROCUREMENT_NOT_HOLDABLE');
+      }
+      if (procurement.status === 'PENDING') {
+        await this.prisma.$executeRaw(Prisma.sql`
+          UPDATE public.b2b_procurement_requests
+          SET status = 'ACCEPTED', updated_at = NOW()
+          WHERE id = ${referenceId}::uuid
+            AND status = 'PENDING'
+        `);
+      }
+      return this.holdWholesaleEscrow(referenceId, amount);
+    }
+
+    throw new NotFoundException('REFERENCE_NOT_FOUND');
+  }
+
+  /**
+   * Lock deposit funds when a catering inquiry is paid / accepted.
    * Applies active shopper loyalty vouchers via RedemptionService ($5 off).
    */
-  async holdInEscrow(inquiryId: string, amountCents: number) {
+  async holdCateringEscrow(inquiryId: string, amountCents: number) {
     if (!inquiryId?.trim()) throw new BadRequestException('INQUIRY_ID_REQUIRED');
     const amount = Math.floor(Number(amountCents));
     if (!Number.isFinite(amount) || amount < 1) {
@@ -47,7 +82,16 @@ export class PaymentClearingService implements OnModuleInit {
 
     const inquiry = await this.loadInquiry(inquiryId);
     if (inquiry.escrow_transaction_id) {
-      throw new BadRequestException('ESCROW_ALREADY_HELD');
+      return {
+        STATUS: 'ESCROW_LEDGER_ACTIVE',
+        ACTION: 'HELD_IN_ESCROW',
+        TRANSACTION_ID: inquiry.escrow_transaction_id,
+        INQUIRY_ID: inquiryId,
+        AMOUNT_CENTS: amount,
+        VOUCHER_CENTS: 0,
+        NET_AMOUNT_CENTS: amount,
+        ALREADY_HELD: true,
+      };
     }
 
     const voucher = await this.redemption.resolveActiveVoucherCents({
@@ -127,6 +171,7 @@ export class PaymentClearingService implements OnModuleInit {
       AMOUNT_CENTS: layout.amountCents,
       VOUCHER_CENTS: layout.voucherCents,
       NET_AMOUNT_CENTS: layout.netAmountCents,
+      ALREADY_HELD: false,
     };
   }
 
@@ -458,6 +503,37 @@ export class PaymentClearingService implements OnModuleInit {
       };
     } catch {
       return { STATUS: 'FINANCIAL_UI_ACTIVE', ITEMS: [], COUNT: 0 };
+    }
+  }
+
+  private async findInquiry(inquiryId: string): Promise<{
+    id: string;
+    vendor_id: string;
+    shopper_id: string;
+    status: string;
+    escrow_transaction_id: string | null;
+  } | null> {
+    try {
+      return await this.loadInquiry(inquiryId);
+    } catch (err) {
+      if (err instanceof NotFoundException) return null;
+      throw err;
+    }
+  }
+
+  private async findProcurement(procurementRequestId: string): Promise<{
+    id: string;
+    vendor_id: string;
+    farmer_id: string;
+    status: string;
+    deposit_cents: number | string | null;
+    escrow_transaction_id: string | null;
+  } | null> {
+    try {
+      return await this.loadProcurement(procurementRequestId);
+    } catch (err) {
+      if (err instanceof NotFoundException) return null;
+      throw err;
     }
   }
 

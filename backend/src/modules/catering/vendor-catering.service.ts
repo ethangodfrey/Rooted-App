@@ -329,7 +329,7 @@ export class VendorCateringService implements OnModuleInit {
       throw new BadRequestException('VENDOR_MISMATCH');
     }
 
-    const escrow = await this.clearing.holdInEscrow(inquiryId, deposit);
+    const escrow = await this.clearing.holdCateringEscrow(inquiryId, deposit);
     this.logger.log(
       `VENDOR_SERVICES_UPDATED ACTION=INQUIRY_ACCEPTED INQUIRY=${inquiryId} ESCROW=${escrow.TRANSACTION_ID}`,
     );
