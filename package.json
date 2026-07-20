@@ -77,6 +77,7 @@
     "test:wholesale:relationship-middleware": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-relationship-middleware.ts",
     "test:wholesale:retail-schema": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-retail-schema.ts",
     "test:wholesale:retail-drafts": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-retail-drafts.ts",
+    "test:wholesale:catalog-csv": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-catalog-csv.ts",
     "test:wholesale:logistics-service": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-logistics-service.ts",
     "test:wholesale:logistics-shipping-options": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-logistics-shipping-options.ts",
     "test:orders:partition-strategy": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-orders-partition-strategy.ts",
