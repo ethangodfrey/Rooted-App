@@ -225,6 +225,14 @@ enum WholesaleProductStatus {
   @@map("wholesale_product_status")
 }
 
+enum WholesaleSaleModePreference {
+  WHOLESALE_ONLY
+  RETAIL_ONLY
+  BOTH
+
+  @@map("wholesale_sale_mode_preference")
+}
+
 /// Bulk wholesale catalog SKU — distinct from consumer-facing Product rows.
 model WholesaleProduct {
   id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -250,6 +258,8 @@ model WholesaleProduct {
   isRetailEnabled   Boolean              @default(false) @map("is_retail_enabled")
   /// Retail unit price in USD (decimal dollars); null until retail is configured.
   retailPrice       Decimal?             @map("retail_price") @db.Decimal(12, 4)
+  /// Phase 66 — explicit catalog preference for wholesale/retail visibility.
+  saleModePreference WholesaleSaleModePreference @default(WHOLESALE_ONLY) @map("sale_mode_preference")
   status          WholesaleProductStatus @default(ACTIVE)
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
