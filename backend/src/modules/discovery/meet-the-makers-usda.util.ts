@@ -142,35 +142,35 @@ export async function fetchUsdaFarmersMarketsByState(
     ) {
       return [];
     }
-    const records = Array.isArray(payload)
-      ? payload
+    const records: Record<string, unknown>[] = Array.isArray(payload)
+      ? (payload as Record<string, unknown>[])
       : payload &&
           typeof payload === 'object' &&
           Array.isArray((payload as { data?: unknown }).data)
         ? ((payload as { data: unknown[] }).data as Record<string, unknown>[])
         : [];
 
-    return records
-      .map((raw) => {
-        const listingId = cleanString(raw.listing_id ?? raw.listingid ?? raw.lid);
-        if (!listingId) return null;
-        return {
-          listingId,
-          directory: 'farmersmarket' as const,
-          name: cleanString(raw.listing_name ?? raw.marketname ?? raw.name),
-          city: cleanString(raw.location_city ?? raw.city),
-          state: normalizeUsStateAbbr(
-            cleanString(raw.location_state ?? raw.state) ?? abbr,
-          ),
-          address: cleanString(raw.location_address ?? raw.address),
-          latitude: toFiniteNumber(raw.location_x ?? raw.latitude ?? raw.lat),
-          longitude: toFiniteNumber(raw.location_y ?? raw.longitude ?? raw.lng),
-          hoursSummary: null,
-          seasonLabel: null,
-          source: 'usda_directory' as const,
-        };
-      })
-      .filter((row): row is UsdaListingSnapshot => row != null);
+    const snapshots: UsdaListingSnapshot[] = [];
+    for (const raw of records) {
+      const listingId = cleanString(raw.listing_id ?? raw.listingid ?? raw.lid);
+      if (!listingId) continue;
+      snapshots.push({
+        listingId,
+        directory: 'farmersmarket',
+        name: cleanString(raw.listing_name ?? raw.marketname ?? raw.name),
+        city: cleanString(raw.location_city ?? raw.city),
+        state: normalizeUsStateAbbr(
+          cleanString(raw.location_state ?? raw.state) ?? abbr,
+        ),
+        address: cleanString(raw.location_address ?? raw.address),
+        latitude: toFiniteNumber(raw.location_x ?? raw.latitude ?? raw.lat),
+        longitude: toFiniteNumber(raw.location_y ?? raw.longitude ?? raw.lng),
+        hoursSummary: null,
+        seasonLabel: null,
+        source: 'usda_directory',
+      });
+    }
+    return snapshots;
   } catch {
     return [];
   }
