@@ -2,38 +2,52 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+import {
+  assertProductionCronEnabled,
+  formatNotificationSystemDeployedLog,
+  resolveMarketAlertCronEnabled,
+} from './market-notification.deploy';
 import { MarketNotificationService } from './market-notification.service';
 
 /**
  * Background job: push MARKET_ALERT when an event starts within a shopper's radius.
- * Gate: MARKET_ALERT_CRON_ENABLED (default true in production).
+ * Gate: MARKET_ALERT_CRON_ENABLED (default true in production; set explicitly on Railway).
  */
 @Injectable()
 export class MarketNotificationScheduler implements OnModuleInit {
   private readonly logger = new Logger(MarketNotificationScheduler.name);
   private readonly cronEnabled: boolean;
+  private readonly nodeEnv: string;
   private inFlight = false;
 
   constructor(
     private readonly notifications: MarketNotificationService,
     private readonly config: ConfigService,
   ) {
-    const raw = (
-      this.config.get<string>('MARKET_ALERT_CRON_ENABLED') ?? ''
-    )
-      .trim()
-      .toLowerCase();
-    const nodeEnv = (
+    this.nodeEnv = (
       this.config.get<string>('NODE_ENV') ?? 'development'
     ).toLowerCase();
-    if (raw === 'true') this.cronEnabled = true;
-    else if (raw === 'false') this.cronEnabled = false;
-    else this.cronEnabled = nodeEnv === 'production';
+    this.cronEnabled = resolveMarketAlertCronEnabled({
+      envFlag: this.config.get<string>('MARKET_ALERT_CRON_ENABLED'),
+      nodeEnv: this.nodeEnv,
+    });
   }
 
   onModuleInit(): void {
+    assertProductionCronEnabled({
+      envFlag: this.config.get<string>('MARKET_ALERT_CRON_ENABLED'),
+      nodeEnv: this.nodeEnv,
+    });
+
     this.logger.log(
       `NOTIFICATION_SERVICE_INITIALIZED SCHEDULER=MarketNotificationScheduler CRON=${CronExpression.EVERY_5_MINUTES} ENABLED=${this.cronEnabled ? '1' : '0'}`,
+    );
+    this.logger.log(
+      formatNotificationSystemDeployedLog({
+        enabled: this.cronEnabled,
+        nodeEnv: this.nodeEnv,
+        cron: CronExpression.EVERY_5_MINUTES,
+      }),
     );
   }
 

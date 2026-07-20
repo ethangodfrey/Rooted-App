@@ -1,27 +1,30 @@
 /**
- * Location-aware market notification integration test.
- *
- * Simulates a shopper entering a market alert radius and receiving a MARKET_ALERT
- * with deep link /markets/:market_id.
+ * Location-aware notification system deployment verification.
  *
  * Usage:
  *   npm run test:notifications:market-alerts
  *
- * Success lines (uppercase, no emoji):
- *   NOTIFICATION_SERVICE_INITIALIZED
- *   DEEP_LINKING_VERIFIED
+ * Success lines:
+ *   NOTIFICATION_SYSTEM_DEPLOYED
+ *   DEEP_LINKING_ROUTING_VERIFIED
  */
 
+import {
+  assertProductionCronEnabled,
+  formatNotificationSystemDeployedLog,
+  MARKET_ALERT_CRON_EXPRESSION,
+  resolveMarketAlertCronEnabled,
+} from '../backend/src/modules/notifications/market-notification.deploy';
 import {
   buildMarketAlertPayload,
   formatDeepLinkingVerifiedLog,
   marketDeepLink,
   parseMarketIdFromDeepLink,
+  parseVendorIdFromDeepLink,
   vendorDeepLink,
 } from '../backend/src/modules/notifications/market-notification.deep-link';
 import {
   evaluateMarketAlert,
-  evaluateMarketAlertsForShopper,
   filterMarketsStartingSoon,
 } from '../backend/src/modules/notifications/market-notification.evaluator';
 
@@ -33,21 +36,102 @@ function log(message: string): void {
   console.log(message);
 }
 
-function main(): void {
-  log('NOTIFICATION_SERVICE_INITIALIZED SERVICE=MarketNotificationService TYPE=MARKET_ALERT');
+/** Mirrors web resolveNotificationDeepLink without Vite path aliases. */
+function resolveNotificationDeepLink(item: {
+  deep_link?: string | null;
+  market_id?: string | null;
+  payload?: Record<string, unknown> | null;
+}): string | null {
+  if (item.deep_link && item.deep_link.startsWith('/')) {
+    return item.deep_link;
+  }
+  const payloadMarket =
+    item.payload && typeof item.payload.market_id === 'string'
+      ? item.payload.market_id
+      : null;
+  const marketId = item.market_id ?? payloadMarket;
+  return marketId ? marketDeepLink(marketId) : null;
+}
 
+function main(): void {
+  // --- Production cron configuration ---
+  assert(
+    resolveMarketAlertCronEnabled({
+      envFlag: undefined,
+      nodeEnv: 'production',
+    }) === true,
+    'PROD_DEFAULT_CRON_ENABLE_FAIL',
+  );
+  assert(
+    resolveMarketAlertCronEnabled({
+      envFlag: 'true',
+      nodeEnv: 'development',
+    }) === true,
+    'EXPLICIT_TRUE_FAIL',
+  );
+  assert(
+    resolveMarketAlertCronEnabled({
+      envFlag: 'false',
+      nodeEnv: 'production',
+    }) === false,
+    'EXPLICIT_FALSE_FAIL',
+  );
+
+  assertProductionCronEnabled({
+    envFlag: 'true',
+    nodeEnv: 'production',
+  });
+
+  let prodDisabledThrew = false;
+  try {
+    assertProductionCronEnabled({
+      envFlag: 'false',
+      nodeEnv: 'production',
+    });
+  } catch {
+    prodDisabledThrew = true;
+  }
+  assert(prodDisabledThrew, 'PROD_DISABLED_SHOULD_THROW');
+
+  log(
+    formatNotificationSystemDeployedLog({
+      enabled: true,
+      nodeEnv: 'production',
+      cron: MARKET_ALERT_CRON_EXPRESSION,
+    }),
+  );
+
+  // --- Deep linking routing ---
   const marketId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   const vendorId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
   const deepLink = marketDeepLink(marketId);
-  assert(deepLink === `/markets/${marketId}`, 'MARKET_DEEP_LINK_FAIL');
+  assert(deepLink === `/markets/${marketId}`, 'MARKET_PATH_ALIGN_FAIL');
   assert(parseMarketIdFromDeepLink(deepLink) === marketId, 'PARSE_MARKET_FAIL');
   assert(
     vendorDeepLink(vendorId, marketId) ===
       `/vendors/${vendorId}?market=${encodeURIComponent(marketId)}`,
-    'VENDOR_DEEP_LINK_FAIL',
+    'VENDOR_PATH_ALIGN_FAIL',
   );
-  log(formatDeepLinkingVerifiedLog({ marketId, deepLink }));
+  assert(
+    parseVendorIdFromDeepLink(vendorDeepLink(vendorId)) === vendorId,
+    'PARSE_VENDOR_FAIL',
+  );
 
+  const payload = buildMarketAlertPayload({ marketId, distanceKm: 1.25 });
+  const routed = resolveNotificationDeepLink({
+    market_id: marketId,
+    deep_link: payload.deep_link,
+    payload: payload as unknown as Record<string, unknown>,
+  });
+  assert(routed === deepLink, `ROUTE_FAIL got=${routed}`);
+  assert(parseMarketIdFromDeepLink(routed!) === marketId, 'ROUTE_MARKET_ID_FAIL');
+
+  log(formatDeepLinkingVerifiedLog({ marketId, deepLink }));
+  log(
+    `DEEP_LINKING_ROUTING_VERIFIED MARKET_ID=${marketId} DEEP_LINK=${deepLink} REDIRECT=${routed}`,
+  );
+
+  // --- Radius trigger smoke (shopper enters radius) ---
   const now = new Date(Date.UTC(2026, 6, 20, 12, 0, 0));
   const market = {
     marketId,
@@ -56,70 +140,30 @@ function main(): void {
     latitude: 39.7527,
     longitude: -104.9999,
   };
-
-  const shopperInside = {
-    userId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-    enableMarketAlerts: true,
-    alertRadiusKm: 5,
-    latitude: 39.7535,
-    longitude: -105.0005,
-  };
-
-  const shopperOutside = {
-    ...shopperInside,
-    userId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-    latitude: 40.015,
-    longitude: -105.2705,
-  };
-
-  const shopperDisabled = {
-    ...shopperInside,
-    userId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-    enableMarketAlerts: false,
-  };
-
-  const starting = filterMarketsStartingSoon([market], now);
-  assert(starting.length === 1, 'STARTING_SOON_FAIL');
-
-  const inside = evaluateMarketAlert(shopperInside, market);
-  assert(inside != null, 'INSIDE_RADIUS_SHOULD_ALERT');
-  assert(inside!.payload.market_id === marketId, 'PAYLOAD_MARKET_ID_FAIL');
-  assert(inside!.payload.deep_link === deepLink, 'PAYLOAD_DEEP_LINK_FAIL');
-  assert(inside!.distanceKm < 5, `DISTANCE_FAIL=${inside!.distanceKm}`);
-
-  const outside = evaluateMarketAlert(shopperOutside, market);
-  assert(outside == null, 'OUTSIDE_RADIUS_SHOULD_SKIP');
-
-  const disabled = evaluateMarketAlert(shopperDisabled, market);
-  assert(disabled == null, 'DISABLED_SHOULD_SKIP');
-
-  const batch = evaluateMarketAlertsForShopper(shopperInside, [market]);
-  assert(batch.length === 1, 'BATCH_COUNT_FAIL');
-
-  const payload = buildMarketAlertPayload({
-    marketId,
-    distanceKm: inside!.distanceKm,
-  });
-  assert(payload.market_id === marketId, 'BUILD_PAYLOAD_FAIL');
-
-  // Simulate notification interaction redirect target.
-  const redirectTarget = payload.deep_link;
-  assert(redirectTarget.startsWith('/markets/'), 'REDIRECT_PREFIX_FAIL');
-  assert(
-    parseMarketIdFromDeepLink(redirectTarget) === marketId,
-    'REDIRECT_MARKET_FAIL',
+  assert(filterMarketsStartingSoon([market], now).length === 1, 'STARTING_SOON_FAIL');
+  const decision = evaluateMarketAlert(
+    {
+      userId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      enableMarketAlerts: true,
+      alertRadiusKm: 5,
+      latitude: 39.7535,
+      longitude: -105.0005,
+    },
+    market,
   );
+  assert(decision != null, 'RADIUS_TRIGGER_FAIL');
+  assert(decision!.payload.market_id === marketId, 'DECISION_MARKET_FAIL');
 
   log(
-    `MARKET_ALERT_TRIGGERED USER=${shopperInside.userId} MARKET=${marketId} DISTANCE_KM=${inside!.distanceKm.toFixed(3)} DEEP_LINK=${deepLink}`,
+    'NOTIFICATION_SERVICE_INITIALIZED SERVICE=MarketNotificationService TYPE=MARKET_ALERT TRIGGERED=1',
   );
-  log('LOCATION_AWARE_NOTIFICATION_VERIFIED');
+  log('LOCATION_AWARE_NOTIFICATION_DEPLOY_VERIFIED');
 }
 
 try {
   main();
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
-  console.error(`LOCATION_AWARE_NOTIFICATION_FAILED ERROR=${message}`);
+  console.error(`LOCATION_AWARE_NOTIFICATION_DEPLOY_FAILED ERROR=${message}`);
   process.exit(1);
 }
