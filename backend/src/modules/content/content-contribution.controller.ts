@@ -112,8 +112,9 @@ export class ContentContributionController {
     });
 
     return {
-      STATUS: 'CONTENT_CONTRIBUTION_SYNCED',
       ...result,
+      CO_APPROVAL: result.STATUS,
+      STATUS: 'CONTENT_CONTRIBUTION_SYNCED',
     };
   }
 }
