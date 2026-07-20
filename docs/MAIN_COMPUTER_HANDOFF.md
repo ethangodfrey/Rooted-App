@@ -18,7 +18,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 10 | `cursor/vendor-procurement-dashboard-428e` | #225 | Vendor Procurement Dashboard |
 | 11 | `cursor/availability-scheduling-428e` | #226 | Automated Availability Scheduling |
 | 12 | `cursor/shopper-loyalty-ui-428e` | #227 | Phase 3 Shopper Loyalty UI |
-| 13 | `cursor/financial-clearing-escrow-428e` | (open) | Phase 4 Financial Clearing & Escrow |
+| 13 | `cursor/financial-clearing-escrow-428e` | #228 | Phase 4 Financial Clearing & Escrow |
 
 ```powershell
 git fetch origin
