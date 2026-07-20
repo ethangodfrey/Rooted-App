@@ -24,6 +24,7 @@ import { LogisticsModule } from './modules/logistics/logistics.module';
 import { ContentModule } from './modules/content/content.module';
 import { DiscoveryModule } from './modules/discovery/discovery.module';
 import { CateringModule } from './modules/catering/catering.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -69,6 +70,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     ContentModule,
     DiscoveryModule,
     CateringModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

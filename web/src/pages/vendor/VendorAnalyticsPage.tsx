@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { EngagementPerformancePanel } from '@/components/vendor/EngagementPerformancePanel';
 import { useAuth } from '@/hooks/use-auth';
 import {
   formatUsd,
@@ -14,9 +15,12 @@ function barWidth(value: number, max: number): string {
   return `${Math.max(4, Math.round((value / max) * 100))}%`;
 }
 
+type AnalyticsTab = 'telemetry' | 'performance';
+
 export function VendorAnalyticsPage() {
   const { user } = useAuth();
   const vendorId = user?.id ?? null;
+  const [tab, setTab] = useState<AnalyticsTab>('performance');
   const [data, setData] = useState<PosTelemetrySuite | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,26 +44,73 @@ export function VendorAnalyticsPage() {
   }, [vendorId]);
 
   useEffect(() => {
+    console.log('ANALYTICS_DASHBOARD_INITIALIZED SURFACE=VENDOR');
     void load();
   }, [load]);
 
-  if (loading && !data) {
-    return (
-      <div className="pos-telemetry">
+  return (
+    <div className="pos-telemetry">
+      <header className="pos-telemetry__header">
+        <div>
+          <p className="pos-telemetry__kicker">FARMER · VENDOR ENGAGEMENT</p>
+          <h1 className="pos-telemetry__title">Analytics</h1>
+        </div>
+        <div className="pos-telemetry__actions">
+          <Link to="/vendor/analytics/integrations" className="pos-telemetry__btn pos-telemetry__btn--solid">
+            [ POS SYNC ]
+          </Link>
+          {tab === 'telemetry' ? (
+            <button type="button" className="pos-telemetry__btn" onClick={() => void load()}>
+              [ REFRESH ]
+            </button>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="engagement-perf__tabs" role="tablist" aria-label="Analytics sections">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'performance'}
+          className={`engagement-perf__tab${tab === 'performance' ? ' engagement-perf__tab--active' : ''}`}
+          onClick={() => setTab('performance')}
+        >
+          Performance
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'telemetry'}
+          className={`engagement-perf__tab${tab === 'telemetry' ? ' engagement-perf__tab--active' : ''}`}
+          onClick={() => setTab('telemetry')}
+        >
+          Business Telemetry
+        </button>
+      </div>
+
+      {tab === 'performance' ? (
+        <EngagementPerformancePanel days={30} />
+      ) : loading && !data ? (
         <p className="pos-telemetry__empty">LOADING TELEMETRY</p>
-      </div>
-    );
-  }
+      ) : !data ? (
+        <>
+          {error ? <p className="pos-telemetry__error">{error}</p> : null}
+          <p className="pos-telemetry__empty">SIGN IN AS A VENDOR TO VIEW ANALYTICS</p>
+        </>
+      ) : (
+        <TelemetryBody data={data} error={error} />
+      )}
+    </div>
+  );
+}
 
-  if (!data) {
-    return (
-      <div className="pos-telemetry">
-        {error ? <p className="pos-telemetry__error">{error}</p> : null}
-        <p className="pos-telemetry__empty">SIGN IN AS A VENDOR TO VIEW ANALYTICS</p>
-      </div>
-    );
-  }
-
+function TelemetryBody({
+  data,
+  error,
+}: {
+  data: PosTelemetrySuite;
+  error: string | null;
+}) {
   const fulfillmentMax = Math.max(
     data.fulfillment.completed,
     data.fulfillment.cancelled,
@@ -70,22 +121,7 @@ export function VendorAnalyticsPage() {
   const connectedCount = data.integrations.filter((row) => row.credentials_connected).length;
 
   return (
-    <div className="pos-telemetry">
-      <header className="pos-telemetry__header">
-        <div>
-          <p className="pos-telemetry__kicker">REVENUE · VOLUME · POS SYNC</p>
-          <h1 className="pos-telemetry__title">Business Telemetry</h1>
-        </div>
-        <div className="pos-telemetry__actions">
-          <Link to="/vendor/analytics/integrations" className="pos-telemetry__btn pos-telemetry__btn--solid">
-            [ POS SYNC ]
-          </Link>
-          <button type="button" className="pos-telemetry__btn" onClick={() => void load()}>
-            [ REFRESH ]
-          </button>
-        </div>
-      </header>
-
+    <>
       {error ? <p className="pos-telemetry__error">{error}</p> : null}
 
       <section className="pos-telemetry__metrics" aria-label="Core metrics">
@@ -204,6 +240,6 @@ export function VendorAnalyticsPage() {
           ))}
         </div>
       </section>
-    </div>
+    </>
   );
 }

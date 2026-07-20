@@ -185,16 +185,21 @@ model VendorCateringService {
 
 /// Phase 72 — shopper catering inquiry / contact request.
 model CateringInquiry {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vendorId   String   @map("vendor_id") @db.Uuid
-  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  shopperId  String   @map("shopper_id") @db.Uuid
-  message    String
-  guestCount Int?     @map("guest_count")
-  eventDate  DateTime? @map("event_date") @db.Date
-  status     String   @default("OPEN")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId          String    @map("vendor_id") @db.Uuid
+  vendor            Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  shopperId         String    @map("shopper_id") @db.Uuid
+  message           String
+  guestCount        Int?      @map("guest_count")
+  eventDate         DateTime? @map("event_date") @db.Date
+  status            String    @default("OPEN")
+  /// Phase 73 — append-only VIEW/CLICK interaction payloads.
+  interactionEvents Json      @default("[]") @map("interaction_events")
+  viewCount         Int       @default(0) @map("view_count")
+  clickCount        Int       @default(0) @map("click_count")
+  lastInteractionAt DateTime? @map("last_interaction_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([vendorId, createdAt(sort: Desc)])
   @@index([shopperId, createdAt(sort: Desc)])
@@ -849,19 +854,24 @@ model Post {
 
 /// Appendable dual-posting contribution rows (create / co-approve / append / reject).
 model PostContribution {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  postId          String   @map("post_id") @db.Uuid
-  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  contributorId   String   @map("contributor_id") @db.Uuid
-  contributorType String   @map("contributor_type")
-  contentType     String   @default("TEXT") @map("content_type")
-  body            String?
-  mediaUrl        String?  @map("media_url")
-  cdnMediaUrl     String?  @map("cdn_media_url")
-  mediaCompressed Boolean  @default(false) @map("media_compressed")
-  action          String
-  metadata        Json     @default("{}")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId            String    @map("post_id") @db.Uuid
+  post              Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  contributorId     String    @map("contributor_id") @db.Uuid
+  contributorType   String    @map("contributor_type")
+  contentType       String    @default("TEXT") @map("content_type")
+  body              String?
+  mediaUrl          String?   @map("media_url")
+  cdnMediaUrl       String?   @map("cdn_media_url")
+  mediaCompressed   Boolean   @default(false) @map("media_compressed")
+  action            String
+  metadata          Json      @default("{}")
+  /// Phase 73 — append-only VIEW/CLICK/INQUIRY interaction payloads.
+  interactionEvents Json      @default("[]") @map("interaction_events")
+  viewCount         Int       @default(0) @map("view_count")
+  clickCount        Int       @default(0) @map("click_count")
+  lastInteractionAt DateTime? @map("last_interaction_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([postId, createdAt(sort: Desc)])
   @@map("post_contributions")
@@ -881,6 +891,25 @@ model UserEvent {
   @@index([userId, createdAt(sort: Desc)])
   @@index([eventId])
   @@map("user_events")
+}
+
+/// Phase 73 — daily engagement aggregates for farmer/vendor Performance dashboards.
+model EngagementMetric {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId   String   @map("entity_id") @db.Uuid
+  /// FARMER | VENDOR
+  entityType String   @map("entity_type")
+  /// VIEW | INQUIRY | RSVP
+  metricType String   @map("metric_type")
+  metricDate DateTime @map("metric_date") @db.Date
+  count      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([entityId, entityType, metricType, metricDate])
+  @@index([entityId, metricDate(sort: Desc)])
+  @@index([metricType, metricDate(sort: Desc)])
+  @@map("engagement_metrics")
 }
 
 model VendorCertification {

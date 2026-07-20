@@ -175,6 +175,20 @@ export class VendorCateringService implements OnModuleInit {
       },
     });
 
+    try {
+      await this.prisma.$executeRaw(Prisma.sql`
+        SELECT public.bump_engagement_metric(
+          ${body.vendorId}::uuid,
+          'VENDOR'::public.engagement_entity_type,
+          'INQUIRY'::public.engagement_metric_type,
+          1,
+          (timezone('utc', now()))::date
+        )
+      `);
+    } catch {
+      // phase73 may not be applied yet
+    }
+
     this.logger.log(
       `VENDOR_SERVICES_UPDATED ACTION=INQUIRY VENDOR=${body.vendorId} SHOPPER=${shopperId} INQUIRY=${row.id}`,
     );
