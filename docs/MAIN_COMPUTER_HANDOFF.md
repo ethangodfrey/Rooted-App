@@ -27,6 +27,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 19 | `cursor/admin-platform-dashboard-428e` | #234 | Phase 7 Platform Admin Dashboard |
 | 20 | `cursor/dispute-resolution-engine-428e` | #235 | Phase 8 Dispute Resolution Engine |
 | 21 | `cursor/notification-engine-428e` | #236 | Phase 9 Automated Notification Engine |
+| 22 | `cursor/platform-e2e-smoke-428e` | (pending) | Final Platform E2E Golden-Path Smoke Test |
 
 ```powershell
 git fetch origin
@@ -34,7 +35,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/notification-engine-428e`
+`cursor/platform-e2e-smoke-428e`
 
 ## 2. Apply Supabase SQL (required)
 
