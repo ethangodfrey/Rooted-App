@@ -121,7 +121,7 @@ create table if not exists public.vendor_rewards_boost (
   label text not null default 'DOUBLE_POINTS',
   multiplier numeric(4, 2) not null default 2.00
     check (multiplier >= 1.00 and multiplier <= 5.00),
-  /// Micro-fee charged to vendor per bonus point (integer cents).
+  -- Micro-fee charged to vendor per bonus point (integer cents).
   micro_fee_cents_per_bonus_point integer not null default 1
     check (micro_fee_cents_per_bonus_point >= 0),
   starts_at timestamptz not null default now(),
