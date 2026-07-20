@@ -9,6 +9,7 @@ import {
   VendorSecondaryButton,
   VENDOR_PRESSABLE,
 } from '@/components/vendor/vendor-ui';
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 import { uploadVendorVideo } from '@/lib/upload';
@@ -31,6 +32,7 @@ export function VendorVideoPostFormPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ caption?: string; video?: string }>({});
 
   async function handleVideoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -50,15 +52,23 @@ export function VendorVideoPostFormPage() {
   }
 
   async function handleSave() {
-    if (!vendor || !caption.trim()) {
-      setError('Caption is required.');
-      return;
+    const nextFieldErrors: { caption?: string; video?: string } = {};
+    if (!caption.trim()) {
+      nextFieldErrors.caption = 'Caption is required.';
     }
     if (!videoUrl) {
-      setError('Add a video for this post.');
+      nextFieldErrors.video = 'Add a video for this post.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
       return;
     }
 
+    if (!vendor) return;
+
+    setFieldErrors({});
     setSaving(true);
     const now = new Date().toISOString();
     const { error: insertError } = await supabase.from('posts').insert({
@@ -101,11 +111,21 @@ export function VendorVideoPostFormPage() {
         <div className="app-input-group">
           <label>Caption</label>
           <textarea
-            className="app-textarea"
+            className={`app-textarea${fieldErrors.caption ? ' app-textarea--invalid' : ''}`}
             value={caption}
-            onChange={(e) => setCaption(e.target.value)}
+            aria-invalid={Boolean(fieldErrors.caption)}
+            onChange={(e) => {
+              setCaption(e.target.value);
+              setFieldErrors((prev) => {
+                if (!prev.caption) return prev;
+                const next = { ...prev };
+                delete next.caption;
+                return next;
+              });
+            }}
             rows={5}
           />
+          <FieldError message={fieldErrors.caption} />
         </div>
 
         <div className="app-input-group">
@@ -118,7 +138,19 @@ export function VendorVideoPostFormPage() {
                 playsInline
                 style={{ width: '100%', borderRadius: '12px', marginBottom: '0.5rem', maxHeight: 280 }}
               />
-              <VendorSecondaryButton onClick={() => setVideoUrl(null)}>Remove video</VendorSecondaryButton>
+              <VendorSecondaryButton
+                onClick={() => {
+                  setVideoUrl(null);
+                  setFieldErrors((prev) => {
+                    if (!prev.video) return prev;
+                    const next = { ...prev };
+                    delete next.video;
+                    return next;
+                  });
+                }}
+              >
+                Remove video
+              </VendorSecondaryButton>
             </div>
           ) : (
             <label className="app-btn app-btn--secondary inline-block cursor-pointer">
@@ -128,10 +160,19 @@ export function VendorVideoPostFormPage() {
                 accept="video/mp4,video/quicktime,video/webm"
                 style={{ display: 'none' }}
                 disabled={uploading}
-                onChange={handleVideoChange}
+                onChange={(e) => {
+                  void handleVideoChange(e);
+                  setFieldErrors((prev) => {
+                    if (!prev.video) return prev;
+                    const next = { ...prev };
+                    delete next.video;
+                    return next;
+                  });
+                }}
               />
             </label>
           )}
+          <FieldError message={fieldErrors.video} />
         </div>
 
         {error ? <p className="app-error">{error}</p> : null}

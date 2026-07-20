@@ -49,6 +49,7 @@ export default function EditPostScreen() {
       media_type: values.media_type,
       product_id: values.product_id,
       event_id: values.event_id,
+      posting_mode: values.posting_mode ?? 'SELF',
     };
     if (values.publish_at) {
       // Scheduled to a (future) time.

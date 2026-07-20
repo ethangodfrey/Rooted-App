@@ -13,6 +13,7 @@ export function SignupPage() {
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [message, setMessage] = useState<string | null>(null);
 
   async function handleSignup() {
@@ -21,6 +22,26 @@ export function SignupPage() {
       return;
     }
 
+    const nextFieldErrors: { email?: string; password?: string } = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      nextFieldErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      nextFieldErrors.email = 'Enter a valid email address.';
+    }
+    if (!password) {
+      nextFieldErrors.password = 'Password is required.';
+    } else if (password.length < 8) {
+      nextFieldErrors.password = 'Password must be at least 8 characters.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
+      return;
+    }
+
+    setFieldErrors({});
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -64,13 +85,30 @@ export function SignupPage() {
       subtitle="Your local food marketplace — farmers markets, private chefs, and home cooks in one place."
       email={email}
       password={password}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
+      onEmailChange={(value) => {
+        setEmail(value);
+        setFieldErrors((prev) => {
+          if (!prev.email) return prev;
+          const next = { ...prev };
+          delete next.email;
+          return next;
+        });
+      }}
+      onPasswordChange={(value) => {
+        setPassword(value);
+        setFieldErrors((prev) => {
+          if (!prev.password) return prev;
+          const next = { ...prev };
+          delete next.password;
+          return next;
+        });
+      }}
       onSubmit={handleSignup}
       submitLabel="Create account"
       loading={loading}
       submitDisabled={!accepted}
       error={error}
+      fieldErrors={fieldErrors}
       message={message}
       beforeSubmit={
         <div className="app-consent">

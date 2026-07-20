@@ -52,7 +52,11 @@ export function usePosActivityFeed({
   const initialLoadDoneRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!vendorId || !enabled) return;
+    if (!vendorId || !enabled) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
 
     const isInitial = !initialLoadDoneRef.current;
     if (isInitial) {
@@ -88,8 +92,13 @@ export function usePosActivityFeed({
   useEffect(() => {
     initialLoadDoneRef.current = false;
     setData(null);
+    if (!vendorId || !enabled) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     void refresh();
-  }, [refresh]);
+  }, [refresh, vendorId, enabled]);
 
   // Polling while tab is visible
   useEffect(() => {

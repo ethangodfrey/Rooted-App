@@ -3,6 +3,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { ActiveCollaborationBadge } from '@/components/makers/ActiveCollaborationBadge';
+import { VendorCateringBanner } from '@/components/vendor/VendorCateringBanner';
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
@@ -228,6 +230,7 @@ export function ShopperVendorPage() {
               <UserSticker role="vendor" />
             </div>
             <SpecialtyPills specialties={specialties} style={{ marginTop: '0.35rem' }} />
+            <ActiveCollaborationBadge profileId={vendor.user_id} />
             {vendor.category ? (
               <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-widest text-zinc-300">
                 {vendor.category}
@@ -239,6 +242,10 @@ export function ShopperVendorPage() {
       </div>
 
       <div className="px-4 py-5">
+        <VendorCateringBanner
+          vendorId={id}
+          vendorName={vendor.business_name}
+        />
         {distanceLabel ? (
           <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500 tabular-nums">
             {distanceLabel} away

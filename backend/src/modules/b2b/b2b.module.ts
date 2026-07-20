@@ -9,6 +9,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ElasticsearchModule } from '../search/elasticsearch.module';
 import { UsWholesaleProximityMiddleware } from '../search/us-wholesale-proximity.middleware';
 import { StripeModule } from '../stripe/stripe.module';
+import { CatalogBulkImportController } from './catalog-bulk-import.controller';
+import { CatalogBulkImportService } from './catalog-bulk-import.service';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
 import { VendorPeerRequestsController } from './vendor-peer-requests.controller';
@@ -30,6 +32,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleProductsController,
     WholesaleOrdersController,
     WholesaleInvoicesController,
+    CatalogBulkImportController,
   ],
   providers: [
     VendorConnectionsService,
@@ -40,6 +43,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleInvoiceOverdueScheduler,
     UsWholesaleProximityMiddleware,
     WholesaleRelationshipMiddleware,
+    CatalogBulkImportService,
   ],
   exports: [
     VendorConnectionsService,
@@ -47,6 +51,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleProductsService,
     WholesaleOrdersService,
     WholesaleInvoiceOverdueService,
+    CatalogBulkImportService,
   ],
 })
 export class B2bModule implements NestModule {

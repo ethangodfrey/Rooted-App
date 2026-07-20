@@ -14,6 +14,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
   useEffect(() => {
     const oauthError = getOAuthErrorFromUrl(window.location.href);
@@ -29,6 +30,24 @@ export function LoginPage() {
       return;
     }
 
+    const nextFieldErrors: { email?: string; password?: string } = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      nextFieldErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      nextFieldErrors.email = 'Enter a valid email address.';
+    }
+    if (!password) {
+      nextFieldErrors.password = 'Password is required.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
+      return;
+    }
+
+    setFieldErrors({});
     setLoading(true);
     setError(null);
 
@@ -57,12 +76,29 @@ export function LoginPage() {
       subtitle="Sign in to explore farmers markets, private chefs, and local food businesses."
       email={email}
       password={password}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
+      onEmailChange={(value) => {
+        setEmail(value);
+        setFieldErrors((prev) => {
+          if (!prev.email) return prev;
+          const next = { ...prev };
+          delete next.email;
+          return next;
+        });
+      }}
+      onPasswordChange={(value) => {
+        setPassword(value);
+        setFieldErrors((prev) => {
+          if (!prev.password) return prev;
+          const next = { ...prev };
+          delete next.password;
+          return next;
+        });
+      }}
       onSubmit={handleLogin}
       submitLabel="Sign in"
       loading={loading}
       error={error}
+      fieldErrors={fieldErrors}
       message={
         import.meta.env.DEV
           ? `OAuth redirect: ${getAuthRedirectUrlForDisplay()}`

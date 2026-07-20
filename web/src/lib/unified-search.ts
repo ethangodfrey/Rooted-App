@@ -24,6 +24,7 @@ export interface VendorSearchResult {
   business_name: string | null;
   category: string | null;
   distance_km?: number | null;
+  is_catering_provider?: boolean | null;
 }
 
 export interface ChefSearchResult {
@@ -279,11 +280,13 @@ export async function runUnifiedSearch(
   query: string,
   filter: UnifiedSearchFilter,
   coords?: Coords | null,
+  options?: { cateringOnly?: boolean },
 ): Promise<UnifiedSearchResults> {
   const trimmed = query.trim();
   if (trimmed.length < 2) return EMPTY;
 
   const wantChefs = filter === 'all' || filter === 'chefs';
+  const cateringOnly = Boolean(options?.cateringOnly);
 
   const { data, error } = await supabase.rpc('search_all', {
     p_query: trimmed,
@@ -297,20 +300,26 @@ export async function runUnifiedSearch(
     if (error && import.meta.env.DEV) {
       console.warn('[search] search_all RPC failed; using direct Supabase fallback.', error.message);
     }
-    return runUnifiedSearchFallback(trimmed, filter, coords);
+    return runUnifiedSearchFallback(trimmed, filter, coords, cateringOnly);
   }
 
   const mapped = mapSearchAllRows(data as SearchAllRow[]);
   const services = wantChefs ? await fetchChefServices(trimmed) : [];
 
+  let vendors = mapped.vendors;
+  if (cateringOnly) {
+    vendors = await filterVendorsByCatering(vendors);
+  }
+
   const results = {
     ...mapped,
+    vendors,
     events: await enrichEventScheduleFields(mapped.events),
     services,
   };
   const wantEvents = filter === 'all' || filter === 'events';
   if (wantEvents && mapped.events.length === 0) {
-    const fallback = await runUnifiedSearchFallback(trimmed, filter, coords);
+    const fallback = await runUnifiedSearchFallback(trimmed, filter, coords, cateringOnly);
     if (fallback.events.length > 0) {
       return {
         ...results,
@@ -322,17 +331,48 @@ export async function runUnifiedSearch(
   return results;
 }
 
+async function filterVendorsByCatering(
+  vendors: VendorSearchResult[],
+): Promise<VendorSearchResult[]> {
+  if (vendors.length === 0) return [];
+  const ids = vendors.map((v) => v.id);
+  const { data } = await supabase
+    .from('vendors')
+    .select('id, is_catering_provider')
+    .in('id', ids)
+    .eq('is_catering_provider', true);
+  const allowed = new Set((data ?? []).map((row) => String(row.id)));
+  return vendors
+    .filter((v) => allowed.has(v.id))
+    .map((v) => ({ ...v, is_catering_provider: true }));
+}
+
 /** Legacy client-side path kept as a graceful fallback if the RPC is unavailable. */
 async function runUnifiedSearchFallback(
   trimmed: string,
   filter: UnifiedSearchFilter,
   coords?: Coords | null,
+  cateringOnly = false,
 ): Promise<UnifiedSearchResults> {
   const like = `%${trimmed}%`;
   const wantEvents = filter === 'all' || filter === 'events';
   const wantChefs = filter === 'all' || filter === 'chefs';
 
   const geoEvents = wantEvents ? await geoRankedEvents(trimmed, coords) : null;
+
+  const vendorsQuery =
+    filter === 'all' || filter === 'vendors'
+      ? (() => {
+          let q = supabase
+            .from('vendors')
+            .select('id, business_name, category, is_catering_provider')
+            .eq('approval_status', 'approved')
+            .ilike('business_name', like)
+            .limit(20);
+          if (cateringOnly) q = q.eq('is_catering_provider', true);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
 
   const [eventsRes, vendorsRes, chefsRes, productsRes, servicesRes] = await Promise.all([
     wantEvents && geoEvents === null
@@ -344,14 +384,7 @@ async function runUnifiedSearchFallback(
           .order('start_datetime', { ascending: true })
           .limit(30)
       : Promise.resolve({ data: [] }),
-    filter === 'all' || filter === 'vendors'
-      ? supabase
-          .from('vendors')
-          .select('id, business_name, category')
-          .eq('approval_status', 'approved')
-          .ilike('business_name', like)
-          .limit(10)
-      : Promise.resolve({ data: [] }),
+    vendorsQuery,
     wantChefs
       ? supabase
           .from('chefs')

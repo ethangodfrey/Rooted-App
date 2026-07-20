@@ -28,7 +28,7 @@ export function AttendingVendorGrid({ vendors, userCoords, marketId }: Attending
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr]">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {vendors.map((vendor) => {
         const distance = isValidCoords(userCoords)
           ? vendorDistanceLabel(vendor, userCoords)

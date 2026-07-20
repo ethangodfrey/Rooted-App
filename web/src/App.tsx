@@ -8,6 +8,7 @@ import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
 import { AdminCommunityEventsPage } from '@/pages/admin/AdminCommunityEventsPage';
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
+import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
@@ -66,6 +67,15 @@ import { ShopperReservePage } from '@/pages/shopper/ShopperReservePage';
 import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
+import { ShopperMeetTheMakersPage } from '@/pages/shopper/ShopperMeetTheMakersPage';
+import { ShopperRewardsPage } from '@/pages/shopper/ShopperRewardsPage';
+import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSettingsPage';
+import { VendorAvailabilityPage } from '@/pages/vendor/VendorAvailabilityPage';
+import { VendorLoyaltyPage } from '@/pages/vendor/VendorLoyaltyPage';
+import { VendorFinancialsPage } from '@/pages/vendor/VendorFinancialsPage';
+import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { FarmerLogisticsPage } from '@/pages/farmer/FarmerLogisticsPage';
+import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
@@ -121,6 +131,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<ShopperCartHost />}>
         <Route path="/app" element={<DashboardRedirect />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/role" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
@@ -141,10 +152,12 @@ export default function App() {
           <Route path="/shopper/home" element={<ShopperHomePage />} />
           <Route path="/shopper/search" element={<ShopperSearchPage />} />
           <Route path="/shopper/explore" element={<ShopperExplorePage />} />
+          <Route path="/shopper/meet-the-makers" element={<ShopperMeetTheMakersPage />} />
           <Route path="/shopper/events" element={<ShopperEventsPage />} />
           <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
           <Route path="/shopper/feed" element={<Navigate to="/following" replace />} />
           <Route path="/shopper/profile" element={<ShopperProfilePage />} />
+          <Route path="/shopper/rewards" element={<ShopperRewardsPage />} />
           <Route path="/shopper/cart" element={<ShopperCartPage />} />
         </Route>
 
@@ -202,12 +215,22 @@ export default function App() {
             element={<OrderContextThreadPage viewerRole="vendor" backTo="/vendor/inbox" />}
           />
           <Route path="network" element={<VendorNetworkPage />} />
+          <Route path="procurement" element={<VendorProcurementPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="analytics/integrations" element={<VendorAnalyticsIntegrationsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="posts" element={<VendorPostsPage />} />
           <Route path="profile" element={<VendorProfilePage />} />
+          <Route path="catering" element={<VendorCateringSettingsPage />} />
+          <Route path="availability" element={<VendorAvailabilityPage />} />
+          <Route path="loyalty" element={<VendorLoyaltyPage />} />
+          <Route path="financials" element={<VendorFinancialsPage />} />
+        </Route>
+
+        <Route path="/farmer" element={<VendorLayout />}>
+          <Route index element={<Navigate to="logistics" replace />} />
+          <Route path="logistics" element={<FarmerLogisticsPage />} />
         </Route>
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
@@ -247,6 +270,8 @@ export default function App() {
         <Route path="/chef/credentials" element={<ChefCredentialsPage />} />
 
         <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />

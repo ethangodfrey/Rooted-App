@@ -2,6 +2,10 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+import {
+  PartitionAwareSchedulerController,
+  type SchedulerLastRunStatus,
+} from './partition-aware-scheduler-reliability.util';
 import { PartitionAwareOrderIndexerService } from './partition-aware-order-indexer.service';
 
 /**
@@ -15,7 +19,7 @@ export class PartitionAwareOrderIndexerScheduler implements OnModuleInit {
     PartitionAwareOrderIndexerScheduler.name,
   );
   private readonly cronEnabled: boolean;
-  private syncInFlight = false;
+  private readonly controller: PartitionAwareSchedulerController;
 
   constructor(
     private readonly indexer: PartitionAwareOrderIndexerService,
@@ -38,6 +42,11 @@ export class PartitionAwareOrderIndexerScheduler implements OnModuleInit {
     } else {
       this.cronEnabled = nodeEnv === 'production';
     }
+
+    this.controller = new PartitionAwareSchedulerController(
+      this.indexer,
+      this.cronEnabled,
+    );
   }
 
   onModuleInit(): void {
@@ -47,6 +56,15 @@ export class PartitionAwareOrderIndexerScheduler implements OnModuleInit {
     this.logger.log(
       `CRON_JOB_REGISTERED JOB=DISCOVERY_PARTITION_PARTIAL_SYNC CRON=${CronExpression.EVERY_HOUR} ENABLED=${this.cronEnabled ? '1' : '0'}`,
     );
+  }
+
+  getLastRunStatus(): SchedulerLastRunStatus {
+    return this.controller.getLastRunStatus();
+  }
+
+  /** Test/ops hook — same path as the hourly cron, including lock semantics. */
+  async triggerSync(): Promise<SchedulerLastRunStatus> {
+    return this.controller.triggerSync();
   }
 
   /**
@@ -63,29 +81,28 @@ export class PartitionAwareOrderIndexerScheduler implements OnModuleInit {
       return;
     }
 
-    if (this.syncInFlight) {
+    const before = this.controller.getLastRunStatus();
+    const status = await this.controller.triggerSync();
+
+    if (status.SKIPPED_REASON === 'LOCK_HELD') {
       this.logger.log(
         'CRON_JOB_REGISTERED SKIPPED REASON=LOCK_HELD JOB=DISCOVERY_PARTITION_PARTIAL_SYNC',
       );
       return;
     }
 
-    this.syncInFlight = true;
-    try {
-      this.logger.log(
-        'CRON_JOB_REGISTERED EXECUTED JOB=DISCOVERY_PARTITION_PARTIAL_SYNC',
-      );
-      const result = await this.indexer.syncRecentPartitions();
-      this.logger.log(
-        `PRODUCTION_SYNC_CONFIGURED COMPLETED PARTITIONS=${result.PARTITIONS_SCANNED} INDEXED=${result.DOCUMENTS_INDEXED} SKIPPED=${result.SKIPPED_REASON ?? 'NONE'}`,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    if (status.ERROR) {
       this.logger.error(
-        `PRODUCTION_SYNC_CONFIGURED FAILED ERROR=${message} CONTINUING=1`,
+        `PRODUCTION_SYNC_CONFIGURED FAILED ERROR=${status.ERROR} CONTINUING=1`,
       );
-    } finally {
-      this.syncInFlight = false;
+      return;
     }
+
+    this.logger.log(
+      'CRON_JOB_REGISTERED EXECUTED JOB=DISCOVERY_PARTITION_PARTIAL_SYNC',
+    );
+    this.logger.log(
+      `PRODUCTION_SYNC_CONFIGURED COMPLETED PARTITIONS=${status.PARTITIONS_SCANNED} INDEXED=${status.DOCUMENTS_INDEXED} SKIPPED=NONE LAST_RUN_SUCCESS=${status.SUCCESS ? '1' : '0'} PREV_SUCCESS=${before.SUCCESS ? '1' : '0'}`,
+    );
   }
 }
