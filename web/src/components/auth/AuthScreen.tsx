@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
+import { FieldError } from '@/components/ui/FieldError';
 import '@/components/ui/ui.css';
 
 interface AuthScreenProps {
@@ -16,6 +17,7 @@ interface AuthScreenProps {
   loading?: boolean;
   submitDisabled?: boolean;
   error?: string | null;
+  fieldErrors?: { email?: string; password?: string };
   message?: string | null;
   beforeSubmit?: React.ReactNode;
   footer?: React.ReactNode;
@@ -35,6 +37,7 @@ export function AuthScreen({
   loading = false,
   submitDisabled = false,
   error,
+  fieldErrors,
   message,
   beforeSubmit,
   footer,
@@ -63,13 +66,15 @@ export function AuthScreen({
             <label htmlFor="email">Email</label>
             <input
               id="email"
-              className="app-input"
+              className={`app-input${fieldErrors?.email ? ' app-input--invalid' : ''}`}
               type="email"
               autoComplete="email"
               value={email}
+              aria-invalid={Boolean(fieldErrors?.email)}
               onChange={(e) => onEmailChange(e.target.value)}
               placeholder="you@example.com"
             />
+            <FieldError message={fieldErrors?.email} />
           </div>
 
           {showPassword ? (
@@ -77,13 +82,15 @@ export function AuthScreen({
               <label htmlFor="password">Password</label>
               <input
                 id="password"
-                className="app-input"
+                className={`app-input${fieldErrors?.password ? ' app-input--invalid' : ''}`}
                 type="password"
                 autoComplete="current-password"
                 value={password}
+                aria-invalid={Boolean(fieldErrors?.password)}
                 onChange={(e) => onPasswordChange(e.target.value)}
                 placeholder="••••••••"
               />
+              <FieldError message={fieldErrors?.password} />
             </div>
           ) : null}
 
