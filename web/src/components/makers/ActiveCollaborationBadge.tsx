@@ -74,7 +74,7 @@ export function ActiveCollaborationBadge({
             className="active-collab-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="Joint partnership content"
+            aria-label="US joint partnership content"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="active-collab-modal__header">
@@ -88,7 +88,9 @@ export function ActiveCollaborationBadge({
               </button>
             </div>
             {items.length === 0 ? (
-              <p className="active-collab-modal__empty">No joint posts yet.</p>
+              <p className="active-collab-modal__empty">
+                No US co-authored posts yet.
+              </p>
             ) : (
               <ul className="active-collab-modal__list">
                 {items.map((item) => (
@@ -105,6 +107,8 @@ export function ActiveCollaborationBadge({
                       {[item.contributorType, item.partnerContributorType]
                         .filter(Boolean)
                         .join(' + ')}
+                      {item.eventName ? ` · ${item.eventName}` : ''}
+                      {item.operatingHours ? ` · ${item.operatingHours}` : ''}
                     </p>
                   </li>
                 ))}

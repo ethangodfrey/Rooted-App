@@ -41,6 +41,30 @@
   padding: 0.85rem 1rem 1rem;
 }
 
+.meet-makers__badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.meet-makers__us-badge,
+.meet-makers__usda-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid #1c1917;
+  padding: 0.15rem 0.4rem;
+  color: #1c1917;
+  background: transparent;
+}
+
+.meet-makers__usda-badge {
+  border-color: #57534e;
+  color: #57534e;
+}
+
 .meet-makers__partners {
   margin: 0 0 0.35rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -48,6 +72,20 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #78716c;
+}
+
+.meet-makers__event {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #44403c;
+}
+
+.meet-makers__hours {
+  margin: 0.35rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: #57534e;
 }
 
 .meet-makers__caption {

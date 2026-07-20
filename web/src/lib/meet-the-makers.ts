@@ -12,6 +12,15 @@ export type MakerFeedItem = {
   vendorName: string | null;
   partnerName: string | null;
   eventName: string | null;
+  eventCity: string | null;
+  eventState: string | null;
+  eventAddress: string | null;
+  eventHoursSummary: string | null;
+  operatingHours: string | null;
+  usdaHoursSummary: string | null;
+  usdaSeasonLabel: string | null;
+  usdaListingId: string | null;
+  isUsMarket: boolean;
   distanceKm: number | null;
   categoryScore: number;
   rankScore: number;
@@ -22,9 +31,11 @@ export type MakerFeedItem = {
 
 export type MeetTheMakersFeedResponse = {
   STATUS: string;
+  REGION?: string;
   ITEMS: MakerFeedItem[];
   ALERT_RADIUS_KM: number;
   COUNT: number;
+  USDA_ENRICHED?: number;
 };
 
 export type JointContentItem = {
@@ -35,6 +46,9 @@ export type JointContentItem = {
   publishAt: string;
   contributorType: string | null;
   partnerContributorType: string | null;
+  isUsMarket?: boolean;
+  eventName?: string | null;
+  operatingHours?: string | null;
 };
 
 export type CollaborationResponse = {

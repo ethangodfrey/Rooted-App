@@ -51,8 +51,13 @@ export function ShopperMeetTheMakersPage() {
       setItems(feed.ITEMS ?? []);
       setRadiusKm(feed.ALERT_RADIUS_KM ?? null);
       console.log(
-        `PARTNERSHIP_FEED_SYNCED COUNT=${feed.COUNT} ALERT_RADIUS_KM=${feed.ALERT_RADIUS_KM}`,
+        `PARTNERSHIP_FEED_SYNCED COUNT=${feed.COUNT} ALERT_RADIUS_KM=${feed.ALERT_RADIUS_KM} REGION=${feed.REGION ?? 'US'}`,
       );
+      if (feed.USDA_ENRICHED != null) {
+        console.log(
+          `USDA_MARKET_DATA_SYNCED ENRICHED=${feed.USDA_ENRICHED}`,
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load makers feed.');
       setItems([]);
@@ -67,7 +72,7 @@ export function ShopperMeetTheMakersPage() {
   }, [load]);
 
   async function handleRsvp(item: MakerFeedItem) {
-    if (!item.eventId) return;
+    if (!item.eventId || !item.isUsMarket) return;
     setRsvpBusy(item.postId);
     try {
       await rsvpToMakerEvent({ eventId: item.eventId, postId: item.postId });
@@ -85,7 +90,7 @@ export function ShopperMeetTheMakersPage() {
         <p className="app-eyebrow">Discovery</p>
         <h1 className="meet-makers__title">Meet the Makers</h1>
         <p className="meet-makers__lede">
-          Farmer and vendor partnerships near you
+          US farmer and vendor partnerships near you
           {radiusKm != null ? ` · ${radiusKm} km alert radius` : ''}.
         </p>
         <Link to="/shopper/explore" className="app-back-link">
@@ -100,12 +105,18 @@ export function ShopperMeetTheMakersPage() {
       ) : error ? (
         <p className="app-error">{error}</p>
       ) : items.length === 0 ? (
-        <p className="app-row-meta">No active partnership posts in range yet.</p>
+        <p className="app-row-meta">
+          No active US partnership posts in range yet.
+        </p>
       ) : (
         <ul className="meet-makers__list">
           {items.map((item) => {
             const media = item.cdnMediaUrl || item.mediaUrl;
             const rsvpd = item.eventId ? rsvpDone.has(item.eventId) : false;
+            const location = [item.eventCity, item.eventState]
+              .filter(Boolean)
+              .join(', ');
+            const hours = item.operatingHours ?? item.usdaHoursSummary ?? item.eventHoursSummary;
             return (
               <li key={item.postId} className="meet-makers__card">
                 {media ? (
@@ -117,19 +128,34 @@ export function ShopperMeetTheMakersPage() {
                   />
                 ) : null}
                 <div className="meet-makers__body">
+                  <div className="meet-makers__badge-row">
+                    {item.isUsMarket ? (
+                      <span className="meet-makers__us-badge">US MARKET</span>
+                    ) : null}
+                    {item.usdaListingId ? (
+                      <span className="meet-makers__usda-badge">USDA DIRECTORY</span>
+                    ) : null}
+                  </div>
                   <p className="meet-makers__partners">
                     {[item.vendorName, item.partnerName].filter(Boolean).join(' · ') ||
                       'Partnership'}
                   </p>
                   <p className="meet-makers__caption">{item.caption}</p>
+                  {item.eventName ? (
+                    <p className="meet-makers__event">{item.eventName}</p>
+                  ) : null}
                   <p className="meet-makers__meta">
                     {item.distanceKm != null
                       ? `${item.distanceKm.toFixed(1)} km`
                       : 'Distance unknown'}
+                    {location ? ` · ${location}` : ''}
                     {item.preferredCategoryHits.length > 0
                       ? ` · ${item.preferredCategoryHits.join(', ')}`
                       : ''}
                   </p>
+                  {hours ? (
+                    <p className="meet-makers__hours">{hours}</p>
+                  ) : null}
                   <div className="meet-makers__actions">
                     <Link to={vendorPath(item.vendorId)} className="meet-makers__link">
                       View maker
@@ -142,18 +168,20 @@ export function ShopperMeetTheMakersPage() {
                         >
                           Market
                         </Link>
-                        <button
-                          type="button"
-                          className="meet-makers__rsvp"
-                          disabled={rsvpBusy === item.postId || rsvpd}
-                          onClick={() => void handleRsvp(item)}
-                        >
-                          {rsvpd
-                            ? 'RSVP saved'
-                            : rsvpBusy === item.postId
-                              ? 'Saving…'
-                              : 'RSVP'}
-                        </button>
+                        {item.isUsMarket ? (
+                          <button
+                            type="button"
+                            className="meet-makers__rsvp"
+                            disabled={rsvpBusy === item.postId || rsvpd}
+                            onClick={() => void handleRsvp(item)}
+                          >
+                            {rsvpd
+                              ? 'RSVP saved'
+                              : rsvpBusy === item.postId
+                                ? 'Saving…'
+                                : 'RSVP'}
+                          </button>
+                        ) : null}
                       </>
                     ) : null}
                   </div>

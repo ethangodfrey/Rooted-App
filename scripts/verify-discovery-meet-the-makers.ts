@@ -1,5 +1,5 @@
 /**
- * Meet the Makers discovery verification.
+ * Meet the Makers discovery verification (US farmers markets + USDA helpers).
  *
  * Usage:
  *   npm run test:discovery:meet-the-makers
@@ -7,6 +7,7 @@
  * Success lines (uppercase, no emoji):
  *   DISCOVERY_INTERFACE_INITIALIZED
  *   PARTNERSHIP_FEED_SYNCED
+ *   USDA_MARKET_DATA_SYNCED
  *   MEET_THE_MAKERS_VERIFIED
  */
 
@@ -15,6 +16,12 @@ import {
   DEFAULT_ALERT_RADIUS_KM,
   isWithinAlertRadiusKm,
 } from '../backend/src/modules/discovery/alert-radius.util';
+import {
+  formatUsdaMarketDataSyncedLog,
+  isUsMarketContext,
+  normalizeUsStateAbbr,
+  parseUsdaExternalId,
+} from '../backend/src/modules/discovery/meet-the-makers-usda.util';
 import {
   formatDiscoveryInterfaceInitializedLog,
   formatPartnershipFeedSyncedLog,
@@ -53,12 +60,24 @@ function candidate(
     vendorName: 'Vendorly Greens',
     vendorLatitude: 39.95,
     vendorLongitude: -75.16,
+    vendorCountry: 'US',
     vendorSpecialties: ['PRODUCE', 'HERBS'],
     partnerName: 'River Farm',
     partnerSpecialties: ['PRODUCE'],
     eventName: 'Rittenhouse Market',
     eventLatitude: 39.95,
     eventLongitude: -75.17,
+    eventCity: 'Philadelphia',
+    eventState: 'PA',
+    eventAddress: '18th & Walnut',
+    eventHoursSummary: 'Saturdays 9am–1pm',
+    externalSource: 'usda',
+    externalId: 'farmersmarket:12345',
+    isUsMarket: true,
+    usdaListingId: '12345',
+    usdaDirectory: 'farmersmarket',
+    usdaHoursSummary: null,
+    usdaSeasonLabel: null,
     ...overrides,
   };
 }
@@ -76,12 +95,34 @@ function main(): void {
   );
   assert(within.within, 'RADIUS_WITHIN_FAIL');
 
+  const parsed = parseUsdaExternalId('farmersmarket:99887');
+  assert(parsed?.directory === 'farmersmarket', 'USDA_PARSE_DIR_FAIL');
+  assert(parsed?.listingId === '99887', 'USDA_PARSE_ID_FAIL');
+  assert(normalizeUsStateAbbr('Pennsylvania') === 'PA', 'US_STATE_FAIL');
+  assert(
+    isUsMarketContext({
+      vendorCountry: 'USA',
+      eventState: 'PA',
+      externalSource: 'usda',
+    }),
+    'US_CONTEXT_FAIL',
+  );
+  assert(
+    !isUsMarketContext({
+      vendorCountry: 'CA',
+      eventState: 'ON',
+      externalSource: null,
+    }),
+    'NON_US_CONTEXT_FAIL',
+  );
+
   const ranked = rankMakerFeed(
     [
       candidate({
         postId: 'hit',
         vendorSpecialties: ['PRODUCE'],
         partnerSpecialties: ['PRODUCE'],
+        usdaHoursSummary: 'Saturday: 09:00 AM – 01:00 PM',
       }),
       candidate({
         postId: 'miss',
@@ -91,6 +132,9 @@ function main(): void {
         vendorLongitude: -75.161,
         eventLatitude: null,
         eventLongitude: null,
+        usdaListingId: null,
+        externalId: null,
+        externalSource: null,
       }),
       candidate({
         postId: 'far',
@@ -99,6 +143,15 @@ function main(): void {
         vendorLongitude: -75.0,
         eventLatitude: 45.0,
         eventLongitude: -75.0,
+      }),
+      candidate({
+        postId: 'intl',
+        isUsMarket: false,
+        vendorCountry: 'MX',
+        eventState: null,
+        usdaListingId: null,
+        externalSource: null,
+        vendorSpecialties: ['PRODUCE'],
       }),
     ],
     {
@@ -110,16 +163,25 @@ function main(): void {
     },
   );
 
-  assert(ranked.length === 2, `RANK_COUNT_FAIL GOT=${ranked.length}`);
+  assert(ranked.length === 3, `RANK_COUNT_FAIL GOT=${ranked.length}`);
   assert(ranked[0].postId === 'hit', 'RANK_ORDER_FAIL');
   assert(ranked[0].preferredCategoryHits.includes('PRODUCE'), 'CATEGORY_HIT_FAIL');
+  assert(
+    ranked[0].operatingHours === 'Saturday: 09:00 AM – 01:00 PM',
+    'HOURS_FAIL',
+  );
+  assert(ranked.some((item) => item.postId === 'miss'), 'MISS_WITHIN_FAIL');
+  assert(!ranked.some((item) => item.postId === 'far'), 'FAR_FILTER_FAIL');
+  assert(ranked.find((item) => item.postId === 'hit')!.isUsMarket, 'US_FLAG_FAIL');
 
   log(
     formatPartnershipFeedSyncedLog({
       count: ranked.length,
       alertRadiusKm: radius,
+      region: 'US',
     }),
   );
+  log(formatUsdaMarketDataSyncedLog({ enriched: 1, directoryHits: 12 }));
 
   log('MEET_THE_MAKERS_VERIFIED');
 }

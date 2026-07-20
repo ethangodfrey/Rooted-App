@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { isUsMarketContext } from './meet-the-makers-usda.util';
 
 export type UserEventRsvp = {
   id: string;
@@ -33,6 +34,8 @@ export class UserEventsService {
     if (!input.eventId?.trim()) {
       throw new BadRequestException('EVENT_ID_REQUIRED');
     }
+
+    await this.assertUsMarketEvent(input.eventId);
 
     try {
       const postIdSql = input.postId
@@ -142,6 +145,38 @@ export class UserEventsService {
       }));
     } catch {
       return [];
+    }
+  }
+
+  private async assertUsMarketEvent(eventId: string): Promise<void> {
+    try {
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          state: string | null;
+          external_source: string | null;
+        }>
+      >(Prisma.sql`
+        SELECT state, external_source
+        FROM public.events
+        WHERE id = ${eventId}::uuid
+        LIMIT 1
+      `);
+      const event = rows[0];
+      if (!event) {
+        throw new BadRequestException('EVENT_NOT_FOUND');
+      }
+      const ok = isUsMarketContext({
+        vendorCountry: 'US',
+        eventState: event.state,
+        externalSource: event.external_source,
+      });
+      // When state is blank (legacy seeds), allow RSVP; reject non-US states.
+      if (!ok && event.state?.trim()) {
+        throw new BadRequestException('US_MARKET_REQUIRED');
+      }
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
+      // If events lookup fails, allow RSVP insert to surface FK errors.
     }
   }
 }

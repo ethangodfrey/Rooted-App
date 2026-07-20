@@ -25,12 +25,24 @@ export type MakerFeedCandidate = {
   vendorName: string | null;
   vendorLatitude: number | null;
   vendorLongitude: number | null;
+  vendorCountry: string | null;
   vendorSpecialties: string[];
   partnerName: string | null;
   partnerSpecialties: string[];
   eventName: string | null;
   eventLatitude: number | null;
   eventLongitude: number | null;
+  eventCity: string | null;
+  eventState: string | null;
+  eventAddress: string | null;
+  eventHoursSummary: string | null;
+  externalSource: string | null;
+  externalId: string | null;
+  isUsMarket: boolean;
+  usdaListingId: string | null;
+  usdaDirectory: string | null;
+  usdaHoursSummary: string | null;
+  usdaSeasonLabel: string | null;
 };
 
 export type RankedMakerFeedItem = MakerFeedCandidate & {
@@ -39,6 +51,8 @@ export type RankedMakerFeedItem = MakerFeedCandidate & {
   rankScore: number;
   withinRadius: boolean;
   preferredCategoryHits: string[];
+  /** Effective hours: USDA live detail preferred, then cached event hours. */
+  operatingHours: string | null;
 };
 
 export function normalizeCategoryToken(value: string): string {
@@ -102,10 +116,22 @@ export function scoreMakerCandidate(input: {
   }
 
   // Higher is better: category hits dominate; nearer distance boosts score.
+  // US farmers-market partnerships get a small priority boost.
   const proximityBoost =
     distanceKm == null ? 0 : Math.max(0, radius - distanceKm) / radius;
+  const usBoost = input.candidate.isUsMarket ? 2 : 0;
+  const usdaBoost = input.candidate.usdaListingId ? 1 : 0;
   const rankScore =
-    categoryScore * 10 + proximityBoost * 5 + (withinRadius ? 1 : 0);
+    categoryScore * 10 +
+    proximityBoost * 5 +
+    (withinRadius ? 1 : 0) +
+    usBoost +
+    usdaBoost;
+
+  const operatingHours =
+    input.candidate.usdaHoursSummary ??
+    input.candidate.eventHoursSummary ??
+    null;
 
   return {
     ...input.candidate,
@@ -114,6 +140,7 @@ export function scoreMakerCandidate(input: {
     rankScore,
     withinRadius,
     preferredCategoryHits,
+    operatingHours,
   };
 }
 
@@ -159,6 +186,8 @@ export function formatDiscoveryInterfaceInitializedLog(): string {
 export function formatPartnershipFeedSyncedLog(input: {
   count: number;
   alertRadiusKm: number;
+  region?: string;
 }): string {
-  return `PARTNERSHIP_FEED_SYNCED COUNT=${input.count} ALERT_RADIUS_KM=${input.alertRadiusKm}`;
+  const region = input.region ?? 'US';
+  return `PARTNERSHIP_FEED_SYNCED COUNT=${input.count} ALERT_RADIUS_KM=${input.alertRadiusKm} REGION=${region}`;
 }

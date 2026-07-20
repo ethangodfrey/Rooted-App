@@ -36,8 +36,8 @@ export class DiscoveryController implements OnModuleInit {
 
   /**
    * GET /api/discovery/meet-the-makers
-   * Aggregates active farmer-vendor partnership posts, ranked by alert_radius_km
-   * location + preferred categories.
+   * Aggregates active US farmer-vendor partnership posts, ranked by
+   * alert_radius_km + preferred categories, enriched via USDA directory.
    */
   @Get('meet-the-makers')
   @Roles('shopper', 'vendor', 'farmer', 'admin')
