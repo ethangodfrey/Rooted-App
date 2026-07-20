@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   FULFILLED_ARCHIVE_STATUSES,
@@ -55,10 +55,13 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fulfillingIds, setFulfillingIds] = useState<Set<string>>(() => new Set());
+  const marketsRequestRef = useRef(0);
+  const ordersRequestRef = useRef(0);
 
   const marketIds = useMemo(() => markets.map((market) => market.id), [markets]);
 
   const loadMarkets = useCallback(async () => {
+    const requestId = ++marketsRequestRef.current;
     if (!vendorId) {
       setMarkets([]);
       return;
@@ -73,6 +76,7 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
         .order('created_at', { ascending: false });
 
       if (queryError) {
+        if (requestId !== marketsRequestRef.current) return;
         setError(queryError.message);
         setMarkets([]);
         return;
@@ -90,14 +94,17 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
             new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime(),
         );
 
+      if (requestId !== marketsRequestRef.current) return;
       setMarkets(slots);
     } catch (err) {
+      if (requestId !== marketsRequestRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load markets');
       setMarkets([]);
     }
   }, [vendorId]);
 
   const loadOrders = useCallback(async () => {
+    const requestId = ++ordersRequestRef.current;
     if (!vendorId) {
       setPendingOrders([]);
       setFulfilledOrders([]);
@@ -126,6 +133,7 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
       const { data, error: queryError } = await query;
 
       if (queryError) {
+        if (requestId !== ordersRequestRef.current) return;
         setError(queryError.message);
         setPendingOrders([]);
         setFulfilledOrders([]);
@@ -137,10 +145,12 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
       const pending = rows.filter((row) => isPendingPickup(row.order_status));
       const fulfilled = rows.filter((row) => isFulfilledArchive(row.order_status));
 
+      if (requestId !== ordersRequestRef.current) return;
       setPendingOrders(pending);
       setFulfilledOrders(fulfilled);
       setCounts({ pending: pending.length, fulfilled: fulfilled.length });
     } catch (err) {
+      if (requestId !== ordersRequestRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load orders');
       setPendingOrders([]);
       setFulfilledOrders([]);
@@ -148,6 +158,18 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
     } finally {
       setLoading(false);
     }
+  }, [vendorId, selectedMarketId, marketIds]);
+
+  useEffect(() => {
+    return () => {
+      marketsRequestRef.current++;
+    };
+  }, [vendorId]);
+
+  useEffect(() => {
+    return () => {
+      ordersRequestRef.current++;
+    };
   }, [vendorId, selectedMarketId, marketIds]);
 
   useEffect(() => {
@@ -185,27 +207,29 @@ export function useFulfillmentOrders(vendorId: string | undefined) {
       }));
 
       const paymentPatch = paymentStatusOnFulfill(order.payment_status);
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          order_status: 'fulfilled',
-          updated_at: fulfilledSnapshot.updated_at,
-          ...(paymentPatch ? { payment_status: paymentPatch } : {}),
-        })
-        .eq('id', orderId)
-        .eq('vendor_id', vendorId);
+      try {
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({
+            order_status: 'fulfilled',
+            updated_at: fulfilledSnapshot.updated_at,
+            ...(paymentPatch ? { payment_status: paymentPatch } : {}),
+          })
+          .eq('id', orderId)
+          .eq('vendor_id', vendorId);
 
-      setFulfillingIds((current) => {
-        const next = new Set(current);
-        next.delete(orderId);
-        return next;
-      });
-
-      if (updateError) {
-        setPendingOrders(previousPending);
-        setFulfilledOrders(previousFulfilled);
-        setCounts(previousCounts);
-        setError(updateError.message);
+        if (updateError) {
+          setPendingOrders(previousPending);
+          setFulfilledOrders(previousFulfilled);
+          setCounts(previousCounts);
+          setError(updateError.message);
+        }
+      } finally {
+        setFulfillingIds((current) => {
+          const next = new Set(current);
+          next.delete(orderId);
+          return next;
+        });
       }
     },
     [vendorId, fulfillingIds, pendingOrders, fulfilledOrders, counts],
