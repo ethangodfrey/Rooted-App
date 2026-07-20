@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { TrustBadges } from '@/components/trust/TrustBadges';
+import { ActiveCollaborationBadge } from '@/components/makers/ActiveCollaborationBadge';
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
@@ -228,6 +229,7 @@ export function ShopperVendorPage() {
               <UserSticker role="vendor" />
             </div>
             <SpecialtyPills specialties={specialties} style={{ marginTop: '0.35rem' }} />
+            <ActiveCollaborationBadge profileId={vendor.user_id} />
             {vendor.category ? (
               <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-widest text-zinc-300">
                 {vendor.category}

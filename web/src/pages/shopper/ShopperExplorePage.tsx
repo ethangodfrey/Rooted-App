@@ -111,6 +111,9 @@ export function ShopperExplorePage() {
       <header className="explore-swipe__header fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0B1228]/60 border-b border-white/5 p-4">
         <div className="explore-swipe__header-inner">
           <p className="explore-swipe__brand">Explore</p>
+          <a href="/shopper/meet-the-makers" className="explore-swipe__chip">
+            Meet the Makers
+          </a>
           <div className="explore-swipe__filters" role="group" aria-label="Discovery filters">
             <button
               type="button"

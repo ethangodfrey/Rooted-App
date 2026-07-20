@@ -828,6 +828,22 @@ model PostContribution {
   @@map("post_contributions")
 }
 
+/// Shopper RSVPs for market events (Meet the Makers partnership posts).
+model UserEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  eventId   String   @map("event_id") @db.Uuid
+  postId    String?  @map("post_id") @db.Uuid
+  status    String   @default("RSVP")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId, eventId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([eventId])
+  @@map("user_events")
+}
+
 model VendorCertification {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   vendorId       String    @map("vendor_id") @db.Uuid

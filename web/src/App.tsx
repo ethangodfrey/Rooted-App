@@ -66,6 +66,7 @@ import { ShopperReservePage } from '@/pages/shopper/ShopperReservePage';
 import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
+import { ShopperMeetTheMakersPage } from '@/pages/shopper/ShopperMeetTheMakersPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
@@ -141,6 +142,7 @@ export default function App() {
           <Route path="/shopper/home" element={<ShopperHomePage />} />
           <Route path="/shopper/search" element={<ShopperSearchPage />} />
           <Route path="/shopper/explore" element={<ShopperExplorePage />} />
+          <Route path="/shopper/meet-the-makers" element={<ShopperMeetTheMakersPage />} />
           <Route path="/shopper/events" element={<ShopperEventsPage />} />
           <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
           <Route path="/shopper/feed" element={<Navigate to="/following" replace />} />

@@ -1,5 +1,6 @@
 import { DeleteAccountSection } from '@/components/account/DeleteAccountSection';
 import { LegalLinks } from '@/components/account/LegalLinks';
+import { ActiveCollaborationBadge } from '@/components/makers/ActiveCollaborationBadge';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import {
@@ -38,6 +39,7 @@ export function VendorProfilePage() {
             </p>
             <UserSticker role={stickerRole} />
           </div>
+          <ActiveCollaborationBadge profileId={user?.id} />
           <SpecialtyPills specialties={specialties} style={{ marginBottom: '0.75rem' }} />
           <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-stone-400">Email</p>
           <p className="m-0 mt-1 text-sm font-semibold text-stone-800">{user?.email}</p>
