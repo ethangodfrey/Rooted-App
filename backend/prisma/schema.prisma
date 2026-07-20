@@ -863,6 +863,10 @@ model Order {
 
   orderItems OrderItem[]
 
+  /// Phase 68 — partition-aligned indexes (RANGE by created_at).
+  @@index([createdAt])
+  @@index([shopperId, createdAt])
+  @@index([vendorId, createdAt])
   @@index([shopperId])
   @@index([vendorId])
   @@index([transactionId])
@@ -882,9 +886,15 @@ model OrderItem {
   itemPrice          Int      @map("item_price")
   customizationData  Json?    @map("customization_data")
   fulfillmentStatus  String?  @map("fulfillment_status")
+  /// Phase 68 — partition key for monthly RANGE partitioning.
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Parent order created_at for composite FK to partitioned orders.
+  orderCreatedAt     DateTime? @map("order_created_at") @db.Timestamptz(6)
 
   @@index([orderId])
   @@index([productId])
+  @@index([createdAt])
+  @@index([orderId, createdAt])
   @@map("order_items")
 }
 
