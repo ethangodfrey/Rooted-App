@@ -27,6 +27,13 @@ function parseCoord(value: string | null, min: number, max: number): number | nu
   return n;
 }
 
+function sanitizeDbCoord(value: unknown, min: number, max: number): number | null {
+  if (value == null) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min || n > max) return null;
+  return n;
+}
+
 /**
  * GET /api/markets/nearby?latitude=39.74&longitude=-104.99&radius_miles=25
  *
@@ -105,8 +112,8 @@ export async function GET(request: Request): Promise<NextResponse> {
       state: row.state,
       zipCode: row.zip_code,
       operatingSchedules: row.operating_schedules ?? [],
-      latitude: row.latitude != null ? Number(row.latitude) : null,
-      longitude: row.longitude != null ? Number(row.longitude) : null,
+      latitude: sanitizeDbCoord(row.latitude, -90, 90),
+      longitude: sanitizeDbCoord(row.longitude, -180, 180),
       distanceMiles: row.distance_miles,
     })),
     meta: {

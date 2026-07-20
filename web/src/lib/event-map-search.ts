@@ -1,4 +1,4 @@
-import { distanceMiles, isValidCoords, type Coords } from '@/lib/geo';
+import { coordsFrom, distanceMiles, isValidCoords, type Coords } from '@/lib/geo';
 import type { Event } from '@/types/database';
 
 export const ZIP_SEARCH_RADIUS_MILES = 35;
@@ -144,11 +144,7 @@ async function nominatimCoords(
     const hit = data[0];
     if (!hit?.lat || !hit?.lon) return null;
 
-    const latitude = Number(hit.lat);
-    const longitude = Number(hit.lon);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-
-    return { latitude, longitude };
+    return coordsFrom({ latitude: Number(hit.lat), longitude: Number(hit.lon) });
   } catch {
     return null;
   }
