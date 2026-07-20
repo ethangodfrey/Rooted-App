@@ -156,10 +156,30 @@ model Vendor {
   wholesaleProducts           WholesaleProduct[]
   wholesaleOrdersAsBuyer      WholesaleOrder[]           @relation("WholesaleOrderBuyer")
   wholesaleOrdersAsSeller     WholesaleOrder[]           @relation("WholesaleOrderSeller")
+  vendorAlerts                VendorAlert[]
 
   @@index([userId])
   @@index([latitude, longitude])
   @@map("vendors")
+}
+
+enum VendorAlertType {
+  LOW_STOCK
+  PAYMENT_DELAY
+
+  @@map("vendor_alert_type")
+}
+
+model VendorAlert {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId  String          @map("vendor_id") @db.Uuid
+  vendor    Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  alertType VendorAlertType @map("alert_type")
+  message   String
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([vendorId, alertType, createdAt(sort: Desc)])
+  @@map("vendor_alerts")
 }
 
 /// Phase 11 peer engine statuses (PENDING | ACCEPTED | BLOCKED).
