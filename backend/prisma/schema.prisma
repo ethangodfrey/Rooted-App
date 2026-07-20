@@ -27,16 +27,43 @@ datasource db {
 model User {
   id               String   @id @db.Uuid
   role             String
+  name             String?
   email            String?
+  phone            String?
+  profilePhoto     String?  @map("profile_photo")
   shopperInterests String[] @default([]) @map("shopper_interests")
   shopperZipCode   String?  @map("shopper_zip_code")
   vendorSpecialties String[] @default([]) @map("vendor_specialties")
   farmerSpecialties String[] @default([]) @map("farmer_specialties")
+  /// Phase 9 — { emailEnabled, smsEnabled }
+  notificationPreferences Json @default("{}") @map("notification_preferences")
 
   shopper      Shopper?
   transactions Transaction[]
+  notificationLogs NotificationLog[]
 
   @@map("users")
+}
+
+/// Phase 82 — notification delivery audit log.
+model NotificationLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// EMAIL | SMS
+  channel     String
+  eventType   String   @map("event_type")
+  /// SENT | FAILED
+  status      String   @default("SENT")
+  destination String?
+  subject     String?
+  body        String?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@map("notifications_log")
 }
 
 /// Vision profiles table — permanent sticker enum shopper|vendor|farmer.

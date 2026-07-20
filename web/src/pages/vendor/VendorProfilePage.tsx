@@ -48,6 +48,7 @@ export function VendorProfilePage() {
 
       <VendorSection title="Settings">
         <VendorListPanel>
+          <VendorListRow to="/settings" title="Notification preferences" icon="badge" tone="sky" />
           <VendorListRow to="/onboarding/specialties" title="Edit specialties" icon="grid" tone="amber" />
           <VendorListRow to="/vendor/procurement" title="Procurement" icon="users" tone="orange" />
           {user?.role === 'farmer' ? (

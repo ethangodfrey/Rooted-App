@@ -7,6 +7,7 @@ import {
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { FinancialModule } from '../financial/financial.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { LogisticsFulfillmentController } from './logistics-fulfillment.controller';
 import { LogisticsFulfillmentService } from './logistics-fulfillment.service';
 import { LogisticsShippingController } from './logistics-shipping.controller';
@@ -15,7 +16,7 @@ import { RegionalFreightCarrierClient } from './regional-freight-carrier.client'
 import { UsLogisticsRouteMiddleware } from './us-logistics-route.middleware';
 
 @Module({
-  imports: [PrismaModule, FinancialModule],
+  imports: [PrismaModule, FinancialModule, NotificationsModule],
   controllers: [LogisticsShippingController, LogisticsFulfillmentController],
   providers: [
     LogisticsService,

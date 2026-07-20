@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedemptionService } from '../loyalty/redemption.service';
+import { NotificationService } from '../notifications/notification.service';
 import {
   applyVoucherToAmount,
   formatEscrowLedgerActiveLog,
@@ -27,6 +28,7 @@ export class PaymentClearingService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redemption: RedemptionService,
+    private readonly notifications: NotificationService,
   ) {}
 
   onModuleInit(): void {
@@ -356,6 +358,15 @@ export class PaymentClearingService implements OnModuleInit {
       }),
     );
 
+    this.notifications.dispatchSafe(
+      this.notifications.notifyEscrowSettled({
+        destinationType: 'VENDOR',
+        destinationId: vendorId,
+        transactionId: tx[0].id,
+        netAmountCents: net,
+      }),
+    );
+
     return {
       STATUS: 'ESCROW_LEDGER_ACTIVE',
       ACTION: 'SETTLED',
@@ -423,6 +434,15 @@ export class PaymentClearingService implements OnModuleInit {
         transactionId: tx[0].id,
         status: 'SETTLED',
         netCents: net,
+      }),
+    );
+
+    this.notifications.dispatchSafe(
+      this.notifications.notifyEscrowSettled({
+        destinationType: 'FARMER',
+        destinationId: farmerId,
+        transactionId: tx[0].id,
+        netAmountCents: net,
       }),
     );
 

@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentClearingService } from '../financial/payment-clearing.service';
+import { NotificationService } from '../notifications/notification.service';
 import { StripeService } from '../stripe/stripe.service';
 import {
   formatDisputeEngineInitializedLog,
@@ -29,6 +30,7 @@ export class DisputeService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly clearing: PaymentClearingService,
     private readonly stripe: StripeService,
+    private readonly notifications: NotificationService,
   ) {}
 
   onModuleInit(): void {
@@ -214,6 +216,14 @@ export class DisputeService implements OnModuleInit {
       `DISPUTE_ENGINE_INITIALIZED ACTION=RESOLVED_REFUNDED DISPUTE=${dispute.id}`,
     );
 
+    this.notifications.dispatchSafe(
+      this.notifications.notifyDisputeResolved({
+        initiatorId: dispute.initiator_id,
+        disputeId: dispute.id,
+        resolution: 'RESOLVED_REFUNDED',
+      }),
+    );
+
     return {
       STATUS: 'DISPUTE_ENGINE_INITIALIZED',
       ACTION: 'RESOLVED_REFUNDED',
@@ -270,6 +280,14 @@ export class DisputeService implements OnModuleInit {
 
     this.logger.log(
       `DISPUTE_ENGINE_INITIALIZED ACTION=RESOLVED_RELEASED DISPUTE=${dispute.id}`,
+    );
+
+    this.notifications.dispatchSafe(
+      this.notifications.notifyDisputeResolved({
+        initiatorId: dispute.initiator_id,
+        disputeId: dispute.id,
+        resolution: 'RESOLVED_RELEASED',
+      }),
     );
 
     return {
@@ -350,12 +368,18 @@ export class DisputeService implements OnModuleInit {
   private async loadDispute(disputeId: string): Promise<{
     id: string;
     transaction_id: string;
+    initiator_id: string;
     status: string;
   }> {
     const rows = await this.prisma.$queryRaw<
-      Array<{ id: string; transaction_id: string; status: string }>
+      Array<{
+        id: string;
+        transaction_id: string;
+        initiator_id: string;
+        status: string;
+      }>
     >(Prisma.sql`
-      SELECT id, transaction_id, status::text AS status
+      SELECT id, transaction_id, initiator_id, status::text AS status
       FROM public.disputes
       WHERE id = ${disputeId}::uuid
       LIMIT 1

@@ -186,6 +186,13 @@ export function ShopperProfilePage() {
             <p className="app-profile-big-card__meta">Profile, ZIP, and preferences</p>
           </div>
         </Link>
+
+        <Link to="/settings" className="app-profile-big-card">
+          <div>
+            <p className="app-profile-big-card__title">Notification preferences</p>
+            <p className="app-profile-big-card__meta">Email and SMS alerts</p>
+          </div>
+        </Link>
       </div>
 
       <button type="button" className="app-sign-out-link" onClick={signOut}>

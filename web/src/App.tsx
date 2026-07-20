@@ -73,6 +73,7 @@ import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSetting
 import { VendorAvailabilityPage } from '@/pages/vendor/VendorAvailabilityPage';
 import { VendorLoyaltyPage } from '@/pages/vendor/VendorLoyaltyPage';
 import { VendorFinancialsPage } from '@/pages/vendor/VendorFinancialsPage';
+import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { FarmerLogisticsPage } from '@/pages/farmer/FarmerLogisticsPage';
 import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
@@ -130,6 +131,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<ShopperCartHost />}>
         <Route path="/app" element={<DashboardRedirect />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/onboarding/role-select" element={<RoleSelectPage />} />
         <Route path="/onboarding/role" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />

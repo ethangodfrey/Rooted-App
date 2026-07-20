@@ -26,6 +26,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 18 | `cursor/stripe-onboarding-ui-428e` | #233 | Phase 6 Stripe Connect Onboarding UI |
 | 19 | `cursor/admin-platform-dashboard-428e` | #234 | Phase 7 Platform Admin Dashboard |
 | 20 | `cursor/dispute-resolution-engine-428e` | #235 | Phase 8 Dispute Resolution Engine |
+| 21 | `cursor/notification-engine-428e` | (open) | Phase 9 Automated Notification Engine |
 
 ```powershell
 git fetch origin
@@ -33,7 +34,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/dispute-resolution-engine-428e`
+`cursor/notification-engine-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -63,8 +64,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_stripe_payments_gateway.sql`) — vendors/farmers.stripe_account_id
 12. `docs/supabase/phase81_dispute_resolution.sql`  
    (or `migrations/20260720_dispute_resolution.sql`) — disputes + FROZEN escrow status
+13. `docs/supabase/phase82_notification_engine.sql`  
+   (or `migrations/20260720_notification_engine.sql`) — notifications_log + notification_preferences
 
-After phase73–81, confirm:
+After phase73–82, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -85,6 +88,10 @@ select to_regclass('public.delivery_routes');
 select to_regclass('public.delivery_stops');
 select to_regclass('public.farmer_balances');
 select to_regclass('public.disputes');
+select to_regclass('public.notifications_log');
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'users'
+  and column_name = 'notification_preferences';
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'farmers'
   and column_name = 'stripe_account_id';

@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentClearingService } from '../financial/payment-clearing.service';
+import { NotificationService } from '../notifications/notification.service';
 import {
   assignDropoffOrders,
   formatFleetTrackingActiveLog,
@@ -27,6 +28,7 @@ export class LogisticsFulfillmentService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clearing: PaymentClearingService,
+    private readonly notifications: NotificationService,
   ) {}
 
   onModuleInit(): void {
@@ -278,6 +280,15 @@ export class LogisticsFulfillmentService implements OnModuleInit {
         routeId: stop.route_id,
         stopId,
         status: 'DELIVERED',
+      }),
+    );
+
+    // Non-blocking SMS to vendor — never blocks dropoff settlement.
+    this.notifications.dispatchSafe(
+      this.notifications.notifyVendorStopDelivered({
+        vendorId: stop.vendor_id,
+        stopId,
+        procurementRequestId: stop.procurement_request_id,
       }),
     );
 
