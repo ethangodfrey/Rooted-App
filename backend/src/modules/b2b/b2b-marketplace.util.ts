@@ -98,11 +98,11 @@ export function inferItemCategory(itemName: string | null | undefined): string {
   if (!n) return 'GENERAL';
   if (/\b(dairy|milk|cheese|yogurt|butter|cream)\b/.test(n)) return 'DAIRY';
   if (/\b(meat|beef|pork|chicken|poultry|lamb|sausage)\b/.test(n)) return 'MEAT';
-  if (/\b(egg|eggs)\b/.test(n)) return 'EGGS';
+  if (/\b(eggs?)\b/.test(n)) return 'EGGS';
   if (/\b(bread|bakery|pastry|flour)\b/.test(n)) return 'BAKERY';
   if (/\b(honey|jam|preserve|syrup)\b/.test(n)) return 'PANTRY';
   if (
-    /\b(fruit|berry|apple|citrus|produce|vegetable|veggie|lettuce|tomato|herb|greens)\b/.test(
+    /\b(fruit|berr(?:y|ies)|apples?|citrus|produce|vegetables?|veggies?|lettuce|tomatoes?|herbs?|greens)\b/.test(
       n,
     )
   ) {
