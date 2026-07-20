@@ -208,7 +208,7 @@ function InitialMapView({
       }
     }
 
-    if (userCoords) {
+    if (isValidCoords(userCoords)) {
       centerOnCoords(userCoords, 9);
       return;
     }
@@ -301,12 +301,13 @@ export function EventsMap({
     [businesses, mapZoom],
   );
   const eventCenter = centroidOfEvents(events);
-  const initialCenter: [number, number] = userCoords
-    ? [userCoords.latitude, userCoords.longitude]
+  const resolvedUserCoords = isValidCoords(userCoords) ? userCoords : null;
+  const initialCenter: [number, number] = resolvedUserCoords
+    ? [resolvedUserCoords.latitude, resolvedUserCoords.longitude]
     : eventCenter
       ? [eventCenter.latitude, eventCenter.longitude]
       : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
-  const initialZoom = userCoords || eventCenter ? 9 : DEFAULT_ZOOM;
+  const initialZoom = resolvedUserCoords || eventCenter ? 9 : DEFAULT_ZOOM;
 
   return (
     <div className="events-map-panel relative isolate z-0">
