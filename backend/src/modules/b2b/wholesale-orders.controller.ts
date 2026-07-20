@@ -56,13 +56,16 @@ export class WholesaleOrdersController {
     }
 
     const pricingMode: WholesalePricingMode =
-      req.wholesalePricingMode ?? 'STANDARD';
+      parsed.DATA.sale_mode === 'RETAIL'
+        ? 'RETAIL_SALE'
+        : (req.wholesalePricingMode ?? 'STANDARD');
     const order = await this.orders.createDraft(vendorId, parsed.DATA, {
       pricingMode,
       peerConnectionId: req.wholesalePeerConnectionId ?? null,
     });
     return {
       STATUS: 'ORDER_DRAFT_INITIALIZED',
+      SALE_MODE: parsed.DATA.sale_mode ?? 'WHOLESALE',
       PRICING_MODE: pricingMode,
       PEER_CONNECTION_ID: req.wholesalePeerConnectionId ?? null,
       ORDER: this.serializeOrder(order),
