@@ -13,7 +13,8 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 5 | `cursor/meet-the-makers-usda-428e` | #215 | US filter + USDA enrichment |
 | 6 | `cursor/engagement-analytics-dashboard-428e` | #216 | Engagement Performance dashboard |
 | 7 | `cursor/intelligence-automated-reporting-428e` | #217 | Weekly reports + anomaly detection |
-| 8 | `cursor/b2b-marketplace-phase1-428e` | (open) | B2B peer marketplace Phase 1 + schema prep |
+| 8 | `cursor/b2b-marketplace-phase1-428e` | #218 | B2B peer marketplace Phase 1 + schema prep |
+| 9 | `cursor/precision-rewards-loyalty-428e` | (open) | Precision Rewards loyalty logic |
 
 ```powershell
 git fetch origin
@@ -21,7 +22,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/b2b-marketplace-phase1-428e`
+`cursor/precision-rewards-loyalty-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -39,8 +40,10 @@ In the Supabase SQL editor, apply **in order** if not already applied:
    (or `migrations/20260720_intelligence_reporting.sql`) — `partner_reports` + PERFORMANCE_* notification types
 6. `docs/supabase/phase75_b2b_marketplace.sql`  
    (or `migrations/20260720_b2b_marketplace.sql`) — wholesale flags, `wholesale_listings`, procurement, availability + loyalty prep
+7. `docs/supabase/phase76_precision_rewards.sql`  
+   (or `migrations/20260720_precision_rewards.sql`) — action points, boosts, redemptions
 
-After phase73–75, confirm:
+After phase73–76, confirm:
 
 ```sql
 select to_regclass('public.engagement_metrics');
@@ -49,6 +52,9 @@ select to_regclass('public.wholesale_listings');
 select to_regclass('public.b2b_procurement_requests');
 select to_regclass('public.vendor_availability');
 select to_regclass('public.shopper_loyalty');
+select to_regclass('public.vendor_rewards_boost');
+select to_regclass('public.loyalty_action_ledger');
+select to_regclass('public.loyalty_redemptions');
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'post_contributions'
   and column_name in ('interaction_events', 'view_count', 'click_count');
@@ -100,6 +106,7 @@ npm run test:vendor:catering
 npm run test:analytics:dashboard
 npm run test:intelligence:automated
 npm run test:b2b:marketplace
+npm run test:loyalty:precision
 
 cd web
 npm run build
@@ -112,6 +119,7 @@ Expected uppercase logs (no emoji):
 - `ANALYTICS_DASHBOARD_INITIALIZED` / `METRICS_SYNC_COMPLETE`
 - `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
 - `B2B_MARKETPLACE_INITIALIZED` / `WHOLESALE_DIRECTORY_ACTIVE`
+- `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
 
 ## 5. Manual UI smoke (5 minutes)
 
@@ -134,7 +142,7 @@ npm run markets:usda:seed
 ## 7. Do not forget
 
 - [ ] Merge PR stack (or tip) after review  
-- [ ] Apply phase70 → phase73 in Supabase  
+- [ ] Apply phase70 → phase76 in Supabase  
 - [ ] Confirm `USDA_API_KEY` in root `.env` (and Railway if used)  
 - [ ] Redeploy backend after merge so `/api/discovery/*`, `/api/catering/*`, `/api/analytics/summary` are live  
 - [ ] Redeploy web so Performance tab + Meet the Makers page ship  

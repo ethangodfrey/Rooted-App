@@ -144,6 +144,10 @@ model Vendor {
   isCateringProvider    Boolean @default(false) @map("is_catering_provider")
   /// Phase 75 — B2B peer marketplace wholesale provider flag.
   isWholesaleProvider   Boolean @default(false) @map("is_wholesale_provider")
+  /// Phase 76 — Precision Rewards opt-in (shopper redemption eligibility).
+  rewardsOptIn          Boolean @default(false) @map("rewards_opt_in")
+  /// Phase 76 — vendor-funded boost micro-fee balance (integer cents).
+  rewardsBoostBalanceCents Int  @default(0) @map("rewards_boost_balance_cents")
 
   /// Phase 24/27 — WGS84 vendor pin + country (default USA in Supabase).
   latitude  Decimal? @db.Decimal(10, 7)
@@ -155,6 +159,8 @@ model Vendor {
   cateringService      VendorCateringService?
   cateringInquiries    CateringInquiry[]
   availabilityBlocks   VendorAvailability[]
+  rewardsBoosts        VendorRewardsBoost[]
+  loyaltyRedemptions   LoyaltyRedemption[]
   orders               Order[]
   vendorEvents         VendorEvent[]
   posConnections       PosConnection[]
@@ -272,16 +278,81 @@ model VendorAvailability {
 
 /// Phase 75 / Phase 3 prep — shopper loyalty points summary.
 model ShopperLoyalty {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  shopperId      String    @unique @map("shopper_id") @db.Uuid
-  shopper        Shopper   @relation(fields: [shopperId], references: [id], onDelete: Cascade)
-  pointsTotal    Int       @default(0) @map("points_total")
-  lastActionDate DateTime? @map("last_action_date") @db.Date
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId            String    @unique @map("shopper_id") @db.Uuid
+  shopper              Shopper   @relation(fields: [shopperId], references: [id], onDelete: Cascade)
+  pointsTotal          Int       @default(0) @map("points_total")
+  /// Phase 76 — reciprocal action buckets.
+  rsvpPoints           Int       @default(0) @map("rsvp_points")
+  cateringPoints       Int       @default(0) @map("catering_points")
+  collaborationPoints  Int       @default(0) @map("collaboration_points")
+  boostedPoints        Int       @default(0) @map("boosted_points")
+  lastActionDate       DateTime? @map("last_action_date") @db.Date
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([pointsTotal(sort: Desc)])
   @@map("shopper_loyalty")
+}
+
+/// Phase 76 — vendor-funded Double Point boost windows.
+model VendorRewardsBoost {
+  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId                   String   @map("vendor_id") @db.Uuid
+  vendor                     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  label                      String   @default("DOUBLE_POINTS")
+  multiplier                 Decimal  @default(2.00) @db.Decimal(4, 2)
+  microFeeCentsPerBonusPoint Int      @default(1) @map("micro_fee_cents_per_bonus_point")
+  startsAt                   DateTime @map("starts_at") @db.Timestamptz(6)
+  endsAt                     DateTime @map("ends_at") @db.Timestamptz(6)
+  isActive                   Boolean  @default(true) @map("is_active")
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ledgerTicks                LoyaltyActionLedger[]
+
+  @@index([vendorId, startsAt, endsAt])
+  @@map("vendor_rewards_boost")
+}
+
+/// Phase 76 — append-only loyalty point ticks.
+model LoyaltyActionLedger {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId     String   @map("shopper_id") @db.Uuid
+  vendorId      String?  @map("vendor_id") @db.Uuid
+  /// RSVP_MARKET_EVENT | CATERING_INQUIRY | COLLABORATION_PURCHASE | REDEMPTION
+  actionType    String   @map("action_type")
+  basePoints    Int      @map("base_points")
+  bonusPoints   Int      @default(0) @map("bonus_points")
+  pointsAwarded Int      @map("points_awarded")
+  boostId       String?  @map("boost_id") @db.Uuid
+  boost         VendorRewardsBoost? @relation(fields: [boostId], references: [id], onDelete: SetNull)
+  referenceId   String?  @map("reference_id") @db.Uuid
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([shopperId, createdAt(sort: Desc)])
+  @@index([vendorId, createdAt(sort: Desc)])
+  @@map("loyalty_action_ledger")
+}
+
+/// Phase 76 — shopper redemptions at opted-in vendors.
+model LoyaltyRedemption {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopperId   String   @map("shopper_id") @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  /// VOUCHER_5 | EARLY_ACCESS_CATERING
+  tier        String
+  pointsSpent Int      @map("points_spent")
+  /// ACTIVE | USED | CANCELLED
+  status      String   @default("ACTIVE")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([shopperId, createdAt(sort: Desc)])
+  @@index([vendorId, createdAt(sort: Desc)])
+  @@map("loyalty_redemptions")
 }
 
 /// Phase 11 peer engine statuses (PENDING | ACCEPTED | BLOCKED).
