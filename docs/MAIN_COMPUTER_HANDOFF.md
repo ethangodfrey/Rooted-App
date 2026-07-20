@@ -24,7 +24,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 16 | `cursor/farmer-fleet-dispatch-ui-428e` | #231 | Phase 5 Farmer Fleet Dispatch Dashboard UI |
 | 17 | `cursor/stripe-payments-gateway-428e` | #232 | Phase 6 Stripe Connect Payment Gateway |
 | 18 | `cursor/stripe-onboarding-ui-428e` | #233 | Phase 6 Stripe Connect Onboarding UI |
-| 19 | `cursor/admin-platform-dashboard-428e` | (open) | Phase 7 Platform Admin Dashboard |
+| 19 | `cursor/admin-platform-dashboard-428e` | #234 | Phase 7 Platform Admin Dashboard |
 
 ```powershell
 git fetch origin
