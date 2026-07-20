@@ -15,6 +15,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 7 | `cursor/intelligence-automated-reporting-428e` | #217 | Weekly reports + anomaly detection |
 | 8 | `cursor/b2b-marketplace-phase1-428e` | #218 | B2B peer marketplace Phase 1 + schema prep |
 | 9 | `cursor/precision-rewards-loyalty-428e` | #219 | Precision Rewards loyalty logic |
+| 10 | `cursor/vendor-procurement-dashboard-428e` | (open) | Vendor Procurement Dashboard |
 
 ```powershell
 git fetch origin
@@ -22,7 +23,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`cursor/precision-rewards-loyalty-428e`
+`cursor/vendor-procurement-dashboard-428e`
 
 ## 2. Apply Supabase SQL (required)
 
@@ -106,6 +107,7 @@ npm run test:vendor:catering
 npm run test:analytics:dashboard
 npm run test:intelligence:automated
 npm run test:b2b:marketplace
+npm run test:b2b:dashboard
 npm run test:loyalty:precision
 
 cd web
@@ -119,6 +121,7 @@ Expected uppercase logs (no emoji):
 - `ANALYTICS_DASHBOARD_INITIALIZED` / `METRICS_SYNC_COMPLETE`
 - `REPORTING_ENGINE_INITIALIZED` / `ANOMALY_DETECTION_ACTIVE` / `PERFORMANCE_ANOMALY_DETECTED`
 - `B2B_MARKETPLACE_INITIALIZED` / `WHOLESALE_DIRECTORY_ACTIVE`
+- `PROCUREMENT_DASHBOARD_INITIALIZED` / `WHOLESALE_UI_ACTIVE`
 - `REWARDS_LOGIC_PRECISION_SET` / `LOYALTY_TICK_PROCESSED`
 
 ## 5. Manual UI smoke (5 minutes)

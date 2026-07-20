@@ -35,10 +35,12 @@ export function normalizeAvailabilityStatus(
   return 'AVAILABLE';
 }
 
+/** Normalize status; REJECTED is accepted as an alias for DECLINED. */
 export function normalizeProcurementStatus(
   value: string | null | undefined,
 ): ProcurementRequestStatus | null {
   const upper = (value ?? '').trim().toUpperCase();
+  if (upper === 'REJECTED') return 'DECLINED';
   if (
     upper === 'PENDING' ||
     upper === 'ACCEPTED' ||
@@ -70,3 +72,51 @@ export function formatProcurementRequestedLog(input: {
   const listing = input.listingId ? ` LISTING=${input.listingId}` : '';
   return `B2B_MARKETPLACE_INITIALIZED ACTION=PROCUREMENT_REQUESTED VENDOR=${input.vendorId} FARMER=${input.farmerId}${listing}`;
 }
+
+/** Vendor Procurement Dashboard telemetry (no emoji). */
+export function formatProcurementDashboardInitializedLog(): string {
+  return 'PROCUREMENT_DASHBOARD_INITIALIZED SURFACE=VENDOR_B2B';
+}
+
+export function formatWholesaleUiActiveLog(input?: { count?: number }): string {
+  if (input?.count != null) {
+    return `WHOLESALE_UI_ACTIVE COUNT=${input.count}`;
+  }
+  return 'WHOLESALE_UI_ACTIVE';
+}
+
+export function formatProcurementStatusUpdatedLog(input: {
+  requestId: string;
+  status: ProcurementRequestStatus;
+}): string {
+  return `PROCUREMENT_DASHBOARD_INITIALIZED ACTION=STATUS_UPDATED REQUEST=${input.requestId} STATUS=${input.status}`;
+}
+
+/** Derive a coarse item category for directory filters when no DB column is set. */
+export function inferItemCategory(itemName: string | null | undefined): string {
+  const n = (itemName ?? '').trim().toLowerCase();
+  if (!n) return 'GENERAL';
+  if (/\b(dairy|milk|cheese|yogurt|butter|cream)\b/.test(n)) return 'DAIRY';
+  if (/\b(meat|beef|pork|chicken|poultry|lamb|sausage)\b/.test(n)) return 'MEAT';
+  if (/\b(egg|eggs)\b/.test(n)) return 'EGGS';
+  if (/\b(bread|bakery|pastry|flour)\b/.test(n)) return 'BAKERY';
+  if (/\b(honey|jam|preserve|syrup)\b/.test(n)) return 'PANTRY';
+  if (
+    /\b(fruit|berry|apple|citrus|produce|vegetable|veggie|lettuce|tomato|herb|greens)\b/.test(
+      n,
+    )
+  ) {
+    return 'PRODUCE';
+  }
+  return 'GENERAL';
+}
+
+export const WHOLESALE_ITEM_CATEGORIES = [
+  'PRODUCE',
+  'DAIRY',
+  'MEAT',
+  'EGGS',
+  'BAKERY',
+  'PANTRY',
+  'GENERAL',
+] as const;

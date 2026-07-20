@@ -26,6 +26,7 @@ export const VENDOR_SIDEBAR_TABS: AppTab[] = [
     to: '/vendor/network',
     label: 'Network',
     icon: 'explore',
+    matchPaths: ['/vendor/procurement'],
   },
 ];
 
@@ -47,6 +48,11 @@ export function buildVendorMobileTabs(_vendorId: string): AppTab[] {
       matchPaths: ['/vendor/orders', '/vendor/fulfillment', '/vendor/handoffs'],
     },
     { to: '/vendor/inbox', label: 'Inbox', icon: 'messages' },
-    { to: '/vendor/network', label: 'Network', icon: 'explore' },
+    {
+      to: '/vendor/network',
+      label: 'Network',
+      icon: 'explore',
+      matchPaths: ['/vendor/procurement'],
+    },
   ];
 }

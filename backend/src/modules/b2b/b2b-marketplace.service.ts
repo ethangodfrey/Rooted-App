@@ -12,10 +12,15 @@ import {
   assertMinOrderQuantity,
   assertPositiveMoney,
   formatB2bMarketplaceInitializedLog,
+  formatProcurementDashboardInitializedLog,
   formatProcurementRequestedLog,
+  formatProcurementStatusUpdatedLog,
   formatWholesaleDirectoryActiveLog,
+  formatWholesaleUiActiveLog,
+  inferItemCategory,
   normalizeAvailabilityStatus,
   normalizeProcurementStatus,
+  type ProcurementRequestStatus,
 } from './b2b-marketplace.util';
 
 export type CreateProcurementBody = {
@@ -33,6 +38,13 @@ export type CreateListingBody = {
   producerType?: 'FARMER' | 'VENDOR';
 };
 
+export type DirectoryFilters = {
+  limit?: number;
+  q?: string | null;
+  location?: string | null;
+  category?: string | null;
+};
+
 @Injectable()
 export class B2bMarketplaceService implements OnModuleInit {
   private readonly logger = new Logger(B2bMarketplaceService.name);
@@ -41,10 +53,18 @@ export class B2bMarketplaceService implements OnModuleInit {
 
   onModuleInit(): void {
     this.logger.log(formatB2bMarketplaceInitializedLog());
+    this.logger.log(formatProcurementDashboardInitializedLog());
   }
 
-  async listDirectory(limit = 40) {
-    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+  async listDirectory(filters: DirectoryFilters = {}) {
+    const safeLimit = Math.min(
+      100,
+      Math.max(1, Math.floor(filters.limit ?? 40)),
+    );
+    const q = (filters.q ?? '').trim().toLowerCase();
+    const location = (filters.location ?? '').trim().toLowerCase();
+    const category = (filters.category ?? '').trim().toUpperCase();
+
     try {
       const rows = await this.prisma.$queryRaw<
         Array<{
@@ -56,6 +76,9 @@ export class B2bMarketplaceService implements OnModuleInit {
           min_order_quantity: number | string;
           availability_status: string;
           producer_name: string | null;
+          sell_city: string | null;
+          sell_state: string | null;
+          postal_code: string | null;
         }>
       >(Prisma.sql`
         SELECT
@@ -66,7 +89,10 @@ export class B2bMarketplaceService implements OnModuleInit {
           l.bulk_unit_price,
           l.min_order_quantity,
           l.availability_status::text AS availability_status,
-          COALESCE(f.farm_name, v.business_name) AS producer_name
+          COALESCE(f.farm_name, v.business_name) AS producer_name,
+          COALESCE(f.sell_city, v.sell_city) AS sell_city,
+          COALESCE(f.sell_state, v.sell_state) AS sell_state,
+          COALESCE(f.postal_code, v.postal_code) AS postal_code
         FROM public.wholesale_listings l
         LEFT JOIN public.farmers f
           ON l.producer_type = 'FARMER'::public.wholesale_producer_type
@@ -85,30 +111,68 @@ export class B2bMarketplaceService implements OnModuleInit {
         LIMIT ${safeLimit}
       `);
 
-      this.logger.log(
-        formatWholesaleDirectoryActiveLog({ count: rows.length }),
-      );
-
-      return {
-        STATUS: 'WHOLESALE_DIRECTORY_ACTIVE',
-        ITEMS: rows.map((row) => ({
+      let items = rows.map((row) => {
+        const itemCategory = inferItemCategory(row.item_name);
+        const locationLabel = [row.sell_city, row.sell_state, row.postal_code]
+          .map((p) => (p ?? '').trim())
+          .filter(Boolean)
+          .join(', ');
+        return {
           id: row.id,
           producerId: row.producer_id,
           producerType: row.producer_type,
           producerName: row.producer_name,
           itemName: row.item_name,
+          itemCategory,
           bulkUnitPrice: Number(row.bulk_unit_price),
           minOrderQuantity: Number(row.min_order_quantity),
           availabilityStatus: row.availability_status,
-        })),
-        COUNT: rows.length,
+          sellCity: row.sell_city,
+          sellState: row.sell_state,
+          postalCode: row.postal_code,
+          locationLabel: locationLabel || null,
+        };
+      });
+
+      if (q) {
+        items = items.filter((item) => {
+          const hay = [
+            item.itemName,
+            item.producerName,
+            item.itemCategory,
+            item.locationLabel,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return hay.includes(q);
+        });
+      }
+      if (location) {
+        items = items.filter((item) =>
+          (item.locationLabel ?? '').toLowerCase().includes(location),
+        );
+      }
+      if (category && category !== 'ALL') {
+        items = items.filter((item) => item.itemCategory === category);
+      }
+
+      this.logger.log(
+        formatWholesaleDirectoryActiveLog({ count: items.length }),
+      );
+      this.logger.log(formatWholesaleUiActiveLog({ count: items.length }));
+
+      return {
+        STATUS: 'WHOLESALE_UI_ACTIVE',
+        ITEMS: items,
+        COUNT: items.length,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(
-        `WHOLESALE_DIRECTORY_ACTIVE DEGRADED ERROR=${message}`,
+        `WHOLESALE_UI_ACTIVE DEGRADED ERROR=${message}`,
       );
-      return { STATUS: 'WHOLESALE_DIRECTORY_ACTIVE', ITEMS: [], COUNT: 0 };
+      return { STATUS: 'WHOLESALE_UI_ACTIVE', ITEMS: [], COUNT: 0 };
     }
   }
 
@@ -326,7 +390,9 @@ export class B2bMarketplaceService implements OnModuleInit {
           requested_quantity: number | string | null;
           status: string;
           created_at: Date;
+          updated_at: Date;
           farm_name: string | null;
+          item_name: string | null;
         }>
       >(Prisma.sql`
         SELECT
@@ -337,20 +403,85 @@ export class B2bMarketplaceService implements OnModuleInit {
           r.requested_quantity,
           r.status,
           r.created_at,
-          f.farm_name
+          r.updated_at,
+          f.farm_name,
+          l.item_name
         FROM public.b2b_procurement_requests r
         JOIN public.farmers f ON f.id = r.farmer_id
+        LEFT JOIN public.wholesale_listings l ON l.id = r.listing_id
         WHERE r.vendor_id = ${vendorId}::uuid
         ORDER BY r.created_at DESC
         LIMIT 50
       `);
+      this.logger.log(formatProcurementDashboardInitializedLog());
       return {
-        STATUS: 'B2B_MARKETPLACE_INITIALIZED',
+        STATUS: 'PROCUREMENT_DASHBOARD_INITIALIZED',
         ITEMS: rows.map((row) => ({
           id: row.id,
           farmerId: row.farmer_id,
           farmName: row.farm_name,
           listingId: row.listing_id,
+          itemName: row.item_name,
+          message: row.message,
+          requestedQuantity:
+            row.requested_quantity != null
+              ? Number(row.requested_quantity)
+              : null,
+          status: normalizeProcurementStatus(row.status) ?? row.status,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        })),
+        COUNT: rows.length,
+      };
+    } catch {
+      return {
+        STATUS: 'PROCUREMENT_DASHBOARD_INITIALIZED',
+        ITEMS: [],
+        COUNT: 0,
+      };
+    }
+  }
+
+  async listProcurementForFarmer(farmerId: string) {
+    try {
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          vendor_id: string;
+          listing_id: string | null;
+          message: string | null;
+          requested_quantity: number | string | null;
+          status: string;
+          created_at: Date;
+          business_name: string | null;
+          item_name: string | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          r.id,
+          r.vendor_id,
+          r.listing_id,
+          r.message,
+          r.requested_quantity,
+          r.status,
+          r.created_at,
+          v.business_name,
+          l.item_name
+        FROM public.b2b_procurement_requests r
+        JOIN public.vendors v ON v.id = r.vendor_id
+        LEFT JOIN public.wholesale_listings l ON l.id = r.listing_id
+        WHERE r.farmer_id = ${farmerId}::uuid
+        ORDER BY r.created_at DESC
+        LIMIT 50
+      `);
+      return {
+        STATUS: 'PROCUREMENT_DASHBOARD_INITIALIZED',
+        ITEMS: rows.map((row) => ({
+          id: row.id,
+          vendorId: row.vendor_id,
+          vendorName: row.business_name,
+          listingId: row.listing_id,
+          itemName: row.item_name,
           message: row.message,
           requestedQuantity:
             row.requested_quantity != null
@@ -362,7 +493,141 @@ export class B2bMarketplaceService implements OnModuleInit {
         COUNT: rows.length,
       };
     } catch {
-      return { STATUS: 'B2B_MARKETPLACE_INITIALIZED', ITEMS: [], COUNT: 0 };
+      return {
+        STATUS: 'PROCUREMENT_DASHBOARD_INITIALIZED',
+        ITEMS: [],
+        COUNT: 0,
+      };
+    }
+  }
+
+  /**
+   * Farmer (or admin) accepts/declines a procurement request.
+   * Vendor may CANCELLED their own pending request.
+   * Notifies the vendor when a farmer updates status.
+   */
+  async updateProcurementStatus(input: {
+    requestId: string;
+    statusRaw: string;
+    actor: { role: string; vendorId?: string | null; farmerId?: string | null };
+  }) {
+    const status = normalizeProcurementStatus(input.statusRaw);
+    if (!status || status === 'PENDING') {
+      throw new BadRequestException('PROCUREMENT_STATUS_INVALID');
+    }
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        vendor_id: string;
+        farmer_id: string;
+        status: string;
+      }>
+    >(Prisma.sql`
+      SELECT id, vendor_id, farmer_id, status
+      FROM public.b2b_procurement_requests
+      WHERE id = ${input.requestId}::uuid
+      LIMIT 1
+    `);
+    if (!rows[0]) throw new NotFoundException('PROCUREMENT_REQUEST_NOT_FOUND');
+
+    const current = rows[0];
+    const isFarmer =
+      input.actor.farmerId != null && input.actor.farmerId === current.farmer_id;
+    const isVendor =
+      input.actor.vendorId != null && input.actor.vendorId === current.vendor_id;
+    const isAdmin = input.actor.role === 'admin';
+
+    if (status === 'CANCELLED') {
+      if (!isVendor && !isAdmin) {
+        throw new BadRequestException('VENDOR_CANCEL_ONLY');
+      }
+    } else if (status === 'ACCEPTED' || status === 'DECLINED') {
+      if (!isFarmer && !isAdmin) {
+        throw new BadRequestException('FARMER_STATUS_ONLY');
+      }
+    }
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.b2b_procurement_requests
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${input.requestId}::uuid
+    `);
+
+    this.logger.log(
+      formatProcurementStatusUpdatedLog({
+        requestId: input.requestId,
+        status,
+      }),
+    );
+
+    // Notify vendor when farmer (or admin acting as farmer path) updates status.
+    if (
+      (status === 'ACCEPTED' || status === 'DECLINED') &&
+      (isFarmer || isAdmin)
+    ) {
+      await this.notifyVendorOfProcurementUpdate({
+        vendorId: current.vendor_id,
+        requestId: input.requestId,
+        status,
+      });
+    }
+
+    return {
+      STATUS: 'PROCUREMENT_DASHBOARD_INITIALIZED',
+      REQUEST_ID: input.requestId,
+      REQUEST_STATUS: status,
+    };
+  }
+
+  private async notifyVendorOfProcurementUpdate(input: {
+    vendorId: string;
+    requestId: string;
+    status: ProcurementRequestStatus;
+  }): Promise<void> {
+    try {
+      const vendors = await this.prisma.$queryRaw<
+        Array<{ user_id: string }>
+      >(Prisma.sql`
+        SELECT user_id FROM public.vendors
+        WHERE id = ${input.vendorId}::uuid
+        LIMIT 1
+      `);
+      const userId = vendors[0]?.user_id;
+      if (!userId) return;
+
+      const title = 'PROCUREMENT REQUEST UPDATED';
+      const body = `Your bulk connection request is now ${input.status}.`;
+
+      try {
+        await this.prisma.$executeRaw(Prisma.sql`
+          SELECT public.enqueue_notification(
+            ${userId}::uuid,
+            ${title},
+            ${body},
+            'CONNECTION_REQUEST'::public.notification_type
+          )
+        `);
+      } catch {
+        await this.prisma.$executeRaw(Prisma.sql`
+          INSERT INTO public.notification_logs (
+            user_id, title, body, notification_type
+          ) VALUES (
+            ${userId}::uuid,
+            ${title},
+            ${body},
+            'CONNECTION_REQUEST'::public.notification_type
+          )
+        `);
+      }
+      this.logger.log(
+        `PROCUREMENT_DASHBOARD_INITIALIZED ACTION=VENDOR_NOTIFIED REQUEST=${input.requestId} STATUS=${input.status}`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `PROCUREMENT_DASHBOARD_INITIALIZED NOTIFY_SKIPPED ERROR=${message}`,
+      );
     }
   }
 

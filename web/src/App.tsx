@@ -68,6 +68,7 @@ import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { ShopperMeetTheMakersPage } from '@/pages/shopper/ShopperMeetTheMakersPage';
 import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSettingsPage';
+import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
@@ -205,6 +206,7 @@ export default function App() {
             element={<OrderContextThreadPage viewerRole="vendor" backTo="/vendor/inbox" />}
           />
           <Route path="network" element={<VendorNetworkPage />} />
+          <Route path="procurement" element={<VendorProcurementPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="analytics/integrations" element={<VendorAnalyticsIntegrationsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />

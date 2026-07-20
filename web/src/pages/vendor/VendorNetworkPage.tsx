@@ -91,6 +91,9 @@ export function VendorNetworkPage() {
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">
+        <Link to="/vendor/procurement" className="app-btn app-btn--primary app-btn--small">
+          Procurement
+        </Link>
         <Link to="/vendor/map" className="app-btn app-btn--primary app-btn--small">
           Markets map
         </Link>
