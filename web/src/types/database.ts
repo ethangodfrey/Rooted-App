@@ -16,7 +16,9 @@ export type VendorType =
   | 'home_kitchen'
   | 'food_business'
   | 'caterer'
-  | 'meal_prep';
+  | 'meal_prep'
+  | 'private_chef'
+  | 'micro_brand';
 
 export type ProductAvailabilityType = 'always' | 'event_only' | 'preorder_only' | 'seasonal';
 
@@ -231,6 +233,18 @@ export interface Vendor {
   accepts_snap_ebt?: boolean;
   /** Phase 72 — optional catering provider */
   is_catering_provider?: boolean;
+  /** Phase 83a — Home Chef cottage-food legal disclosure */
+  cottage_food_disclosure?: string | null;
+  /** Phase 83a — Private Chef base service rate (cents) */
+  base_service_rate_cents?: number | null;
+  /** Phase 83a — Private Chef minimum guest count */
+  minimum_guest_count?: number | null;
+  /** Phase 83a — Micro-Brand nationwide shipping toggle */
+  shipping_enabled?: boolean;
+  /** Phase 83a — Micro-Brand flat-rate shipping fee (cents) */
+  flat_rate_shipping_fee_cents?: number | null;
+  /** Phase 83a — Micro-Brand free-shipping order minimum (cents) */
+  free_shipping_minimum_cents?: number | null;
   latitude?: number | null;
   longitude?: number | null;
   created_at: string;
