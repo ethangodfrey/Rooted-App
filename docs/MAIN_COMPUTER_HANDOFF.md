@@ -28,6 +28,7 @@ Checklist for when you are back on the main machine. Cloud agents already commit
 | 20 | `cursor/dispute-resolution-engine-428e` | #235 | Phase 8 Dispute Resolution Engine |
 | 21 | `cursor/notification-engine-428e` | #236 | Phase 9 Automated Notification Engine |
 | 22 | `cursor/platform-e2e-smoke-428e` | #237 | Final Platform E2E Golden-Path Smoke Test |
+| 23 | `cursor/phase83-deferred-features-amend-428e` | (pending) | Phase 83 — amend conflicted leftover features onto main |
 
 ```powershell
 git fetch origin
@@ -35,7 +36,7 @@ git fetch origin
 ```
 
 Tip of stack (includes everything above once merged):  
-`main` (landed via #237 tip merge + follow-up open PRs; restore fix #238)
+`cursor/phase83-deferred-features-amend-428e`
 
 ## 2. Apply Supabase SQL (required)
 
