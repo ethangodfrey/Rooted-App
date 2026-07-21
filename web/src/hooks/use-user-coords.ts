@@ -27,18 +27,22 @@ export function useUserCoords() {
         return;
       }
 
-      const geocoded = await geocodeAddress({
-        city: user?.city,
-        state: user?.state,
-        postalCode: user?.zip_code,
-      });
+      try {
+        const geocoded = await geocodeAddress({
+          city: user?.city,
+          state: user?.state,
+          postalCode: user?.zip_code,
+        });
 
-      if (!cancelled) {
-        if (geocoded && isValidCoords(geocoded)) {
-          setCoords(geocoded);
-          setSource('profile');
+        if (!cancelled) {
+          if (geocoded && isValidCoords(geocoded)) {
+            setCoords(geocoded);
+            setSource('profile');
+          }
+          setCoordsReady(true);
         }
-        setCoordsReady(true);
+      } catch {
+        if (!cancelled) setCoordsReady(true);
       }
     }
 
