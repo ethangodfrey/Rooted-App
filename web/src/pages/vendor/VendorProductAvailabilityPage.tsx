@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { FieldError } from '@/components/ui/FieldError';
-import { SkeletonCard } from '@/components/ui/Skeleton';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { IconBadge } from '@/components/vendor/dashboard-icons';
 import {
   VendorEmpty,
@@ -175,7 +175,8 @@ export function VendorProductAvailabilityPage() {
   if (loading) {
     return (
       <VendorScreen>
-        <div className="mb-6 h-24 animate-pulse rounded-xl bg-white/5" aria-hidden />
+        <Link to={`/vendor/products/${productId}/edit`} className="app-back-link">← Product</Link>
+        <Skeleton className="mb-6 h-24 w-full" />
         <div className="flex flex-col gap-3" aria-busy aria-label="Loading event availability">
           {Array.from({ length: 3 }, (_, index) => (
             <SkeletonCard key={index} height={120} />

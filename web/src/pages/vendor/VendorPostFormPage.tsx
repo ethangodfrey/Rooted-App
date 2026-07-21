@@ -251,6 +251,7 @@ export function VendorPostFormPage() {
           <textarea
             className={`app-textarea${captionError ? ' app-textarea--invalid' : ''}`}
             value={caption}
+            aria-invalid={Boolean(captionError)}
             onChange={(e) => {
               setCaption(e.target.value);
               if (captionError) setCaptionError(null);

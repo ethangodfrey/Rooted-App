@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { ProductForm } from '@/components/vendor/ProductForm';
+import { ProductFormSkeleton } from '@/components/vendor/ProductFormSkeleton';
 import {
   VendorHero,
   VendorListPanel,
@@ -106,7 +107,15 @@ export function VendorProductFormPage() {
     }
   }
 
-  if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
+  if (loading) {
+    return (
+      <VendorScreen>
+        <Link to="/vendor/products" className="app-back-link">← Products</Link>
+        <VendorHero eyebrow="Manage" title="Edit product" />
+        <ProductFormSkeleton />
+      </VendorScreen>
+    );
+  }
 
   return (
     <VendorScreen>

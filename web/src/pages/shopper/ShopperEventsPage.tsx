@@ -17,6 +17,7 @@ import {
   startOfDay,
 } from '@/lib/event-day-filter';
 import { MarketHeroImage } from '@/components/market/MarketHeroImage';
+import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
@@ -280,7 +281,17 @@ export function ShopperEventsPage() {
                     <div className="markets-preview__vendors">
                       <p className="ft-label">Local vendor roster</p>
                       {preview.loading ? (
-                        <p className="ft-subhead">Loading vendors…</p>
+                        <div aria-busy aria-label="Loading vendors">
+                          {Array.from({ length: 3 }, (_, index) => (
+                            <div key={index} className="markets-preview__vendor-skeleton">
+                              <Skeleton style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+                              <div className="min-w-0 flex-1">
+                                <SkeletonText width="60%" height={14} />
+                                <SkeletonText width="40%" height={12} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       ) : preview.vendors.length === 0 ? (
                         <p className="ft-subhead">No approved vendors listed for this market yet.</p>
                       ) : (

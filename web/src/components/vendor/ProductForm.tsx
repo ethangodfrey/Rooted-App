@@ -90,9 +90,14 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       nextFieldErrors.name = 'Product name is required.';
     }
 
-    const priceValue = Number.parseFloat(priceText);
-    if (!Number.isFinite(priceValue) || priceValue < 0) {
-      nextFieldErrors.price = 'Enter a valid price (e.g. 12.50).';
+    const trimmedPrice = priceText.trim();
+    if (!trimmedPrice) {
+      nextFieldErrors.price = 'Price is required.';
+    } else {
+      const priceValue = Number.parseFloat(trimmedPrice);
+      if (!Number.isFinite(priceValue) || priceValue < 0) {
+        nextFieldErrors.price = 'Enter a valid price (e.g. 12.50).';
+      }
     }
 
     let limitTotalValue: number | null = null;
@@ -127,6 +132,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       return;
     }
 
+    const priceValue = Number.parseFloat(priceText.trim());
     setFieldErrors({});
     setError(null);
     await onSubmit({
@@ -146,14 +152,14 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
     <form onSubmit={(e) => void handleSubmit(e)}>
       <div className="app-input-group">
         <label>Photos</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
+        <div className="mb-2 flex min-w-0 flex-wrap gap-3">
           {mediaUrls.map((url) => (
-            <div key={url} style={{ position: 'relative' }}>
+            <div key={url} className="relative shrink-0">
               <FallbackImage
                 src={url}
                 variant="product"
                 category={category}
-                style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover' }}
+                className="h-20 w-20 rounded-xl object-cover"
               />
               <button
                 type="button"
