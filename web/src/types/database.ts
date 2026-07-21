@@ -498,6 +498,26 @@ export interface OrderItem {
   fulfillment_status: string | null;
 }
 
+export interface ConversationThread {
+  id: string;
+  customer_user_id: string;
+  vendor_id: string | null;
+  chef_id: string | null;
+  order_id: string | null;
+  booking_id: string | null;
+  subject: string | null;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface Message {
+  id: string;
+  thread_id: string;
+  sender_user_id: string;
+  body: string;
+  created_at: string;
+}
+
 export interface Post {
   id: string;
   vendor_id: string;

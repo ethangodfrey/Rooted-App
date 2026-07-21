@@ -93,6 +93,9 @@ export function AdminMorePage() {
           <Link to="/admin/dashboard" className="app-btn app-btn--primary">
             Platform dashboard
           </Link>
+          <Link to="/admin/mix-analytics" className="app-btn app-btn--secondary">
+            Mix analytics
+          </Link>
           <Link to="/settings" className="app-btn app-btn--secondary">
             Notification preferences
           </Link>

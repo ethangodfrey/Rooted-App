@@ -9,6 +9,7 @@ import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
 import { AdminCommunityEventsPage } from '@/pages/admin/AdminCommunityEventsPage';
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
+import { AdminMixAnalyticsPage } from '@/pages/admin/AdminMixAnalyticsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
@@ -68,16 +69,24 @@ import { ShopperSearchPage } from '@/pages/shopper/ShopperSearchPage';
 import { ShopperSavedPage } from '@/pages/shopper/ShopperSavedPage';
 import { ShopperVendorPage } from '@/pages/shopper/ShopperVendorPage';
 import { ShopperMeetTheMakersPage } from '@/pages/shopper/ShopperMeetTheMakersPage';
+import { ShopperMessagesPage } from '@/pages/shopper/ShopperMessagesPage';
 import { ShopperRewardsPage } from '@/pages/shopper/ShopperRewardsPage';
 import { VendorCateringSettingsPage } from '@/pages/vendor/VendorCateringSettingsPage';
 import { VendorAvailabilityPage } from '@/pages/vendor/VendorAvailabilityPage';
 import { VendorLoyaltyPage } from '@/pages/vendor/VendorLoyaltyPage';
 import { VendorFinancialsPage } from '@/pages/vendor/VendorFinancialsPage';
+import { VendorFulfillmentSettingsPage } from '@/pages/vendor/VendorFulfillmentSettingsPage';
+import { VendorLoadInPage } from '@/pages/vendor/VendorLoadInPage';
+import { VendorMessagesPage } from '@/pages/vendor/VendorMessagesPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { FarmerLogisticsPage } from '@/pages/farmer/FarmerLogisticsPage';
 import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
+import { CreatorHandoffsPage } from '@/pages/creator/CreatorHandoffsPage';
+import { CreatorLayout } from '@/pages/creator/CreatorLayout';
+import { CreatorListingsPage } from '@/pages/creator/CreatorListingsPage';
+import { CreatorSettingsPage } from '@/pages/creator/CreatorSettingsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
 import { VendorB2bChatPage } from '@/pages/vendor/VendorB2bChatPage';
 import { VendorNetworkPage } from '@/pages/vendor/VendorNetworkPage';
@@ -153,6 +162,7 @@ export default function App() {
           <Route path="/shopper/search" element={<ShopperSearchPage />} />
           <Route path="/shopper/explore" element={<ShopperExplorePage />} />
           <Route path="/shopper/meet-the-makers" element={<ShopperMeetTheMakersPage />} />
+          <Route path="/shopper/messages" element={<ShopperMessagesPage />} />
           <Route path="/shopper/events" element={<ShopperEventsPage />} />
           <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
           <Route path="/shopper/feed" element={<Navigate to="/following" replace />} />
@@ -184,18 +194,21 @@ export default function App() {
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
 
-        {/* Spec aliases: /creator → vendor workspace (shell stays /vendor) */}
-        <Route path="/creator" element={<Navigate to="/vendor/storefront" replace />} />
+        {/* Spec aliases: /creator → dedicated creator shell (Phase 83 amend) */}
+        <Route path="/creator" element={<CreatorLayout />}>
+          <Route index element={<Navigate to="listings" replace />} />
+          <Route path="listings" element={<CreatorListingsPage />} />
+          <Route path="handoffs" element={<CreatorHandoffsPage />} />
+          <Route path="settings" element={<CreatorSettingsPage />} />
+        </Route>
         <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
-        <Route path="/creator/inbox" element={<Navigate to="/vendor/inbox" replace />} />
+        <Route path="/creator/inbox" element={<Navigate to="/vendor/messages" replace />} />
         <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />
-        <Route path="/creator/handoffs" element={<Navigate to="/vendor/handoffs" replace />} />
         <Route
           path="/creator/analytics/integrations"
           element={<Navigate to="/vendor/analytics/integrations" replace />}
         />
         <Route path="/creator/analytics" element={<Navigate to="/vendor/analytics" replace />} />
-        <Route path="/creator/*" element={<Navigate to="/vendor/storefront" replace />} />
 
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
         <Route path="/vendor" element={<VendorLayout />}>
@@ -207,8 +220,11 @@ export default function App() {
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="fulfillment" element={<VendorFulfillmentPage />} />
+          <Route path="fulfillment-settings" element={<VendorFulfillmentSettingsPage />} />
+          <Route path="load-in" element={<VendorLoadInPage />} />
           <Route path="handoffs" element={<VendorHandoffsPage />} />
           <Route path="inbox" element={<VendorInboxPage />} />
+          <Route path="messages" element={<VendorMessagesPage />} />
           <Route path="inbox/chat/:peerId" element={<VendorB2bChatPage />} />
           <Route
             path="inbox/thread/:threadId"
@@ -272,6 +288,7 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="mix-analytics" element={<AdminMixAnalyticsPage />} />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
