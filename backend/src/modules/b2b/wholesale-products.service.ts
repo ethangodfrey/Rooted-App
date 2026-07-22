@@ -259,6 +259,7 @@ export class WholesaleProductsService implements OnModuleInit {
       pricingTiers: [],
       availableQuantity: input.availableQuantity,
       isRetailEnabled: false,
+      saleModePreference: 'WHOLESALE_ONLY',
       retailPrice: null,
     });
     return { ACTION: 'INSERTED', PRODUCT_ID: created.id };

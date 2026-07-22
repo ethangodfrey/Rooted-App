@@ -39,6 +39,8 @@
     "markets:seed-photos": "node scripts/seed-market-photos.js",
     "admin:agent": "npm run admin:agent --prefix backend",
     "admin:posts": "npm run admin:posts --prefix backend",
+    "test": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-full-stack.ts",
+    "test:full-stack": "npm test",
     "test:webhook": "npx tsx scripts/test-pos-webhook.ts",
     "test:pos-sales": "npx tsx scripts/test-pos-sales-webhook.ts",
     "test:checkout": "npx tsx scripts/test-checkout-pipeline.ts",
