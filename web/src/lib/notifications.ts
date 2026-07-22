@@ -10,6 +10,12 @@ export type NotificationPreferences = {
   smsEnabled: boolean
 }
 
+type NotificationPreferencesResponse = {
+  EMAIL_ENABLED: boolean
+  SMS_ENABLED: boolean
+  PREFERENCES?: NotificationPreferences
+}
+
 export function formatNotificationEngineActiveLog(input?: {
   channel?: NotificationChannel
   eventType?: string
@@ -32,11 +38,6 @@ export function formatEventDispatchedLog(input?: {
   if (input?.status) parts.push(`STATUS=${input.status}`)
   if (input?.userId) parts.push(`USER=${input.userId}`)
   return parts.join(' ')
-}
-
-type NotificationPreferencesResponse = {
-  EMAIL_ENABLED: boolean
-  SMS_ENABLED: boolean
 }
 
 export async function fetchNotificationPreferences(): Promise<NotificationPreferencesResponse> {

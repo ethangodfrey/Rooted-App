@@ -71,7 +71,7 @@ export function CreatorLayout() {
 
         <div className="app-topbar__actions">
           <Link to="/explore" className="app-btn app-btn--primary app-btn--small">
-            🔄 Back to Shopping
+            Back to Shopping
           </Link>
           <ThemeToggle />
           <span className="app-topbar__email">{user?.email}</span>

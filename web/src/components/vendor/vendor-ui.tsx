@@ -12,7 +12,7 @@ export const VENDOR_LIST_PANEL =
   'overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] divide-y divide-white/10';
 
 export const VENDOR_FORM_PANEL =
-  'rounded-xl border border-white/10 bg-white/[0.04] p-4';
+  'min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-5';
 
 export function VendorScreen({ children }: { children: ReactNode }) {
   return <div className="app-screen min-w-0 px-4 pb-10">{children}</div>;

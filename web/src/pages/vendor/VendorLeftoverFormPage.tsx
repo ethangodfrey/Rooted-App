@@ -11,6 +11,7 @@ import {
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { expiresAtFromHours, EXPIRY_PRESETS } from '@/lib/leftovers';
+import { coordsFrom } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -119,8 +120,9 @@ export function VendorLeftoverFormPage() {
       pickupCity = event.city;
       pickupState = event.state;
       pickupAddress = event.address;
-      pickupLat = Number(event.latitude);
-      pickupLng = Number(event.longitude);
+      const eventCoords = coordsFrom({ latitude: event.latitude, longitude: event.longitude });
+      pickupLat = eventCoords?.latitude ?? null;
+      pickupLng = eventCoords?.longitude ?? null;
     } else if (pickupMode === 'event' && !sourceEventId) {
       nextFieldErrors.sourceEventId = 'Select which market this leftover is from.';
     }

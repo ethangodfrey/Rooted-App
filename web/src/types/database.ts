@@ -14,11 +14,11 @@ export type UserRole = 'customer' | 'shopper' | 'vendor' | 'farmer' | 'chef' | '
 export type VendorType =
   | 'farmers_market'
   | 'home_kitchen'
-  | 'private_chef'
-  | 'micro_brand'
   | 'food_business'
   | 'caterer'
-  | 'meal_prep';
+  | 'meal_prep'
+  | 'private_chef'
+  | 'micro_brand';
 
 export type ProductAvailabilityType = 'always' | 'event_only' | 'preorder_only' | 'seasonal';
 
@@ -233,17 +233,17 @@ export interface Vendor {
   accepts_snap_ebt?: boolean;
   /** Phase 72 — optional catering provider */
   is_catering_provider?: boolean;
-  /** Phase 83a — cottage food legal disclosure (home kitchen) */
+  /** Phase 83a — Home Chef cottage-food legal disclosure */
   cottage_food_disclosure?: string | null;
-  /** Phase 83a — base private-chef service rate in cents */
+  /** Phase 83a — Private Chef base service rate (cents) */
   base_service_rate_cents?: number | null;
-  /** Phase 83a — minimum guest count for private chef bookings */
+  /** Phase 83a — Private Chef minimum guest count */
   minimum_guest_count?: number | null;
-  /** Phase 83a — micro-brand nationwide shipping toggle */
+  /** Phase 83a — Micro-Brand nationwide shipping toggle */
   shipping_enabled?: boolean;
-  /** Phase 83a — flat-rate shipping fee in cents */
+  /** Phase 83a — Micro-Brand flat-rate shipping fee (cents) */
   flat_rate_shipping_fee_cents?: number | null;
-  /** Phase 83a — order subtotal in cents above which shipping is free */
+  /** Phase 83a — Micro-Brand free-shipping order minimum (cents) */
   free_shipping_minimum_cents?: number | null;
   latitude?: number | null;
   longitude?: number | null;

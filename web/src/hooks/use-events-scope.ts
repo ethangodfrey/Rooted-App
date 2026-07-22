@@ -9,16 +9,24 @@ export function useEventsScope() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(SCOPE_KEY);
-    if (stored === 'local' || stored === 'nationwide') {
-      setScopeState(stored);
+    try {
+      const stored = localStorage.getItem(SCOPE_KEY);
+      if (stored === 'local' || stored === 'nationwide') {
+        setScopeState(stored);
+      }
+    } catch {
+      // Private browsing / storage quota — keep default scope.
     }
     setReady(true);
   }, []);
 
   const setScope = (next: EventsScope) => {
     setScopeState(next);
-    localStorage.setItem(SCOPE_KEY, next);
+    try {
+      localStorage.setItem(SCOPE_KEY, next);
+    } catch {
+      // Ignore write failures; in-memory scope still updates.
+    }
   };
 
   return { scope, setScope, ready };
