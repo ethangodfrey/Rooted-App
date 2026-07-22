@@ -26,6 +26,7 @@ export function useChatThread(threadId: string | null, currentUserId: string | n
       setMessages(rows);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load messages');
+      setMessages([]);
     } finally {
       setLoading(false);
     }

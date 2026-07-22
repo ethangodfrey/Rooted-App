@@ -111,7 +111,10 @@ export async function fetchTrackedBusinessesInBounds(
       specialtyFilter && specialtyFilter.length > 0 ? specialtyFilter : null,
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.warn('get_tracked_businesses_in_bounds failed:', error.message)
+    return []
+  }
 
   return ((data ?? []) as TrackedBusiness[])
     .map((row) => ({

@@ -16,7 +16,6 @@ import {
   type VendorPersona,
   vendorTypeLabel,
 } from '@/lib/vendor-types';
-import type { VendorType } from '@/types/database';
 import '@/components/ui/ui.css';
 
 /**
@@ -27,7 +26,9 @@ import '@/components/ui/ui.css';
  */
 export function VendorFulfillmentSettingsPage() {
   const { vendor, refreshUser } = useAuth();
-  const [vendorType, setVendorType] = useState<VendorType | null>(vendor?.vendor_type ?? null);
+  const [vendorType, setVendorType] = useState<VendorPersona | null>(
+    isVendorPersona(vendor?.vendor_type) ? vendor.vendor_type : null,
+  );
   const [streetAddress, setStreetAddress] = useState(vendor?.street_address ?? '');
   const [servesDelivery, setServesDelivery] = useState(Boolean(vendor?.serves_delivery));
   const [deliveryRadius, setDeliveryRadius] = useState(
@@ -85,7 +86,11 @@ export function VendorFulfillmentSettingsPage() {
     }
 
     if (data) {
-      setVendorType((data.vendor_type as VendorType | null) ?? null);
+      setVendorType(
+        isVendorPersona(data.vendor_type as string | null)
+          ? (data.vendor_type as VendorPersona)
+          : null,
+      );
       setStreetAddress((data.street_address as string | null) ?? '');
       setServesDelivery(Boolean(data.serves_delivery));
       setDeliveryRadius(

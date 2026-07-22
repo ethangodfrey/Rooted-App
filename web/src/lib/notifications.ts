@@ -1,5 +1,54 @@
+import { api } from '@/lib/api'
 import { marketPath, vendorPath } from '@/lib/market-routes'
 import { supabase } from '@/lib/supabase'
+
+export type NotificationChannel = 'EMAIL' | 'SMS' | 'PREFS'
+export type NotificationStatus = 'SENT' | 'FAILED'
+
+export type NotificationPreferences = {
+  emailEnabled: boolean
+  smsEnabled: boolean
+}
+
+type NotificationPreferencesResponse = {
+  EMAIL_ENABLED: boolean
+  SMS_ENABLED: boolean
+  PREFERENCES?: NotificationPreferences
+}
+
+export function formatNotificationEngineActiveLog(input?: {
+  channel?: NotificationChannel
+  eventType?: string
+}): string {
+  const parts = ['NOTIFICATION_ENGINE_ACTIVE']
+  if (input?.channel) parts.push(`CHANNEL=${input.channel}`)
+  if (input?.eventType) parts.push(`EVENT=${input.eventType}`)
+  return parts.join(' ')
+}
+
+export function formatEventDispatchedLog(input?: {
+  channel?: NotificationChannel
+  eventType?: string
+  status?: NotificationStatus
+  userId?: string
+}): string {
+  const parts = ['EVENT_DISPATCHED']
+  if (input?.channel) parts.push(`CHANNEL=${input.channel}`)
+  if (input?.eventType) parts.push(`EVENT=${input.eventType}`)
+  if (input?.status) parts.push(`STATUS=${input.status}`)
+  if (input?.userId) parts.push(`USER=${input.userId}`)
+  return parts.join(' ')
+}
+
+export async function fetchNotificationPreferences(): Promise<NotificationPreferencesResponse> {
+  return api.get<NotificationPreferencesResponse>('/api/notifications/preferences')
+}
+
+export async function updateNotificationPreferences(
+  prefs: NotificationPreferences,
+): Promise<NotificationPreferencesResponse> {
+  return api.patch<NotificationPreferencesResponse>('/api/notifications/preferences', prefs)
+}
 
 export type NotificationType =
   | 'ORDER_STATUS'
