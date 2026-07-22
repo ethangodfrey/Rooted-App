@@ -44,6 +44,14 @@ create table if not exists public.vendor_connections (
   constraint vendor_connections_no_self check (sender_id <> receiver_id)
 );
 
+-- Idempotent: table may already exist from an earlier partial apply without follow cols.
+alter table public.vendor_connections
+  add column if not exists is_following boolean not null default false;
+alter table public.vendor_connections
+  add column if not exists receiver_is_following boolean not null default false;
+alter table public.vendor_connections
+  add column if not exists updated_at timestamptz not null default now();
+
 comment on table public.vendor_connections is
   'Phase 83b: V2V connection requests + follow flags between vendor profiles.';
 comment on column public.vendor_connections.is_following is
