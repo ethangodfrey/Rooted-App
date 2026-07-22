@@ -17,6 +17,7 @@
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest",
     "test:e2e:platform": "jest --config ./test/jest-e2e.json --runInBand test/platform.e2e-spec.ts",
+    "test:e2e:phase83": "jest --config ./test/jest-e2e.json --runInBand test/phase83-lifecycle.e2e-spec.ts",
     "markets:links": "ts-node scripts/run-market-links.ts",
     "markets:dedupe": "ts-node scripts/run-dedupe-markets.ts",
     "markets:enrich": "ts-node scripts/run-markets-enrich.ts",
