@@ -14,6 +14,8 @@ export type UserRole = 'customer' | 'shopper' | 'vendor' | 'farmer' | 'chef' | '
 export type VendorType =
   | 'farmers_market'
   | 'home_kitchen'
+  | 'private_chef'
+  | 'micro_brand'
   | 'food_business'
   | 'caterer'
   | 'meal_prep';
@@ -231,6 +233,18 @@ export interface Vendor {
   accepts_snap_ebt?: boolean;
   /** Phase 72 — optional catering provider */
   is_catering_provider?: boolean;
+  /** Phase 83a — cottage food legal disclosure (home kitchen) */
+  cottage_food_disclosure?: string | null;
+  /** Phase 83a — base private-chef service rate in cents */
+  base_service_rate_cents?: number | null;
+  /** Phase 83a — minimum guest count for private chef bookings */
+  minimum_guest_count?: number | null;
+  /** Phase 83a — micro-brand nationwide shipping toggle */
+  shipping_enabled?: boolean;
+  /** Phase 83a — flat-rate shipping fee in cents */
+  flat_rate_shipping_fee_cents?: number | null;
+  /** Phase 83a — order subtotal in cents above which shipping is free */
+  free_shipping_minimum_cents?: number | null;
   latitude?: number | null;
   longitude?: number | null;
   created_at: string;
