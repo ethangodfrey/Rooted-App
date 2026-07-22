@@ -1,0 +1,9 @@
+# Vendorly backend — Railway / Nixpacks / Heroku-style process definition.
+# Prefer Docker deploy via railway.toml (dockerfilePath=backend/Dockerfile).
+# This Procfile documents the production start entry when a Node builder is used:
+#   build: npm run build
+#   start: npm run start:prod  →  node dist/main.js
+#
+# Nest listens on 0.0.0.0:$PORT (Railway injects PORT).
+
+web: npm run start:prod

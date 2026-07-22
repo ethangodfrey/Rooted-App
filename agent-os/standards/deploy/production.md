@@ -20,8 +20,10 @@ See `docs/VERCEL_MULTI_PROJECT.md` for split-project build targets.
 
 ## Backend (Railway)
 
-- Root Directory: **`backend`** (not repo root, not `web`)
-- Dockerfile deploy, health check `/health/live`
+- Root Directory: **repository root** (required so `backend/Dockerfile` can `COPY packages/env-config`)
+- `dockerfilePath`: `backend/Dockerfile` (see `backend/railway.toml`)
+- Start: `npm run start:prod` → `node dist/main.js` on `0.0.0.0:$PORT`
+- Health check: `/api/health`
 - See `backend/.env.example` and `docs/DEPLOY.md` §2
 
 ## Off-LAN

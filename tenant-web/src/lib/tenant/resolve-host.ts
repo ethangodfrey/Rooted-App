@@ -169,9 +169,46 @@ export function resolvePlatformDomain(): string {
     .toLowerCase();
 }
 
+/** Live Railway public URL when custom API DNS is not yet cut over. */
+export const RAILWAY_PUBLIC_API_URL =
+  'https://rooted-app-production-43fb.up.railway.app';
+
+/** Canonical production API origin (custom domain). */
+export const CANONICAL_API_ORIGIN = 'https://api.vendorlymarketplace.app';
+
+/**
+ * Nest API base for tenant edge proxying.
+ * Production (`NODE_ENV === 'production'`) falls back to Railway when unset.
+ */
 export function resolveApiBaseUrl(): string {
-  const base = (process.env.TENANT_API_URL ?? 'http://localhost:4000').trim();
-  return base.replace(/\/$/, '');
+  const configured = (
+    process.env.TENANT_API_URL ??
+    process.env.VITE_API_URL ??
+    ''
+  )
+    .trim()
+    .replace(/\/$/, '');
+
+  if (configured) {
+    try {
+      const host = new URL(configured).hostname.toLowerCase();
+      if (
+        host === 'api.vendorlymarketplace.app' ||
+        host === 'api.vendorly.app'
+      ) {
+        return RAILWAY_PUBLIC_API_URL;
+      }
+    } catch {
+      /* keep configured */
+    }
+    return configured;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return RAILWAY_PUBLIC_API_URL;
+  }
+
+  return 'http://localhost:4000';
 }
 
 export function tenantCacheKey(host: string): string {

@@ -253,8 +253,8 @@ Job queues        →  Upstash Redis (REDIS_URL, POS_QUEUES_ENABLED=true)
 ### Railway — step-by-step
 
 1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → select `Rooted-App`.
-2. Add a service → **Dockerfile** deploy.
-3. **Settings → Root Directory:** `backend`.
+2. Add a service → **Dockerfile** deploy (`backend/Dockerfile` via `backend/railway.toml`).
+3. **Settings → Root Directory:** leave **empty / repo root** (required for `@vendorly/env-config`). Do **not** set Root Directory to `backend`.
 4. **Settings → Networking → Generate Domain** (temporary `*.up.railway.app` URL).
 5. **Settings → Networking → Custom Domain** → add `api.vendorlymarketplace.app` → add the CNAME Railway shows at your DNS provider.
    - Canonical ingress targets: [`deploy/ingress.targets.json`](../deploy/ingress.targets.json)

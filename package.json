@@ -114,6 +114,7 @@
     "env:typecheck": "npm run typecheck --prefix packages/env-config",
     "health:audit": "npx tsx scripts/autonomous-health-check.ts",
     "config:audit": "node scripts/audit-production-config.mjs",
+    "verify:deployment-config": "node scripts/verify-deployment-config.mjs",
     "smoke:boundaries": "node scripts/smoke-production-boundaries.mjs",
     "smoke:settlement": "node scripts/settlement-dashboard-smoke.mjs",
     "smoke:ui-baseline": "node scripts/verify-ui-production-baseline.mjs",

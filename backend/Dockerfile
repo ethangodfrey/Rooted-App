@@ -57,4 +57,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "const p=process.env.PORT||'4000';fetch('http://127.0.0.1:'+p+'/api/health').then(async r=>{const t=await r.text();process.exit(r.ok&&t.includes('HEALTH')?0:1)}).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/main.js"]
+# Equivalent to package.json "start:prod" (Nest production entry).
+CMD ["npm", "run", "start:prod"]
