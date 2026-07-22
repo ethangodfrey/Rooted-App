@@ -2,7 +2,10 @@
   "preset": "ts-jest",
   "testEnvironment": "node",
   "rootDir": "..",
-  "testMatch": ["<rootDir>/test/platform.e2e-spec.ts"],
+  "testMatch": [
+    "<rootDir>/test/platform.e2e-spec.ts",
+    "<rootDir>/test/phase83-lifecycle.e2e-spec.ts"
+  ],
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/src/$1"
   },
