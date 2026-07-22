@@ -63,6 +63,7 @@
     "test:notifications:engine": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-notifications-engine.ts",
     "test:e2e:platform": "npm run test:e2e:platform --prefix backend",
     "test:phase83:amend": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-phase83-amend.ts",
+    "test:phase83:ui": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-phase83-ui.ts",
     "test:wholesale:pricing": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-pricing.ts",
     "test:wholesale:order-draft": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-draft.ts",
     "test:wholesale:acceptance": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/verify-wholesale-order-acceptance.ts",

@@ -1,12 +1,18 @@
 import type { AppTab } from '@/components/navigation/app-tabs';
 
-/** Unified creator shell — Listings / Hand-offs / Settings. */
+/** Unified creator shell — Feed / Listings / Hand-offs / Settings. */
 export const CREATOR_TABS: AppTab[] = [
   {
-    to: '/creator',
+    to: '/creator/feed',
+    label: 'Feed',
+    icon: 'feed',
+    matchPaths: ['/creator/feed'],
+  },
+  {
+    to: '/creator/listings',
     label: 'Listings',
     icon: 'products',
-    matchPaths: ['/vendor/products', '/vendor/inventory', '/vendor/leftovers'],
+    matchPaths: ['/creator/listings', '/vendor/products', '/vendor/inventory', '/vendor/leftovers'],
   },
   {
     to: '/creator/handoffs',

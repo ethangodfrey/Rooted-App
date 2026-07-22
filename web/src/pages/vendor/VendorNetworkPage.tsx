@@ -5,6 +5,7 @@ import {
   ConnectionButton,
   connectionUiToButtonProps,
 } from '@/components/ui/ConnectionButton';
+import { VendorConnectButton } from '@/components/vendor/VendorConnectButton';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
 import { useAuth } from '@/hooks/use-auth';
@@ -201,7 +202,10 @@ export function VendorNetworkPage() {
                         'Local network peer'}
                     </p>
                   </div>
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    {peer.vendorId ? (
+                      <VendorConnectButton peerVendorId={peer.vendorId} />
+                    ) : null}
                     <ConnectionButton
                       targetProfileId={peer.profileId}
                       {...connectionUiToButtonProps(ui)}

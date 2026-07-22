@@ -1,0 +1,119 @@
+.vvf-shell {
+  position: relative;
+  height: min(100dvh, 900px);
+  max-height: calc(100dvh - 7.5rem);
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  background: #0b1020;
+  border-radius: 0;
+  margin: 0 -1rem;
+  width: calc(100% + 2rem);
+}
+
+@media (min-width: 768px) {
+  .vvf-shell {
+    margin: 0;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+.vvf-shell--empty {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.vvf-slide {
+  position: relative;
+  height: 100%;
+  min-height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow: hidden;
+  background: #05070f;
+}
+
+.vvf-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vvf-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 7, 15, 0.15) 0%,
+    rgba(5, 7, 15, 0.05) 45%,
+    rgba(5, 7, 15, 0.82) 100%
+  );
+  pointer-events: none;
+}
+
+.vvf-meta {
+  position: absolute;
+  left: 1rem;
+  right: 5rem;
+  bottom: 1.25rem;
+  z-index: 2;
+  color: #fff;
+}
+
+.vvf-vendor {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fdba74;
+}
+
+.vvf-caption {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  max-width: 28ch;
+}
+
+.vvf-actions {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 1.5rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.vvf-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.vvf-action__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+  stroke-width: 2;
+}
+
+.vvf-action--active {
+  color: #fb923c;
+}
