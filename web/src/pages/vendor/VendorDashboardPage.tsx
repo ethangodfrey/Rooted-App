@@ -18,6 +18,7 @@ import {
 } from '@/components/vendor/vendor-ui';
 import { PosLiveTransactionFeed } from '@/components/vendor/pos-live-transaction-feed';
 import { SquarePosConnectionCard } from '@/components/vendor/square-pos-connection-card';
+import { FlashPromoWidget } from '@/components/vendor/FlashPromoWidget';
 import '@/components/ui/ui.css';
 
 const statusCopy: Record<string, string> = {
@@ -136,6 +137,8 @@ export function VendorDashboardPage() {
           </div>
         </div>
       </div>
+
+      <FlashPromoWidget />
 
       <VendorSection title="POS sales">
         <div className="mb-4">

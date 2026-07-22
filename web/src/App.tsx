@@ -87,6 +87,7 @@ import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { CreatorHandoffsPage } from '@/pages/creator/CreatorHandoffsPage';
 import { CreatorLayout } from '@/pages/creator/CreatorLayout';
 import { CreatorListingsPage } from '@/pages/creator/CreatorListingsPage';
+import { CreatorFeedPage } from '@/pages/creator/CreatorFeedPage';
 import { CreatorSettingsPage } from '@/pages/creator/CreatorSettingsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
 import { VendorB2bChatPage } from '@/pages/vendor/VendorB2bChatPage';
@@ -116,6 +117,7 @@ import { VendorVideoPostFormPage } from '@/pages/vendor/VendorVideoPostFormPage'
 import { VendorProductAvailabilityPage } from '@/pages/vendor/VendorProductAvailabilityPage';
 import { VendorProductFormPage } from '@/pages/vendor/VendorProductFormPage';
 import { VendorProductsPage } from '@/pages/vendor/VendorProductsPage';
+import { VendorDashboardPage } from '@/pages/vendor/VendorDashboardPage';
 import { VendorProfilePage } from '@/pages/vendor/VendorProfilePage';
 import { VendorSetupPage } from '@/pages/vendor/VendorSetupPage';
 import { VendorPreviewPage } from '@/pages/vendor/VendorPreviewPage';
@@ -197,7 +199,8 @@ export default function App() {
 
         {/* Spec aliases: /creator → dedicated creator shell (Phase 83 amend) */}
         <Route path="/creator" element={<CreatorLayout />}>
-          <Route index element={<Navigate to="listings" replace />} />
+          <Route index element={<Navigate to="feed" replace />} />
+          <Route path="feed" element={<CreatorFeedPage />} />
           <Route path="listings" element={<CreatorListingsPage />} />
           <Route path="handoffs" element={<CreatorHandoffsPage />} />
           <Route path="settings" element={<CreatorSettingsPage />} />
@@ -216,7 +219,7 @@ export default function App() {
           <Route index element={<Navigate to="storefront" replace />} />
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="storefront" element={<VendorStorefrontPage />} />
-          <Route path="dashboard" element={<Navigate to="/vendor/storefront" replace />} />
+          <Route path="dashboard" element={<VendorDashboardPage />} />
           {/* Same farmers-market map as shopper Explore — available inside vendor shell */}
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="inventory" element={<VendorInventoryPage />} />

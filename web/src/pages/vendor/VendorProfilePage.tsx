@@ -3,6 +3,7 @@ import { LegalLinks } from '@/components/account/LegalLinks';
 import { ActiveCollaborationBadge } from '@/components/makers/ActiveCollaborationBadge';
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
+import { VendorNetworkPanel } from '@/components/vendor/VendorNetworkPanel';
 import {
   VendorFormPanel,
   VendorHero,
@@ -45,6 +46,8 @@ export function VendorProfilePage() {
           <p className="m-0 mt-1 text-sm font-semibold text-stone-800">{user?.email}</p>
         </VendorFormPanel>
       </VendorSection>
+
+      <VendorNetworkPanel />
 
       <VendorSection title="Settings">
         <VendorListPanel>
