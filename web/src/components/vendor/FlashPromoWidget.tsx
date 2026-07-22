@@ -86,8 +86,8 @@ export function FlashPromoWidget() {
     }
     next.sort((a, b) => a.unitsLeft - b.unitsLeft);
     setCandidates(next);
-    if (!selectedId && next[0]) setSelectedId(next[0].productId);
-  }, [vendor?.id, eligible, selectedId]);
+    setSelectedId((prev) => prev || next[0]?.productId || '');
+  }, [vendor?.id, eligible]);
 
   useEffect(() => {
     void load();
