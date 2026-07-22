@@ -586,25 +586,45 @@
   flex-shrink: 0;
   overflow: hidden;
   color: var(--color-primary);
+  transition: opacity 0.2s ease;
 }
 
 .app-image-fallback--product {
-  background: #f4f4f5;
+  background: linear-gradient(145deg, #f4f4f5 0%, #e4e4e7 100%);
   border: 1px solid var(--color-border);
 }
 
 .app-image-fallback--vendor,
 .app-image-fallback--vendor-logo {
-  background: #f4f4f5;
+  background: linear-gradient(145deg, #fafafa 0%, #e4e4e7 100%);
   font-size: 1.5rem;
+  font-weight: 700;
   border: 1px solid var(--color-border);
+}
+
+.app-image-fallback--avatar {
+  background: linear-gradient(145deg, var(--color-honeydew) 0%, #e8f5e9 100%);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  border: 2px solid var(--color-terracotta);
 }
 
 .app-image-fallback--banner {
   width: 100%;
-  background: #09090b;
+  background: linear-gradient(160deg, #18181b 0%, #27272a 100%);
   color: #a1a1aa;
   font-size: 2.5rem;
+}
+
+/* Dark messaging surfaces */
+.msg-avatar.app-image-fallback {
+  background: linear-gradient(145deg, #1a2548 0%, #121a36 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fb923c;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-radius: 0.85rem;
 }
 
 .app-thumb-fallback {
@@ -2229,15 +2249,23 @@
 }
 
 .markets-preview__body {
-  padding: 1.25rem 1.5rem 1.75rem;
+  padding: 1rem 1rem 1.5rem;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .markets-preview__body {
+    padding: 1.25rem 1.5rem 1.75rem;
+  }
 }
 
 .markets-preview__title {
   margin: 0.35rem 0 0;
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-size: clamp(1.5rem, 3.5vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .markets-preview__meta {
@@ -2255,11 +2283,20 @@
 
 .markets-preview__vendor-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 0;
   border-bottom: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.markets-preview__vendor-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
 }
 
 .markets-preview__vendor-row:last-child {

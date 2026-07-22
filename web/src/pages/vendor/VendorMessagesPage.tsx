@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { RealtimeChatThread } from '@/components/messaging/RealtimeChatThread';
+import { MsgAvatar } from '@/components/messaging/MsgAvatar';
 import '@/components/messaging/messaging.css';
 import {
   VendorEmpty,
@@ -35,7 +36,6 @@ function ThreadList({
       {threads.map((thread) => {
         const name = thread.customer?.name?.trim() || 'Shopper';
         const code = thread.order?.pickup_code;
-        const initial = name.slice(0, 1).toUpperCase();
         return (
           <li key={thread.id}>
             <button
@@ -43,13 +43,11 @@ function ThreadList({
               className={`msg-thread-btn${selectedId === thread.id ? ' msg-thread-btn--active' : ''}`}
               onClick={() => onSelect(thread.id)}
             >
-              <span className="msg-avatar">
-                {thread.customer?.profile_photo ? (
-                  <img src={thread.customer.profile_photo} alt="" />
-                ) : (
-                  initial
-                )}
-              </span>
+              <MsgAvatar
+                src={thread.customer?.profile_photo}
+                label={name}
+                variant="avatar"
+              />
               <span className="msg-thread-meta">
                 <span className="msg-thread-top">
                   <p className="msg-thread-name">

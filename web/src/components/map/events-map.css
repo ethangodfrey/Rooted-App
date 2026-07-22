@@ -219,6 +219,11 @@
   gap: 1rem;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
+}
+
+.shopper-map-layout > * {
+  min-width: 0;
 }
 
 .shopper-map-list {

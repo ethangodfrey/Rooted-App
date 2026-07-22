@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { RealtimeChatThread } from '@/components/messaging/RealtimeChatThread';
+import { MsgAvatar } from '@/components/messaging/MsgAvatar';
+import { MsgThreadListSkeleton } from '@/components/messaging/MsgThreadListSkeleton';
 import '@/components/messaging/messaging.css';
 import { useAuth } from '@/hooks/use-auth';
 import { useRealtimeChatThread } from '@/hooks/use-chat-thread';
@@ -207,7 +209,7 @@ export function ShopperMessagesPage() {
           </p>
 
           {loading ? (
-            <p className="px-2 py-8 text-center text-sm text-white/55">Loading threads…</p>
+            <MsgThreadListSkeleton rows={4} />
           ) : null}
 
           {!loading && groups.length === 0 ? (
@@ -226,13 +228,7 @@ export function ShopperMessagesPage() {
                         disabled={starting}
                         onClick={() => void startWithVendor(starter)}
                       >
-                        <span className="msg-avatar">
-                          {starter.logoUrl ? (
-                            <img src={starter.logoUrl} alt="" />
-                          ) : (
-                            starter.name.slice(0, 1).toUpperCase()
-                          )}
-                        </span>
+                        <MsgAvatar src={starter.logoUrl} label={starter.name} />
                         <span className="msg-thread-meta">
                           <span className="msg-thread-top">
                             <p className="msg-thread-name">
@@ -262,13 +258,7 @@ export function ShopperMessagesPage() {
           {groups.map((group) => (
             <div key={group.vendorId} className="mb-3">
               <div className="mb-1 flex items-center gap-2 px-2">
-                <span className="msg-avatar" style={{ width: '2rem', height: '2rem' }}>
-                  {group.logoUrl ? (
-                    <img src={group.logoUrl} alt="" />
-                  ) : (
-                    group.vendorName.slice(0, 1).toUpperCase()
-                  )}
-                </span>
+                <MsgAvatar src={group.logoUrl} label={group.vendorName} size={32} />
                 <p className="m-0 text-xs font-bold tracking-wide text-white/70 uppercase">
                   {group.vendorName}
                 </p>
@@ -281,13 +271,7 @@ export function ShopperMessagesPage() {
                       className={`msg-thread-btn${selectedId === thread.id ? ' msg-thread-btn--active' : ''}`}
                       onClick={() => openThread(thread.id)}
                     >
-                      <span className="msg-avatar">
-                        {group.logoUrl ? (
-                          <img src={group.logoUrl} alt="" />
-                        ) : (
-                          group.vendorName.slice(0, 1).toUpperCase()
-                        )}
-                      </span>
+                      <MsgAvatar src={group.logoUrl} label={group.vendorName} />
                       <span className="msg-thread-meta">
                         <span className="msg-thread-top">
                           <p className="msg-thread-name">
