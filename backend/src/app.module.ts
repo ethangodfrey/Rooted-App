@@ -33,6 +33,7 @@ import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.
 import { DisputesModule } from './modules/disputes/disputes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SupplierAnalyticsModule } from './modules/supplier-analytics/supplier-analytics.module';
+import { VendorNetworkModule } from './modules/vendor-network/vendor-network.module';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -85,6 +86,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     LoyaltyModule,
     FinancialModule,
     SupplierAnalyticsModule,
+    VendorNetworkModule,
   ],
 })
 export class AppModule {}
