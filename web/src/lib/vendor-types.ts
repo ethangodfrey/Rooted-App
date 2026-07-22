@@ -7,33 +7,31 @@ export type VendorPersona =
   | 'private_chef'
   | 'micro_brand';
 
+/** Phase 83a uppercase API classifications. */
+export type VendorClassification = 'HOME' | 'PRIVATE_CHEF' | 'MICRO_BRAND' | 'FARMERS_MARKET';
+
 export const VENDOR_PERSONA_OPTIONS: Array<{
   value: VendorPersona;
-  emoji: string;
   title: string;
   description: string;
 }> = [
   {
     value: 'farmers_market',
-    emoji: '🌾',
     title: 'Market Vendor',
     description: 'I sell at physical farmers markets.',
   },
   {
     value: 'home_kitchen',
-    emoji: '🍳',
     title: 'Home Chef',
     description: 'I offer prepared meals, batch orders, or cottage food for pickup/delivery.',
   },
   {
     value: 'private_chef',
-    emoji: '🔪',
     title: 'Private Chef',
     description: 'I offer private dining, catering, and customized culinary experiences.',
   },
   {
     value: 'micro_brand',
-    emoji: '🏬',
     title: 'Micro-Brand / Maker',
     description: 'I sell physical products, crafts, or apparel.',
   },
@@ -46,6 +44,16 @@ export function isVendorPersona(value: string | null | undefined): value is Vend
     value === 'private_chef' ||
     value === 'micro_brand'
   );
+}
+
+export function vendorTypeToClassification(
+  type: VendorType | string | null | undefined,
+): VendorClassification | null {
+  if (type === 'home_kitchen') return 'HOME';
+  if (type === 'private_chef') return 'PRIVATE_CHEF';
+  if (type === 'micro_brand') return 'MICRO_BRAND';
+  if (type === 'farmers_market') return 'FARMERS_MARKET';
+  return null;
 }
 
 export function vendorTypeLabel(type: VendorType | string | null | undefined): string | null {

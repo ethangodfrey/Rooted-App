@@ -28,14 +28,16 @@ export interface Follow {
   created_at: string;
 }
 
-export type NetworkConnectionStatus = 'pending' | 'connected' | 'ignored';
+export type NetworkConnectionStatus = 'none' | 'pending' | 'connected' | 'ignored';
 
-/** B2B V2V / F2V connection between vendor and farmer profiles (`vendor_connections`). */
+/** Phase 83b V2V connection between vendors (`vendor_connections`). */
 export interface NetworkConnection {
   id: string;
   sender_id: string;
   receiver_id: string;
   status: NetworkConnectionStatus;
+  is_following?: boolean;
+  receiver_is_following?: boolean;
   created_at: string;
   updated_at?: string;
 }

@@ -10,6 +10,7 @@ import { AdminCommunityEventsPage } from '@/pages/admin/AdminCommunityEventsPage
 import { AdminCredentialsPage } from '@/pages/admin/AdminCredentialsPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminMixAnalyticsPage } from '@/pages/admin/AdminMixAnalyticsPage';
+import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalyticsPage';
 import { AdminEventsPage } from '@/pages/admin/AdminEventsPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminMorePage } from '@/pages/admin/AdminMorePage';
@@ -289,6 +290,7 @@ export default function App() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="mix-analytics" element={<AdminMixAnalyticsPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />

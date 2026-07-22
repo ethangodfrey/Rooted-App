@@ -1,5 +1,5 @@
 /**
- * Phase 83 deferred-features amend verification.
+ * Phase 83 feature amendments verification.
  *
  * Usage:
  *   npm run test:phase83:amend
@@ -27,7 +27,15 @@ const REQUIRED = [
   'docs/PHASE83_DEFERRED_FEATURES_AMEND.md',
   'docs/supabase/phase83a_home_private_chef_vendor_types.sql',
   'docs/supabase/phase83b_vendor_connections.sql',
+  'backend/src/modules/vendor-network/vendor-classification.ts',
+  'backend/src/modules/vendor-network/v2v-connections.service.ts',
+  'backend/src/modules/vendor-network/v2v-connections.controller.ts',
+  'backend/src/modules/vendor-network/flash-promo.util.ts',
+  'backend/src/modules/vendor-network/flash-promo.service.ts',
+  'backend/src/modules/vendor-network/flash-promo.controller.ts',
+  'backend/src/modules/vendor-network/vendor-network.module.ts',
   'web/src/pages/admin/AdminMixAnalyticsPage.tsx',
+  'web/src/pages/admin/AdminAnalyticsPage.tsx',
   'web/src/lib/mix-analytics.ts',
   'web/src/pages/vendor/VendorLoadInPage.tsx',
   'web/src/lib/load-in.ts',
@@ -43,11 +51,25 @@ const REQUIRED = [
 
 const ROUTES = [
   'mix-analytics',
+  'analytics',
   'load-in',
   'fulfillment-settings',
   'shopper/messages',
   'VendorMessagesPage',
   'CreatorLayout',
+  'AdminAnalyticsPage',
+] as const;
+
+const BACKEND_MARKERS = [
+  ['backend/src/modules/vendor-network/vendor-classification.ts', 'HOME'],
+  ['backend/src/modules/vendor-network/vendor-classification.ts', 'PRIVATE_CHEF'],
+  ['backend/src/modules/vendor-network/vendor-classification.ts', 'MICRO_BRAND'],
+  ['backend/src/modules/vendor-network/v2v-connections.service.ts', 'V2V_CONNECTION_REQUESTED'],
+  ['backend/src/modules/vendor-network/flash-promo.util.ts', 'FLASH_PROMO_INVALID'],
+  ['backend/src/app.module.ts', 'VendorNetworkModule'],
+  ['backend/prisma/schema.prisma', 'cottageFoodDisclosure'],
+  ['backend/prisma/schema.prisma', 'isFollowing'],
+  ['backend/prisma/schema.prisma', 'themeSettings'],
 ] as const;
 
 function main(): void {
@@ -64,6 +86,11 @@ function main(): void {
     assert(app.includes(needle), `ROUTE_MISSING ${needle}`);
   }
 
+  for (const [rel, needle] of BACKEND_MARKERS) {
+    const body = readFileSync(join(ROOT, rel), 'utf8');
+    assert(body.includes(needle), `MARKER_MISSING ${rel} ${needle}`);
+  }
+
   assert(
     existsSync(join(ROOT, 'web/src/components/messaging/ChatThread.tsx')),
     'LEGACY_CHAT_THREAD_PRESERVED',
@@ -72,6 +99,9 @@ function main(): void {
     existsSync(join(ROOT, 'web/src/components/messaging/RealtimeChatThread.tsx')),
     'REALTIME_CHAT_THREAD',
   );
+
+  const flashSale = readFileSync(join(ROOT, 'web/src/lib/flash-sale.ts'), 'utf8');
+  assert(!flashSale.includes('⚡'), 'FLASH_SALE_EMOJI_FORBIDDEN');
 
   log('PHASE83_AMEND_VERIFIED');
 }

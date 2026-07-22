@@ -21,7 +21,7 @@ export interface LowStockProduct {
 
 export function flashSaleBadgeText(unitsLeft: number): string {
   const n = Math.max(0, Math.floor(unitsLeft));
-  return `⚡ ONLY ${n} LEFT - Flash Sale Active`;
+  return `ONLY ${n} LEFT - FLASH SALE ACTIVE`;
 }
 
 export function parseFlashSale(raw: Record<string, unknown> | null | undefined): FlashSaleState | null {

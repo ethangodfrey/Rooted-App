@@ -253,10 +253,8 @@ export function VendorFulfillmentSettingsPage() {
                     : 'border-white/10 bg-[#121A36] hover:border-white/20'
                 }`}
               >
-                <span className="mr-2" aria-hidden>
-                  {option.emoji}
-                </span>
                 <span className="text-sm font-bold text-white">{option.title}</span>
+                <p className="mt-1 text-xs text-white/55">{option.description}</p>
               </button>
             );
           })}

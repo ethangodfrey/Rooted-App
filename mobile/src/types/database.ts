@@ -16,7 +16,9 @@ export type VendorType =
   | 'home_kitchen'
   | 'food_business'
   | 'caterer'
-  | 'meal_prep';
+  | 'meal_prep'
+  | 'private_chef'
+  | 'micro_brand';
 
 export type ProductAvailabilityType = 'always' | 'event_only' | 'preorder_only' | 'seasonal';
 

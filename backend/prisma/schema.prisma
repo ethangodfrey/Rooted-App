@@ -79,8 +79,6 @@ model Profile {
 
   followsAsShopper  Follow[] @relation("FollowShopper")
   followsAsFollowed Follow[] @relation("FollowTarget")
-  connectionsSent     VendorConnection[] @relation("NetworkSender")
-  connectionsReceived VendorConnection[] @relation("NetworkReceiver")
 
   @@map("profiles")
 }
@@ -99,15 +97,21 @@ model Follow {
   @@map("follows")
 }
 
+/// Phase 83b — LinkedIn-style V2V connection + follow flags between vendors.
 model VendorConnection {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  senderId   String   @map("sender_id") @db.Uuid
-  sender     Profile  @relation("NetworkSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiverId String   @map("receiver_id") @db.Uuid
-  receiver   Profile  @relation("NetworkReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  status     String   @default("pending") // pending | connected | ignored
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId             String   @map("sender_id") @db.Uuid
+  sender               Vendor   @relation("NetworkSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId           String   @map("receiver_id") @db.Uuid
+  receiver             Vendor   @relation("NetworkReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  /// none | pending | connected | ignored
+  status               String   @default("none")
+  /// True when sender follows receiver.
+  isFollowing          Boolean  @default(false) @map("is_following")
+  /// True when receiver follows sender.
+  receiverIsFollowing  Boolean  @default(false) @map("receiver_is_following")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([senderId, status])
   @@index([receiverId, status])
@@ -178,6 +182,21 @@ model Vendor {
   /// Phase 76 — vendor-funded boost micro-fee balance (integer cents).
   rewardsBoostBalanceCents Int  @default(0) @map("rewards_boost_balance_cents")
 
+  /// Phase 83a — farmers_market | home_kitchen | private_chef | micro_brand | …
+  vendorType               String?  @map("vendor_type")
+  /// Phase 83a — Home Chef cottage-food disclosure.
+  cottageFoodDisclosure    String?  @map("cottage_food_disclosure")
+  /// Phase 83a — Private Chef base service rate (cents).
+  baseServiceRateCents     Int?     @map("base_service_rate_cents")
+  /// Phase 83a — Private Chef minimum guest count.
+  minimumGuestCount        Int?     @map("minimum_guest_count")
+  /// Phase 83a — Micro-Brand nationwide shipping.
+  shippingEnabled          Boolean  @default(false) @map("shipping_enabled")
+  flatRateShippingFeeCents Int?     @map("flat_rate_shipping_fee_cents")
+  freeShippingMinimumCents Int?     @map("free_shipping_minimum_cents")
+  /// Phase 83f — theme + flash_sale campaign payload.
+  themeSettings            Json     @default("{}") @map("theme_settings")
+
   /// Phase 24/27 — WGS84 vendor pin + country (default USA in Supabase).
   latitude  Decimal? @db.Decimal(10, 7)
   longitude Decimal? @db.Decimal(10, 7)
@@ -201,6 +220,8 @@ model Vendor {
   businessConnectionsReceived VendorBusinessConnection[] @relation("BusinessConnectionReceiver")
   peerConnectionsRequested    VendorPeerConnection[]     @relation("PeerConnectionRequestor")
   peerConnectionsReceived     VendorPeerConnection[]     @relation("PeerConnectionRecipient")
+  networkConnectionsSent      VendorConnection[]         @relation("NetworkSender")
+  networkConnectionsReceived  VendorConnection[]         @relation("NetworkReceiver")
   wholesaleProducts           WholesaleProduct[]
   vendorAlerts                VendorAlert[]
   wholesaleOrdersAsBuyer      WholesaleOrder[]           @relation("WholesaleOrderBuyer")
@@ -208,6 +229,7 @@ model Vendor {
   procurementRequests         B2bProcurementRequest[]
 
   @@index([userId])
+  @@index([vendorType])
   @@index([latitude, longitude])
   @@map("vendors")
 }
