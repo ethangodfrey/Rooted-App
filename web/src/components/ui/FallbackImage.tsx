@@ -34,6 +34,25 @@ function ProductPlaceholderIcon() {
   );
 }
 
+function VendorLogoPlaceholderIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      style={{ width: '46%', height: '46%', opacity: 0.6 }}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 9.75L12 4l9 5.75M5.25 10.5V19.5A1.5 1.5 0 006.75 21h3.75v-5.25a1.5 1.5 0 011.5-1.5h0a1.5 1.5 0 011.5 1.5V21h3.75a1.5 1.5 0 001.5-1.5v-9"
+      />
+    </svg>
+  );
+}
+
 function resolveFallbackContent(
   variant: FallbackImageVariant,
   category: string | null | undefined,
@@ -48,7 +67,7 @@ function resolveFallbackContent(
       return initial;
     }
     case 'vendor-logo':
-      return '🏪';
+      return <VendorLogoPlaceholderIcon />;
     case 'banner':
       return categoryVisual(category).emoji;
     case 'product':

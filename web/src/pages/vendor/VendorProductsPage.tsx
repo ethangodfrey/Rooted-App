@@ -12,6 +12,7 @@ import {
   VendorSection,
   VENDOR_PRESSABLE,
 } from '@/components/vendor/vendor-ui';
+import { VendorCatalogSkeleton } from '@/components/vendor/VendorListSkeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -59,9 +60,7 @@ export function VendorProductsPage() {
       </VendorActionGrid>
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
-        </div>
+        <VendorCatalogSkeleton />
       ) : products.length === 0 ? (
         <VendorEmpty message="No products yet." />
       ) : (

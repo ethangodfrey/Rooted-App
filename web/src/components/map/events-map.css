@@ -231,6 +231,24 @@
   min-width: 0;
 }
 
+@media (max-width: 767px) {
+  .shopper-map-list {
+    padding-bottom: max(8rem, env(safe-area-inset-bottom, 0px) + 5rem);
+  }
+
+  .shopper-map-carousel-card {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .shopper-map-carousel-card .app-hscroll-card__title,
+  .shopper-map-carousel-card .app-hscroll-card__meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .shopper-map-carousel-card {
   width: 100%;
   max-width: 100%;

@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { formatExploreDistanceMiles, resolveExploreHybridHref } from '@/lib/explore-hybrid-feed';
 import type { ExploreHybridFeedItem } from '@/lib/explore-hybrid-feed';
 
@@ -39,54 +39,36 @@ export interface ExploreHybridFeedCardProps {
  * Mobile-first hybrid explore card — media posts and storefront details.
  */
 export function ExploreHybridFeedCard({ item }: ExploreHybridFeedCardProps) {
-  const [mediaFailed, setMediaFailed] = useState(false);
-  const [avatarFailed, setAvatarFailed] = useState(false);
   const href = resolveExploreHybridHref(item);
   const media = resolveMedia(item);
   const distance = formatExploreDistanceMiles(item.distance_miles);
   const kindLabel = CONTENT_KIND_LABEL[item.content_kind] ?? item.content_kind;
   const headline = item.title ?? item.caption?.slice(0, 120) ?? 'Local update';
-  const creatorInitial = (item.creator_name ?? '?').charAt(0).toUpperCase();
 
   const body = (
     <article className="flex flex-col overflow-hidden rounded-xl border border-zinc-200/50 bg-white/80 backdrop-blur-md">
-      {media && !mediaFailed ? (
-        <div className="relative aspect-[4/3] w-full bg-zinc-100 sm:aspect-[16/9]">
-          <img
-            src={media}
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
-            onError={() => setMediaFailed(true)}
-          />
-          {item.media_type === 'video' ? (
-            <span className="absolute bottom-3 right-3 rounded border border-white/10 bg-zinc-950/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-50">
-              Video
-            </span>
-          ) : null}
-        </div>
-      ) : (
-        <div className="flex aspect-[4/3] items-center justify-center bg-zinc-950 sm:aspect-[16/9]">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-            {item.creator_name ?? 'Local vendor'}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100 sm:aspect-[16/9]">
+        <FallbackImage
+          src={media}
+          variant="banner"
+          label={item.creator_name ?? undefined}
+          className="h-full w-full object-cover"
+        />
+        {item.media_type === 'video' && media ? (
+          <span className="absolute bottom-3 right-3 rounded border border-white/10 bg-zinc-950/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-zinc-50">
+            Video
           </span>
-        </div>
-      )}
+        ) : null}
+      </div>
 
       <div className="flex flex-col gap-3 p-4">
         <div className="flex items-start gap-3">
-          {item.creator_avatar_url && !avatarFailed ? (
-            <img
-              src={item.creator_avatar_url}
-              alt=""
-              className="h-10 w-10 shrink-0 rounded-lg border border-zinc-200/50 object-cover"
-              onError={() => setAvatarFailed(true)}
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200/50 bg-zinc-50 text-xs font-bold text-zinc-700">
-              {creatorInitial}
-            </div>
-          )}
+          <FallbackImage
+            src={item.creator_avatar_url}
+            variant="avatar"
+            label={item.creator_name ?? undefined}
+            className="h-10 w-10 shrink-0 rounded-lg border border-zinc-200/50 object-cover"
+          />
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
