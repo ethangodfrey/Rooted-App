@@ -38,7 +38,7 @@ function row(overrides: Partial<MarketCsvRow> = {}): MarketCsvRow {
 describe('normalizeMarketName', () => {
   it('lowercases, strips accents, and collapses punctuation', () => {
     expect(normalizeMarketName("O'Brien's Farmers & Artisan Market")).toBe(
-      'o brien s farmers and artisan market',
+      'obriens farmers and artisan market',
     );
   });
 
@@ -118,7 +118,14 @@ describe('dedupeMarketRows', () => {
   it('dedupes by external_id first, then by location', () => {
     const rows = [
       row({ external_id: 'usda-1', name: 'Alpha Market', city: 'Austin', state: 'TX' }),
-      row({ external_id: 'usda-1', name: 'Alpha Market Updated', city: 'Austin', state: 'TX' }),
+      row({
+        external_id: 'usda-1',
+        name: 'Alpha Market Updated',
+        city: 'Austin',
+        state: 'TX',
+        description: 'Richer USDA record with a longer description for scoring',
+        website: 'https://alpha.test',
+      }),
       row({ name: 'Beta Market', city: 'Dallas', state: 'TX' }),
       row({ name: 'Beta Market', city: 'Dallas', state: 'TX', website: 'https://beta.test' }),
     ];

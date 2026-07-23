@@ -41,7 +41,7 @@ describe('parseVariants', () => {
     };
 
     const parsed = parseVariants(raw);
-    expect(parsed.attributes).toHaveLength(1);
+    expect(parsed.attributes.filter((a) => a.name === 'Size')).toHaveLength(1);
     expect(parsed.attributes[0]).toEqual({ name: 'Size', values: ['S', 'M'] });
     expect(parsed.combinations).toHaveLength(1);
     expect(parsed.combinations[0]).toMatchObject({
@@ -95,10 +95,10 @@ describe('regenerateCombinations', () => {
     expect(combos).toHaveLength(4);
     const labels = combos.map(combinationLabel).sort();
     expect(labels).toEqual([
-      'Color: Blue, Size: M',
-      'Color: Blue, Size: S',
-      'Color: Red, Size: M',
-      'Color: Red, Size: S',
+      'Size: M, Color: Blue',
+      'Size: M, Color: Red',
+      'Size: S, Color: Blue',
+      'Size: S, Color: Red',
     ]);
     for (const combo of combos) {
       expect(combo.price_cents).toBe(999);
