@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { eventRuntimePhase } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
+import { isValidCoords } from '@/lib/geo';
 import { useUserCoords } from '@/hooks/use-user-coords';
 import { useNow } from '@/hooks/use-now';
 
@@ -14,7 +15,7 @@ export function useNearbyOpenMarkets() {
   useEffect(() => {
     if (!coordsReady) return;
 
-    if (coords?.latitude == null || coords?.longitude == null) {
+    if (!isValidCoords(coords)) {
       setOpenCount(0);
       return;
     }
@@ -22,7 +23,7 @@ export function useNearbyOpenMarkets() {
     let cancelled = false;
     void fetchPublicEvents({
       forMap: true,
-      near: { latitude: coords.latitude, longitude: coords.longitude },
+      near: coords,
     }).then(({ data, error }) => {
       if (cancelled) return;
       const list = error ? [] : data;

@@ -116,10 +116,10 @@ export function centroidOfEvents(events: Event[]): Coords | null {
     }),
     { latitude: 0, longitude: 0 },
   );
-  return {
+  return coordsFrom({
     latitude: totals.latitude / mappable.length,
     longitude: totals.longitude / mappable.length,
-  };
+  });
 }
 
 const NOMINATIM_USER_AGENT = 'RootedApp/1.0 (farmers market map search)';
