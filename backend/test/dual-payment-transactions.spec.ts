@@ -450,6 +450,18 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       expect(txn.grossAmount).toBe(0);
       expect(txn.netAmount).toBe(0);
     });
+
+    it('maps non-terminal Square order states to COMPLETED for import', () => {
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-open-1',
+        state: 'OPEN',
+        total_money: { amount: 500, currency: 'USD' },
+        line_items: [{ uid: 'li-1', name: 'Coffee', quantity: '1', gross_sales_money: { amount: 500 } }],
+      });
+
+      expect(txn.state).toBe('COMPLETED');
+      expect(txn.grossAmount).toBe(500);
+    });
   });
 
   describe('Stripe checkout success mutates stripe_pending orders end-to-end', () => {
@@ -508,6 +520,53 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
         payment_status: 'paid_online',
         stripe_payment_intent_id: 'pi_success',
       });
+    });
+
+    it('ignores checkout.session.completed when customer_user_id metadata is missing', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-no-user',
+          total: 900,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_no_user',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-real',
+        },
+      ]);
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_no_user',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_no_user',
+            payment_intent: 'pi_no_user',
+            metadata: { order_id: 'order-no-user' },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
     });
 
     it('leaves stripe_pending orders unchanged when session id does not match', async () => {
