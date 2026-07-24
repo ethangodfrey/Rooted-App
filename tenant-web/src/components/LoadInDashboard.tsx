@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   buildCheckInPayload,
   distanceMiles,
+  coordsFrom,
   isWithinMarketGeofence,
   MORNING_CHECKLIST,
   parseBoothAssignment,
@@ -149,11 +150,14 @@ export function LoadInDashboard({
     }
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        setUserCoords({
+        const next = coordsFrom({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
-        setGeoStatus('ready');
+        if (next) {
+          setUserCoords(next);
+          setGeoStatus('ready');
+        }
       },
       () => setGeoStatus('denied'),
       { enableHighAccuracy: true, maximumAge: 15_000, timeout: 12_000 },
@@ -162,10 +166,10 @@ export function LoadInDashboard({
   }, []);
 
   const booth = useMemo(() => parseBoothAssignment(event?.booth_details), [event?.booth_details]);
-  const marketCoords =
-    event?.latitude != null && event?.longitude != null
-      ? { latitude: event.latitude, longitude: event.longitude }
-      : null;
+  const marketCoords = coordsFrom({
+    latitude: event?.latitude,
+    longitude: event?.longitude,
+  });
   const onSite = isWithinMarketGeofence(userCoords, marketCoords);
   const distanceLabel =
     userCoords && marketCoords

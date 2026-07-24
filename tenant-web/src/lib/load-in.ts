@@ -18,6 +18,36 @@ export interface Coords {
   longitude: number;
 }
 
+type CoordInput = { latitude?: unknown; longitude?: unknown } | null | undefined;
+
+function normalizeCoord(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** True when latitude/longitude are finite and within valid Earth bounds. */
+export function isValidCoords(value: CoordInput): value is Coords {
+  if (!value) return false;
+  const latitude = normalizeCoord(value.latitude);
+  const longitude = normalizeCoord(value.longitude);
+  if (latitude == null || longitude == null) return false;
+  return (
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+export function coordsFrom(value: CoordInput): Coords | null {
+  if (!isValidCoords(value)) return null;
+  return {
+    latitude: normalizeCoord(value.latitude)!,
+    longitude: normalizeCoord(value.longitude)!,
+  };
+}
+
 export function distanceMiles(a: Coords, b: Coords): number {
   const R = 3958.8;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -35,9 +65,7 @@ export function isWithinMarketGeofence(
   market: Coords | null | undefined,
   radiusMiles: number = LOAD_IN_GEOFENCE_MILES,
 ): boolean {
-  if (!user || !market) return false;
-  if (!Number.isFinite(user.latitude) || !Number.isFinite(user.longitude)) return false;
-  if (!Number.isFinite(market.latitude) || !Number.isFinite(market.longitude)) return false;
+  if (!isValidCoords(user) || !isValidCoords(market)) return false;
   return distanceMiles(user, market) <= radiusMiles;
 }
 
