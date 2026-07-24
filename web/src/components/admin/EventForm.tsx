@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { FieldError } from '@/components/ui/FieldError';
 import { combineDateTime, toDateInput, toTimeInput } from '@/lib/event-datetime';
+import { isValidCoords } from '@/lib/geo';
 import type { Event, EventStatus, VisibilityStatus } from '@/types/database';
 import '@/components/ui/ui.css';
 
@@ -132,6 +133,10 @@ export function EventForm({ initial, submitLabel, onSubmit, loading = false }: E
     }
     if (!Number.isFinite(lng)) {
       nextFieldErrors.longitude = 'Longitude must be a valid number.';
+    }
+    if (Number.isFinite(lat) && Number.isFinite(lng) && !isValidCoords({ latitude: lat, longitude: lng })) {
+      nextFieldErrors.latitude = 'Latitude must be between -90 and 90.';
+      nextFieldErrors.longitude = 'Longitude must be between -180 and 180.';
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {

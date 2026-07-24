@@ -125,7 +125,8 @@ export function VendorEventsPage() {
       const resolveCoords = (): Promise<{ lat: number; lng: number } | null> =>
         new Promise((resolve) => {
           if (vendor.latitude != null && vendor.longitude != null) {
-            resolve({ lat: Number(vendor.latitude), lng: Number(vendor.longitude) });
+            const c = coordsFrom({ latitude: vendor.latitude, longitude: vendor.longitude });
+            resolve(c ? { lat: c.latitude, lng: c.longitude } : null);
             return;
           }
           if (!navigator.geolocation) {
@@ -133,28 +134,36 @@ export function VendorEventsPage() {
             return;
           }
           navigator.geolocation.getCurrentPosition(
-            (pos) =>
-              resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (pos) => {
+              const c = coordsFrom({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+              });
+              resolve(c ? { lat: c.latitude, lng: c.longitude } : null);
+            },
             () => resolve(null),
             { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
           );
         });
 
-      const coords = await resolveCoords();
-      if (cancelled) return;
+      try {
+        const coords = await resolveCoords();
+        if (cancelled) return;
 
-      if (!coords) {
-        setNearbyMarkets([]);
-        setNearbyReady(true);
-        setNearbyLoading(false);
-        return;
-      }
+        if (!coords) {
+          setNearbyMarkets([]);
+          return;
+        }
 
-      const markets = await fetchNearbyMarkets(coords.lat, coords.lng, 50);
-      if (!cancelled) {
-        setNearbyMarkets(markets);
-        setNearbyReady(true);
-        setNearbyLoading(false);
+        const markets = await fetchNearbyMarkets(coords.lat, coords.lng, 50);
+        if (!cancelled) setNearbyMarkets(markets);
+      } catch {
+        if (!cancelled) setNearbyMarkets([]);
+      } finally {
+        if (!cancelled) {
+          setNearbyReady(true);
+          setNearbyLoading(false);
+        }
       }
     }
 
@@ -217,13 +226,18 @@ export function VendorEventsPage() {
     setPublishing(true);
     setFormError(null);
     try {
+      const c = coordsFrom({ latitude: Number(latitude), longitude: Number(longitude) });
+      if (!c) {
+        setFormError('Enter valid latitude and longitude.');
+        return;
+      }
       await publishCommunityEvent({
         creatorId: profileId,
         title,
         description,
         eventType,
-        latitude: Number(latitude),
-        longitude: Number(longitude),
+        latitude: c.latitude,
+        longitude: c.longitude,
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
       });

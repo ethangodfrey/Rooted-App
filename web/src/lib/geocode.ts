@@ -14,6 +14,8 @@
  *     browsers send Referer automatically) and a single request per attempt.
  */
 
+import { coordsFrom } from '@/lib/geo';
+
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT = 'VendorlyMarketplace/1.0 (onboarding address geocoder)';
 
@@ -61,8 +63,7 @@ async function search(query: string): Promise<GeocodeResult | null> {
     if (!best?.lat || !best?.lon) return null;
     const latitude = Number(best.lat);
     const longitude = Number(best.lon);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-    return { latitude: Number(latitude.toFixed(6)), longitude: Number(longitude.toFixed(6)) };
+    return coordsFrom({ latitude, longitude });
   } catch {
     return null;
   }

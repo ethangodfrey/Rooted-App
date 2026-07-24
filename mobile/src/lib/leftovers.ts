@@ -1,5 +1,5 @@
 import type { Coords } from '@/src/lib/geo';
-import { distanceMiles } from '@/src/lib/geo';
+import { coordsFrom, distanceMiles } from '@/src/lib/geo';
 import { fetchNearbyLeftovers } from '@/src/lib/geo-search';
 import { firstRelation } from '@/src/lib/supabase-relations';
 import { supabase } from '@/src/lib/supabase';
@@ -89,13 +89,10 @@ function locationLabel(listing: LeftoverListing): string {
 }
 
 function listingCoords(listing: LeftoverListing): Coords | null {
-  if (listing.pickup_latitude != null && listing.pickup_longitude != null) {
-    return {
-      latitude: Number(listing.pickup_latitude),
-      longitude: Number(listing.pickup_longitude),
-    };
-  }
-  return null;
+  return coordsFrom({
+    latitude: listing.pickup_latitude,
+    longitude: listing.pickup_longitude,
+  });
 }
 
 /** Curate leftovers: soonest expiry first, then nearest pickup, then same city/state. */

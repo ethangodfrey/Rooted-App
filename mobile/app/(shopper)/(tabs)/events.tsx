@@ -22,7 +22,7 @@ import {
 import { eventPlaceholderEmoji } from '@/src/lib/event-image';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/src/lib/event-runtime';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/src/lib/format';
-import { distanceMiles, formatDistance } from '@/src/lib/geo';
+import { distanceMiles, formatDistance, parseCoords } from '@/src/lib/geo';
 import { fetchPublicEvents } from '@/src/lib/events-query';
 import { colors } from '@/src/theme/colors';
 import { layoutStyles } from '@/src/theme/layout';
@@ -148,12 +148,11 @@ export default function ShopperEventsScreen() {
 
   const distanceFor = useCallback(
     (event: Event): string | null => {
-      if (!coords || event.latitude == null || event.longitude == null) {
+      const eventCoords = parseCoords(event.latitude, event.longitude);
+      if (!coords || !eventCoords) {
         return null;
       }
-      return formatDistance(
-        distanceMiles(coords, { latitude: event.latitude, longitude: event.longitude }),
-      );
+      return formatDistance(distanceMiles(coords, eventCoords));
     },
     [coords],
   );
