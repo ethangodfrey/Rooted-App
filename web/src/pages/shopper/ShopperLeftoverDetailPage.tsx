@@ -27,19 +27,34 @@ export function ShopperLeftoverDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
-    fetchLeftoverById(id).then((row) => {
-      if (!row) {
-        setListing(null);
-      } else {
-        const [curated] = curateLeftovers([row], {
-          userCity: user?.city,
-          userState: user?.state,
-        });
-        setListing(curated ?? null);
-      }
+    if (!id) {
       setLoading(false);
-    });
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    fetchLeftoverById(id)
+      .then((row) => {
+        if (cancelled) return;
+        if (!row) {
+          setListing(null);
+        } else {
+          const [curated] = curateLeftovers([row], {
+            userCity: user?.city,
+            userState: user?.state,
+          });
+          setListing(curated ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setListing(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id, user?.city, user?.state]);
 
   async function handleReserve() {

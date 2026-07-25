@@ -20,7 +20,7 @@ import { marketPath, vendorPath } from '@/lib/market-routes';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
 import { formatEventDisplayDate } from '@/lib/format';
-import { isValidCoords, type Coords } from '@/lib/geo';
+import { isValidCoords, coordsFrom, type Coords } from '@/lib/geo';
 import {
   clusterTrackedBusinesses,
   type MapBounds,
@@ -150,7 +150,7 @@ function FlyToTarget({
   const map = useMap();
 
   useEffect(() => {
-    if (!target) return;
+    if (!target || !isValidCoords(target)) return;
     try {
       map.flyTo([target.latitude, target.longitude], zoom, { duration: 0.6 });
     } catch {
@@ -300,20 +300,24 @@ export function EventsMap({
     () => clusterTrackedBusinesses(businesses, mapZoom),
     [businesses, mapZoom],
   );
-  const eventCenter = centroidOfEvents(events);
+  const eventCenter = centroidOfEvents(mappableEvents);
   const resolvedUserCoords = isValidCoords(userCoords) ? userCoords : null;
   const initialCenter: [number, number] = resolvedUserCoords
     ? [resolvedUserCoords.latitude, resolvedUserCoords.longitude]
     : eventCenter
       ? [eventCenter.latitude, eventCenter.longitude]
       : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
+  const safeCenter = coordsFrom({
+    latitude: initialCenter[0],
+    longitude: initialCenter[1],
+  }) ?? DEFAULT_CENTER;
   const initialZoom = resolvedUserCoords || eventCenter ? 9 : DEFAULT_ZOOM;
 
   return (
     <div className="events-map-panel relative isolate z-0">
       <div className="events-map-frame relative h-[50vh] min-h-[280px] w-full overflow-hidden rounded-2xl md:h-[60vh] md:min-h-[360px]">
         <MapContainer
-          center={initialCenter}
+          center={[safeCenter.latitude, safeCenter.longitude]}
           zoom={initialZoom}
           scrollWheelZoom
           className="h-full w-full rounded-2xl"
