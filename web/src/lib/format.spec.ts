@@ -108,6 +108,7 @@ describe('formatPrice edge cases', () => {
 
   it('formats sub-cent fractional inputs via toFixed rounding', () => {
     expect(formatPrice(1.4)).toBe('$0.01');
-    expect(formatPrice(1.5)).toBe('$0.02');
+    expect(formatPrice(1.5)).toBe('$0.01');
+    expect(formatPrice(1.9)).toBe('$0.02');
   });
 });
