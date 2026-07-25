@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ExploreMenuDrawer } from '@/components/explore/ExploreMenuDrawer';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { useSavedVendors } from '@/hooks/use-saved-vendors';
 import {
   formatExploreDistanceMiles,
@@ -51,7 +52,6 @@ function directionsUrl(item: ExploreHybridFeedItem): string | null {
  * Full-viewport snap slide for the shopper explore swipe feed.
  */
 export function ExploreSwipeSlide({ item, index, snapEligible = false }: ExploreSwipeSlideProps) {
-  const [mediaFailed, setMediaFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isSaved, toggle, pending } = useSavedVendors();
   const href = resolveExploreHybridHref(item);
@@ -94,17 +94,14 @@ export function ExploreSwipeSlide({ item, index, snapEligible = false }: Explore
   return (
     <article className="explore-swipe__slide h-[100dvh] w-full snap-start snap-always relative overflow-hidden flex flex-col justify-between p-6 pb-24">
       <div className="explore-swipe__media" aria-hidden>
-        {media && !mediaFailed ? (
-          <img
-            src={media}
-            alt=""
-            className="explore-swipe__media-img"
-            loading={index < 2 ? 'eager' : 'lazy'}
-            onError={() => setMediaFailed(true)}
-          />
-        ) : (
-          <div className="explore-swipe__media-fallback" />
-        )}
+        <FallbackImage
+          src={media}
+          variant="banner"
+          category={item.content_kind}
+          label={item.creator_name ?? undefined}
+          className="explore-swipe__media-img"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
         <div className="explore-swipe__media-fade" />
       </div>
 

@@ -126,7 +126,7 @@ export function ShopperEventsPage() {
   const preview = useMarketDetail(selectedEvent?.id);
 
   return (
-    <div className="app-screen app-screen--titled" style={{ maxWidth: 1100 }}>
+    <div className="app-screen app-screen--titled min-w-0 overflow-x-hidden" style={{ maxWidth: 1100 }}>
       <p className="app-eyebrow">Boutique directory</p>
       <h1 className="app-title" style={{ marginBottom: '0.35rem' }}>
         Markets
@@ -214,11 +214,11 @@ export function ShopperEventsPage() {
                       onClick={() => setSelectedId(event.id)}
                     >
                       <EventThumb event={event} size={52} />
-                      <div className="app-row-body">
+                      <div className="app-row-body min-w-0">
                         <div style={{ marginBottom: '0.25rem' }}>
                           <EventStatusBadge event={event} now={now} />
                         </div>
-                        <p className="app-row-title" style={{ fontSize: '0.9375rem' }}>
+                        <p className="app-row-title truncate" style={{ fontSize: '0.9375rem' }}>
                           {event.name}
                         </p>
                         <span className="markets-split__hours">{hoursBadge(event, now)}</span>
@@ -260,7 +260,7 @@ export function ShopperEventsPage() {
                       <div className="markets-preview__hero-fallback">Market preview</div>
                     )}
                   </div>
-                  <div className="markets-preview__body">
+                  <div className="markets-preview__body min-w-0">
                     <p className="ft-label" style={{ marginBottom: 0 }}>
                       Selected market
                     </p>

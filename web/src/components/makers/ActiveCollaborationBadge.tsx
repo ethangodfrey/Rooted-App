@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import {
   fetchCollaboration,
   type JointContentItem,
@@ -96,10 +97,11 @@ export function ActiveCollaborationBadge({
                 {items.map((item) => (
                   <li key={item.postId} className="active-collab-modal__item">
                     {(item.cdnMediaUrl || item.mediaUrl) ? (
-                      <img
-                        src={item.cdnMediaUrl || item.mediaUrl || ''}
-                        alt=""
+                      <FallbackImage
+                        src={item.cdnMediaUrl || item.mediaUrl}
+                        variant="product"
                         className="active-collab-modal__media"
+                        style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
                       />
                     ) : null}
                     <p className="active-collab-modal__caption">{item.caption}</p>

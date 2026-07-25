@@ -234,6 +234,7 @@
 .shopper-map-carousel-card {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   text-align: left;
   border: 1px solid rgba(24, 24, 27, 0.08);
   cursor: pointer;
@@ -242,6 +243,18 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: none;
+  overflow: hidden;
+}
+
+.shopper-map-carousel-card .app-hscroll-card__body {
+  min-width: 0;
+}
+
+.shopper-map-carousel-card .app-hscroll-card__title,
+.shopper-map-carousel-card .app-hscroll-card__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shopper-map-carousel-card.app-card--selected,

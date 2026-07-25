@@ -1,10 +1,9 @@
-import { useState } from 'react';
-
 import {
   eventPlaceholderEmoji,
   resolveEventBannerUrl,
   type EventImageFields,
 } from '@/lib/event-image';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 
 interface EventThumbProps {
   event: EventImageFields;
@@ -13,42 +12,30 @@ interface EventThumbProps {
 }
 
 export function EventThumb({ event, size = 56, large = false }: EventThumbProps) {
-  const [failed, setFailed] = useState(false);
   const imageUrl = resolveEventBannerUrl(event);
-
-  if (imageUrl && !failed) {
-    return (
-      <img
-        src={imageUrl}
-        alt=""
-        onError={() => setFailed(true)}
-        style={{
-          width: large ? '100%' : size,
-          height: large ? 200 : size,
-          borderRadius: large ? 16 : 12,
-          objectFit: 'cover',
-          flexShrink: 0,
-          background: 'var(--color-line, #e8e8e8)',
-          marginBottom: large ? '1rem' : 0,
-        }}
-      />
-    );
-  }
+  const width = large ? '100%' : size;
+  const height = large ? 200 : size;
+  const borderRadius = large ? 16 : 12;
 
   return (
-    <div
+    <FallbackImage
+      src={imageUrl}
+      variant="banner"
+      category={event.market_type}
+      fallbackIcon={
+        <span style={{ fontSize: large ? '2rem' : '1.25rem', lineHeight: 1 }}>
+          {eventPlaceholderEmoji(event.market_type)}
+        </span>
+      }
       className="app-event-card-thumb"
       style={{
-        width: large ? '100%' : size,
-        height: large ? 200 : size,
-        borderRadius: large ? 16 : 12,
+        width,
+        height,
+        borderRadius,
+        objectFit: 'cover',
         flexShrink: 0,
         marginBottom: large ? '1rem' : 0,
-        background: imageUrl && !failed ? undefined : '#18181b',
-        color: '#a1a1aa',
       }}
-    >
-      {eventPlaceholderEmoji(event.market_type)}
-    </div>
+    />
   );
 }
