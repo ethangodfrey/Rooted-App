@@ -100,3 +100,14 @@ describe('formatCurrentClock', () => {
     expect(label).toMatch(/45/);
   });
 });
+
+describe('formatPrice edge cases', () => {
+  it('formats single-cent amounts', () => {
+    expect(formatPrice(1)).toBe('$0.01');
+  });
+
+  it('formats sub-cent fractional inputs via toFixed rounding', () => {
+    expect(formatPrice(1.4)).toBe('$0.01');
+    expect(formatPrice(1.5)).toBe('$0.02');
+  });
+});

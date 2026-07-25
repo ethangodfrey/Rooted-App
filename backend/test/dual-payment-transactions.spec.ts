@@ -450,6 +450,180 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       expect(txn.grossAmount).toBe(0);
       expect(txn.netAmount).toBe(0);
     });
+
+    it('creates a synthetic line item when Square omits line_items but reports net totals', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const txn = normalizeSquareOrder(adapter, {
+        id: 'sq-no-lines',
+        state: 'COMPLETED',
+        closed_at: '2026-06-08T15:30:00.000Z',
+        total_money: { amount: 850, currency: 'USD' },
+        net_amounts: { total_money: { amount: 850 } },
+        line_items: [],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [txn]);
+
+      expect(result.imported).toBe(1);
+      expect(fake.store.transactions[0]).toMatchObject({
+        providerTransactionId: 'sq-no-lines',
+        grossAmount: 850,
+        state: 'COMPLETED',
+      });
+    });
+  });
+
+  describe('Stripe wholesale payment failure payloads', () => {
+    it('updates wholesale invoice status on payment_intent.payment_failed', async () => {
+      const updateMany = jest.fn(async () => ({ count: 1 }));
+      const executeRaw = jest.fn();
+      const prisma = {
+        $executeRaw: executeRaw,
+        $queryRaw: jest.fn(async () => []),
+        $transaction: jest.fn(),
+        vendor: {},
+        wholesaleInvoice: { updateMany },
+      } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_wholesale_failed',
+        type: 'payment_intent.payment_failed',
+        data: {
+          object: {
+            id: 'pi_wholesale_failed',
+            status: 'requires_payment_method',
+            metadata: {
+              purpose: 'wholesale_net30',
+              wholesale_invoice_id: 'invoice-123',
+            },
+          },
+        },
+      } as never);
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: 'invoice-123' },
+        data: { stripePaymentStatus: 'requires_payment_method' },
+      });
+      expect(executeRaw).toHaveBeenCalled();
+    });
+
+    it('ignores payment_intent.payment_failed without wholesale metadata', async () => {
+      const updateMany = jest.fn();
+      const prisma = {
+        $executeRaw: jest.fn(),
+        $queryRaw: jest.fn(async () => []),
+        $transaction: jest.fn(),
+        vendor: {},
+        wholesaleInvoice: { updateMany },
+      } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_generic_failed',
+        type: 'payment_intent.payment_failed',
+        data: {
+          object: {
+            id: 'pi_generic_failed',
+            status: 'requires_payment_method',
+            metadata: { order_id: 'order-1' },
+          },
+        },
+      } as never);
+
+      expect(updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Stripe webhook idempotency', () => {
+    it('skips already-processed webhook events without mutating orders', async () => {
+      const finalizePaidOrder = jest.fn();
+      const fake = createFakeOrderPrisma([
+        {
+          id: 'order-deduped',
+          total: 1200,
+          payment_status: 'stripe_pending',
+          stripe_checkout_session_id: 'cs_deduped',
+          stripe_payment_intent_id: null,
+          vendor_id: VENDOR_ID,
+          business_name: 'River Farm',
+          stripe_account_id: 'acct_vendor',
+          stripe_charges_enabled: true,
+          customer_user_id: 'user-deduped',
+        },
+      ]);
+      fake.prisma.$queryRaw = jest.fn(async (strings: TemplateStringsArray) => {
+        if (strings.join(' ').includes('stripe_webhook_events')) {
+          return [{ id: 'existing-event' }];
+        }
+        return [];
+      }) as never;
+
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        fake.prisma,
+        {
+          finalizePaidOrder,
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_already_processed',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_deduped',
+            payment_intent: 'pi_retry',
+            metadata: {
+              order_id: 'order-deduped',
+              customer_user_id: 'user-deduped',
+            },
+          },
+        },
+      } as never);
+
+      expect(finalizePaidOrder).not.toHaveBeenCalled();
+      expect(fake.orders[0].payment_status).toBe('stripe_pending');
+    });
   });
 
   describe('Stripe checkout success mutates stripe_pending orders end-to-end', () => {
