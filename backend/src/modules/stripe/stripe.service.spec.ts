@@ -205,6 +205,61 @@ describe('StripeService payment webhook handling', () => {
     expect(vendorUpdateManyCalls).toHaveLength(0);
   });
 
+  it('updates wholesale invoice status on payment_intent.payment_failed payloads', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const updateMany = jest.fn(async () => ({ count: 1 }));
+    (prisma as unknown as { wholesaleInvoice: { updateMany: jest.Mock } }).wholesaleInvoice = {
+      updateMany,
+    };
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    await service.handleWebhookEvent({
+      id: 'evt_pi_failed',
+      type: 'payment_intent.payment_failed',
+      data: {
+        object: {
+          id: 'pi_failed',
+          status: 'requires_payment_method',
+          metadata: {
+            purpose: 'wholesale_net30',
+            wholesale_invoice_id: 'inv-123',
+          },
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'inv-123' },
+      data: { stripePaymentStatus: 'requires_payment_method' },
+    });
+    expect(inventory.finalizePaidOrder).not.toHaveBeenCalled();
+  });
+
+  it('ignores payment_intent.payment_failed without wholesale invoice metadata', async () => {
+    const { prisma } = fakePrisma();
+    const inventory = fakeInventory();
+    const updateMany = jest.fn();
+    (prisma as unknown as { wholesaleInvoice: { updateMany: jest.Mock } }).wholesaleInvoice = {
+      updateMany,
+    };
+    const service = new StripeService(fakeConfig(), prisma, inventory);
+
+    await service.handleWebhookEvent({
+      id: 'evt_pi_failed_orphan',
+      type: 'payment_intent.payment_failed',
+      data: {
+        object: {
+          id: 'pi_failed_orphan',
+          status: 'requires_payment_method',
+          metadata: {},
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
   describe('verifyWebhook', () => {
     it('delegates signature verification to Stripe SDK', () => {
       const { prisma } = fakePrisma();

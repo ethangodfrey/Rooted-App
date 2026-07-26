@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type Stripe from 'stripe';
 
@@ -9,6 +9,9 @@ import type { StripeService } from './stripe.service';
 
 const REFERENCE_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const TRANSACTION_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const STRIPE_ACCOUNT_ID = 'acct_vendor_123';
+
+const checkoutSessionsCreate = jest.fn();
 
 function fakeConfig(): ConfigService {
   return {
@@ -23,6 +26,8 @@ function buildService(overrides?: {
   holdInEscrow?: jest.Mock;
   verifyWebhook?: jest.Mock;
   executeRaw?: jest.Mock;
+  queryRaw?: jest.Mock;
+  checkoutSessionsCreate?: jest.Mock;
 }) {
   const holdInEscrow =
     overrides?.holdInEscrow ??
@@ -32,19 +37,22 @@ function buildService(overrides?: {
     }));
   const verifyWebhook = overrides?.verifyWebhook ?? jest.fn();
   const executeRaw = overrides?.executeRaw ?? jest.fn(async () => 1);
+  const queryRaw = overrides?.queryRaw ?? jest.fn(async () => []);
 
   const clearing = { holdInEscrow } as unknown as PaymentClearingService;
   const stripe = {
     verifyWebhook,
-    requireClient: jest.fn(),
+    requireClient: jest.fn(() => ({
+      checkout: { sessions: { create: overrides?.checkoutSessionsCreate ?? checkoutSessionsCreate } },
+    })),
   } as unknown as StripeService;
   const prisma = {
-    $queryRaw: jest.fn(async () => []),
+    $queryRaw: queryRaw,
     $executeRaw: executeRaw,
   } as unknown as PrismaService;
 
   const service = new PaymentsGatewayService(fakeConfig(), prisma, stripe, clearing);
-  return { service, holdInEscrow, verifyWebhook, executeRaw, prisma };
+  return { service, holdInEscrow, verifyWebhook, executeRaw, prisma, queryRaw };
 }
 
 function escrowCompletedSession(
@@ -66,6 +74,10 @@ function escrowCompletedSession(
 describe('PaymentsGatewayService webhook processing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    checkoutSessionsCreate.mockResolvedValue({
+      id: 'cs_created',
+      url: 'https://checkout.stripe.test/cs_created',
+    });
   });
 
   it('holds escrow funds on successful checkout.session.completed payloads', async () => {
@@ -203,5 +215,102 @@ describe('PaymentsGatewayService webhook processing', () => {
     await service.handleWebhook(Buffer.from('{}'), 'sig_ok');
 
     expect(executeRaw).toHaveBeenCalled();
+  });
+});
+
+describe('PaymentsGatewayService checkout session creation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    checkoutSessionsCreate.mockResolvedValue({
+      id: 'cs_created',
+      url: 'https://checkout.stripe.test/cs_created',
+    });
+  });
+
+  it('creates a Stripe Checkout session for a catering inquiry reference', async () => {
+    const queryRaw = jest.fn(async () => [{ id: REFERENCE_ID, stripe_account_id: STRIPE_ACCOUNT_ID }]);
+    const { service } = buildService({ queryRaw });
+
+    const result = await service.createCheckoutSession({
+      referenceId: REFERENCE_ID,
+      amount: 1800,
+    });
+
+    expect(queryRaw).toHaveBeenCalled();
+    expect(checkoutSessionsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'payment',
+        metadata: expect.objectContaining({
+          reference_id: REFERENCE_ID,
+          reference_type: 'CATERING',
+          purpose: 'ESCROW_HOLD',
+        }),
+        payment_intent_data: expect.objectContaining({
+          application_fee_amount: 90,
+          transfer_data: { destination: STRIPE_ACCOUNT_ID },
+        }),
+      }),
+    );
+    expect(result).toMatchObject({
+      STATUS: 'STRIPE_GATEWAY_INITIALIZED',
+      ACTION: 'CHECKOUT_CREATED',
+      REFERENCE_ID,
+      REFERENCE_TYPE: 'CATERING',
+      AMOUNT_CENTS: 1800,
+      SESSION_ID: 'cs_created',
+      URL: 'https://checkout.stripe.test/cs_created',
+    });
+  });
+
+  it('creates a wholesale procurement checkout without Connect transfer when no account is linked', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: REFERENCE_ID, stripe_account_id: null }]);
+    const { service } = buildService({ queryRaw });
+
+    const result = await service.createCheckoutSession({
+      referenceId: REFERENCE_ID,
+      amount: 2500,
+    });
+
+    expect(result.REFERENCE_TYPE).toBe('B2B_PROCUREMENT');
+    expect(checkoutSessionsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          reference_type: 'B2B_PROCUREMENT',
+        }),
+        payment_intent_data: expect.not.objectContaining({
+          transfer_data: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it('rejects checkout creation when reference id is blank', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.createCheckoutSession({ referenceId: '   ', amount: 500 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects checkout creation when amount is below the Stripe minimum', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.createCheckoutSession({ referenceId: REFERENCE_ID, amount: 25 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it('throws when the reference id cannot be resolved', async () => {
+    const { service } = buildService({ queryRaw: jest.fn(async () => []) });
+
+    await expect(
+      service.createCheckoutSession({ referenceId: REFERENCE_ID, amount: 500 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
   });
 });

@@ -15,6 +15,13 @@ describe('isValidCoords', () => {
     expect(isValidCoords({})).toBe(false);
   });
 
+  it('rejects empty-string coordinate values from partial API payloads', () => {
+    expect(isValidCoords({ latitude: '', longitude: '-87.6298' })).toBe(false);
+    expect(isValidCoords({ latitude: '41.8781', longitude: '' })).toBe(false);
+    expect(coordsFrom({ latitude: '', longitude: '' })).toBeNull();
+    expect(parseCoords('', '')).toBeNull();
+  });
+
   it('rejects out-of-range or non-finite values', () => {
     expect(isValidCoords({ latitude: 91, longitude: 0 })).toBe(false);
     expect(isValidCoords({ latitude: 0, longitude: -181 })).toBe(false);
