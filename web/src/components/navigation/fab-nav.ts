@@ -60,6 +60,12 @@ const VENDOR_FAB_PAGES: AppTab[] = [
     matchPaths: ['/vendor/dashboard', '/vendor/products', '/vendor/posts', '/vendor/inventory'],
   },
   {
+    to: '/vendor/analytics',
+    label: 'Analytics',
+    icon: 'dashboard',
+    matchPaths: ['/vendor/analytics/integrations', '/vendor/financials'],
+  },
+  {
     to: '/vendor/events',
     label: 'Events',
     icon: 'markets',
@@ -95,6 +101,12 @@ const FARMER_FAB_PAGES: AppTab[] = [
     label: 'Network',
     icon: 'explore',
     matchPaths: ['/vendor/procurement'],
+  },
+  {
+    to: '/vendor/analytics',
+    label: 'Analytics',
+    icon: 'dashboard',
+    matchPaths: ['/vendor/analytics/integrations', '/vendor/financials'],
   },
   {
     to: '/vendor/events',
