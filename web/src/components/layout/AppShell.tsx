@@ -23,14 +23,18 @@ const ROLE_HOME: Record<'shopper' | 'vendor' | 'chef' | 'admin', string> = {
 
 const SHOPPER_SCREEN_TITLES: Record<string, string> = {
   '/explore': 'Explore',
+  '/explore/feed': 'Explore feed',
   '/inbox': 'Inbox',
   '/following': 'Following',
   '/orders': 'Orders',
   '/shopper/search': 'Search',
-  '/shopper/events': 'Markets',
-  '/shopper/profile': 'You',
+  '/shopper/events': 'Events nearby',
+  '/shopper/profile': 'Profile',
   '/shopper/feed': 'Updates',
   '/shopper/map': 'Map',
+  '/shopper/home': 'Home',
+  '/shopper/saved': 'Saved',
+  '/shopper/rewards': 'Rewards',
 };
 
 function vendorAvatarLabel(businessName?: string | null, email?: string | null): string {

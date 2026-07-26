@@ -15,8 +15,8 @@ type FloatingActionBarProps = {
 };
 
 /**
- * Bottom-left expandable FAB — replaces the legacy mobile tab bar.
- * Desktop keeps the sidebar; this control is mobile-first (`md:hidden`).
+ * Bottom-left expandable FAB — primary page destinations by role
+ * (Explore, Events nearby, Profile, …). Desktop keeps the sidebar.
  */
 export function FloatingActionBar({ role, tabs: tabsOverride }: FloatingActionBarProps) {
   const location = useLocation();
