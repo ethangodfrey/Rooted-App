@@ -52,5 +52,5 @@ export function ChefLayout() {
     return <Outlet />;
   }
 
-  return <AppShell role="chef" tabs={CHEF_TABS} />;
+  return <AppShell role="chef" tabs={CHEF_TABS} fabRole="PRIVATE_CHEF" />;
 }
