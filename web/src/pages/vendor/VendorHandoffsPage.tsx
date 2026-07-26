@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { FieldError } from '@/components/ui/FieldError';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import {
   VendorEmpty,
   VendorHero,
@@ -39,6 +41,7 @@ export function VendorHandoffsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [codes, setCodes] = useState<Record<string, string>>({});
+  const [codeErrors, setCodeErrors] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -76,9 +79,19 @@ export function VendorHandoffsPage() {
   async function onComplete(order: PreorderOrderRow) {
     const code = (codes[order.id] ?? '').trim().toUpperCase();
     if (!code) {
-      setError('Enter the pickup verification code.');
+      setCodeErrors((prev) => ({
+        ...prev,
+        [order.id]: 'Enter the pickup verification code.',
+      }));
+      setError(null);
       return;
     }
+
+    setCodeErrors((prev) => {
+      const next = { ...prev };
+      delete next[order.id];
+      return next;
+    });
     setBusyId(order.id);
     setError(null);
     try {
@@ -124,8 +137,10 @@ export function VendorHandoffsPage() {
       {error ? <p className="app-error">{error}</p> : null}
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
+        <div className="flex flex-col gap-3" aria-busy aria-label="Loading hand-offs">
+          {Array.from({ length: 3 }, (_, index) => (
+            <SkeletonCard key={index} height={120} />
+          ))}
         </div>
       ) : visible.length === 0 ? (
         <VendorEmpty
@@ -176,18 +191,27 @@ export function VendorHandoffsPage() {
                           Verification code
                         </span>
                         <input
-                          className="app-input w-full font-mono tracking-[0.14em] uppercase"
+                          className={`app-input w-full font-mono tracking-[0.14em] uppercase${codeErrors[order.id] ? ' app-input--invalid' : ''}`}
                           placeholder="RT-000"
                           value={codes[order.id] ?? ''}
-                          onChange={(e) =>
+                          aria-invalid={Boolean(codeErrors[order.id])}
+                          onChange={(e) => {
                             setCodes((prev) => ({
                               ...prev,
                               [order.id]: e.target.value.toUpperCase(),
-                            }))
-                          }
+                            }));
+                            if (codeErrors[order.id]) {
+                              setCodeErrors((prev) => {
+                                const next = { ...prev };
+                                delete next[order.id];
+                                return next;
+                              });
+                            }
+                          }}
                           maxLength={6}
                         />
                       </label>
+                      <FieldError message={codeErrors[order.id]} />
                       <button
                         type="button"
                         className={`app-btn app-btn--primary app-btn--small ${VENDOR_PRESSABLE}`}

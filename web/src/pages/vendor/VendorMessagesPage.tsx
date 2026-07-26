@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { RealtimeChatThread } from '@/components/messaging/RealtimeChatThread';
 import { MsgAvatar } from '@/components/messaging/MsgAvatar';
+import { MsgThreadListSkeleton } from '@/components/messaging/MsgThreadListSkeleton';
 import '@/components/messaging/messaging.css';
 import {
   VendorEmpty,
@@ -135,7 +136,7 @@ export function VendorMessagesPage() {
           </div>
           <div className="msg-vendor-pane__body">
             {loading ? (
-              <p className="px-2 py-8 text-center text-sm text-white/55">Loading inbox…</p>
+              <MsgThreadListSkeleton rows={5} />
             ) : (
               <ThreadList threads={threads} selectedId={selectedId} onSelect={openThread} />
             )}

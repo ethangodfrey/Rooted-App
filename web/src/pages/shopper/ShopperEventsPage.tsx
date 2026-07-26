@@ -17,6 +17,7 @@ import {
   startOfDay,
 } from '@/lib/event-day-filter';
 import { MarketHeroImage } from '@/components/market/MarketHeroImage';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
@@ -302,12 +303,20 @@ export function ShopperEventsPage() {
                             className="markets-preview__vendor-row markets-preview__vendor-row--link"
                           >
                             <div>
-                              <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
-                                {vendor.business_name ?? 'Vendor'}
-                              </p>
-                              <p className="ft-subhead">
-                                {vendor.category ?? vendor.product_summary ?? 'Local maker'}
-                              </p>
+                              <FallbackImage
+                                src={vendor.logo_url}
+                                variant="vendor-logo"
+                                category={vendor.category}
+                                style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }}
+                              />
+                              <div className="min-w-0">
+                                <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
+                                  {vendor.business_name ?? 'Vendor'}
+                                </p>
+                                <p className="ft-subhead">
+                                  {vendor.category ?? vendor.product_summary ?? 'Local maker'}
+                                </p>
+                              </div>
                             </div>
                             <span className="markets-split__distance">View profile</span>
                           </Link>
