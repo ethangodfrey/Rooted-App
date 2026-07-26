@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { distanceMiles, type Coords } from '@/lib/geo';
+import { distanceMiles, parseCoords, type Coords } from '@/lib/geo';
 
 const SETTLE_MS = 800;
 const REFETCH_DISTANCE_MILES = 20;
@@ -12,7 +12,8 @@ export function useMapFetchOrigin(coords: Coords | null): Coords | null {
   const hasInitialRef = useRef(false);
 
   useEffect(() => {
-    if (!coords) return;
+    const parsed = parseCoords(coords?.latitude, coords?.longitude);
+    if (!parsed) return;
 
     if (pendingRef.current) clearTimeout(pendingRef.current);
 
@@ -22,9 +23,9 @@ export function useMapFetchOrigin(coords: Coords | null): Coords | null {
       setOrigin((prev) => {
         if (!prev) {
           hasInitialRef.current = true;
-          return coords;
+          return parsed;
         }
-        if (distanceMiles(prev, coords) >= REFETCH_DISTANCE_MILES) return coords;
+        if (distanceMiles(prev, parsed) >= REFETCH_DISTANCE_MILES) return parsed;
         return prev;
       });
     }, delay);

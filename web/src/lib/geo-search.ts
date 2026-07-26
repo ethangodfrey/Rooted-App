@@ -65,7 +65,9 @@ export async function fetchNearbyEvents(
   });
 
   if (error) return null;
-  return (data as NearbyEvent[] | null) ?? [];
+  return ((data as NearbyEvent[] | null) ?? []).filter((event) =>
+    isValidCoords({ latitude: event.latitude, longitude: event.longitude }),
+  );
 }
 
 /** Approved vendors near `coords` (only those with populated coordinates). */
@@ -84,5 +86,7 @@ export async function fetchNearbyVendors(
   });
 
   if (error) return null;
-  return (data as NearbyVendor[] | null) ?? [];
+  return ((data as NearbyVendor[] | null) ?? []).filter((vendor) =>
+    isValidCoords({ latitude: vendor.latitude, longitude: vendor.longitude }),
+  );
 }
