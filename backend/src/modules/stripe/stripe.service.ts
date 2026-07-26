@@ -13,6 +13,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeWebhookErrorMessage } from '../../common/observability/sanitize-error.util';
 import { computePlatformFeeCents, resolvePlatformFeeBps } from '../../common/settlement/platform-fee';
 import { CheckoutInventoryService } from '../checkout/checkout-inventory.service';
+import { SquareIntegrationService } from '../pos/services/square-integration.service';
 import {
   formatPaymentWebhooksActiveLog,
   formatStripeGatewayInitializedLog,
@@ -40,6 +41,7 @@ export class StripeService implements OnModuleInit {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly inventory: CheckoutInventoryService,
+    private readonly square: SquareIntegrationService,
   ) {
     const secretKey = this.config.get<string>('STRIPE_SECRET_KEY', '').trim();
     this.client = secretKey ? new Stripe(secretKey) : null;
@@ -718,6 +720,59 @@ export class StripeService implements OnModuleInit {
         await this.refreshTransactionCaptureStatus(tx, transactionId, paymentIntentId ?? null);
       }
     });
+
+    // After digital stock finalize, mirror the sale onto physical Square inventory.
+    await this.deductSquareForPaidOrder(orderId, session.metadata);
+  }
+
+  private async deductSquareForPaidOrder(
+    orderId: string,
+    metadata: Stripe.Metadata | null | undefined,
+  ): Promise<void> {
+    const metaLines = this.square.extractCheckoutDeductionLines(
+      metadata as Record<string, string> | null | undefined,
+    );
+    if (metaLines.length > 0) {
+      for (const line of metaLines) {
+        try {
+          await this.square.deductSquareInventory(
+            line.vendorId,
+            line.sku,
+            line.quantity,
+          );
+        } catch (err) {
+          this.logger.warn(
+            `SQUARE_DEDUCT_FAILED ORDER=${orderId} SKU=${line.sku} ERR=${(err as Error).message}`,
+          );
+        }
+      }
+      return;
+    }
+
+    try {
+      const items = await this.prisma.$queryRaw<
+        Array<{ vendor_id: string; sku: string | null; quantity: number }>
+      >`
+        select o.vendor_id, p.sku, oi.quantity
+        from public.order_items oi
+        join public.orders o on o.id = oi.order_id
+        join public.products p on p.id = oi.product_id
+        where oi.order_id = ${orderId}::uuid
+      `;
+      for (const item of items) {
+        const sku = item.sku?.trim();
+        if (!sku) continue;
+        await this.square.deductSquareInventory(
+          item.vendor_id,
+          sku,
+          Number(item.quantity) || 1,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `SQUARE_DEDUCT_ORDER_LOOKUP_FAILED ORDER=${orderId} ERR=${(err as Error).message}`,
+      );
+    }
   }
 
   private async onCheckoutSessionExpired(session: Stripe.Checkout.Session) {

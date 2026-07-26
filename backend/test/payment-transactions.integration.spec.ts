@@ -11,6 +11,7 @@ import { PosWebhookService } from '../src/modules/pos/services/pos-webhook.servi
 import type { NormalizedTransaction } from '../src/modules/pos/types/normalized-transaction';
 import type { CheckoutInventoryService } from '../src/modules/checkout/checkout-inventory.service';
 import { StripeService } from '../src/modules/stripe/stripe.service';
+import type { SquareIntegrationService } from '../src/modules/pos/services/square-integration.service';
 import { createFakeOrderPrisma } from './fake-order-prisma';
 import { createFakePrisma } from './fake-prisma';
 
@@ -123,6 +124,20 @@ function squareTxn(overrides: Partial<NormalizedTransaction> = {}): NormalizedTr
   };
 }
 
+
+function fakeSquareIntegration(): SquareIntegrationService {
+  return {
+    deductSquareInventory: jest.fn(async () => ({
+      STATUS: 'SQUARE_DEDUCT_SKIPPED',
+      VENDOR_ID: '',
+      SKU: '',
+      QUANTITY: 0,
+      MODE: 'SKIP',
+    })),
+    extractCheckoutDeductionLines: jest.fn(() => []),
+  } as unknown as SquareIntegrationService;
+}
+
 describe('dual payment transaction processing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -135,7 +150,7 @@ describe('dual payment transaction processing', () => {
   describe('Stripe checkout → webhook success', () => {
     it('moves an order from unpaid to stripe_pending to paid_online', async () => {
       const fake = createFakeOrderPrisma([stripeOrder()]);
-      const stripe = new StripeService(stripeConfig(), fake.prisma, fakeInventory());
+      const stripe = new StripeService(stripeConfig(), fake.prisma, fakeInventory(), fakeSquareIntegration());
 
       await stripe.createOrderCheckoutSession({
         orderId: ORDER_ID,
@@ -170,7 +185,7 @@ describe('dual payment transaction processing', () => {
         },
       ]);
       const inventory = fakeInventory();
-      const stripe = new StripeService(stripeConfig(), fake.prisma, inventory);
+      const stripe = new StripeService(stripeConfig(), fake.prisma, inventory, fakeSquareIntegration());
 
       await stripe.handleWebhookEvent({
         id: 'evt_expired_dual',

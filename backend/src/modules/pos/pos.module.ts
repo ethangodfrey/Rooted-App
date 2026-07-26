@@ -14,6 +14,7 @@ import { PosConnectionsController } from './controllers/pos-connections.controll
 import { PosMappingsController } from './controllers/pos-mappings.controller';
 import { PosOAuthController } from './controllers/pos-oauth.controller';
 import { PosSyncController } from './controllers/pos-sync.controller';
+import { ApiSquareWebhooksController } from './controllers/api-square-webhooks.controller';
 import { PosWebhooksController } from './controllers/pos-webhooks.controller';
 import { PosAggregationProcessor } from './jobs/pos-aggregation.processor';
 import { PosInventoryFlushProcessor, PosInventoryIngestProcessor } from './jobs/pos-inventory.processor';
@@ -47,6 +48,7 @@ import { AdminSimulateSwipeService } from './services/admin-simulate-swipe.servi
 import { PosAnalyticsWebhookService } from './services/pos-analytics-webhook.service';
 import { PosWebhookService } from './services/pos-webhook.service';
 import { ProviderRegistryService } from './services/provider-registry.service';
+import { SquareIntegrationService } from './services/square-integration.service';
 
 const posQueuesEnabled = isPosQueuesEnabledFromEnv();
 
@@ -71,6 +73,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     PosMappingsController,
     PosOAuthController,
     PosWebhooksController,
+    ApiSquareWebhooksController,
     PosAnalyticsWebhooksController,
     PosActivityController,
     AdminPosController,
@@ -84,6 +87,7 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
     ProviderRegistryService,
     PosAnalyticsWebhookService,
     AdminSimulateSwipeService,
+    SquareIntegrationService,
     // Core services
     PosConnectionService,
     PosSyncService,
@@ -115,5 +119,6 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
       : []),
     PosSchedulerService,
   ],
+  exports: [SquareIntegrationService],
 })
 export class PosModule {}
