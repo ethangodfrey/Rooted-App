@@ -41,6 +41,10 @@ export function useVendorStorefront(vendorId: string | undefined): UseVendorStor
 
   useEffect(() => {
     if (!vendorId) {
+      setVendor(null);
+      setProducts([]);
+      setUpcomingMarkets([]);
+      setError(null);
       setLoading(false);
       return;
     }

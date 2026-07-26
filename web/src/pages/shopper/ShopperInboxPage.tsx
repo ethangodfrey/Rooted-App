@@ -43,7 +43,10 @@ export function ShopperInboxPage() {
         }
         setError(null)
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : 'INBOX_LOAD_FAILED')
+        if (active) {
+          setError(err instanceof Error ? err.message : 'INBOX_LOAD_FAILED');
+          setThreads([]);
+        }
       } finally {
         if (active) setLoading(false)
       }

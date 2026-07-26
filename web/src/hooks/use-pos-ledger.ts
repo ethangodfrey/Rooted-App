@@ -73,6 +73,9 @@ export function usePosLedger({
       seenIdsRef.current = new Set(txnRows.map((t) => t.id));
       setError(null);
     } catch (err) {
+      setConnections([]);
+      setTransactions([]);
+      setLiveFeed([]);
       setError(err instanceof Error ? err.message : 'Failed to load POS ledger');
     } finally {
       setLoading(false);

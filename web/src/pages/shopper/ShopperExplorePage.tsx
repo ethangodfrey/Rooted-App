@@ -55,6 +55,7 @@ export function ShopperExplorePage() {
         setError(null);
       } catch (err) {
         setError((err as Error).message);
+        if (!append) setItems([]);
       } finally {
         setLoading(false);
         setLoadingMore(false);

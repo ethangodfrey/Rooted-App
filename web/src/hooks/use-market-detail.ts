@@ -34,6 +34,9 @@ export function useMarketDetail(marketId: string | undefined): UseMarketDetailRe
 
   useEffect(() => {
     if (!marketId) {
+      setEvent(null);
+      setVendors([]);
+      setError(null);
       setLoading(false);
       return;
     }

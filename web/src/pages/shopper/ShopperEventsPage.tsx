@@ -49,20 +49,26 @@ export function ShopperEventsPage() {
 
   const loadEvents = useCallback(async () => {
     setError(null);
-    const { data, error: queryError, truncated: isTruncated } = await fetchPublicEvents({
-      scope,
-      near: scope === 'local' ? coords : null,
-    });
+    try {
+      const { data, error: queryError, truncated: isTruncated } = await fetchPublicEvents({
+        scope,
+        near: scope === 'local' ? coords : null,
+      });
 
-    if (queryError) {
-      setError(queryError);
+      if (queryError) {
+        setError(queryError);
+        setEvents([]);
+      } else {
+        setEvents(data);
+      }
+      setTruncated(isTruncated);
+      setVisibleCount(EVENTS_PAGE_SIZE);
+    } catch {
+      setError('Failed to load events');
       setEvents([]);
-    } else {
-      setEvents(data);
+    } finally {
+      setLoading(false);
     }
-    setTruncated(isTruncated);
-    setVisibleCount(EVENTS_PAGE_SIZE);
-    setLoading(false);
   }, [scope, coords]);
 
   useEffect(() => {
