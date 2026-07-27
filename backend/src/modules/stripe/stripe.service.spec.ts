@@ -74,6 +74,9 @@ function fakePrisma() {
         return { count: 1 };
       }),
     },
+    wholesaleInvoice: {
+      updateMany: jest.fn(async () => ({ count: 1 })),
+    },
   } as unknown as PrismaService;
 
   return { prisma, executeRawCalls, vendorUpdateManyCalls, tx };
@@ -188,6 +191,31 @@ describe('StripeService payment webhook handling', () => {
         },
       },
     ]);
+  });
+
+  it('updates wholesale invoice status on payment_intent.payment_failed', async () => {
+    const { prisma } = fakePrisma();
+    const service = new StripeService(fakeConfig(), prisma, fakeInventory());
+
+    await service.handleWebhookEvent({
+      id: 'evt_pi_failed',
+      type: 'payment_intent.payment_failed',
+      data: {
+        object: {
+          id: 'pi_failed',
+          status: 'requires_payment_method',
+          metadata: {
+            purpose: 'wholesale_net30',
+            wholesale_invoice_id: 'inv-123',
+          },
+        },
+      },
+    } as unknown as Stripe.Event);
+
+    expect(prisma.wholesaleInvoice.updateMany).toHaveBeenCalledWith({
+      where: { id: 'inv-123' },
+      data: { stripePaymentStatus: 'requires_payment_method' },
+    });
   });
 
   it('no-ops unknown webhook event types', async () => {
