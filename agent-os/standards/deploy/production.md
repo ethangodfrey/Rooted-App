@@ -56,6 +56,8 @@ Deterministic pass/fail matrix for repo-root validation. **No manual shell `NODE
 
 Unset `SMOKE_VENDOR_EMAIL` / `SMOKE_VENDOR_PASSWORD` → settlement UI segments report `BLOCKED_AUTH` (safe expected state).
 
+Full test matrix: [`docs/VERIFICATION_AND_TESTING.md`](../../docs/VERIFICATION_AND_TESTING.md).
+
 ## Smoke test (manual / deploy)
 
 - `/` and `/login` on web

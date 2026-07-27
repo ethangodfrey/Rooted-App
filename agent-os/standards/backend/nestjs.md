@@ -2,7 +2,7 @@
 
 ## Structure
 
-- `backend/src/modules/` — feature modules (markets, pos, admin-agent, stripe, health, b2b, logistics, search)
+- `backend/src/modules/` — feature modules (markets, pos, admin-agent, stripe, health, b2b, logistics, search, vendor-network)
 - `backend/src/common/` — auth guards, crypto, redis, observability
 - `backend/prisma/schema.prisma` — ORM schema (Supabase Postgres)
 - Entry: `backend/src/main.ts` — CORS, validation pipe, raw body for webhooks
@@ -15,8 +15,9 @@
 | `search` | `wholesale-discovery-search.service.ts`, `partition-aware-order-indexer.*` | ES-backed discovery ranking + hourly partition partial sync |
 | `logistics` | `logistics.service.ts`, `logistics-shipping.controller.ts` | `GET /api/orders/:orderId/shipping-options` US freight routes |
 | `orders` | `orders-partitioning.strategy.ts` | Phase68 monthly RANGE partition invariants (verify scripts) |
+| `vendor-network` | `v2v-connections.*`, `flash-promo.*`, `vendor-classification.ts` | Phase83 V2V connections + flash promo campaigns |
 
-Runbook: `docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`.
+Runbooks: `docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`, `docs/PHASE83_DEFERRED_FEATURES_AMEND.md`.
 
 ## Modules pattern
 
@@ -56,6 +57,15 @@ cd backend
 npm run start:dev    # port 4000
 npm run build
 ```
+
+## Phase 83 vendor-network API
+
+| Controller | Base path | Auth | Purpose |
+|------------|-----------|------|---------|
+| `V2vConnectionsController` | `/api/v2v/connections` | vendor | Request/accept/ignore profile-level V2V connections |
+| `FlashPromoController` | `/api/vendors/flash-promo` | vendor | CRUD flash-sale campaigns in `vendors.theme_settings` |
+
+Verify: `npm run test:phase83:amend`. Classification helpers map API tokens (`HOME`, `PRIVATE_CHEF`, `MICRO_BRAND`) to DB `vendor_type` snake_case.
 
 ## Health
 
