@@ -22,6 +22,7 @@ export function useCustomerMessageInbox(customerUserId: string | null | undefine
     try {
       setThreads(await fetchCustomerThreads(customerUserId));
     } catch (err) {
+      setThreads([]);
       setError(err instanceof Error ? err.message : 'Unable to load messages');
     } finally {
       setLoading(false);
@@ -58,6 +59,7 @@ export function useVendorMessageInbox(vendorId: string | null | undefined) {
     try {
       setThreads(await fetchVendorThreads(vendorId));
     } catch (err) {
+      setThreads([]);
       setError(err instanceof Error ? err.message : 'Unable to load messages');
     } finally {
       setLoading(false);

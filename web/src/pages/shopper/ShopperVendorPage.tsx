@@ -59,22 +59,35 @@ export function ShopperVendorPage() {
       setSpecialties([]);
       return;
     }
-    void supabase
-      .from('profiles')
-      .select('role, vendor_specialties, farmer_specialties')
-      .eq('id', vendor.user_id)
-      .maybeSingle()
-      .then(({ data }) => {
+
+    let active = true;
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role, vendor_specialties, farmer_specialties')
+          .eq('id', vendor.user_id)
+          .maybeSingle();
+
+        if (!active) return;
         if (!data) {
           setSpecialties([]);
           return;
         }
+
         const list =
           data.role === 'farmer'
             ? ((data.farmer_specialties as string[] | null) ?? [])
             : ((data.vendor_specialties as string[] | null) ?? []);
         setSpecialties(list);
-      });
+      } catch {
+        if (active) setSpecialties([]);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [vendor?.user_id]);
 
   const accent = useMemo(() => {

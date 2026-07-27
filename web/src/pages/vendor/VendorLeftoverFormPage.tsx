@@ -11,7 +11,7 @@ import {
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
 import { expiresAtFromHours, EXPIRY_PRESETS } from '@/lib/leftovers';
-import { coordsFrom } from '@/lib/geo';
+import { coordsFrom, isValidCoords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
@@ -76,11 +76,21 @@ export function VendorLeftoverFormPage() {
         .from('vendor_events')
         .select('event:events(id, name, address, city, state, latitude, longitude)')
         .eq('vendor_id', vendor.id),
-    ]).then(([productsRes, eventsRes]) => {
-      setProducts((productsRes.data as ProductOption[]) ?? []);
-      const rows = (eventsRes.data as unknown as { event: EventOption | null }[]) ?? [];
-      setEvents(rows.filter((r) => r.event).map((r) => r.event!));
-    });
+    ])
+      .then(([productsRes, eventsRes]) => {
+        setProducts((productsRes.data as ProductOption[]) ?? []);
+        const rows = (eventsRes.data as unknown as { event: EventOption | null }[]) ?? [];
+        setEvents(
+          rows
+            .map((row) => row.event)
+            .filter((event): event is EventOption => Boolean(event))
+            .filter((event) => isValidCoords(event)),
+        );
+      })
+      .catch(() => {
+        setProducts([]);
+        setEvents([]);
+      });
   }, [vendor]);
 
   function selectProduct(id: string | null) {

@@ -22,9 +22,13 @@ export function TrustBadges({ userId, className }: TrustBadgesProps) {
       return;
     }
     let cancelled = false;
-    void fetchAwardedBadges(userId).then((result) => {
-      if (!cancelled) setBadges(result);
-    });
+    void fetchAwardedBadges(userId)
+      .then((result) => {
+        if (!cancelled) setBadges(result);
+      })
+      .catch(() => {
+        if (!cancelled) setBadges([]);
+      });
     return () => {
       cancelled = true;
     };

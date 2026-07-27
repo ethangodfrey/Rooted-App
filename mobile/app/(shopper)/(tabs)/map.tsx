@@ -151,15 +151,19 @@ export default function ShopperMapScreen() {
     if (!target) return;
 
     setSelectedEventId(null);
-    mapRef.current?.animateToRegion(
-      {
-        latitude: target.latitude,
-        longitude: target.longitude,
-        latitudeDelta: parsed.zip ? 0.45 : 0.25,
-        longitudeDelta: parsed.zip ? 0.45 : 0.25,
-      },
-      350,
-    );
+    try {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: target.latitude,
+          longitude: target.longitude,
+          latitudeDelta: parsed.zip ? 0.45 : 0.25,
+          longitudeDelta: parsed.zip ? 0.45 : 0.25,
+        },
+        350,
+      );
+    } catch {
+      // Skip corrupt map targets rather than crashing the screen.
+    }
   }, [query, searchCenter, filteredEvents]);
 
   const sortedEvents = useMemo(() => {
@@ -206,15 +210,19 @@ export default function ShopperMapScreen() {
       const eventCoords = event ? parseCoords(event.latitude, event.longitude) : null;
       if (!eventCoords) return;
       setSelectedEventId(id);
-      mapRef.current?.animateToRegion(
-        {
-          latitude: eventCoords.latitude,
-          longitude: eventCoords.longitude,
-          latitudeDelta: 0.12,
-          longitudeDelta: 0.12,
-        },
-        350,
-      );
+      try {
+        mapRef.current?.animateToRegion(
+          {
+            latitude: eventCoords.latitude,
+            longitude: eventCoords.longitude,
+            latitudeDelta: 0.12,
+            longitudeDelta: 0.12,
+          },
+          350,
+        );
+      } catch {
+        // Skip corrupt coordinates rather than crashing the map.
+      }
     },
     [mapEvents],
   );
@@ -224,7 +232,11 @@ export default function ShopperMapScreen() {
     if (!gps) return;
     const next = { ...gps, ...DEFAULT_DELTA };
     setRegion(next);
-    mapRef.current?.animateToRegion(next, 400);
+    try {
+      mapRef.current?.animateToRegion(next, 400);
+    } catch {
+      // Skip corrupt GPS coordinates rather than crashing the map.
+    }
     setSelectedEventId(null);
   }, []);
 
