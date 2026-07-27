@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
 import {
-  buildVendorMobileTabs,
   VENDOR_MAP_HREF,
   VENDOR_SIDEBAR_TABS,
 } from '@/components/navigation/vendor-tabs';
+import { resolveFabNavRole } from '@/components/navigation/fab-nav';
 import { useAuth } from '@/hooks/use-auth';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
@@ -22,11 +22,6 @@ export function VendorLayout() {
   const location = useLocation();
   const onSetup = location.pathname.startsWith('/vendor/setup');
   const [routeCache, setRouteCache] = useState<AuthRouteCache | null | undefined>(undefined);
-
-  const mobileTabs = useMemo(
-    () => (vendor?.id ? buildVendorMobileTabs(vendor.id) : []),
-    [vendor?.id],
-  );
 
   useEffect(() => {
     void readAuthRouteCache().then(setRouteCache);
@@ -67,13 +62,18 @@ export function VendorLayout() {
     return <Outlet />;
   }
 
+  const fabRole = resolveFabNavRole({
+    accountRole: role,
+    vendorType: vendor?.vendor_type,
+  });
+
   return (
     <NotificationProvider userId={user?.id ?? session?.user?.id}>
       <AppShell
         role="vendor"
         tabs={VENDOR_SIDEBAR_TABS}
-        mobileTabs={mobileTabs}
         mapFabHref={VENDOR_MAP_HREF}
+        fabRole={fabRole}
       />
     </NotificationProvider>
   );
