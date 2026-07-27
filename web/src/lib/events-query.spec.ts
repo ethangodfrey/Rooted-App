@@ -156,9 +156,9 @@ describe('fetchFeaturedPublicMarkets', () => {
     mockOrder.mockReturnValue(
       createAwaitableQuery({
         data: [
-          event({ id: 'a', start_datetime: '2026-07-12T14:00:00.000Z' }),
-          event({ id: 'b', start_datetime: '2026-07-13T14:00:00.000Z' }),
-          event({ id: 'c', start_datetime: '2026-07-14T14:00:00.000Z' }),
+          event({ id: 'a', name: 'River Market', city: 'Chicago', start_datetime: '2026-07-12T14:00:00.000Z' }),
+          event({ id: 'b', name: 'Oak Grove Market', city: 'Evanston', start_datetime: '2026-07-13T14:00:00.000Z' }),
+          event({ id: 'c', name: 'Lakefront Market', city: 'Milwaukee', state: 'WI', start_datetime: '2026-07-14T14:00:00.000Z' }),
         ],
         error: null,
       }),
