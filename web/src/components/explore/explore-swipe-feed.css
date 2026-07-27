@@ -136,7 +136,8 @@
 }
 
 .explore-swipe__media-img,
-.explore-swipe__media-fallback {
+.explore-swipe__media-fallback,
+.explore-swipe__media .app-image-fallback {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -144,10 +145,11 @@
   object-fit: cover;
 }
 
-.explore-swipe__media-fallback {
+.explore-swipe__media .app-image-fallback--banner {
   background:
     radial-gradient(ellipse 80% 60% at 50% 20%, rgba(249, 115, 22, 0.35), transparent 60%),
     linear-gradient(160deg, #1a2448 0%, #0b1228 70%);
+  color: #a1a1aa;
 }
 
 .explore-swipe__media-fade {

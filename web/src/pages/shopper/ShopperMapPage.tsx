@@ -464,14 +464,14 @@ export function ShopperMapPage() {
           </div>
 
           {listEvents.length > 0 ? (
-            <div className="shopper-map-list flex w-full flex-col space-y-4 px-4 pb-32 md:max-h-[min(68vh,520px)] md:overflow-y-auto md:px-0 md:pb-0">
+            <div className="shopper-map-list flex w-full flex-row gap-3 overflow-x-auto px-4 pb-32 [-ms-overflow-style:none] [scrollbar-width:none] md:max-h-[min(68vh,520px)] md:flex-col md:gap-4 md:overflow-x-visible md:overflow-y-auto md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
               {listEvents.map((event) => {
                 const phase = eventRuntimePhase(event, now);
                 return (
                   <button
                     key={event.id}
                     type="button"
-                    className={`app-hscroll-card shopper-map-carousel-card${selectedEventId === event.id ? ' is-selected' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
+                    className={`app-hscroll-card shopper-map-carousel-card shrink-0 snap-start md:shrink md:snap-align-none${selectedEventId === event.id ? ' is-selected' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
                     onClick={() => previewEvent(event.id)}
                   >
                     <div className="app-hscroll-card__body">

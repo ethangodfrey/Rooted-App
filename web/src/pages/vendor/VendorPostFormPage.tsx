@@ -46,6 +46,9 @@ export function VendorPostFormPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captionError, setCaptionError] = useState<string | null>(null);
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+
+  const MAX_CAPTION_LENGTH = 2000;
 
   useEffect(() => {
     async function loadPartners() {
@@ -98,18 +101,30 @@ export function VendorPostFormPage() {
 
   async function handleSave() {
     if (!vendor || !user) return;
-    if (!caption.trim()) {
+
+    const trimmedCaption = caption.trim();
+    if (!trimmedCaption) {
       setCaptionError('Caption is required.');
+      setPartnerError(null);
+      setError(null);
+      return;
+    }
+    if (trimmedCaption.length > MAX_CAPTION_LENGTH) {
+      setCaptionError(`Caption must be ${MAX_CAPTION_LENGTH.toLocaleString()} characters or fewer.`);
+      setPartnerError(null);
       setError(null);
       return;
     }
 
     if (postingMode === 'PARTNERSHIP' && !selectedPartnerKey) {
-      setError('Select a connected partner for partnership posting.');
+      setPartnerError('Select a connected partner for partnership posting.');
+      setCaptionError(null);
+      setError(null);
       return;
     }
 
     setCaptionError(null);
+    setPartnerError(null);
     setSaving(true);
     setError(null);
 
@@ -227,14 +242,19 @@ export function VendorPostFormPage() {
 
         {postingMode === 'PARTNERSHIP' ? (
           <div className="app-input-group">
-            <label>Partner</label>
+            <label htmlFor="post-partner">Partner</label>
             {partners.length === 0 ? (
               <p className="text-sm text-stone-500">No connected partners yet.</p>
             ) : (
               <select
-                className="app-input"
+                id="post-partner"
+                className={`app-input${partnerError ? ' app-input--invalid' : ''}`}
                 value={selectedPartnerKey}
-                onChange={(e) => setSelectedPartnerKey(e.target.value)}
+                aria-invalid={Boolean(partnerError)}
+                onChange={(e) => {
+                  setSelectedPartnerKey(e.target.value);
+                  if (partnerError) setPartnerError(null);
+                }}
               >
                 {partners.map((p) => (
                   <option key={p.connectionId} value={p.connectionId}>
@@ -243,6 +263,7 @@ export function VendorPostFormPage() {
                 ))}
               </select>
             )}
+            <FieldError message={partnerError} />
           </div>
         ) : null}
 

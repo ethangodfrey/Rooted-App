@@ -25,7 +25,10 @@ interface ProductFormProps {
   loading?: boolean;
 }
 
-type ProductField = 'name' | 'price' | 'limitTotal' | 'limitPerShopper';
+type ProductField = 'name' | 'description' | 'category' | 'price' | 'limitTotal' | 'limitPerShopper';
+
+const MAX_DESCRIPTION_LENGTH = 2000;
+const MAX_CATEGORY_LENGTH = 100;
 
 function parseOptionalLimit(text: string): number | null | 'invalid' {
   const trimmed = text.trim();
@@ -90,9 +93,21 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       nextFieldErrors.name = 'Product name is required.';
     }
 
+    const trimmedDescription = description.trim();
+    if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+      nextFieldErrors.description = `Description must be ${MAX_DESCRIPTION_LENGTH.toLocaleString()} characters or fewer.`;
+    }
+
+    const trimmedCategory = category.trim();
+    if (trimmedCategory.length > MAX_CATEGORY_LENGTH) {
+      nextFieldErrors.category = `Category must be ${MAX_CATEGORY_LENGTH} characters or fewer.`;
+    }
+
     const trimmedPrice = priceText.trim();
     if (!trimmedPrice) {
       nextFieldErrors.price = 'Price is required.';
+    } else if (!/^\d+(\.\d{1,2})?$/.test(trimmedPrice)) {
+      nextFieldErrors.price = 'Enter a valid price with up to two decimal places (e.g. 12.50).';
     } else {
       const priceValue = Number.parseFloat(trimmedPrice);
       if (!Number.isFinite(priceValue) || priceValue < 0) {
@@ -201,28 +216,52 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       </div>
       <div className="app-input-group">
         <label htmlFor="product-description">Description</label>
-        <textarea id="product-description" className="app-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
-      </div>
-      <div className="app-input-group">
-        <label htmlFor="product-category">Category</label>
-        <input id="product-category" className="app-input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Produce, Baked goods" />
-      </div>
-      <div className="app-input-group">
-        <label htmlFor="product-price">Price (USD)</label>
-        <input
-          id="product-price"
-          className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
-          type="number"
-          step="0.01"
-          min="0"
-          value={priceText}
-          aria-invalid={Boolean(fieldErrors.price)}
+        <textarea
+          id="product-description"
+          className={`app-textarea${fieldErrors.description ? ' app-textarea--invalid' : ''}`}
+          value={description}
+          aria-invalid={Boolean(fieldErrors.description)}
           onChange={(e) => {
-            setPriceText(e.target.value);
-            clearFieldError('price');
+            setDescription(e.target.value);
+            clearFieldError('description');
           }}
         />
-        <FieldError message={fieldErrors.price} />
+        <FieldError message={fieldErrors.description} />
+      </div>
+      <div className="app-form-grid">
+        <div className="app-input-group">
+          <label htmlFor="product-category">Category</label>
+          <input
+            id="product-category"
+            className={`app-input${fieldErrors.category ? ' app-input--invalid' : ''}`}
+            value={category}
+            aria-invalid={Boolean(fieldErrors.category)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              clearFieldError('category');
+            }}
+            placeholder="e.g. Produce, Baked goods"
+          />
+          <FieldError message={fieldErrors.category} />
+        </div>
+        <div className="app-input-group">
+          <label htmlFor="product-price">Price (USD)</label>
+          <input
+            id="product-price"
+            className={`app-input${fieldErrors.price ? ' app-input--invalid' : ''}`}
+            type="number"
+            step="0.01"
+            min="0"
+            inputMode="decimal"
+            value={priceText}
+            aria-invalid={Boolean(fieldErrors.price)}
+            onChange={(e) => {
+              setPriceText(e.target.value);
+              clearFieldError('price');
+            }}
+          />
+          <FieldError message={fieldErrors.price} />
+        </div>
       </div>
 
       <label style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -250,7 +289,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       </label>
 
       {reserveEnabled ? (
-        <>
+        <div className="app-form-grid">
           <div className="app-input-group">
             <label htmlFor="product-limit-total">Total reservation limit (optional)</label>
             <input
@@ -281,7 +320,7 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
             />
             <FieldError message={fieldErrors.limitPerShopper} />
           </div>
-        </>
+        </div>
       ) : null}
 
       {error ? <p className="app-error">{error}</p> : null}

@@ -231,6 +231,30 @@
   min-width: 0;
 }
 
+@media (max-width: 767px) {
+  .shopper-map-list {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.75rem;
+    padding-bottom: 0.25rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .shopper-map-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shopper-map-carousel-card {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    width: min(85vw, 300px);
+    max-width: none;
+  }
+}
+
 .shopper-map-carousel-card {
   width: 100%;
   max-width: 100%;
