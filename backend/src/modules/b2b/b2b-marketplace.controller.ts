@@ -48,7 +48,7 @@ export class B2bMarketplaceController implements OnModuleInit {
    */
   @Get('directory')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('vendor', 'farmer', 'admin')
+  @Roles('vendor', 'farmer', 'chef', 'admin')
   async directory(
     @Query('limit') limitRaw?: string,
     @Query('q') q?: string,
