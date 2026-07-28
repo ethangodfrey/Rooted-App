@@ -9,7 +9,7 @@ export const POS_SNAPSHOT_ROLLUP_JOB = 'rollup-vendor-market-day';
 /** Debounce window before calling upsert_market_sales_snapshot (ms). */
 export const SNAPSHOT_ROLLUP_DEBOUNCE_MS = 5_000;
 
-/** BullMQ-safe job id (Upstash rejects ':' in custom ids). */
+/** BullMQ-safe job id (colon-free for broad Redis compatibility). */
 export function salesIngestJobId(provider: string, providerEventId: string): string {
   return `ingest-${provider}-${providerEventId}`;
 }

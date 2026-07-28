@@ -47,7 +47,7 @@ After changing env vars, **Redeploy** (values are baked in at build time).
 ### Deferred until paid Supabase + Railway
 
 1. **Supabase paid plan** — IPv4 add-on or direct connection so Railway can reach Postgres (fixes Prisma P1000 / pooler auth issues on free tier).
-2. **Railway backend** — set `DATABASE_URL`, `REDIS_URL` (Upstash), deploy from `backend/Dockerfile`.
+2. **Railway backend** — set `DATABASE_URL`, link Railway Redis (`REDIS_URL`), deploy from `backend/Dockerfile`.
 3. **Then** add `VITE_API_URL=https://api.vendorlymarketplace.app` in Vercel and `EXPO_PUBLIC_API_URL` for mobile → redeploy.
 
 See §2 below for full backend setup when ready.
@@ -234,7 +234,7 @@ npx vercel --prod
 
 | Platform | Verdict |
 |----------|---------|
-| **Railway** | **Best fit** — native Dockerfile deploy, custom domain, env vars, health checks. Use Supabase Postgres + Upstash Redis (already documented in `backend/.env.example`). |
+| **Railway** | **Best fit** — native Dockerfile deploy, custom domain, env vars, health checks. Use Supabase Postgres + Railway Redis (`REDIS_URL`). |
 | Render | Good alternative — Docker web service, similar flow. See `backend/render.yaml`. |
 | Fly.io | Fine for global edge; more `fly.toml` setup. Same Dockerfile. |
 | Docker VPS | Full control; you manage TLS (Caddy/nginx), updates, and monitoring. |
@@ -247,7 +247,7 @@ The backend is a **long-running Node process** (POS queues, cron, webhooks). It 
 Browser / mobile  →  Vercel (web)     → Supabase (auth, marketplace data)
                    →  api.vendorlymarketplace.app → NestJS (POS, Stripe webhooks, market photo proxy, admin AI)
 Database          →  Supabase Postgres (DATABASE_URL pooler URL)
-Job queues        →  Upstash Redis (REDIS_URL, POS_QUEUES_ENABLED=true)
+Job queues        →  Railway Redis (REDIS_URL, POS_QUEUES_ENABLED=true)
 ```
 
 ### Railway — step-by-step
@@ -307,10 +307,10 @@ Copy from `backend/.env.example`. **Never commit** real values.
 
 | Variable | Production value |
 |----------|------------------|
-| `REDIS_URL` | Upstash TCP URL (`rediss://...`) |
+| `REDIS_URL` | Railway Redis TCP URL (`redis://…railway.internal` or `rediss://…`) |
 | `POS_QUEUES_ENABLED` | `true` |
 
-Without Redis, POS sync runs inline in dev only; production should use Upstash (see comment in `.env.example`).
+Without Redis, POS sync runs inline in dev only; production should link the Railway Redis plugin and reference `REDIS_URL`.
 
 #### POS / OAuth (when using Square etc.)
 
@@ -441,7 +441,7 @@ Run on **cellular or off home Wi‑Fi**:
 | OAuth redirect error | Missing Supabase redirect URL | Add URLs in §3 |
 | CORS error in browser console | Backend missing web origin | Update `WEB_APP_URL` / `CORS_ORIGINS`, redeploy API |
 | POS OAuth fails | HTTP callback URL | `PUBLIC_BASE_URL` must be `https://...` |
-| `/health/ready` 503 | Bad `DATABASE_URL` or Redis | Check Supabase pooler URL; Upstash `REDIS_URL` |
+| `/health/ready` 503 | Bad `DATABASE_URL` or Redis | Check Supabase pooler URL; Railway `REDIS_URL` |
 | Prisma `Can't reach … db.*:6543` | Pooler port on direct host | Use `*.pooler.supabase.com:6543` (transaction) or `db.*:5432` (direct) — not both |
 | Prisma **P1000** / SASL auth failed | Stale or wrong DB password | Supabase → Database → reset password → wait 2–3 min → paste fresh Transaction pooler URI |
 | Web still hits LAN API | Stale build | Set `VITE_API_URL` in Vercel → Redeploy |

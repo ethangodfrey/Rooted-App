@@ -1,4 +1,6 @@
-import { Queue, type ConnectionOptions } from 'bullmq';
+import { Queue } from 'bullmq';
+
+import { resolveRedisConnection } from '@/lib/redis/redis-connection';
 
 export const POS_INVENTORY_INGEST_QUEUE = 'pos-inventory-ingest';
 export const POS_INVENTORY_INGEST_JOB = 'ingest-webhook';
@@ -17,22 +19,6 @@ export interface PosInventoryWebhookJobData {
 }
 
 let queue: Queue | null | undefined;
-
-function resolveRedisConnection(): ConnectionOptions | null {
-  const url = process.env.REDIS_URL?.trim();
-  if (!url) return null;
-
-  const parsed = new URL(url);
-  return {
-    host: parsed.hostname,
-    port: Number(parsed.port) || 6379,
-    username: decodeURIComponent(parsed.username) || undefined,
-    password: decodeURIComponent(parsed.password) || undefined,
-    ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-    maxRetriesPerRequest: 2,
-    enableOfflineQueue: false,
-  };
-}
 
 function getQueue(): Queue | null {
   if (queue !== undefined) return queue;

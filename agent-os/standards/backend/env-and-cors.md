@@ -16,7 +16,7 @@
 
 | Variable | Value |
 |----------|-------|
-| `REDIS_URL` | Upstash `rediss://...` |
+| `REDIS_URL` | Railway Redis TCP URL (`redis://` private or `rediss://` TLS) |
 | `POS_QUEUES_ENABLED` | `true` |
 
 ## CORS behavior

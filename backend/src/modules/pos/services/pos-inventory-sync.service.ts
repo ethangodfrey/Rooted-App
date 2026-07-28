@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 
+import {
+  attachRailwayRedisLogs,
+  resolveIoredisOptions,
+} from '../../../common/redis/redis-connection';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { POS_INVENTORY_TX_TYPE } from '../pos.constants';
 import {
@@ -47,19 +51,10 @@ export class PosInventorySyncService implements OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {
-    const url = this.config.get<string>('REDIS_URL')?.trim();
-    if (url) {
-      const parsed = new URL(url);
-      this.redis = new Redis({
-        host: parsed.hostname,
-        port: Number(parsed.port) || 6379,
-        username: decodeURIComponent(parsed.username) || undefined,
-        password: decodeURIComponent(parsed.password) || undefined,
-        ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-        maxRetriesPerRequest: 2,
-        enableOfflineQueue: false,
-        lazyConnect: true,
-      });
+    const options = resolveIoredisOptions(this.config);
+    if (options) {
+      this.redis = new Redis(options);
+      attachRailwayRedisLogs(this.redis, 'POS_INVENTORY_COALESCE');
       void this.redis.connect().catch((err: Error) => {
         this.logger.warn(`Redis unavailable for inventory coalesce: ${err.message}`);
         this.redis = null;

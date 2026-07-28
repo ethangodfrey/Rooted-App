@@ -3,35 +3,21 @@
  * @see tenant-web/src/lib/pos/inventory-queue.ts
  */
 
-import { Queue, type ConnectionOptions } from 'bullmq';
+import { Queue } from 'bullmq';
+
+import { resolveRedisConnection } from '@/lib/redis/redis-connection';
 
 import type { PosSalesIngestJobData } from './sales/types';
 
 export const POS_SALES_INGEST_QUEUE = 'pos-sales-ingest';
 export const POS_SALES_INGEST_JOB = 'ingest-sales-webhook';
 
-/** BullMQ-safe job id (Upstash rejects ':' in custom ids). */
+/** BullMQ-safe job id (colon-free for broad Redis compatibility). */
 export function salesIngestJobId(provider: string, providerEventId: string): string {
   return `ingest-${provider}-${providerEventId}`;
 }
 
 let queue: Queue | null | undefined;
-
-function resolveRedisConnection(): ConnectionOptions | null {
-  const url = process.env.REDIS_URL?.trim();
-  if (!url) return null;
-
-  const parsed = new URL(url);
-  return {
-    host: parsed.hostname,
-    port: Number(parsed.port) || 6379,
-    username: decodeURIComponent(parsed.username) || undefined,
-    password: decodeURIComponent(parsed.password) || undefined,
-    ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-    maxRetriesPerRequest: 2,
-    enableOfflineQueue: false,
-  };
-}
 
 function getQueue(): Queue | null {
   if (queue !== undefined) return queue;

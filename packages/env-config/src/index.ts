@@ -97,6 +97,16 @@ export {
   type UsStateGeoFixture,
 } from './us-states';
 
+export {
+  isRailwayRedisHost,
+  isRedisConfigured,
+  resolveRedisConnectionFromEnv,
+  type RedisConnectionFields,
+  type RedisTlsOption,
+  type ResolveRedisOptions,
+  type ResolvedRedisConnection,
+} from './redis';
+
 const MIN_ANON_KEY_LENGTH = 32;
 
 /**

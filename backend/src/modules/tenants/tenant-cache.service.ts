@@ -2,6 +2,10 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
+import {
+  attachRailwayRedisLogs,
+  resolveIoredisOptions,
+} from '../../common/redis/redis-connection';
 import type { TenantCacheEnvelope, TenantConfig } from './tenant.types';
 
 /** Fresh window: serve without background revalidation. */
@@ -26,19 +30,10 @@ export class TenantCacheService implements OnModuleDestroy {
   private redis: Redis | null = null;
 
   constructor(private readonly config: ConfigService) {
-    const url = this.config.get<string>('REDIS_URL')?.trim();
-    if (url) {
-      const parsed = new URL(url);
-      this.redis = new Redis({
-        host: parsed.hostname,
-        port: Number(parsed.port) || 6379,
-        username: decodeURIComponent(parsed.username) || undefined,
-        password: decodeURIComponent(parsed.password) || undefined,
-        ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-        maxRetriesPerRequest: 2,
-        enableOfflineQueue: false,
-        lazyConnect: true,
-      });
+    const options = resolveIoredisOptions(this.config);
+    if (options) {
+      this.redis = new Redis(options);
+      attachRailwayRedisLogs(this.redis, 'TENANT_CACHE');
       void this.redis.connect().catch((err: Error) => {
         this.logger.warn(`Redis unavailable for tenant cache: ${err.message}`);
         this.redis = null;

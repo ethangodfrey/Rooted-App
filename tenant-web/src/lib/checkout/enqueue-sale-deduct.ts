@@ -1,4 +1,6 @@
-import { Queue, type ConnectionOptions } from 'bullmq';
+import { Queue } from 'bullmq';
+
+import { resolveRedisConnection } from '@/lib/redis/redis-connection';
 
 const POS_INVENTORY_INGEST_QUEUE = 'pos-inventory-ingest';
 const ONLINE_SALE_DEDUCT_JOB = 'online-sale-deduct';
@@ -11,22 +13,6 @@ export interface OnlineSaleDeductPayload {
   quantity: number;
   provider?: 'SQUARE' | 'TOAST' | null;
   providerCatalogObjectId?: string | null;
-}
-
-function resolveRedisConnection(): ConnectionOptions | null {
-  const url = process.env.REDIS_URL?.trim();
-  if (!url) return null;
-
-  const parsed = new URL(url);
-  return {
-    host: parsed.hostname,
-    port: Number(parsed.port) || 6379,
-    username: decodeURIComponent(parsed.username) || undefined,
-    password: decodeURIComponent(parsed.password) || undefined,
-    ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-    maxRetriesPerRequest: 2,
-    enableOfflineQueue: false,
-  };
 }
 
 /**
