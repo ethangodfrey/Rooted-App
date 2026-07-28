@@ -561,4 +561,51 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       expect(fake.orders[0].stripe_payment_intent_id).toBeNull();
     });
   });
+
+  describe('Stripe wholesale payment failure payloads', () => {
+    it('updates wholesale invoice status on payment_intent.payment_failed', async () => {
+      const updateMany = jest.fn(async () => ({ count: 1 }));
+      const prisma = {
+        $executeRaw: jest.fn(),
+        $queryRaw: jest.fn(async () => []),
+        $transaction: jest.fn(),
+        vendor: {},
+        wholesaleInvoice: { updateMany },
+      } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_pi_failed_dual',
+        type: 'payment_intent.payment_failed',
+        data: {
+          object: {
+            id: 'pi_failed_dual',
+            status: 'requires_payment_method',
+            metadata: {
+              purpose: 'wholesale_net30',
+              wholesale_invoice_id: 'inv-dual-123',
+            },
+          },
+        },
+      } as never);
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: 'inv-dual-123' },
+        data: { stripePaymentStatus: 'requires_payment_method' },
+      });
+    });
+  });
 });
