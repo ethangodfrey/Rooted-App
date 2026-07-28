@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
+import { isShopperRole } from '@/lib/role-utils';
 import { fetchApprovedReviews, submitReview } from '@/lib/reviews';
 import type { Review, ReviewTargetType } from '@/types/database';
 
@@ -45,7 +46,7 @@ export function ReviewsSection({
     };
   }, [targetType, targetId]);
 
-  const canReview = Boolean(user?.id && (user.role === 'shopper' || user.role === 'customer'));
+  const canReview = Boolean(user?.id && isShopperRole(user.role));
 
   async function handleSubmit() {
     if (!user?.id) return;

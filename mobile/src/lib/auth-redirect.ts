@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 
 import type { AuthRouteCache } from '@/src/lib/auth-route-cache';
 import { isChefProfileComplete } from '@/src/lib/chef-profile';
-import { isCustomerRole } from '@/src/lib/role-utils';
+import { isShopperRole } from '@/src/lib/role-utils';
 import type { Chef, Shopper, User, Vendor } from '@/src/types/database';
 import { isVendorApplicationComplete } from '@/src/lib/vendor-application';
 import * as Linking from 'expo-linking';
@@ -59,7 +59,7 @@ export function resolveAuthRedirect(
     return null;
   }
 
-  if (isCustomerRole(role)) {
+  if (isShopperRole(role)) {
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);

@@ -85,8 +85,10 @@ import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
 import { CreatorHandoffsPage } from '@/pages/creator/CreatorHandoffsPage';
+import { CreatorInboxPage } from '@/pages/creator/CreatorInboxPage';
 import { CreatorLayout } from '@/pages/creator/CreatorLayout';
 import { CreatorListingsPage } from '@/pages/creator/CreatorListingsPage';
+import { CreatorNetworkPage } from '@/pages/creator/CreatorNetworkPage';
 import { CreatorSettingsPage } from '@/pages/creator/CreatorSettingsPage';
 import { VendorInboxPage } from '@/pages/vendor/VendorInboxPage';
 import { VendorB2bChatPage } from '@/pages/vendor/VendorB2bChatPage';
@@ -95,6 +97,7 @@ import { VendorAnalyticsIntegrationsPage } from '@/pages/vendor/VendorAnalyticsI
 import { VendorAnalyticsPage } from '@/pages/vendor/VendorAnalyticsPage';
 import { VendorCompliancePage } from '@/pages/vendor/VendorCompliancePage';
 import { VendorCredentialsPage } from '@/pages/vendor/VendorCredentialsPage';
+import { VendorDashboardPage } from '@/pages/vendor/VendorDashboardPage';
 import { VendorEventsPage } from '@/pages/vendor/VendorEventsPage';
 import { VendorExplorePage } from '@/pages/vendor/VendorExplorePage';
 import { VendorInventoryPage } from '@/pages/vendor/VendorInventoryPage';
@@ -200,10 +203,10 @@ export default function App() {
           <Route index element={<Navigate to="listings" replace />} />
           <Route path="listings" element={<CreatorListingsPage />} />
           <Route path="handoffs" element={<CreatorHandoffsPage />} />
+          <Route path="network" element={<CreatorNetworkPage />} />
+          <Route path="inbox" element={<CreatorInboxPage />} />
           <Route path="settings" element={<CreatorSettingsPage />} />
         </Route>
-        <Route path="/creator/network" element={<Navigate to="/vendor/network" replace />} />
-        <Route path="/creator/inbox" element={<Navigate to="/vendor/messages" replace />} />
         <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />
         <Route
           path="/creator/analytics/integrations"
@@ -216,7 +219,7 @@ export default function App() {
           <Route index element={<Navigate to="storefront" replace />} />
           <Route path="setup" element={<VendorSetupPage />} />
           <Route path="storefront" element={<VendorStorefrontPage />} />
-          <Route path="dashboard" element={<Navigate to="/vendor/storefront" replace />} />
+          <Route path="dashboard" element={<VendorDashboardPage />} />
           {/* Same farmers-market map as shopper Explore — available inside vendor shell */}
           <Route path="map" element={<ShopperMapPage />} />
           <Route path="inventory" element={<VendorInventoryPage />} />
@@ -248,6 +251,8 @@ export default function App() {
         <Route path="/farmer" element={<VendorLayout />}>
           <Route index element={<Navigate to="logistics" replace />} />
           <Route path="logistics" element={<FarmerLogisticsPage />} />
+          <Route path="network" element={<VendorNetworkPage />} />
+          <Route path="procurement" element={<VendorProcurementPage />} />
         </Route>
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />

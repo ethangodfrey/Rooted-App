@@ -19,7 +19,7 @@ import type { CreateFlashPromoInput } from './flash-promo.util';
 
 @Controller('api/vendors/flash-promo')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
-@Roles('vendor')
+@Roles('vendor', 'farmer')
 export class FlashPromoController {
   constructor(
     private readonly flashPromo: FlashPromoService,

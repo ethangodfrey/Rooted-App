@@ -9,7 +9,7 @@ import { Input } from '@/src/components/ui/input';
 import { Screen } from '@/src/components/ui/screen';
 import { Text } from '@/src/components/ui/text';
 import { useAuth } from '@/src/hooks/use-auth';
-import { isCustomerRole } from '@/src/lib/role-utils';
+import { isShopperRole } from '@/src/lib/role-utils';
 import { resetRoleSelection } from '@/src/lib/reset-role-selection';
 import { supabase } from '@/src/lib/supabase';
 
@@ -37,7 +37,7 @@ export default function InterestsScreen() {
   const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (user?.role && !isCustomerRole(user.role)) {
+  if (user?.role && !isShopperRole(user.role)) {
     return <Redirect href="/" />;
   }
 
@@ -129,7 +129,7 @@ export default function InterestsScreen() {
     setBacking(true);
     setError(null);
 
-    const { error: resetError } = await resetRoleSelection(session.user.id, 'customer');
+    const { error: resetError } = await resetRoleSelection(session.user.id, 'shopper');
 
     setBacking(false);
 

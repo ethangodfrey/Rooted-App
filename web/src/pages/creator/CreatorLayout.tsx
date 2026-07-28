@@ -8,6 +8,7 @@ import { isTabActive } from '@/components/navigation/app-tabs';
 import { TabIcon } from '@/components/navigation/TabIcon';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
 import { useAuth } from '@/hooks/use-auth';
+import { isShopperRole } from '@/lib/role-utils';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
 
@@ -41,8 +42,8 @@ export function CreatorLayout() {
     return <Navigate to="/onboarding/role-select" replace />;
   }
 
-  // Customers switching into creator mode pick/confirm the vendor role first.
-  if (role === 'customer' || role === 'shopper') {
+  // Shoppers entering creator mode pick/confirm the vendor role first.
+  if (isShopperRole(role)) {
     return <Navigate to="/onboarding/role-select" replace />;
   }
 

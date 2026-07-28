@@ -17,7 +17,7 @@ export function resolveStickerRole(
 ): StickerRole | null {
   if (role === 'vendor') return 'vendor';
   if (role === 'farmer') return 'farmer';
-  if (role === 'shopper' || role === 'customer') return 'shopper';
+  if (role === 'shopper' || role === 'customer') return 'shopper';  // legacy customer
   return null;
 }
 

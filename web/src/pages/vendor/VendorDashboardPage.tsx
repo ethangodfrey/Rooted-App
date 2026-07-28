@@ -16,6 +16,7 @@ import {
   VendorSection,
   VendorSecondaryButton,
 } from '@/components/vendor/vendor-ui';
+import { FlashPromoWidget } from '@/components/vendor/FlashPromoWidget';
 import { PosLiveTransactionFeed } from '@/components/vendor/pos-live-transaction-feed';
 import { SquarePosConnectionCard } from '@/components/vendor/square-pos-connection-card';
 import '@/components/ui/ui.css';
@@ -95,6 +96,8 @@ export function VendorDashboardPage() {
         {' — '}
         {statusCopy[status]}
       </p>
+
+      <FlashPromoWidget vendorId={vendor?.id} />
 
       <div className="vendor-asym">
         <Link to="/vendor/analytics" className="vendor-asym__hero no-underline">

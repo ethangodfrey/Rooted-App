@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { isShopperRole } from '@/lib/role-utils';
 import type { Chef, Shopper, User, Vendor } from '@/types/database';
 
 type UserWithRelations = User & {
@@ -27,7 +28,7 @@ async function fetchUserProfileSequential(userId: string) {
   let vendor: Vendor | null = null;
   let chef: Chef | null = null;
 
-  if (user.role === 'shopper' || user.role === 'customer') {
+  if (isShopperRole(user.role)) {
     const { data } = await supabase.from('shoppers').select('*').eq('user_id', userId).maybeSingle();
     shopper = data;
   } else if (user.role === 'vendor') {
