@@ -13,6 +13,7 @@ import { Input } from '@/src/components/ui/input';
 import { useAuth } from '@/src/hooks/use-auth';
 import { formatPrice } from '@/src/lib/format';
 import { expiresAtFromHours, EXPIRY_PRESETS } from '@/src/lib/leftovers';
+import { coordsFrom } from '@/src/lib/geo';
 import { pickAndUploadProductImage } from '@/src/lib/upload';
 import { supabase } from '@/src/lib/supabase';
 
@@ -124,8 +125,9 @@ export default function NewLeftoverScreen() {
       pickupCity = event.city;
       pickupState = event.state;
       pickupAddress = event.address;
-      pickupLat = Number(event.latitude);
-      pickupLng = Number(event.longitude);
+      const eventCoords = coordsFrom({ latitude: event.latitude, longitude: event.longitude });
+      pickupLat = eventCoords?.latitude ?? null;
+      pickupLng = eventCoords?.longitude ?? null;
     } else if (pickupMode === 'event' && !sourceEventId) {
       setError('Select which market this leftover is from.');
       return;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
@@ -21,7 +21,7 @@ import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
-import { distanceMiles, formatDistance } from '@/lib/geo';
+import { distanceMiles, formatDistance, parseCoords } from '@/lib/geo';
 import { marketPath, vendorPath } from '@/lib/market-routes';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
@@ -46,23 +46,33 @@ export function ShopperEventsPage() {
   const [visibleCount, setVisibleCount] = useState(EVENTS_PAGE_SIZE);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const eventsRequestRef = useRef(0);
 
   const loadEvents = useCallback(async () => {
+    const requestId = ++eventsRequestRef.current;
     setError(null);
-    const { data, error: queryError, truncated: isTruncated } = await fetchPublicEvents({
-      scope,
-      near: scope === 'local' ? coords : null,
-    });
+    try {
+      const { data, error: queryError, truncated: isTruncated } = await fetchPublicEvents({
+        scope,
+        near: scope === 'local' ? coords : null,
+      });
+      if (requestId !== eventsRequestRef.current) return;
 
-    if (queryError) {
-      setError(queryError);
+      if (queryError) {
+        setError(queryError);
+        setEvents([]);
+      } else {
+        setEvents(data);
+      }
+      setTruncated(isTruncated);
+      setVisibleCount(EVENTS_PAGE_SIZE);
+    } catch {
+      if (requestId !== eventsRequestRef.current) return;
+      setError('Failed to load events');
       setEvents([]);
-    } else {
-      setEvents(data);
+    } finally {
+      if (requestId === eventsRequestRef.current) setLoading(false);
     }
-    setTruncated(isTruncated);
-    setVisibleCount(EVENTS_PAGE_SIZE);
-    setLoading(false);
   }, [scope, coords]);
 
   useEffect(() => {
@@ -194,12 +204,10 @@ export function ShopperEventsPage() {
               <div className="app-list">
                 {visibleEvents.map((event) => {
                   const phase = eventRuntimePhase(event, now);
+                  const eventCoords = parseCoords(event.latitude, event.longitude);
                   const miles =
-                    scope === 'local' && coords && event.latitude != null
-                      ? distanceMiles(coords, {
-                          latitude: event.latitude,
-                          longitude: event.longitude,
-                        })
+                    scope === 'local' && coords && eventCoords
+                      ? distanceMiles(coords, eventCoords)
                       : null;
                   const dist = miles != null ? formatDistance(miles) : null;
                   const active = event.id === selectedId;

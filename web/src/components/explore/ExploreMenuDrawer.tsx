@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { MarketSlotPicker } from '@/components/explore/MarketSlotPicker';
@@ -50,69 +50,79 @@ export function ExploreMenuDrawer({
   const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addedId, setAddedId] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
 
   const loadMenu = useCallback(async (id: string) => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
 
-    const [vendorRes, productsRes, marketsRes] = await Promise.all([
-      supabase.from('vendors').select('id, business_name').eq('id', id).maybeSingle(),
-      supabase
-        .from('products')
-        .select(
-          `id, name, description, price, category, reserve_enabled, media_urls, is_snap_eligible,
-           product_event_availability(available_quantity_presale)`,
-        )
-        .eq('vendor_id', id)
-        .eq('status', 'active')
-        .order('name', { ascending: true }),
-      supabase
-        .from('vendor_events')
-        .select(
-          `event:events(
-            id, name, city, state, address, start_datetime, end_datetime,
-            timezone, hours_summary, sync_metadata
-          )`,
-        )
-        .eq('vendor_id', id)
-        .eq('participation_status', 'approved'),
-    ]);
+    try {
+      const [vendorRes, productsRes, marketsRes] = await Promise.all([
+        supabase.from('vendors').select('id, business_name').eq('id', id).maybeSingle(),
+        supabase
+          .from('products')
+          .select(
+            `id, name, description, price, category, reserve_enabled, media_urls, is_snap_eligible,
+             product_event_availability(available_quantity_presale)`,
+          )
+          .eq('vendor_id', id)
+          .eq('status', 'active')
+          .order('name', { ascending: true }),
+        supabase
+          .from('vendor_events')
+          .select(
+            `event:events(
+              id, name, city, state, address, start_datetime, end_datetime,
+              timezone, hours_summary, sync_metadata
+            )`,
+          )
+          .eq('vendor_id', id)
+          .eq('participation_status', 'approved'),
+      ]);
 
-    if (vendorRes.error) {
-      setError(vendorRes.error.message);
+      if (vendorRes.error) {
+        if (requestId !== loadRequestRef.current) return;
+        setError(vendorRes.error.message);
+        setMenu(null);
+        return;
+      }
+      if (!vendorRes.data) {
+        if (requestId !== loadRequestRef.current) return;
+        setError('Vendor not found.');
+        setMenu(null);
+        return;
+      }
+      if (productsRes.error) {
+        if (requestId !== loadRequestRef.current) return;
+        setError(productsRes.error.message);
+        setMenu(null);
+        return;
+      }
+
+      const now = Date.now();
+      const markets = ((marketsRes.data ?? []) as unknown as { event: MenuMarket | null }[])
+        .map((row) => row.event)
+        .filter((event): event is MenuMarket => Boolean(event))
+        .sort((a, b) => a.start_datetime.localeCompare(b.start_datetime));
+
+      const upcoming = markets.filter((m) => new Date(m.end_datetime || m.start_datetime).getTime() >= now);
+      const marketList = upcoming.length > 0 ? upcoming : markets;
+
+      if (requestId !== loadRequestRef.current) return;
+      setMenu({
+        vendorName: vendorRes.data.business_name?.trim() || vendorName,
+        products: (productsRes.data as MenuProduct[] | null) ?? [],
+        markets: marketList,
+      });
+      setSelectedMarketId(marketList[0]?.id ?? null);
+    } catch {
+      if (requestId !== loadRequestRef.current) return;
+      setError('Unable to load menu.');
       setMenu(null);
-      setLoading(false);
-      return;
+    } finally {
+      if (requestId === loadRequestRef.current) setLoading(false);
     }
-    if (!vendorRes.data) {
-      setError('Vendor not found.');
-      setMenu(null);
-      setLoading(false);
-      return;
-    }
-    if (productsRes.error) {
-      setError(productsRes.error.message);
-      setMenu(null);
-      setLoading(false);
-      return;
-    }
-
-    const now = Date.now();
-    const markets = ((marketsRes.data ?? []) as unknown as { event: MenuMarket | null }[])
-      .map((row) => row.event)
-      .filter((event): event is MenuMarket => Boolean(event))
-      .sort((a, b) => a.start_datetime.localeCompare(b.start_datetime));
-
-    const upcoming = markets.filter((m) => new Date(m.end_datetime || m.start_datetime).getTime() >= now);
-    const marketList = upcoming.length > 0 ? upcoming : markets;
-
-    setMenu({
-      vendorName: vendorRes.data.business_name?.trim() || vendorName,
-      products: (productsRes.data as MenuProduct[] | null) ?? [],
-      markets: marketList,
-    });
-    setSelectedMarketId(marketList[0]?.id ?? null);
-    setLoading(false);
   }, [vendorName]);
 
   useEffect(() => {

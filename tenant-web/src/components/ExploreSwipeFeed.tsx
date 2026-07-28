@@ -33,6 +33,22 @@ interface FeedItem {
 
 const RADIUS_OPTIONS = [15, 25, 35, 50];
 
+function parseClientCoord(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return value;
+}
+
+function isValidClientCoords(lat: number | null, lng: number | null): boolean {
+  return (
+    lat != null &&
+    lng != null &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 function formatDistance(miles: number): string {
   if (!Number.isFinite(miles) || miles < 0.1) return 'Nearby';
   if (miles < 10) return `${miles.toFixed(1)} mi`;
@@ -69,7 +85,12 @@ export function ExploreSwipeFeed({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [geoStatus, setGeoStatus] = useState<'pending' | 'ready' | 'denied' | 'provided'>(
-    initialLat != null && initialLng != null ? 'provided' : 'pending',
+    isValidClientCoords(
+      parseClientCoord(initialLat),
+      parseClientCoord(initialLng),
+    )
+      ? 'provided'
+      : 'pending',
   );
   const [menuVendor, setMenuVendor] = useState<{ id: string; name: string } | null>(null);
   const [snapOnly, setSnapOnly] = useState(false);
@@ -90,7 +111,9 @@ export function ExploreSwipeFeed({
   }, [apiBaseUrl]);
 
   useEffect(() => {
-    if (initialLat != null && initialLng != null) return;
+    const initialLatParsed = parseClientCoord(initialLat);
+    const initialLngParsed = parseClientCoord(initialLng);
+    if (isValidClientCoords(initialLatParsed, initialLngParsed)) return;
     if (!navigator.geolocation) {
       setGeoStatus('denied');
       setLoading(false);
@@ -98,9 +121,16 @@ export function ExploreSwipeFeed({
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setGeoStatus('ready');
+        const lat = parseClientCoord(pos.coords.latitude);
+        const lng = parseClientCoord(pos.coords.longitude);
+        if (isValidClientCoords(lat, lng)) {
+          setLat(lat);
+          setLng(lng);
+          setGeoStatus('ready');
+        } else {
+          setGeoStatus('denied');
+          setLoading(false);
+        }
       },
       () => {
         setGeoStatus('denied');

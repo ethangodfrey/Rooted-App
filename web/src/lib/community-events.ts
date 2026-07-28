@@ -1,4 +1,5 @@
 import { api, isApiConfigured } from '@/lib/api';
+import { isValidCoords } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 
 export const COMMUNITY_EVENT_TYPES = [
@@ -162,6 +163,9 @@ export async function publishCommunityEvent(
   const title = input.title.trim();
   if (!title) throw new Error('Title is required');
   if (!Number.isFinite(input.latitude) || !Number.isFinite(input.longitude)) {
+    throw new Error('Valid latitude and longitude are required');
+  }
+  if (!isValidCoords({ latitude: input.latitude, longitude: input.longitude })) {
     throw new Error('Valid latitude and longitude are required');
   }
   if (new Date(input.endTime) <= new Date(input.startTime)) {

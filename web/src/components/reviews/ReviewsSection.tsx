@@ -36,11 +36,20 @@ export function ReviewsSection({
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchApprovedReviews(targetType, targetId).then((res) => {
-      if (!active) return;
-      setReviews(res.reviews);
-      setLoading(false);
-    });
+    fetchApprovedReviews(targetType, targetId)
+      .then((res) => {
+        if (!active) return;
+        setReviews(res.reviews ?? []);
+        setError(res.error);
+      })
+      .catch(() => {
+        if (!active) return;
+        setReviews([]);
+        setError('Failed to load reviews');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     return () => {
       active = false;
     };

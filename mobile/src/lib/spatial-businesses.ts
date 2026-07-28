@@ -93,7 +93,11 @@ export function isValidMapBounds(bounds: MapBounds | null | undefined): bounds i
     Number.isFinite(minLng) &&
     Number.isFinite(maxLng) &&
     minLat <= maxLat &&
-    minLng <= maxLng
+    minLng <= maxLng &&
+    minLat >= -90 &&
+    maxLat <= 90 &&
+    minLng >= -180 &&
+    maxLng <= 180
   )
 }
 
