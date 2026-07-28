@@ -68,6 +68,11 @@ export class PaymentClearingService implements OnModuleInit {
       return this.holdWholesaleEscrow(referenceId, amount);
     }
 
+    const chefOrder = await this.findChefProcurementOrder(referenceId);
+    if (chefOrder) {
+      return this.holdChefProcurementEscrow(referenceId, amount);
+    }
+
     throw new NotFoundException('REFERENCE_NOT_FOUND');
   }
 
@@ -188,10 +193,14 @@ export class PaymentClearingService implements OnModuleInit {
       | {
           inquiryId?: string;
           procurementRequestId?: string;
+          chefProcurementOrderId?: string;
         },
   ) {
     if (typeof input === 'string') {
       return this.releaseCateringEscrow(input);
+    }
+    if (input.chefProcurementOrderId?.trim()) {
+      return this.releaseChefProcurementEscrow(input.chefProcurementOrderId);
     }
     if (input.procurementRequestId?.trim()) {
       return this.releaseWholesaleEscrow(input.procurementRequestId);
@@ -675,6 +684,199 @@ export class PaymentClearingService implements OnModuleInit {
     } catch {
       return { STATUS: 'FINANCIAL_UI_ACTIVE', ITEMS: [], COUNT: 0 };
     }
+  }
+
+  private async findChefProcurementOrder(orderId: string): Promise<{
+    id: string;
+    buyer_user_id: string;
+    seller_vendor_id: string;
+    status: string;
+    escrow_transaction_id: string | null;
+    subtotal_cents: number | string;
+  } | null> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        buyer_user_id: string;
+        seller_vendor_id: string;
+        status: string;
+        escrow_transaction_id: string | null;
+        subtotal_cents: number | string;
+      }>
+    >(Prisma.sql`
+      SELECT
+        id,
+        buyer_user_id,
+        seller_vendor_id,
+        status::text AS status,
+        escrow_transaction_id,
+        subtotal_cents
+      FROM public.chef_procurement_orders
+      WHERE id = ${orderId}::uuid
+      LIMIT 1
+    `);
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Lock wholesale bulk funds for a Private Chef / vendor procurement order.
+   * Destination is the supplying vendor wallet.
+   */
+  async holdChefProcurementEscrow(orderId: string, amountCents: number) {
+    const order = await this.findChefProcurementOrder(orderId);
+    if (!order) throw new NotFoundException('CHEF_PROCUREMENT_ORDER_NOT_FOUND');
+
+    if (order.escrow_transaction_id) {
+      return {
+        STATUS: 'ESCROW_LEDGER_ACTIVE',
+        ACTION: 'HELD_IN_ESCROW',
+        TRANSACTION_ID: order.escrow_transaction_id,
+        ORDER_ID: orderId,
+        AMOUNT_CENTS: Number(order.subtotal_cents) || amountCents,
+        NET_AMOUNT_CENTS: Number(order.subtotal_cents) || amountCents,
+        ALREADY_HELD: true,
+      };
+    }
+
+    const amount = Math.floor(Number(amountCents));
+    await this.ensureVendorBalance(order.seller_vendor_id);
+
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      INSERT INTO public.financial_transactions (
+        source_id, destination_id, amount_cents, voucher_cents, net_amount_cents,
+        status, transaction_type, reference_id, metadata
+      ) VALUES (
+        ${order.buyer_user_id}::uuid,
+        ${order.seller_vendor_id}::uuid,
+        ${amount},
+        0,
+        ${amount},
+        'HELD_IN_ESCROW'::public.financial_transaction_status,
+        'WHOLESALE'::public.financial_transaction_type,
+        ${orderId}::uuid,
+        ${JSON.stringify({
+          chefProcurementOrderId: orderId,
+          layout: 'CHEF_PROCUREMENT',
+        })}::jsonb
+      )
+      RETURNING id
+    `);
+
+    const txId = rows[0]?.id;
+    if (!txId) throw new BadRequestException('ESCROW_CREATE_FAILED');
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.vendor_balances
+      SET
+        escrow_held_cents = escrow_held_cents + ${amount},
+        updated_at = NOW()
+      WHERE vendor_id = ${order.seller_vendor_id}::uuid
+    `);
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.chef_procurement_orders
+      SET
+        escrow_transaction_id = ${txId}::uuid,
+        status = 'READY_FOR_PICKUP'::public.chef_procurement_order_status,
+        paid_at = NOW(),
+        updated_at = NOW()
+      WHERE id = ${orderId}::uuid
+    `);
+
+    this.logger.log(
+      formatEscrowLedgerActiveLog({
+        transactionId: txId,
+        status: 'HELD_IN_ESCROW',
+        netCents: amount,
+      }),
+    );
+    this.logger.log(`B2B_WHOLESALE_ACTIVE ACTION=HELD_IN_ESCROW ORDER=${orderId}`);
+
+    return {
+      STATUS: 'ESCROW_LEDGER_ACTIVE',
+      ACTION: 'HELD_IN_ESCROW',
+      TRANSACTION_ID: txId,
+      ORDER_ID: orderId,
+      AMOUNT_CENTS: amount,
+      NET_AMOUNT_CENTS: amount,
+      ALREADY_HELD: false,
+    };
+  }
+
+  /** Release chef/vendor procurement escrow after pickup code verification. */
+  private async releaseChefProcurementEscrow(orderId: string) {
+    const order = await this.findChefProcurementOrder(orderId);
+    if (!order) throw new NotFoundException('CHEF_PROCUREMENT_ORDER_NOT_FOUND');
+    if (!order.escrow_transaction_id) {
+      throw new BadRequestException('ESCROW_NOT_FOUND');
+    }
+
+    const tx = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        status: string;
+        net_amount_cents: number | string;
+        destination_id: string | null;
+      }>
+    >(Prisma.sql`
+      SELECT id, status::text AS status, net_amount_cents, destination_id
+      FROM public.financial_transactions
+      WHERE id = ${order.escrow_transaction_id}::uuid
+      LIMIT 1
+    `);
+    if (!tx[0]) throw new NotFoundException('TRANSACTION_NOT_FOUND');
+    if (tx[0].status === 'FROZEN') {
+      throw new BadRequestException('ESCROW_FROZEN');
+    }
+    if (tx[0].status === 'SETTLED') {
+      return {
+        STATUS: 'ESCROW_LEDGER_ACTIVE',
+        ACTION: 'ALREADY_SETTLED',
+        TRANSACTION_ID: tx[0].id,
+        ORDER_ID: orderId,
+      };
+    }
+    if (tx[0].status !== 'HELD_IN_ESCROW') {
+      throw new BadRequestException('ESCROW_NOT_HELD');
+    }
+
+    const net = Number(tx[0].net_amount_cents) || 0;
+    const vendorId = tx[0].destination_id ?? order.seller_vendor_id;
+
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.financial_transactions
+      SET
+        status = 'SETTLED'::public.financial_transaction_status,
+        updated_at = NOW()
+      WHERE id = ${tx[0].id}::uuid
+    `);
+
+    await this.ensureVendorBalance(vendorId);
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE public.vendor_balances
+      SET
+        escrow_held_cents = GREATEST(0, escrow_held_cents - ${net}),
+        available_cents = available_cents + ${net},
+        updated_at = NOW()
+      WHERE vendor_id = ${vendorId}::uuid
+    `);
+
+    this.logger.log(
+      formatEscrowLedgerActiveLog({
+        transactionId: tx[0].id,
+        status: 'SETTLED',
+        netCents: net,
+      }),
+    );
+    this.logger.log(`B2B_WHOLESALE_ACTIVE ACTION=SETTLED ORDER=${orderId}`);
+
+    return {
+      STATUS: 'ESCROW_LEDGER_ACTIVE',
+      ACTION: 'SETTLED',
+      TRANSACTION_ID: tx[0].id,
+      ORDER_ID: orderId,
+      NET_AMOUNT_CENTS: net,
+    };
   }
 
   private async findInquiry(inquiryId: string): Promise<{

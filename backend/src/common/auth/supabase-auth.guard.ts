@@ -11,7 +11,7 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AppRole, AuthenticatedUser } from './auth.types';
 
-const APP_ROLES: AppRole[] = ['shopper', 'vendor', 'farmer', 'admin'];
+const APP_ROLES: AppRole[] = ['shopper', 'vendor', 'farmer', 'chef', 'admin'];
 /** Canonical role is `shopper`; legacy DB value `customer` maps to shopper. */
 const DB_ROLES: string[] = [...APP_ROLES, 'customer'];
 
@@ -107,6 +107,7 @@ export class SupabaseAuthGuard implements CanActivate {
     const role: AppRole = dbUser.role === 'customer' ? 'shopper' : (dbUser.role as AppRole);
 
     let vendorId: string | undefined;
+    let chefId: string | undefined;
     if (role === 'vendor' || role === 'farmer') {
       const vendor = await this.prisma.vendor.findFirst({
         where: { userId: id },
@@ -114,11 +115,18 @@ export class SupabaseAuthGuard implements CanActivate {
       });
       vendorId = vendor?.id;
     }
+    if (role === 'chef') {
+      const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM public.chefs WHERE user_id = ${id}::uuid LIMIT 1
+      `;
+      chefId = rows[0]?.id;
+    }
 
     return {
       id,
       role,
       vendorId,
+      chefId,
       email: dbUser.email ?? (typeof payload.email === 'string' ? payload.email : undefined),
     };
   }

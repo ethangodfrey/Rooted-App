@@ -444,6 +444,10 @@ export interface Product {
   availability_type: ProductAvailabilityType;
   /** Phase 49 — SNAP/EBT eligible SKU */
   is_snap_eligible?: boolean;
+  /** Phase 84 — B2B wholesale catalog eligibility */
+  is_wholesale_eligible?: boolean;
+  moq_quantity?: number | null;
+  wholesale_price_cents?: number | null;
   created_at: string;
   updated_at: string;
 }

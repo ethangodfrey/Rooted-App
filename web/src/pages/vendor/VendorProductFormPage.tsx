@@ -28,6 +28,9 @@ export function VendorProductFormPage() {
     reserve_limit_per_shopper: number | null;
     media_urls: string[];
     is_snap_eligible: boolean;
+    is_wholesale_eligible: boolean;
+    moq_quantity: number | null;
+    wholesale_price_cents: number | null;
   }> | null>(null);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -48,6 +51,9 @@ export function VendorProductFormPage() {
           reserve_limit_per_shopper: data.reserve_limit_per_shopper,
           media_urls: data.media_urls ?? [],
           is_snap_eligible: Boolean(data.is_snap_eligible),
+          is_wholesale_eligible: Boolean(data.is_wholesale_eligible),
+          moq_quantity: data.moq_quantity ?? null,
+          wholesale_price_cents: data.wholesale_price_cents ?? null,
         });
       }
       setLoading(false);
@@ -65,6 +71,9 @@ export function VendorProductFormPage() {
     reserve_limit_per_shopper: number | null;
     media_urls: string[];
     is_snap_eligible: boolean;
+    is_wholesale_eligible: boolean;
+    moq_quantity: number | null;
+    wholesale_price_cents: number | null;
   }) {
     if (!vendor) return;
     setSaving(true);
@@ -81,6 +90,9 @@ export function VendorProductFormPage() {
       reserve_limit_per_shopper: values.reserve_limit_per_shopper,
       media_urls: values.media_urls,
       is_snap_eligible: values.is_snap_eligible,
+      is_wholesale_eligible: values.is_wholesale_eligible,
+      moq_quantity: values.moq_quantity,
+      wholesale_price_cents: values.wholesale_price_cents,
       status: 'active' as const,
       updated_at: new Date().toISOString(),
     };
@@ -97,6 +109,11 @@ export function VendorProductFormPage() {
     if (result.error) {
       setError(result.error.message);
       return;
+    }
+
+    if (values.is_wholesale_eligible) {
+      // eslint-disable-next-line no-console
+      console.log('B2B_WHOLESALE_ACTIVE');
     }
 
     if (isEdit) {
