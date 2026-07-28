@@ -147,8 +147,28 @@ export function ChefProcurementPage() {
     }
   }
 
+  const allowedBuyer =
+    user?.role === 'chef' ||
+    user?.role === 'admin' ||
+    (user?.role === 'vendor' && Boolean(vendor?.id));
+
   const roleLabel =
-    user?.role === 'chef' ? 'Private Chef' : vendor ? 'Verified Vendor' : 'Buyer';
+    user?.role === 'chef' ? 'PRIVATE_CHEF' : vendor ? 'VENDOR' : 'BUYER';
+
+  if (user && !allowedBuyer) {
+    return (
+      <div className="app-screen app-screen--narrow">
+        <p className="app-eyebrow">B2B wholesale</p>
+        <h1 className="app-title">Procurement</h1>
+        <p className="app-subtitle">
+          Access restricted to PRIVATE_CHEF or verified VENDOR roles.
+        </p>
+        <Link to="/" className="app-btn app-btn--secondary app-btn--small">
+          Home
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="app-screen app-screen--narrow">
@@ -162,8 +182,8 @@ export function ChefProcurementPage() {
         <Link to="/chef/dashboard" className="app-btn app-btn--ghost app-btn--small">
           Chef home
         </Link>
-        <Link to="/vendor/procurement" className="app-btn app-btn--secondary app-btn--small">
-          Vendor procurement
+        <Link to="/vendor/wholesale" className="app-btn app-btn--secondary app-btn--small">
+          Vendor wholesale
         </Link>
       </div>
 
