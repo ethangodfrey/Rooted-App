@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { FinancialModule } from '../financial/financial.module';
 import { InventoryLedgerModule } from '../inventory/inventory-ledger.module';
+import { PosModule } from '../pos/pos.module';
 import { ApiPaymentsController } from './controllers/api-payments.controller';
 import { ApiStripeWebhooksController } from './controllers/api-stripe-webhooks.controller';
 import { WebhooksStripeController } from './controllers/webhooks-stripe.controller';
@@ -13,7 +14,7 @@ import { StripeOnboardingService } from './stripe-onboarding.service';
 import { StripeService } from './stripe.service';
 
 @Module({
-  imports: [InventoryLedgerModule, FinancialModule],
+  imports: [InventoryLedgerModule, FinancialModule, PosModule],
   controllers: [
     ApiPaymentsController,
     ApiStripeWebhooksController,

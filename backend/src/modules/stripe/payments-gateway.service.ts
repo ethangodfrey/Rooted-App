@@ -17,6 +17,7 @@ import Stripe from 'stripe';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentClearingService } from '../financial/payment-clearing.service';
+import { SquareIntegrationService } from '../pos/services/square-integration.service';
 import {
   formatPaymentWebhooksActiveLog,
   formatStripeGatewayInitializedLog,
@@ -33,6 +34,7 @@ export class PaymentsGatewayService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
     private readonly clearing: PaymentClearingService,
+    private readonly square: SquareIntegrationService,
   ) {}
 
   onModuleInit(): void {
@@ -182,6 +184,22 @@ export class PaymentsGatewayService implements OnModuleInit {
     );
     if (amountCents < 1) {
       throw new BadRequestException('WEBHOOK_AMOUNT_INVALID');
+    }
+
+    // Online Stripe sale → reduce physical Square POS stock before escrow hold.
+    const deductionLines = this.square.extractCheckoutDeductionLines(session.metadata);
+    for (const line of deductionLines) {
+      try {
+        await this.square.deductSquareInventory(
+          line.vendorId,
+          line.sku,
+          line.quantity,
+        );
+      } catch (err) {
+        this.logger.warn(
+          `SQUARE_DEDUCT_FAILED VENDOR=${line.vendorId} SKU=${line.sku} ERR=${(err as Error).message}`,
+        );
+      }
     }
 
     const escrow = await this.clearing.holdInEscrow(referenceId, amountCents);

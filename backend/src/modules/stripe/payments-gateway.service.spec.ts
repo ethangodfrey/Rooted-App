@@ -6,6 +6,7 @@ import type { PaymentClearingService } from '../financial/payment-clearing.servi
 import type { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsGatewayService } from './payments-gateway.service';
 import type { StripeService } from './stripe.service';
+import type { SquareIntegrationService } from '../pos/services/square-integration.service';
 
 const REFERENCE_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const TRANSACTION_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
@@ -43,8 +44,18 @@ function buildService(overrides?: {
     $executeRaw: executeRaw,
   } as unknown as PrismaService;
 
-  const service = new PaymentsGatewayService(fakeConfig(), prisma, stripe, clearing);
-  return { service, holdInEscrow, verifyWebhook, executeRaw, prisma };
+  const square = {
+    deductSquareInventory: jest.fn(async () => ({
+      STATUS: 'SQUARE_DEDUCT_SKIPPED',
+      VENDOR_ID: '',
+      SKU: '',
+      QUANTITY: 0,
+      MODE: 'SKIP',
+    })),
+    extractCheckoutDeductionLines: jest.fn(() => []),
+  } as unknown as SquareIntegrationService;
+  const service = new PaymentsGatewayService(fakeConfig(), prisma, stripe, clearing, square);
+  return { service, holdInEscrow, verifyWebhook, executeRaw, prisma, square };
 }
 
 function escrowCompletedSession(

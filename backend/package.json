@@ -16,6 +16,7 @@
     "audit:phase42": "node scripts/audit-phase42-runbook.cjs",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest",
+    "test:square:sync": "jest --testPathPatterns=square-integration --no-coverage",
     "test:e2e:platform": "jest --config ./test/jest-e2e.json --runInBand test/platform.e2e-spec.ts",
     "markets:links": "ts-node scripts/run-market-links.ts",
     "markets:dedupe": "ts-node scripts/run-dedupe-markets.ts",

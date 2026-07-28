@@ -7,6 +7,7 @@ import { PosAnalyticsService } from '../src/modules/pos/services/pos-analytics.s
 import type { NormalizedTransaction } from '../src/modules/pos/types/normalized-transaction';
 import type { ConfigService } from '@nestjs/config';
 import { StripeService } from '../src/modules/stripe/stripe.service';
+import type { SquareIntegrationService } from '../src/modules/pos/services/square-integration.service';
 import { createFakeOrderPrisma } from './fake-order-prisma';
 import { createFakePrisma } from './fake-prisma';
 
@@ -53,6 +54,20 @@ function connection(): PosConnection {
   } as unknown as PosConnection;
 }
 
+
+function fakeSquareIntegration(): SquareIntegrationService {
+  return {
+    deductSquareInventory: jest.fn(async () => ({
+      STATUS: 'SQUARE_DEDUCT_SKIPPED',
+      VENDOR_ID: '',
+      SKU: '',
+      QUANTITY: 0,
+      MODE: 'SKIP',
+    })),
+    extractCheckoutDeductionLines: jest.fn(() => []),
+  } as unknown as SquareIntegrationService;
+}
+
 describe('Dual payment transaction parsing (Stripe + Square)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -82,6 +97,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder: jest.fn(),
           compensateStripeCheckout: jest.fn(),
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
@@ -127,6 +143,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder,
           compensateStripeCheckout: jest.fn(),
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
@@ -173,6 +190,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder,
           compensateStripeCheckout: jest.fn(),
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
@@ -224,6 +242,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder: jest.fn(),
           compensateStripeCheckout,
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
@@ -276,6 +295,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder: jest.fn(),
           compensateStripeCheckout,
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
@@ -482,6 +502,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder,
           compensateStripeCheckout: jest.fn(),
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
@@ -539,6 +560,7 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
           finalizePaidOrder,
           compensateStripeCheckout: jest.fn(),
         } as never,
+        fakeSquareIntegration(),
       );
 
       await stripe.handleWebhookEvent({
