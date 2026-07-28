@@ -3,6 +3,8 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { GuestOnly } from '@/components/layout/GuestOnly';
 import { RequireAuth } from '@/components/layout/RequireAuth';
 import { ShopperCartHost } from '@/components/cart/ShopperCartHost';
+import { LaunchFeatureGate } from '@/components/routing/LaunchFeatureGate';
+import { LAUNCH_FEATURES, logLaunchPruneMarkers } from '@/config/features';
 import { DashboardRedirect } from '@/pages/DashboardRedirect';
 import { AdminEventDetailPage } from '@/pages/admin/AdminEventDetailPage';
 import { AdminEventFormPage } from '@/pages/admin/AdminEventFormPage';
@@ -126,6 +128,11 @@ import { VendorPreviewPage } from '@/pages/vendor/VendorPreviewPage';
 import { VendorStorefrontPage } from '@/pages/vendor/VendorStorefrontPage';
 
 export default function App() {
+  if (typeof window !== 'undefined') {
+    // Emit once per module evaluation in the browser.
+    logLaunchPruneMarkers();
+  }
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -150,15 +157,34 @@ export default function App() {
         <Route path="/onboarding/role" element={<RoleSelectPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
         <Route path="/onboarding/specialties" element={<SpecialtiesPage />} />
+        <Route
+          path="/onboarding/llc"
+          element={
+            <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_LLC_ONBOARDING} fallback="not-found">
+              <Navigate to="/onboarding/specialties" replace />
+            </LaunchFeatureGate>
+          }
+        />
 
         {/* Shopper workspace — Explore / Inbox / Following / Orders */}
         <Route element={<ShopperLayout />}>
           <Route path="/explore" element={<ShopperMapPage />} />
           <Route path="/explore/feed" element={<ShopperExplorePage />} />
-          <Route path="/inbox" element={<ShopperInboxPage />} />
+          <Route
+            path="/inbox"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_SHOPPER_INBOX}>
+                <ShopperInboxPage />
+              </LaunchFeatureGate>
+            }
+          />
           <Route
             path="/inbox/thread/:threadId"
-            element={<OrderContextThreadPage viewerRole="shopper" backTo="/inbox" />}
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_SHOPPER_INBOX}>
+                <OrderContextThreadPage viewerRole="shopper" backTo="/inbox" />
+              </LaunchFeatureGate>
+            }
           />
           <Route path="/following" element={<ShopperFollowingPage />} />
           <Route path="/orders" element={<ShopperOrdersPage />} />
@@ -167,7 +193,14 @@ export default function App() {
           <Route path="/shopper/search" element={<ShopperSearchPage />} />
           <Route path="/shopper/explore" element={<ShopperExplorePage />} />
           <Route path="/shopper/meet-the-makers" element={<ShopperMeetTheMakersPage />} />
-          <Route path="/shopper/messages" element={<ShopperMessagesPage />} />
+          <Route
+            path="/shopper/messages"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_SHOPPER_INBOX}>
+                <ShopperMessagesPage />
+              </LaunchFeatureGate>
+            }
+          />
           <Route path="/shopper/events" element={<ShopperEventsPage />} />
           <Route path="/shopper/map" element={<Navigate to="/explore" replace />} />
           <Route path="/shopper/feed" element={<Navigate to="/following" replace />} />
@@ -199,26 +232,50 @@ export default function App() {
         <Route path="/shopper/leftovers" element={<ShopperLeftoversPage />} />
         <Route path="/shopper/leftovers/:id" element={<ShopperLeftoverDetailPage />} />
 
-        {/* Spec aliases: /creator → dedicated creator shell (Phase 83 amend) */}
-        <Route path="/creator" element={<CreatorLayout />}>
-          <Route index element={<Navigate to="listings" replace />} />
-          <Route path="listings" element={<CreatorListingsPage />} />
-          <Route path="handoffs" element={<CreatorHandoffsPage />} />
-          <Route path="network" element={<CreatorNetworkPage />} />
-          <Route path="inbox" element={<CreatorInboxPage />} />
-          <Route path="inbox/chat/:peerId" element={<CreatorB2bChatPage />} />
-          <Route
-            path="inbox/thread/:threadId"
-            element={<OrderContextThreadPage viewerRole="vendor" backTo="/creator/inbox" />}
-          />
-          <Route path="settings" element={<CreatorSettingsPage />} />
-        </Route>
-        <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />
+        {/* Spec aliases: /creator — disabled for MVP launch when flag is off */}
+        {LAUNCH_FEATURES.ENABLE_CREATOR_ROLE ? (
+          <Route path="/creator" element={<CreatorLayout />}>
+            <Route index element={<Navigate to="listings" replace />} />
+            <Route path="listings" element={<CreatorListingsPage />} />
+            <Route path="handoffs" element={<CreatorHandoffsPage />} />
+            <Route path="network" element={<CreatorNetworkPage />} />
+            <Route path="inbox" element={<CreatorInboxPage />} />
+            <Route path="inbox/chat/:peerId" element={<CreatorB2bChatPage />} />
+            <Route
+              path="inbox/thread/:threadId"
+              element={<OrderContextThreadPage viewerRole="vendor" backTo="/creator/inbox" />}
+            />
+            <Route path="settings" element={<CreatorSettingsPage />} />
+          </Route>
+        ) : (
+          <Route path="/creator/*" element={<Navigate to="/explore" replace />} />
+        )}
+        <Route
+          path="/creator/events"
+          element={
+            LAUNCH_FEATURES.ENABLE_CREATOR_ROLE ? (
+              <Navigate to="/vendor/events" replace />
+            ) : (
+              <Navigate to="/explore" replace />
+            )
+          }
+        />
         <Route
           path="/creator/analytics/integrations"
-          element={<Navigate to="/vendor/analytics/integrations" replace />}
+          element={
+            <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS}>
+              <Navigate to="/vendor/analytics/integrations" replace />
+            </LaunchFeatureGate>
+          }
         />
-        <Route path="/creator/analytics" element={<Navigate to="/vendor/analytics" replace />} />
+        <Route
+          path="/creator/analytics"
+          element={
+            <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS}>
+              <Navigate to="/vendor/analytics" replace />
+            </LaunchFeatureGate>
+          }
+        />
 
         {/* Vendor workspace — Storefront / Hand-offs / Inbox / Network */}
         <Route path="/vendor" element={<VendorLayout />}>
@@ -242,16 +299,58 @@ export default function App() {
           />
           <Route path="network" element={<VendorNetworkPage />} />
           <Route path="procurement" element={<VendorProcurementPage />} />
-          <Route path="analytics" element={<VendorAnalyticsPage />} />
-          <Route path="analytics/integrations" element={<VendorAnalyticsIntegrationsPage />} />
+          <Route
+            path="analytics"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS}>
+                <VendorAnalyticsPage />
+              </LaunchFeatureGate>
+            }
+          />
+          <Route
+            path="analytics/integrations"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS}>
+                <VendorAnalyticsIntegrationsPage />
+              </LaunchFeatureGate>
+            }
+          />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="products" element={<VendorProductsPage />} />
-          <Route path="posts" element={<VendorPostsPage />} />
+          <Route
+            path="posts"
+            element={
+              <LaunchFeatureGate
+                enabled={LAUNCH_FEATURES.ENABLE_VENDOR_POST_VAULT}
+                fallback="not-found"
+              >
+                <VendorPostsPage />
+              </LaunchFeatureGate>
+            }
+          />
+          <Route
+            path="vault"
+            element={
+              <LaunchFeatureGate
+                enabled={LAUNCH_FEATURES.ENABLE_VENDOR_POST_VAULT}
+                fallback="not-found"
+              >
+                <NotFoundPage />
+              </LaunchFeatureGate>
+            }
+          />
           <Route path="profile" element={<VendorProfilePage />} />
           <Route path="catering" element={<VendorCateringSettingsPage />} />
           <Route path="availability" element={<VendorAvailabilityPage />} />
           <Route path="loyalty" element={<VendorLoyaltyPage />} />
-          <Route path="financials" element={<VendorFinancialsPage />} />
+          <Route
+            path="financials"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_B2B_INVOICING}>
+                <VendorFinancialsPage />
+              </LaunchFeatureGate>
+            }
+          />
         </Route>
 
         <Route path="/farmer" element={<VendorLayout />}>
@@ -259,14 +358,57 @@ export default function App() {
           <Route path="logistics" element={<FarmerLogisticsPage />} />
           <Route path="network" element={<VendorNetworkPage />} />
           <Route path="procurement" element={<VendorProcurementPage />} />
+          <Route
+            path="procurement/invoices/*"
+            element={
+              <LaunchFeatureGate
+                enabled={LAUNCH_FEATURES.ENABLE_B2B_INVOICING}
+                fallback="not-found"
+              >
+                <VendorFinancialsPage />
+              </LaunchFeatureGate>
+            }
+          />
         </Route>
+
+        <Route
+          path="/vendor/vault/*"
+          element={
+            <LaunchFeatureGate
+              enabled={LAUNCH_FEATURES.ENABLE_VENDOR_POST_VAULT}
+              fallback="not-found"
+            >
+              <NotFoundPage />
+            </LaunchFeatureGate>
+          }
+        />
 
         <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
         <Route path="/vendor/products/new" element={<VendorProductFormPage />} />
         <Route path="/vendor/products/:id/edit" element={<VendorProductFormPage />} />
         <Route path="/vendor/products/:id/availability" element={<VendorProductAvailabilityPage />} />
-        <Route path="/vendor/posts/new" element={<VendorPostFormPage />} />
-        <Route path="/vendor/posts/new-video" element={<VendorVideoPostFormPage />} />
+        <Route
+          path="/vendor/posts/new"
+          element={
+            <LaunchFeatureGate
+              enabled={LAUNCH_FEATURES.ENABLE_VENDOR_POST_VAULT}
+              fallback="not-found"
+            >
+              <VendorPostFormPage />
+            </LaunchFeatureGate>
+          }
+        />
+        <Route
+          path="/vendor/posts/new-video"
+          element={
+            <LaunchFeatureGate
+              enabled={LAUNCH_FEATURES.ENABLE_VENDOR_POST_VAULT}
+              fallback="not-found"
+            >
+              <VendorVideoPostFormPage />
+            </LaunchFeatureGate>
+          }
+        />
         <Route path="/vendor/leftovers" element={<VendorLeftoversPage />} />
         <Route path="/vendor/leftovers/new" element={<VendorLeftoverFormPage />} />
         <Route path="/vendor/events" element={<VendorEventsPage />} />
@@ -300,8 +442,22 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="mix-analytics" element={<AdminMixAnalyticsPage />} />
-          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route
+            path="mix-analytics"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS}>
+                <AdminMixAnalyticsPage />
+              </LaunchFeatureGate>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <LaunchFeatureGate enabled={LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS}>
+                <AdminAnalyticsPage />
+              </LaunchFeatureGate>
+            }
+          />
           <Route path="vendors" element={<AdminVendorsPage />} />
           <Route path="events" element={<AdminEventsPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />

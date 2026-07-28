@@ -1,19 +1,26 @@
 import { Redirect, router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { UserSticker } from '@/src/components/ui/UserSticker';
 import { Text } from '@/src/components/ui/text';
+import { LAUNCH_FEATURES, logLaunchPruneMarkers } from '@/src/config/features';
 import { useAuth } from '@/src/hooks/use-auth';
 import { isAdminDevEmail } from '@/src/lib/admin-dev';
-import { ensureRoleExtension, type StickerOnboardingRole } from '@/src/lib/role-selection';
+import {
+  ensureRoleExtension,
+  type OnboardingRole,
+  type StickerOnboardingRole,
+} from '@/src/lib/role-selection';
 import { supabase } from '@/src/lib/supabase';
 
-const ROLE_CARDS: {
-  role: StickerOnboardingRole;
+type SelectableRole = StickerOnboardingRole | 'chef';
+
+const BASE_ROLE_CARDS: {
+  role: SelectableRole;
   title: string;
   meta: string;
-  accent: 'shopper' | 'vendor' | 'farmer';
+  accent: 'shopper' | 'vendor' | 'farmer' | 'chef';
 }[] = [
   {
     role: 'shopper',
@@ -33,24 +40,44 @@ const ROLE_CARDS: {
     meta: 'List raw or bulk harvest goods, share daily updates, and supply vendors.',
     accent: 'farmer',
   },
+  {
+    role: 'chef',
+    title: 'Private Chef',
+    meta: 'Offer private dining and wholesale catering demand to local hosts.',
+    accent: 'chef',
+  },
 ];
 
 export default function RoleSelectScreen() {
   const { session, user, refreshUser, signOut } = useAuth();
-  const [loading, setLoading] = useState<StickerOnboardingRole | null>(null);
+  const [loading, setLoading] = useState<SelectableRole | null>(null);
   const [adminLoading, setAdminLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const roleCards = useMemo(
+    () =>
+      BASE_ROLE_CARDS.filter((card) => {
+        if ((card.role as string) === 'creator') return false;
+        if (card.role === 'chef') return LAUNCH_FEATURES.ENABLE_CHEF_ROLE;
+        return true;
+      }),
+    [],
+  );
 
   const showAdminLogin = useMemo(
     () => isAdminDevEmail(session?.user?.email ?? user?.email),
     [session?.user?.email, user?.email],
   );
 
+  useEffect(() => {
+    logLaunchPruneMarkers();
+  }, []);
+
   if (user?.role && loading === null) {
     return <Redirect href="/" />;
   }
 
-  async function selectRole(role: StickerOnboardingRole) {
+  async function selectRole(role: SelectableRole) {
     if (!session?.user) {
       setError('You must be signed in to continue.');
       return;
@@ -61,28 +88,40 @@ export default function RoleSelectScreen() {
 
     const userId = session.user.id;
 
-    const { error: profileError } = await supabase.from('profiles').upsert(
-      {
-        id: userId,
-        role,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' },
-    );
-
-    if (profileError) {
+    if (role === 'chef') {
       const { error: roleError } = await supabase
         .from('users')
-        .update({ role, updated_at: new Date().toISOString() })
+        .update({ role: 'chef', updated_at: new Date().toISOString() })
         .eq('id', userId);
       if (roleError) {
         setLoading(null);
-        setError(profileError.message || roleError.message);
+        setError(roleError.message);
         return;
+      }
+    } else {
+      const { error: profileError } = await supabase.from('profiles').upsert(
+        {
+          id: userId,
+          role,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
+
+      if (profileError) {
+        const { error: roleError } = await supabase
+          .from('users')
+          .update({ role, updated_at: new Date().toISOString() })
+          .eq('id', userId);
+        if (roleError) {
+          setLoading(null);
+          setError(profileError.message || roleError.message);
+          return;
+        }
       }
     }
 
-    const { error: extensionError } = await ensureRoleExtension(userId, role);
+    const { error: extensionError } = await ensureRoleExtension(userId, role as OnboardingRole);
 
     if (extensionError) {
       setLoading(null);
@@ -93,6 +132,8 @@ export default function RoleSelectScreen() {
     await refreshUser();
     if (role === 'vendor' || role === 'farmer') {
       router.replace('/(onboarding)/specialties');
+    } else if (role === 'chef') {
+      router.replace('/(chef)/profile/setup');
     } else {
       router.replace('/');
     }
@@ -145,14 +186,16 @@ export default function RoleSelectScreen() {
       </Text>
 
       <View className="mt-8 gap-4">
-        {ROLE_CARDS.map((card) => {
+        {roleCards.map((card) => {
           const active = loading === card.role;
           const tone =
             card.accent === 'shopper'
               ? { bg: 'rgba(99,102,241,0.16)', border: 'rgba(129,140,248,0.35)', label: '#a5b4fc' }
               : card.accent === 'vendor'
                 ? { bg: 'rgba(249,115,22,0.16)', border: 'rgba(251,146,60,0.4)', label: '#fdba74' }
-                : { bg: 'rgba(34,197,94,0.16)', border: 'rgba(74,222,128,0.4)', label: '#86efac' };
+                : card.accent === 'chef'
+                  ? { bg: 'rgba(244,114,182,0.16)', border: 'rgba(244,114,182,0.4)', label: '#f9a8d4' }
+                  : { bg: 'rgba(34,197,94,0.16)', border: 'rgba(74,222,128,0.4)', label: '#86efac' };
           return (
             <Pressable
               key={card.role}
@@ -165,7 +208,16 @@ export default function RoleSelectScreen() {
                 opacity: loading !== null && !active ? 0.55 : 1,
               }}
             >
-              <UserSticker role={card.role} />
+              {card.role === 'chef' ? (
+                <Text
+                  className="text-[10px] font-bold uppercase tracking-[1.5px]"
+                  style={{ color: tone.label }}
+                >
+                  PRIVATE CHEF
+                </Text>
+              ) : (
+                <UserSticker role={card.role} />
+              )}
               <Text className="mt-4 text-xl font-semibold text-white">{card.title}</Text>
               <Text className="mt-2 flex-1 text-sm leading-5 text-slate-300">{card.meta}</Text>
               <Text

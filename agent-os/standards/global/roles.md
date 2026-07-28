@@ -27,7 +27,8 @@ Legacy aliases still accepted on `users.role`: `customer` → treat as shopper.
 | `/explore`, `/orders`, `/following`, `/inbox` | Shopper shared roots | Active |
 | `/vendor/*` | Vendor workspace (farmers may enter network) | Active |
 | `/farmer/logistics`, `/farmer/network`, `/farmer/procurement` | Farmer shell (logistics + V2V + procurement); FAB persona `FARMER` | Active |
-| `/creator/*` | Creator shell (listings, hand-offs, network, inbox, settings); FAB persona `CREATOR` | Active |
+| `/creator/*` | Creator shell | **Disabled for MVP** (`ENABLE_CREATOR_ROLE=false`) — redirects to `/explore` |
+| `/chef/*` | Private Chef portal | Active (`ENABLE_CHEF_ROLE=true`) |
 | `/chef/*`, `/admin/*` | Ops portals | Active |
 | `/onboarding/role`, `/onboarding/role-select` | Sticker role selection | Active |
 

@@ -1,4 +1,5 @@
 import type { AppTab } from '@/components/navigation/app-tabs';
+import { LAUNCH_FEATURES } from '@/config/features';
 
 /** Uppercase FAB navigation personas (marketplace + seller shells). */
 export type FabNavRole =
@@ -140,7 +141,7 @@ const FARMER_FAB_PAGES: AppTab[] = [
   },
 ];
 
-/** Creator shell — distinct /creator destinations (not vendor storefront clones). */
+/** Creator shell — gated by LAUNCH_FEATURES.ENABLE_CREATOR_ROLE. */
 const CREATOR_FAB_PAGES: AppTab[] = [
   {
     to: '/creator/listings',
@@ -200,27 +201,62 @@ export const FAB_NAV_BY_ROLE: Record<FabNavRole, AppTab[]> = {
   ADMIN: ADMIN_FAB_PAGES,
 };
 
+function isPrunedFabTab(tab: AppTab): boolean {
+  const to = tab.to.toLowerCase();
+  if (!LAUNCH_FEATURES.ENABLE_SHOPPER_INBOX && (to === '/inbox' || to.startsWith('/shopper/messages'))) {
+    return true;
+  }
+  if (
+    !LAUNCH_FEATURES.ENABLE_COMPLEX_ANALYTICS &&
+    (to.includes('/analytics') || to.includes('/financials') || to.includes('mix-analytics'))
+  ) {
+    return true;
+  }
+  if (!LAUNCH_FEATURES.ENABLE_VENDOR_POST_VAULT && (to.includes('/posts') || to.includes('/vault'))) {
+    return true;
+  }
+  if (
+    !LAUNCH_FEATURES.ENABLE_B2B_INVOICING &&
+    (to.includes('/invoice') || to.includes('/invoices'))
+  ) {
+    return true;
+  }
+  if (!LAUNCH_FEATURES.ENABLE_CREATOR_ROLE && to.startsWith('/creator')) {
+    return true;
+  }
+  return false;
+}
+
 export function resolveFabNavRole(input: {
   accountRole?: string | null;
   vendorType?: string | null;
   pathname?: string | null;
 }): FabNavRole {
   const path = input.pathname ?? '';
-  if (path.startsWith('/creator')) return 'CREATOR';
+
+  // Creator shell disabled for launch — never emit CREATOR menus.
+  if (path.startsWith('/creator')) {
+    if (!LAUNCH_FEATURES.ENABLE_CREATOR_ROLE) return 'VENDOR';
+    return 'CREATOR';
+  }
   if (path.startsWith('/farmer')) return 'FARMER';
 
   const role = (input.accountRole ?? '').toLowerCase();
 
   if (role === 'admin') return 'ADMIN';
-  // Account role `chef` drives PRIVATE_CHEF FAB destinations.
-  // Vendor persona `private_chef` still uses the vendor shell routes.
-  if (role === 'chef') return 'PRIVATE_CHEF';
+  // Account role `chef` drives PRIVATE_CHEF FAB destinations when chef role is enabled.
+  if (role === 'chef') {
+    return LAUNCH_FEATURES.ENABLE_CHEF_ROLE ? 'PRIVATE_CHEF' : 'SHOPPER';
+  }
   if (role === 'farmer') return 'FARMER';
   if (role === 'vendor') return 'VENDOR';
   return 'SHOPPER';
 }
 
 export function fabTabsForRole(role: FabNavRole, override?: AppTab[]): AppTab[] {
-  if (override && override.length > 0) return override;
-  return FAB_NAV_BY_ROLE[role];
+  const resolvedRole =
+    role === 'CREATOR' && !LAUNCH_FEATURES.ENABLE_CREATOR_ROLE ? 'VENDOR' : role;
+  const base =
+    override && override.length > 0 ? override : FAB_NAV_BY_ROLE[resolvedRole];
+  return base.filter((tab) => !isPrunedFabTab(tab));
 }
