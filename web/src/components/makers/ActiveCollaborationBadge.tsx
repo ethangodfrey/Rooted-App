@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import {
   fetchCollaboration,
   type JointContentItem,
@@ -11,6 +12,20 @@ type ActiveCollaborationBadgeProps = {
   profileId: string | null | undefined;
   className?: string;
 };
+
+function CollabMediaThumb({ item }: { item: JointContentItem }) {
+  const mediaUrl = item.cdnMediaUrl || item.mediaUrl;
+  if (!mediaUrl) return null;
+
+  return (
+    <FallbackImage
+      src={mediaUrl}
+      alt=""
+      variant="product"
+      className="active-collab-modal__media object-cover"
+    />
+  );
+}
 
 /**
  * Shows ACTIVE COLLABORATION when the profile has co-authored partnership posts.
@@ -95,13 +110,7 @@ export function ActiveCollaborationBadge({
               <ul className="active-collab-modal__list">
                 {items.map((item) => (
                   <li key={item.postId} className="active-collab-modal__item">
-                    {(item.cdnMediaUrl || item.mediaUrl) ? (
-                      <img
-                        src={item.cdnMediaUrl || item.mediaUrl || ''}
-                        alt=""
-                        className="active-collab-modal__media"
-                      />
-                    ) : null}
+                    <CollabMediaThumb item={item} />
                     <p className="active-collab-modal__caption">{item.caption}</p>
                     <p className="active-collab-modal__meta">
                       {[item.contributorType, item.partnerContributorType]

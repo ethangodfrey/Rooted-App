@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { EventForm } from '@/components/admin/EventForm';
+import { MarketDetailSkeleton } from '@/components/market/MarketDetailSkeleton';
 import { useNow } from '@/hooks/use-now';
 import { formatEventDisplayFullDate, formatEventDisplayTimeRange } from '@/lib/format';
 import { marketPath } from '@/lib/market-routes';
@@ -35,7 +36,7 @@ export function AdminEventDetailPage() {
     void load();
   }, [load]);
 
-  if (loading) return <div className="app-loading"><div className="app-spinner" /></div>;
+  if (loading) return <MarketDetailSkeleton />;
   if (!event) return <div className="app-empty">{error ?? 'Not found'}</div>;
 
   if (editing) {

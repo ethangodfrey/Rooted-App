@@ -27,7 +27,9 @@ export function ChefServiceFormPage() {
   const [basePrice, setBasePrice] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'serviceName' | 'basePrice', string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'serviceName' | 'description' | 'basePrice', string>>>({});
+
+  const MAX_DESCRIPTION_LENGTH = 2000;
 
   function clearFieldError(field: keyof typeof fieldErrors) {
     setFieldErrors((prev) => {
@@ -42,13 +44,24 @@ export function ChefServiceFormPage() {
     if (!chef?.id) return;
     const priceCents =
       priceType === 'custom_quote' ? 0 : Math.round(Number(basePrice) * 100);
-    const nextFieldErrors: Partial<Record<'serviceName' | 'basePrice', string>> = {};
+    const nextFieldErrors: Partial<Record<'serviceName' | 'description' | 'basePrice', string>> = {};
 
     if (!serviceName.trim()) {
       nextFieldErrors.serviceName = 'Enter a service name.';
     }
-    if (priceType !== 'custom_quote' && (!Number.isFinite(priceCents) || priceCents <= 0)) {
-      nextFieldErrors.basePrice = 'Enter a valid price greater than zero.';
+    const trimmedDescription = description.trim();
+    if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+      nextFieldErrors.description = `Description must be ${MAX_DESCRIPTION_LENGTH.toLocaleString()} characters or fewer.`;
+    }
+    if (priceType !== 'custom_quote') {
+      const trimmedPrice = basePrice.trim();
+      if (!trimmedPrice) {
+        nextFieldErrors.basePrice = 'Enter a price greater than zero.';
+      } else if (!/^\d+(\.\d{1,2})?$/.test(trimmedPrice)) {
+        nextFieldErrors.basePrice = 'Enter a valid price with up to two decimal places (e.g. 150.00).';
+      } else if (!Number.isFinite(priceCents) || priceCents <= 0) {
+        nextFieldErrors.basePrice = 'Enter a valid price greater than zero.';
+      }
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {
@@ -120,10 +133,15 @@ export function ChefServiceFormPage() {
         <label htmlFor="svc-desc">Description</label>
         <textarea
           id="svc-desc"
-          className="app-textarea"
+          className={`app-textarea${fieldErrors.description ? ' app-textarea--invalid' : ''}`}
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          aria-invalid={Boolean(fieldErrors.description)}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            clearFieldError('description');
+          }}
         />
+        <FieldError message={fieldErrors.description} />
       </div>
       <div className="app-input-group">
         <label htmlFor="svc-price-type">Pricing</label>

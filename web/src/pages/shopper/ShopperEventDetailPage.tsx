@@ -49,7 +49,7 @@ export function ShopperEventDetailPage() {
   const addressLine = [event.address, event.city, event.state].filter(Boolean).join(', ');
 
   return (
-      <div className="mx-auto max-w-3xl overflow-hidden px-4 py-6 sm:px-6">
+      <div className="mx-auto min-w-0 max-w-3xl overflow-x-hidden px-4 py-6 sm:px-6">
       <Link
         to="/explore"
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-800 hover:underline"
@@ -63,8 +63,8 @@ export function ShopperEventDetailPage() {
         <EventStatusBadge event={event} showHint size="md" />
       </div>
 
-      <header className="mb-6">
-        <h1 className="break-words text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
+      <header className="mb-6 min-w-0">
+        <h1 className="break-words text-xl font-bold tracking-tight text-stone-900 sm:text-2xl md:text-3xl">
           {event.name}
         </h1>
         {locationLine ? (
