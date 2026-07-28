@@ -1,17 +1,29 @@
 import type { UserRole } from '@/src/types/database';
 
-/** Customer role — includes legacy `shopper` values during migration. */
+/**
+ * Canonical platform buyer role: `shopper`.
+ * Legacy DB value `customer` is still accepted at read boundaries.
+ */
+export function isShopperRole(role: UserRole | null | undefined): boolean {
+  return role === 'shopper' || role === 'customer';
+}
+
+/**
+ * @deprecated Prefer `isShopperRole`.
+ */
 export function isCustomerRole(role: UserRole | null | undefined): boolean {
-  return role === 'customer' || role === 'shopper';
+  return isShopperRole(role);
 }
 
 export function roleDisplayName(role: UserRole | null | undefined): string {
   switch (role) {
     case 'customer':
     case 'shopper':
-      return 'Customer';
+      return 'Shopper';
     case 'vendor':
       return 'Vendor';
+    case 'farmer':
+      return 'Farmer';
     case 'chef':
       return 'Chef';
     case 'admin':
@@ -29,6 +41,8 @@ export function vendorTypeLabel(type: string | null | undefined): string | null 
     food_business: 'Food Business',
     caterer: 'Caterer',
     meal_prep: 'Meal Prep',
+    private_chef: 'Private Chef',
+    micro_brand: 'Micro Brand',
   };
   return labels[type] ?? type;
 }

@@ -1,18 +1,30 @@
 import type { AppTab } from '@/components/navigation/app-tabs';
 
-/** Unified creator shell — Listings / Hand-offs / Settings. */
+/** Creator shell — distinct /creator routes (not vendor storefront clones). */
 export const CREATOR_TABS: AppTab[] = [
   {
-    to: '/creator',
+    to: '/creator/listings',
     label: 'Listings',
     icon: 'products',
-    matchPaths: ['/vendor/products', '/vendor/inventory', '/vendor/leftovers'],
+    matchPaths: ['/creator', '/vendor/products', '/vendor/inventory', '/vendor/leftovers'],
   },
   {
     to: '/creator/handoffs',
     label: 'Hand-offs',
     icon: 'orders',
     matchPaths: ['/vendor/fulfillment', '/vendor/orders'],
+  },
+  {
+    to: '/creator/network',
+    label: 'Network',
+    icon: 'explore',
+    matchPaths: ['/vendor/network', '/vendor/procurement'],
+  },
+  {
+    to: '/creator/inbox',
+    label: 'Inbox',
+    icon: 'messages',
+    matchPaths: ['/vendor/inbox', '/vendor/messages'],
   },
   {
     to: '/creator/settings',

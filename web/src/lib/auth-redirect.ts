@@ -1,5 +1,6 @@
 import type { AuthRouteCache } from '@/lib/auth-route-cache';
 import { isChefProfileComplete } from '@/lib/chef-profile';
+import { isShopperRole } from '@/lib/role-utils';
 import { isVendorApplicationComplete } from '@/lib/vendor-application';
 import type { Chef, Shopper, User, Vendor } from '@/types/database';
 
@@ -13,6 +14,7 @@ export type AuthRedirectPath =
   | '/vendor/setup'
   | '/vendor/storefront'
   | '/vendor/network'
+  | '/farmer/logistics'
   | '/chef/setup'
   | '/chef/dashboard'
   | '/admin/dashboard'
@@ -63,7 +65,7 @@ export function resolveAuthRedirect(
     return null;
   }
 
-  if (role === 'shopper' || role === 'customer') {
+  if (isShopperRole(role)) {
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);
@@ -73,8 +75,7 @@ export function resolveAuthRedirect(
   if (role === 'farmer') {
     const farmerSpecs = user?.farmer_specialties ?? [];
     if (user && farmerSpecs.length === 0) return '/onboarding/specialties';
-    // Farmer extension is provisioned at onboarding; dedicated setup comes later.
-    return '/vendor/network';
+    return '/farmer/logistics';
   }
 
   if (role === 'vendor') {

@@ -1,7 +1,7 @@
 import { supabase } from '@/src/lib/supabase';
 import type { UserRole } from '@/src/types/database';
 
-export type ResettableRole = Extract<UserRole, 'customer' | 'shopper' | 'vendor' | 'chef'>;
+export type ResettableRole = Extract<UserRole, 'shopper' | 'vendor' | 'chef' | 'farmer'>;
 
 /** Clears role + extension row so the user can pick a role again. */
 export async function resetRoleSelection(

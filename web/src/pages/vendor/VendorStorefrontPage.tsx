@@ -8,6 +8,7 @@ import {
   VendorPrimaryButton,
   VendorScreen,
 } from '@/components/vendor/vendor-ui';
+import { FlashPromoWidget } from '@/components/vendor/FlashPromoWidget';
 import { useAuth } from '@/hooks/use-auth';
 import { normalizeUrl } from '@/lib/vendor-application';
 import { supabase } from '@/lib/supabase';
@@ -111,6 +112,8 @@ export function VendorStorefrontPage() {
     <VendorScreen>
       <Link to="/vendor/profile" className="app-back-link">← Profile</Link>
       <VendorHero eyebrow="Storefront" title="Edit storefront" />
+
+      <FlashPromoWidget vendorId={vendor?.id} />
 
       <VendorFormPanel>
         <div className="app-input-group">

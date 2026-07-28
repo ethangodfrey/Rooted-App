@@ -12,7 +12,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { AppRole, AuthenticatedUser } from './auth.types';
 
 const APP_ROLES: AppRole[] = ['shopper', 'vendor', 'farmer', 'admin'];
-/** Vendorly uses `customer` in Supabase; backend routes accept it as shopper. */
+/** Canonical role is `shopper`; legacy DB value `customer` maps to shopper. */
 const DB_ROLES: string[] = [...APP_ROLES, 'customer'];
 
 /**

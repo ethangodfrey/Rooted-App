@@ -272,11 +272,23 @@ export function FarmerLogisticsPage() {
   return (
     <VendorScreen>
       <VendorHero
-        eyebrow="Phase 5 fleet"
+        eyebrow="Farmer shell"
         title="Fleet Dispatch"
         subtitle="Group ACCEPTED wholesale orders into a delivery route, then confirm each dropoff to settle escrow into your available balance."
         pill="FLEET_UI_ACTIVE"
       />
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        <Link to="/farmer/network" className="app-btn app-btn--primary app-btn--small">
+          V2V Network
+        </Link>
+        <Link to="/farmer/procurement" className="app-btn app-btn--secondary app-btn--small">
+          Procurement
+        </Link>
+        <Link to="/vendor/inbox" className="app-btn app-btn--ghost app-btn--small">
+          Inbox
+        </Link>
+      </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <Link

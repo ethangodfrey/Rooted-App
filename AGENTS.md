@@ -24,7 +24,7 @@ You are maintaining **Vendorly Marketplace** (formerly Rooted), a local food mar
 ## Vendorly migration
 
 - Apply `docs/supabase/phase22_vendorly_marketplace.sql` after prior phase scripts
-- Roles: `customer` (legacy `shopper` alias), `vendor`, `chef`, `admin`
+- Roles: `shopper` (legacy `customer` alias), `vendor`, `farmer`, `chef`, `admin`
 - See `docs/VENDORLY_MIGRATION.md` for Phase 1 status
 
 ## Priority order each run

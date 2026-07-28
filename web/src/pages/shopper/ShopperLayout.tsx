@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { SHOPPER_MAP_HREF, SHOPPER_TABS } from '@/components/navigation/shopper-tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
-import { isCustomerRole } from '@/lib/role-utils';
+import { isShopperRole } from '@/lib/role-utils';
 import { NotificationProvider } from '@/providers/notification-provider';
 
 /**
@@ -23,6 +23,11 @@ export function ShopperLayout() {
 
   useEffect(() => {
     void readAuthRouteCache().then(setRouteCache);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('ROLE_NAMING_STANDARDIZED');
   }, []);
 
   if (isProfileLoading || routeCache === undefined) {
@@ -45,11 +50,11 @@ export function ShopperLayout() {
       location.pathname.startsWith('/shopper/checkout') ||
       location.pathname.startsWith('/checkout'));
 
-  if (!isCustomerRole(role) && !vendorShopping) {
+  if (!isShopperRole(role) && !vendorShopping) {
     return <Navigate to="/app" replace />;
   }
 
-  if (isCustomerRole(role)) {
+  if (isShopperRole(role)) {
     const hasInterests = user
       ? (shopper?.interests?.length ?? 0) > 0
       : (trustedCache?.hasInterests ?? false);

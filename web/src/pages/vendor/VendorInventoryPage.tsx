@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 
 import { ProductImage } from '@/components/ui/ProductImage';
 import { HybridStockAllocator } from '@/components/vendor/hybrid-stock-allocator';
+import { FlashPromoWidget } from '@/components/vendor/FlashPromoWidget';
 import {
   VendorEmpty,
   VendorHero,
@@ -272,6 +273,8 @@ export function VendorInventoryPage() {
         subtitle="Allocate each batch between online pre-orders and in-person walk-ups so market day never starts empty."
         pill={`${products.length} product${products.length === 1 ? '' : 's'}`}
       />
+
+      <FlashPromoWidget vendorId={vendor?.id} />
 
       <Link to="/vendor/products/new" className={`${TACTILE_BTN} mb-6`}>
         Add Product
