@@ -1,4 +1,4 @@
-import type { Coords } from '@/lib/geo';
+import { isValidCoords, type Coords } from '@/lib/geo';
 import { fetchFeaturedPublicMarkets } from '@/lib/events-query';
 import { fetchNearbyEvents, fetchNearbyVendors, type NearbyEvent, type NearbyVendor } from '@/lib/geo-search';
 import { fetchCuratedLeftovers, type CuratedLeftover } from '@/lib/leftovers';
@@ -141,7 +141,9 @@ async function fetchDiscoverMarkets(
   }
 
   const featured = await fetchFeaturedPublicMarkets(limit, { userState: context.userState });
-  return featured.map(eventToNearbyEvent);
+  return featured
+    .filter((event) => isValidCoords(event))
+    .map(eventToNearbyEvent);
 }
 
 /** Browse feed for the Discover tab — reuses home/search Supabase loaders. */

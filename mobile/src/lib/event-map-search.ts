@@ -109,19 +109,24 @@ export function filterEventsForMapSearch(
 }
 
 export function centroidOfEvents(events: Event[]): Coords | null {
-  const mappable = events.filter((event) => isValidCoords(event));
-  if (mappable.length === 0) return null;
-  const totals = mappable.reduce(
-    (acc, event) => ({
-      latitude: acc.latitude + event.latitude,
-      longitude: acc.longitude + event.longitude,
-    }),
-    { latitude: 0, longitude: 0 },
-  );
-  return {
-    latitude: totals.latitude / mappable.length,
-    longitude: totals.longitude / mappable.length,
-  };
+  try {
+    const mappable = events.filter((event) => isValidCoords(event));
+    if (mappable.length === 0) return null;
+    const totals = mappable.reduce(
+      (acc, event) => ({
+        latitude: acc.latitude + event.latitude,
+        longitude: acc.longitude + event.longitude,
+      }),
+      { latitude: 0, longitude: 0 },
+    );
+    const centroid = {
+      latitude: totals.latitude / mappable.length,
+      longitude: totals.longitude / mappable.length,
+    };
+    return isValidCoords(centroid) ? centroid : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function geocodeUsZip(zip: string): Promise<Coords | null> {

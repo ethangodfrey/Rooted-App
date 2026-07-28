@@ -316,7 +316,7 @@ export function ShopperMapPage() {
       (event) =>
         event.title.toLowerCase().includes(q) ||
         event.event_type.toLowerCase().includes(q) ||
-        event.description.toLowerCase().includes(q),
+        (event.description ?? '').toLowerCase().includes(q),
     );
   }, [communityEvents, query]);
 
