@@ -137,3 +137,166 @@ No production runtime dependencies were removed. Script renames only (`seed:stre
 ---
 
 *Generated automatically on 2026-07-20T15:02Z by Cursor Cloud Agent.*
+
+---
+
+## 2026-07-27 — Weekly review (`2bea704` → `1af174f`)
+
+**Scope:** 78 commits · 383 files changed · +42,502 / −692 lines  
+**Period:** 2026-07-20 through 2026-07-22  
+**PRs merged:** #166, #194–#198, #203, #209–#210, #220–#224, #238–#248
+
+### Summary
+
+This week landed the **platform stack Phases 2–9** (availability → loyalty → financial clearing → fleet logistics → Stripe escrow → admin dashboard → disputes → notifications), a **Phase 83 deferred-features amend** (home/private-chef vendor types, V2V connections, mix analytics, load-in, messaging, flash promo, creator shell), and substantial **stability / UX hardening** after bulk PR merges. The diff also adds **32 new verification scripts**, a **full-stack Phase 4–9 runner**, and **platform E2E golden-path smoke**. Money-adjacent flows (escrow ledger, Stripe Connect, dispute freeze) are now wired end-to-end but require coordinated SQL apply and env setup before production.
+
+---
+
+### 1. Features & components altered
+
+#### Database / Supabase schema (phases 66–83b)
+
+| Phase range | Area | Key changes |
+|-------------|------|-------------|
+| 66 | Wholesale catalog | `wholesale_sale_mode_preference` enum (`WHOLESALE_ONLY` / `RETAIL_ONLY` / `BOTH`) on `wholesale_products` |
+| 67 | Supplier analytics | `vendor_alerts` table (`LOW_STOCK`, `PAYMENT_DELAY`) |
+| 69 | Notifications | Location-aware market alert radius columns |
+| 70 | Content | Dual-posting `post_contributions` + interaction metrics |
+| 71 | Discovery | Meet the Makers `user_events` + RSVP schedule |
+| 72 | Catering | Optional vendor catering services module |
+| 73 | Analytics | `engagement_metrics` + interaction columns on posts/inquiries |
+| 74 | Intelligence | `partner_reports` + automated anomaly/weekly reporting |
+| 75 | B2B marketplace | `wholesale_listings`, procurement requests, availability + loyalty prep |
+| 76 | Loyalty | Precision Rewards: action points, boosts, redemptions |
+| 77 | Availability | Catering inquiry conflict detection (`PENDING_REVIEW`, conflict flags) |
+| 78 | Financial | `financial_transactions` + `vendor_balances` escrow ledger |
+| 79 | Fleet logistics | `delivery_routes`, `delivery_stops`, `farmer_balances` |
+| 80 | Payments | Stripe Connect `stripe_account_id` on vendors/farmers |
+| 81 | Disputes | `disputes` table + `FROZEN` escrow status |
+| 82 | Notifications | `notifications_log` + `notification_preferences` on users |
+| 83a | Vendor types | Home / Private Chef / Micro-Brand `vendor_type` check constraint |
+| 83b | Vendor network | `vendor_connections` V2V peer graph (idempotent column adds) |
+
+#### Backend (`backend/`)
+
+| Module | Changes |
+|--------|---------|
+| **Availability** | Automated scheduling service; catering inquiry conflict wiring |
+| **Loyalty** | Precision Rewards ticks/boosts/redemptions; redemption rules |
+| **Financial** | Payment clearing, escrow ledger, dynamic invoice generation |
+| **Logistics** | Fleet fulfillment controller/service; B2B escrow loop |
+| **Stripe** | Connect payment gateway, onboarding service, API payments controller |
+| **Disputes** | Dispute resolution engine with escrow freeze |
+| **Notifications** | Phase 9 engine (email/SMS mocks), market-notification service, location-aware alerts |
+| **Admin dashboard** | Platform telemetry, fleet overview, mix analytics API |
+| **B2B** | Peer marketplace Phase 1, catalog bulk-import + CSV parser, wholesale products |
+| **Supplier analytics** | Demand forecast, vendor alerts, A/R analytics |
+| **Discovery** | Meet the Makers feed, USDA enrichment, user-events service |
+| **Content** | Dual-posting contributions + sync-health observability cron |
+| **Catering** | Optional vendor catering module |
+| **Analytics / Intelligence** | Engagement reporting, weekly partner reports, anomaly detection |
+| **Vendor network** | V2V connections, flash promo service |
+| **Search** | `sale_mode_preference` indexing + role-based discovery filter |
+
+#### Web (`web/`)
+
+| Area | Changes |
+|------|---------|
+| **Shopper** | Rewards/redemption UI, Meet the Makers, chef booking, events, messages |
+| **Vendor** | Procurement dashboard, financials, availability, catering settings, loyalty, analytics (recharts), network, load-in |
+| **Farmer** | Fleet logistics dispatch dashboard |
+| **Admin** | Platform dashboard, mix analytics, credentials |
+| **Creator** | Unified creator shell (`/creator/*`) with handoffs, listings, settings |
+| **Map** | Coordinate sanitization, `MapContainer` center guard |
+| **Messaging** | `RealtimeChatThread` for shopper/vendor messages |
+| **UI/UX** | Responsive layouts, skeleton loaders, image fallbacks, form validation |
+| **Hooks** | Fixed stuck loading/pending states and stale fetch races |
+
+#### Tenant-web (`tenant-web/`)
+
+| Area | Changes |
+|------|---------|
+| **B2B** | Business connection panel, P2P connection request API |
+| **Vendor** | Load-in dashboard, flash-promo API, low-stock alerts, messages |
+| **Admin** | Mix analytics dashboard + API route |
+| **Shopper** | Messages page |
+| **Explore** | Vendor-types API route |
+
+#### Mobile (`mobile/`)
+
+| Area | Changes |
+|------|---------|
+| **Creator** | New creator tab shell (handoffs, listings, settings) |
+| **Vendor** | Post form updates, video post flow, vendor connections lib |
+| **Shopper** | Event detail improvements |
+| **Types** | `database.ts` / `profiles.ts` aligned with Phase 83 vendor types |
+
+#### Scripts, CI & testing
+
+- **32 new `verify-*.ts` scripts** covering phases 4–9, loyalty, financial, logistics, payments, admin, disputes, notifications, catering, content, discovery, health regression
+- Root `npm test` / `npm run test:full-stack` — Phase 4–9 full-stack verification runner
+- `npm run test:e2e:platform` — Jest golden-path E2E (`backend/test/platform.e2e-spec.ts`)
+- `npm run test:all` — health/efficiency regression aggregator
+- `npm run test:phase83:amend` — deferred-features amend verifier
+- CI workflows: Supabase Vite env resolution from GitHub secrets (with placeholder fallback) across 4 workflow files
+- Application security review branch merged (`cursor/application-security-review-afbb`)
+
+#### Docs
+
+- `docs/MAIN_COMPUTER_HANDOFF.md` — stacked PR apply order + SQL checklist through phase83
+- `docs/PHASE83_DEFERRED_FEATURES_AMEND.md` — Phase 83a–83g surface map
+- `docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md` — partition + discovery runbook updates
+
+---
+
+### 2. Dependencies added or removed
+
+#### Added
+
+| Package / script | Workspace | Purpose |
+|------------------|-----------|---------|
+| `recharts` ^2.15.4 | `web` | Vendor analytics + admin mix-analytics charts |
+| `test:e2e:platform` script | `backend` | Platform golden-path Jest E2E |
+| `typecheck` script | `mobile` | `tsc --noEmit` for CI |
+| `test` / `test:full-stack` + 25 phase scripts | root `package.json` | Full-stack and per-phase verification runners |
+
+#### Removed
+
+No production runtime dependencies were removed.
+
+#### Notable non-dependency changes
+
+- Wholesale catalog create path now requires `saleModePreference` (Nest build fix)
+- Post-merge module/schema restore commit (`#238`) — indicates merge-conflict risk on `app.module` and Prisma schema
+
+---
+
+### 3. Performance & structural risk assessment
+
+| Area | Risk level | Notes |
+|------|------------|-------|
+| **Financial clearing + escrow ledger (phase78)** | **High** | New `financial_transactions` / `vendor_balances` tables touch money flows. Verify with `test:financial:clearing` and `test:financial:ui` before enabling production settlement. |
+| **Stripe Connect gateway (phase80)** | **High** | PaymentIntent escrow checkout + onboarding UI. Requires live Stripe keys and `stripe_account_id` columns. Run `test:payments:stripe` + `test:payments:ui`. |
+| **Dispute resolution + escrow freeze (phase81)** | **High** | `FROZEN` status can block payouts. Run `test:admin:disputes` and confirm dispute workflow in staging. |
+| **Fleet logistics escrow loop (phase79)** | **Medium–High** | Delivery routes/stops + farmer balances. Cross-cuts B2B fulfillment. Run `test:logistics:fulfillment` + `test:logistics:ui`. |
+| **Bulk PR merge / post-merge restore (#238)** | **Medium** | `fix: restore app modules and schema after bulk PR merges` signals merge-conflict fragility. Re-run `npm run build:web`, `npm run build:tenant-web`, and `npm run test:full-stack` after any rebase. |
+| **Phase 83 SQL (83a/83b)** | **Medium** | Vendor type constraint + `vendor_connections` graph. Idempotent fix applied for 83b columns. Apply after phase82. |
+| **Notification engine (phase82)** | **Medium** | Email/SMS mocks in dev; production needs provider keys (`RESEND_API_KEY`, etc.). Location-aware alerts add geo-query load. |
+| **Precision Rewards (phase76)** | **Medium** | Ledger-based loyalty ticks/boosts; race conditions possible on concurrent redemptions. Run `test:loyalty:precision`. |
+| **Map / fetch hook fixes** | **Low** | Coordinate sanitization and stale-fetch guards reduce runtime errors; no schema impact. |
+| **UI polish (skeletons, fallbacks)** | **Low** | Visual/UX only; improves perceived performance. |
+| **Monorepo size (+42k lines)** | **Medium** | CI duration and build times will increase. 32 new verify scripts add maintenance surface. |
+
+#### Recommended pre-deploy checklist
+
+1. Apply Supabase phases **66 → 83b** in order (see `docs/MAIN_COMPUTER_HANDOFF.md`)
+2. Set env vars: Stripe Connect keys, `RESEND_API_KEY` (optional), `USDA_API_KEY` (Meet the Makers), notification provider keys
+3. Run: `npm run build:web && npm run build:tenant-web && npm run smoke:ui-baseline`
+4. Run: `npm run test:full-stack` (or individual `test:financial:*`, `test:payments:*`, `test:logistics:*`, `test:admin:*`, `test:notifications:*`)
+5. Run: `npm run test:phase83:amend`
+6. If orders partitioning from prior week not yet applied: run `test:orders:partition-strategy` before phase68 cutover
+7. Redeploy **Vendorly_Marketplace1** (Vercel) from `main`
+
+---
+
+*Generated automatically on 2026-07-27T15:02Z by Cursor Cloud Agent.*
