@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { FallbackImage } from '@/components/ui/FallbackImage';
+import { FieldError } from '@/components/ui/FieldError';
+import { ProductDetailSkeleton } from '@/components/market/ProductDetailSkeleton';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { useAuth } from '@/hooks/use-auth';
 import { useNow } from '@/hooks/use-now';
@@ -64,6 +66,7 @@ export function ShopperProductPage() {
   const [successCode, setSuccessCode] = useState<string | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [openingChat, setOpeningChat] = useState(false);
+  const [quantityError, setQuantityError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -122,6 +125,16 @@ export function ShopperProductPage() {
       return;
     }
 
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      setQuantityError('Quantity must be at least 1.');
+      return;
+    }
+    if (quantity > maxQty) {
+      setQuantityError(`Only ${maxQty} available for this fulfillment option.`);
+      return;
+    }
+
+    setQuantityError(null);
     setSubmitting(true);
     setError(null);
     try {
@@ -171,11 +184,7 @@ export function ShopperProductPage() {
   }
 
   if (loading) {
-    return (
-      <div className="app-loading">
-        <div className="app-spinner" />
-      </div>
-    );
+    return <ProductDetailSkeleton />;
   }
   if (!product) return <div className="app-empty">Product not found.</div>;
 
@@ -383,15 +392,18 @@ export function ShopperProductPage() {
                   <label htmlFor="preorder-qty">QUANTITY</label>
                   <input
                     id="preorder-qty"
-                    className="app-input"
+                    className={`app-input${quantityError ? ' app-input--invalid' : ''}`}
                     type="number"
                     min={1}
                     max={maxQty}
                     value={quantity}
-                    onChange={(e) =>
-                      setQuantity(Math.max(1, Math.min(maxQty, Number(e.target.value) || 1)))
-                    }
+                    aria-invalid={Boolean(quantityError)}
+                    onChange={(e) => {
+                      setQuantity(Math.max(1, Math.min(maxQty, Number(e.target.value) || 1)));
+                      setQuantityError(null);
+                    }}
                   />
+                  <FieldError message={quantityError} />
                 </div>
 
                 <p className="app-row-meta">

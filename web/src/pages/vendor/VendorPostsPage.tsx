@@ -14,6 +14,7 @@ import {
   VendorStatusPill,
   VENDOR_PRESSABLE,
 } from '@/components/vendor/vendor-ui';
+import { VendorListSkeleton } from '@/components/vendor/VendorListSkeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { isApiConfigured } from '@/lib/api';
 import { submitPartnerContributionAction, recordPartnerUiReceived } from '@/lib/content-contributions';
@@ -192,9 +193,7 @@ export function VendorPostsPage() {
       </VendorSection>
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
-        </div>
+        <VendorListSkeleton rows={4} rowHeight={120} />
       ) : filtered.length === 0 ? (
         <VendorEmpty message={section === 'videos' ? 'No videos yet.' : 'No posts yet.'} />
       ) : (
