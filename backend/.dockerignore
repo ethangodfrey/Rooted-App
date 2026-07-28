@@ -1,3 +1,8 @@
+# NOTE: Railway / `docker build -f backend/Dockerfile .` uses the REPO ROOT
+# as context, so the root `.dockerignore` applies — not this file.
+# This file only matters if someone builds with context=`backend/` (unsupported;
+# packages/env-config would be missing). Keep Root Directory empty on Railway.
+
 node_modules
 dist
 .env
