@@ -42,57 +42,62 @@ export function ShopperSavedPage() {
       }
 
       setLoadingDetails(true);
-      const [vendorsRes, chefsRes, productsRes] = await Promise.all([
-        savedVendorIds.length
-          ? supabase.from('vendors').select('id, business_name, category').in('id', savedVendorIds)
-          : Promise.resolve({ data: [] as { id: string; business_name: string | null; category: string | null }[] }),
-        savedChefIds.length
-          ? supabase
-              .from('chefs')
-              .select('id, display_name, home_base_city, home_base_state')
-              .in('id', savedChefIds)
-          : Promise.resolve({ data: [] as { id: string; display_name: string; home_base_city: string | null; home_base_state: string | null }[] }),
-        savedProductIds.length
-          ? supabase.from('products').select('id, name, price').in('id', savedProductIds)
-          : Promise.resolve({ data: [] as { id: string; name: string; price: number }[] }),
-      ]);
+      try {
+        const [vendorsRes, chefsRes, productsRes] = await Promise.all([
+          savedVendorIds.length
+            ? supabase.from('vendors').select('id, business_name, category').in('id', savedVendorIds)
+            : Promise.resolve({ data: [] as { id: string; business_name: string | null; category: string | null }[] }),
+          savedChefIds.length
+            ? supabase
+                .from('chefs')
+                .select('id, display_name, home_base_city, home_base_state')
+                .in('id', savedChefIds)
+            : Promise.resolve({ data: [] as { id: string; display_name: string; home_base_city: string | null; home_base_state: string | null }[] }),
+          savedProductIds.length
+            ? supabase.from('products').select('id, name, price').in('id', savedProductIds)
+            : Promise.resolve({ data: [] as { id: string; name: string; price: number }[] }),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      const next: SavedRow[] = [];
-      for (const v of vendorsRes.data ?? []) {
-        next.push({
-          type: 'vendor',
-          id: v.id,
-          title: v.business_name ?? 'Vendor',
-          meta: v.category,
-          to: vendorPath(v.id),
-          icon: '🏪',
-        });
-      }
-      for (const c of chefsRes.data ?? []) {
-        next.push({
-          type: 'chef',
-          id: c.id,
-          title: c.display_name,
-          meta: [c.home_base_city, c.home_base_state].filter(Boolean).join(', ') || 'Private chef',
-          to: `/shopper/chefs/${c.id}`,
-          icon: '👨‍🍳',
-        });
-      }
-      for (const p of productsRes.data ?? []) {
-        next.push({
-          type: 'product',
-          id: p.id,
-          title: p.name,
-          meta: formatPrice(p.price),
-          to: `/shopper/products/${p.id}`,
-          icon: '🧺',
-        });
-      }
+        const next: SavedRow[] = [];
+        for (const v of vendorsRes.data ?? []) {
+          next.push({
+            type: 'vendor',
+            id: v.id,
+            title: v.business_name ?? 'Vendor',
+            meta: v.category,
+            to: vendorPath(v.id),
+            icon: '🏪',
+          });
+        }
+        for (const c of chefsRes.data ?? []) {
+          next.push({
+            type: 'chef',
+            id: c.id,
+            title: c.display_name,
+            meta: [c.home_base_city, c.home_base_state].filter(Boolean).join(', ') || 'Private chef',
+            to: `/shopper/chefs/${c.id}`,
+            icon: '👨‍🍳',
+          });
+        }
+        for (const p of productsRes.data ?? []) {
+          next.push({
+            type: 'product',
+            id: p.id,
+            title: p.name,
+            meta: formatPrice(p.price),
+            to: `/shopper/products/${p.id}`,
+            icon: '🧺',
+          });
+        }
 
-      setRows(next);
-      setLoadingDetails(false);
+        setRows(next);
+      } catch {
+        if (!cancelled) setRows([]);
+      } finally {
+        if (!cancelled) setLoadingDetails(false);
+      }
     }
     void load();
     return () => {
