@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
+import { FieldError } from '@/components/ui/FieldError';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { IconBadge } from '@/components/vendor/dashboard-icons';
 import {
   VendorEmpty,
@@ -53,6 +55,9 @@ export function VendorEventsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<'title' | 'latitude' | 'longitude' | 'startTime' | 'endTime', string>>
+  >({});
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventType, setEventType] = useState<CommunityEventType>('POP_UP');
@@ -211,21 +216,71 @@ export function VendorEventsPage() {
     setBusyId(null);
   }
 
+  function clearFieldError(field: keyof typeof fieldErrors) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function onPublish(e: FormEvent) {
     e.preventDefault();
     if (!profileId || !canHost) return;
+
+    const nextFieldErrors: Partial<
+      Record<'title' | 'latitude' | 'longitude' | 'startTime' | 'endTime', string>
+    > = {};
+
+    if (!title.trim()) {
+      nextFieldErrors.title = 'Event title is required.';
+    }
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (!latitude.trim() || !Number.isFinite(lat)) {
+      nextFieldErrors.latitude = 'Enter a valid latitude.';
+    }
+    if (!longitude.trim() || !Number.isFinite(lng)) {
+      nextFieldErrors.longitude = 'Enter a valid longitude.';
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (!startTime || Number.isNaN(start.getTime())) {
+      nextFieldErrors.startTime = 'Enter a valid start date and time.';
+    }
+    if (!endTime || Number.isNaN(end.getTime())) {
+      nextFieldErrors.endTime = 'Enter a valid end date and time.';
+    }
+    if (
+      !nextFieldErrors.startTime &&
+      !nextFieldErrors.endTime &&
+      end.getTime() <= start.getTime()
+    ) {
+      nextFieldErrors.endTime = 'End must be after the start.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setFormError(null);
+      return;
+    }
+
+    setFieldErrors({});
     setPublishing(true);
     setFormError(null);
     try {
       await publishCommunityEvent({
         creatorId: profileId,
-        title,
+        title: title.trim(),
         description,
         eventType,
-        latitude: Number(latitude),
-        longitude: Number(longitude),
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
+        latitude: lat,
+        longitude: lng,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
       });
       setTitle('');
       setDescription('');
@@ -290,19 +345,22 @@ export function VendorEventsPage() {
                 CREATE LOCAL EVENT
               </p>
 
-              <label className="block">
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                  Title
-                </span>
+              <div className="app-input-group">
+                <label htmlFor="community-event-title">Title</label>
                 <input
-                  className="app-input w-full"
+                  id="community-event-title"
+                  className={`app-input w-full${fieldErrors.title ? ' app-input--invalid' : ''}`}
                   value={title}
-                  onChange={(ev) => setTitle(ev.target.value)}
-                  required
+                  onChange={(ev) => {
+                    setTitle(ev.target.value);
+                    clearFieldError('title');
+                  }}
+                  aria-invalid={Boolean(fieldErrors.title)}
                   maxLength={120}
                   placeholder="Saturday pop-up market"
                 />
-              </label>
+                <FieldError message={fieldErrors.title} />
+              </div>
 
               <label className="block">
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
@@ -334,33 +392,39 @@ export function VendorEventsPage() {
                 </select>
               </label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                    Latitude
-                  </span>
+              <div className="app-form-grid">
+                <div className="app-input-group">
+                  <label htmlFor="community-event-lat">Latitude</label>
                   <input
-                    className="app-input w-full"
+                    id="community-event-lat"
+                    className={`app-input w-full${fieldErrors.latitude ? ' app-input--invalid' : ''}`}
                     value={latitude}
-                    onChange={(ev) => setLatitude(ev.target.value)}
-                    required
+                    onChange={(ev) => {
+                      setLatitude(ev.target.value);
+                      clearFieldError('latitude');
+                    }}
+                    aria-invalid={Boolean(fieldErrors.latitude)}
                     inputMode="decimal"
                     placeholder="39.7392"
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                    Longitude
-                  </span>
+                  <FieldError message={fieldErrors.latitude} />
+                </div>
+                <div className="app-input-group">
+                  <label htmlFor="community-event-lng">Longitude</label>
                   <input
-                    className="app-input w-full"
+                    id="community-event-lng"
+                    className={`app-input w-full${fieldErrors.longitude ? ' app-input--invalid' : ''}`}
                     value={longitude}
-                    onChange={(ev) => setLongitude(ev.target.value)}
-                    required
+                    onChange={(ev) => {
+                      setLongitude(ev.target.value);
+                      clearFieldError('longitude');
+                    }}
+                    aria-invalid={Boolean(fieldErrors.longitude)}
                     inputMode="decimal"
                     placeholder="-104.9903"
                   />
-                </label>
+                  <FieldError message={fieldErrors.longitude} />
+                </div>
               </div>
 
               <button
@@ -371,31 +435,38 @@ export function VendorEventsPage() {
                 USE MY LOCATION
               </button>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                    Start
-                  </span>
+              <div className="app-form-grid">
+                <div className="app-input-group">
+                  <label htmlFor="community-event-start">Start</label>
                   <input
+                    id="community-event-start"
                     type="datetime-local"
-                    className="app-input w-full"
+                    className={`app-input w-full${fieldErrors.startTime ? ' app-input--invalid' : ''}`}
                     value={startTime}
-                    onChange={(ev) => setStartTime(ev.target.value)}
-                    required
+                    onChange={(ev) => {
+                      setStartTime(ev.target.value);
+                      clearFieldError('startTime');
+                      clearFieldError('endTime');
+                    }}
+                    aria-invalid={Boolean(fieldErrors.startTime)}
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                    End
-                  </span>
+                  <FieldError message={fieldErrors.startTime} />
+                </div>
+                <div className="app-input-group">
+                  <label htmlFor="community-event-end">End</label>
                   <input
+                    id="community-event-end"
                     type="datetime-local"
-                    className="app-input w-full"
+                    className={`app-input w-full${fieldErrors.endTime ? ' app-input--invalid' : ''}`}
                     value={endTime}
-                    onChange={(ev) => setEndTime(ev.target.value)}
-                    required
+                    onChange={(ev) => {
+                      setEndTime(ev.target.value);
+                      clearFieldError('endTime');
+                    }}
+                    aria-invalid={Boolean(fieldErrors.endTime)}
                   />
-                </label>
+                  <FieldError message={fieldErrors.endTime} />
+                </div>
               </div>
 
               {formError ? <p className="app-error m-0">{formError}</p> : null}
@@ -416,8 +487,9 @@ export function VendorEventsPage() {
           ) : null}
 
           {loading ? (
-            <div className="app-loading">
-              <div className="app-spinner" />
+            <div className="flex flex-col gap-3" aria-busy aria-label="Loading events">
+              <SkeletonCard height={72} />
+              <SkeletonCard height={72} />
             </div>
           ) : hosted.length === 0 ? (
             <VendorEmpty message="No hosted community events yet. Publish a local festival, pop-up, or city market." />
@@ -504,8 +576,10 @@ export function VendorEventsPage() {
 
       {vendor ? (
         loading ? (
-          <div className="app-loading">
-            <div className="app-spinner" />
+          <div className="flex flex-col gap-3" aria-busy aria-label="Loading markets">
+            <SkeletonCard height={72} />
+            <SkeletonCard height={72} />
+            <SkeletonCard height={72} />
           </div>
         ) : sortedEvents.length === 0 ? (
           <VendorEmpty message="No public USDA markets available yet." />

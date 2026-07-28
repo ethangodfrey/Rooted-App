@@ -4,6 +4,7 @@ import {
   fetchCollaboration,
   type JointContentItem,
 } from '@/lib/meet-the-makers';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { isApiConfigured } from '@/lib/api';
 import './active-collaboration.css';
 
@@ -93,12 +94,14 @@ export function ActiveCollaborationBadge({
               </p>
             ) : (
               <ul className="active-collab-modal__list">
-                {items.map((item) => (
+                {items.map((item) => {
+                  const mediaSrc = item.cdnMediaUrl || item.mediaUrl;
+                  return (
                   <li key={item.postId} className="active-collab-modal__item">
-                    {(item.cdnMediaUrl || item.mediaUrl) ? (
-                      <img
-                        src={item.cdnMediaUrl || item.mediaUrl || ''}
-                        alt=""
+                    {mediaSrc ? (
+                      <FallbackImage
+                        src={mediaSrc}
+                        variant="product"
                         className="active-collab-modal__media"
                       />
                     ) : null}
@@ -111,7 +114,8 @@ export function ActiveCollaborationBadge({
                       {item.operatingHours ? ` · ${item.operatingHours}` : ''}
                     </p>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </div>

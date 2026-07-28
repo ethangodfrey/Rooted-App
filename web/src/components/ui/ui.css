@@ -191,7 +191,8 @@
 
 .app-screen--map {
   max-width: 1100px;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .profile-avatar-block {

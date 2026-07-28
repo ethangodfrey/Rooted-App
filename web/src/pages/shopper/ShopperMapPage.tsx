@@ -344,7 +344,7 @@ export function ShopperMapPage() {
   }
 
   return (
-    <div className="app-screen app-screen--map app-screen--titled">
+    <div className="app-screen app-screen--map app-screen--titled min-w-0 overflow-x-hidden">
       <p className="app-subtitle">
         Explore markets on the map — or open the{' '}
         <Link to="/explore/feed" className="font-semibold text-orange-400 underline-offset-2 hover:underline">
@@ -354,7 +354,7 @@ export function ShopperMapPage() {
       </p>
 
       <input
-        className="app-search app-search--glass"
+        className="app-search app-search--glass w-full min-w-0"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by ZIP, city, or market name"
