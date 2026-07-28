@@ -1,6 +1,6 @@
 # Railway quick-start for Vendorly backend.
-# Root Directory must be the REPOSITORY ROOT (not backend/) so Dockerfile can
-# COPY packages/env-config for @vendorly/env-config.
+# DOCKERFILE_PATHS_FIXED: Root Directory must be the REPOSITORY ROOT (not backend/)
+# so Dockerfile can COPY packages/env-config for @vendorly/env-config.
 # Custom domain: bind api.vendorlymarketplace.app -> this service (CNAME to *.up.railway.app).
 # Container listens on 0.0.0.0:$PORT (default 4000) for Railway's public proxy.
 # Docs: docs/DEPLOY.md, deploy/ingress.targets.json
@@ -8,7 +8,12 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile"
-watchPatterns = ["backend/**", "packages/env-config/**", "deploy/ingress.targets.json"]
+watchPatterns = [
+  "backend/**",
+  "packages/env-config/**",
+  ".dockerignore",
+  "deploy/ingress.targets.json",
+]
 
 [deploy]
 healthcheckPath = "/api/health"
