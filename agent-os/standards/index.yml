@@ -7,6 +7,9 @@ global:
     description: Priority order, diff rules, verification commands, run summary
   roles:
     description: Customer/vendor/chef/admin roles, route prefixes, auth redirect
+  verification:
+    description: Full-stack test orchestrator, Vitest/Jest, smoke auditors, phase verify scripts
+    path: ../../../docs/VERIFICATION_AND_TESTING.md
 
 web:
   vite-react:

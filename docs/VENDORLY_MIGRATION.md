@@ -89,11 +89,15 @@ docs/supabase/phase64_vendor_peer_connections.sql # vendor_peer_connections PEND
 docs/supabase/phase65_wholesale_retail_pricing.sql # wholesale_products is_retail_enabled + retail_price
 docs/supabase/phase68a_orders_partitioning_strategy.sql # orders/order_items monthly RANGE strategy registry (no data move)
 docs/supabase/phase68b_orders_partition_migration_safe.sql # preferred orders partition cutover (resumes partial runs)
+docs/supabase/phase83a_home_private_chef_vendor_types.sql # home_kitchen/private_chef/micro_brand vendor_type + persona columns
+docs/supabase/phase83b_vendor_connections.sql # V2V vendor_connections + products.visibility RLS
 ```
 
 **Post-phase41 production rollout:** see [`docs/POST_PHASE41_RELEASE_RUNBOOK.md`](POST_PHASE41_RELEASE_RUNBOOK.md) (commit `e0ae644`).
 
 **Wholesale discovery + orders partitioning:** see [`docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`](WHOLESALE_DISCOVERY_AND_PARTITIONING.md) for Elasticsearch ranking, partition indexer cron, logistics shipping-options API, and phase68 cutover troubleshooting.
+
+**Phase 83 deferred features:** see [`docs/PHASE83_DEFERRED_FEATURES_AMEND.md`](PHASE83_DEFERRED_FEATURES_AMEND.md) for V2V connections, flash promo, mix analytics, load-in, messaging UI, and creator shell. Verify with `npm run test:phase83:amend`.
 
 Optional (any time after `phase1_auth.sql`):
 
@@ -187,6 +191,18 @@ optional-column mapping, and rebuilds partition-pruning indexes. Prefer
 `phase68b_orders_partition_migration_safe.sql` (idempotent / resumable). See
 [`docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`](WHOLESALE_DISCOVERY_AND_PARTITIONING.md)
 for maintenance (`maintain_orders_partitions`) and troubleshooting.
+
+`phase83a` expands **vendor personas** (`home_kitchen`, `private_chef`,
+`micro_brand`) with cottage-food disclosure, private-chef service rates, and
+micro-brand shipping fields; adds `products.has_variants` / `variants` jsonb.
+API classification tokens (`HOME`, `PRIVATE_CHEF`, `MICRO_BRAND`) map to DB
+snake_case via `vendor-classification.ts`.
+
+`phase83b` adds **profile-level V2V connections** (`vendor_connections` with
+`pending`/`connected`/`ignored` + bidirectional follow flags) and
+`products.visibility` (`public` | `connected_vendors` | `private`). Distinct
+from wholesale `vendor_peer_connections` (phase64). Nest exposes
+`/api/v2v/connections`; see [`docs/PHASE83_DEFERRED_FEATURES_AMEND.md`](PHASE83_DEFERRED_FEATURES_AMEND.md).
 
 See also `docs/VENDORLY_ENHANCED_PLAN.md` for enhanced-plan gap tracker.
 

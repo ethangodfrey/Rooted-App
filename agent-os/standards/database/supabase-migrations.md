@@ -61,6 +61,8 @@ docs/supabase/phase64_vendor_peer_connections.sql # vendor_peer_connections whol
 docs/supabase/phase65_wholesale_retail_pricing.sql # is_retail_enabled + retail_price on wholesale_products
 docs/supabase/phase68a_orders_partitioning_strategy.sql # orders monthly RANGE strategy registry
 docs/supabase/phase68b_orders_partition_migration_safe.sql # preferred orders partition cutover
+docs/supabase/phase83a_home_private_chef_vendor_types.sql # home_kitchen/private_chef/micro_brand personas
+docs/supabase/phase83b_vendor_connections.sql # V2V vendor_connections + products.visibility
 docs/supabase/farmers_markets_directory.sql
 ```
 
@@ -94,6 +96,7 @@ Phase54–63 cover the B2B wholesale marketplace (catalog, orders, fulfillment, 
 Phase64 adds `vendor_peer_connections` (wholesale peer edges; distinct from profile `vendor_connections`).
 Phase65 adds retail sale fields on `wholesale_products`.
 Phase68a registers monthly RANGE partitioning strategy for `orders` / `order_items`; phase68b performs cutover. Ops runbook: `docs/WHOLESALE_DISCOVERY_AND_PARTITIONING.md`.
+Phase83a expands `vendors.vendor_type` (home_kitchen, private_chef, micro_brand) and persona columns; phase83b adds profile-level `vendor_connections` + `products.visibility`. Distinct from phase64 `vendor_peer_connections`. Runbook: `docs/PHASE83_DEFERRED_FEATURES_AMEND.md`.
 `farmers_markets_directory.sql` adds `public.farmers_markets` (PostGIS directory + GiST) for seedable national directory rows; complements `national_farmers_markets`. Seed with `npm run markets:seed-directory`.
 
 ## Key RPCs

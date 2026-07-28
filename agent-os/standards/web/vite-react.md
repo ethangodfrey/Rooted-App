@@ -32,3 +32,15 @@ Use `web/src/lib/api.ts` — attaches Supabase Bearer token, reads `getApiBaseUr
 ## Deploy
 
 Vercel builds from repo root via `vercel.json` (`npm run build --prefix web`). Env vars require redeploy after changes.
+
+## Unit tests (Vitest)
+
+```bash
+npm run test:web          # from repo root
+cd web && npm test        # vitest run
+cd web && npm run test:watch
+```
+
+Specs: `web/src/lib/*.spec.ts` — pure utilities only (geo, events, settlement, market-links). Add tests for deterministic helpers; no Supabase/DOM.
+
+See [`docs/VERIFICATION_AND_TESTING.md`](../../../docs/VERIFICATION_AND_TESTING.md).
