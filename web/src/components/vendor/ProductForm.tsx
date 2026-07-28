@@ -16,6 +16,9 @@ export interface ProductFormValues {
   reserve_limit_per_shopper: number | null;
   media_urls: string[];
   is_snap_eligible: boolean;
+  is_wholesale_eligible: boolean;
+  moq_quantity: number | null;
+  wholesale_price_cents: number | null;
 }
 
 interface ProductFormProps {
@@ -25,7 +28,7 @@ interface ProductFormProps {
   loading?: boolean;
 }
 
-type ProductField = 'name' | 'price' | 'limitTotal' | 'limitPerShopper';
+type ProductField = 'name' | 'price' | 'limitTotal' | 'limitPerShopper' | 'moq' | 'wholesalePrice';
 
 function parseOptionalLimit(text: string): number | null | 'invalid' {
   const trimmed = text.trim();
@@ -53,6 +56,17 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
   );
   const [mediaUrls, setMediaUrls] = useState<string[]>(initial?.media_urls ?? []);
   const [snapEligible, setSnapEligible] = useState(initial?.is_snap_eligible ?? false);
+  const [wholesaleEligible, setWholesaleEligible] = useState(
+    initial?.is_wholesale_eligible ?? false,
+  );
+  const [moqText, setMoqText] = useState(
+    initial?.moq_quantity != null ? String(initial.moq_quantity) : '1',
+  );
+  const [wholesalePriceText, setWholesalePriceText] = useState(
+    initial?.wholesale_price_cents != null
+      ? (initial.wholesale_price_cents / 100).toFixed(2)
+      : '',
+  );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProductField, string>>>({});
@@ -132,6 +146,30 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       return;
     }
 
+    let moqValue: number | null = null;
+    let wholesaleCents: number | null = null;
+    if (wholesaleEligible) {
+      const moqParsed = Number.parseInt(moqText.trim(), 10);
+      if (!Number.isInteger(moqParsed) || moqParsed < 1) {
+        nextFieldErrors.moq = 'MOQ must be a whole number of 1 or more.';
+      } else {
+        moqValue = moqParsed;
+      }
+
+      const wholesaleParsed = Number.parseFloat(wholesalePriceText.trim());
+      if (!Number.isFinite(wholesaleParsed) || wholesaleParsed < 0) {
+        nextFieldErrors.wholesalePrice = 'Enter a valid wholesale unit price.';
+      } else {
+        wholesaleCents = Math.round(wholesaleParsed * 100);
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(null);
+      return;
+    }
+
     const priceValue = Number.parseFloat(priceText.trim());
     setFieldErrors({});
     setError(null);
@@ -145,6 +183,9 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
       reserve_limit_per_shopper: limitPerShopperValue,
       media_urls: mediaUrls,
       is_snap_eligible: snapEligible,
+      is_wholesale_eligible: wholesaleEligible,
+      moq_quantity: wholesaleEligible ? moqValue : null,
+      wholesale_price_cents: wholesaleEligible ? wholesaleCents : null,
     });
   }
 
@@ -248,6 +289,64 @@ export function ProductForm({ initial, submitLabel, onSubmit, loading = false }:
           onChange={(e) => setSnapEligible(e.target.checked)}
         />
       </label>
+
+      <label
+        className="mb-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-zinc-700 bg-zinc-950/40 px-4 py-3"
+      >
+        <span>
+          <span className="block text-sm font-bold text-zinc-100">Wholesale / bulk available</span>
+          <span className="mt-0.5 block text-xs font-medium text-zinc-400">
+            List this SKU for Private Chefs and verified vendors with MOQ and bulk pricing.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          role="switch"
+          aria-checked={wholesaleEligible}
+          className="h-5 w-5"
+          checked={wholesaleEligible}
+          onChange={(e) => setWholesaleEligible(e.target.checked)}
+        />
+      </label>
+
+      {wholesaleEligible ? (
+        <>
+          <div className="app-input-group">
+            <label htmlFor="product-moq">Minimum order quantity (MOQ)</label>
+            <input
+              id="product-moq"
+              className={`app-input${fieldErrors.moq ? ' app-input--invalid' : ''}`}
+              type="number"
+              min="1"
+              step="1"
+              value={moqText}
+              aria-invalid={Boolean(fieldErrors.moq)}
+              onChange={(e) => {
+                setMoqText(e.target.value);
+                clearFieldError('moq');
+              }}
+            />
+            <FieldError message={fieldErrors.moq} />
+          </div>
+          <div className="app-input-group">
+            <label htmlFor="product-wholesale-price">Wholesale unit price (USD)</label>
+            <input
+              id="product-wholesale-price"
+              className={`app-input${fieldErrors.wholesalePrice ? ' app-input--invalid' : ''}`}
+              type="number"
+              step="0.01"
+              min="0"
+              value={wholesalePriceText}
+              aria-invalid={Boolean(fieldErrors.wholesalePrice)}
+              onChange={(e) => {
+                setWholesalePriceText(e.target.value);
+                clearFieldError('wholesalePrice');
+              }}
+            />
+            <FieldError message={fieldErrors.wholesalePrice} />
+          </div>
+        </>
+      ) : null}
 
       {reserveEnabled ? (
         <>

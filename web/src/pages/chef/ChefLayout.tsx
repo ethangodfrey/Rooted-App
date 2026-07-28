@@ -8,6 +8,7 @@ import { isChefProfileComplete } from '@/lib/chef-profile';
 
 const CHEF_TABS = [
   { to: '/chef/dashboard', label: 'Home', icon: 'dashboard' as const },
+  { to: '/chef/procurement', label: 'Procurement', icon: 'products' as const },
   { to: '/chef/services', label: 'Services', icon: 'services' as const },
   { to: '/chef/bookings', label: 'Bookings', icon: 'bookings' as const },
   { to: '/chef/portfolio', label: 'Portfolio', icon: 'portfolio' as const },

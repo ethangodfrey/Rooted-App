@@ -26,6 +26,7 @@ import { ChefCredentialsPage } from '@/pages/chef/ChefCredentialsPage';
 import { ChefDashboardPage } from '@/pages/chef/ChefDashboardPage';
 import { ChefLayout } from '@/pages/chef/ChefLayout';
 import { ChefPortfolioPage } from '@/pages/chef/ChefPortfolioPage';
+import { ChefProcurementPage } from '@/pages/chef/ChefProcurementPage';
 import { ChefProfilePage } from '@/pages/chef/ChefProfilePage';
 import { ChefServiceFormPage } from '@/pages/chef/ChefServiceFormPage';
 import { ChefServicesPage } from '@/pages/chef/ChefServicesPage';
@@ -242,6 +243,7 @@ export default function App() {
           />
           <Route path="network" element={<VendorNetworkPage />} />
           <Route path="procurement" element={<VendorProcurementPage />} />
+          <Route path="wholesale" element={<ChefProcurementPage />} />
           <Route path="analytics" element={<VendorAnalyticsPage />} />
           <Route path="analytics/integrations" element={<VendorAnalyticsIntegrationsPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
@@ -287,6 +289,7 @@ export default function App() {
         <Route path="/chef" element={<ChefLayout />}>
           <Route path="setup" element={<ChefSetupPage />} />
           <Route path="dashboard" element={<ChefDashboardPage />} />
+          <Route path="procurement" element={<ChefProcurementPage />} />
           <Route path="services" element={<ChefServicesPage />} />
           <Route path="bookings" element={<ChefBookingsPage />} />
           <Route path="portfolio" element={<ChefPortfolioPage />} />

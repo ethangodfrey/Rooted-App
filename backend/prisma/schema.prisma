@@ -227,6 +227,7 @@ model Vendor {
   wholesaleOrdersAsBuyer      WholesaleOrder[]           @relation("WholesaleOrderBuyer")
   wholesaleOrdersAsSeller     WholesaleOrder[]           @relation("WholesaleOrderSeller")
   procurementRequests         B2bProcurementRequest[]
+  chefProcurementSales        ChefProcurementOrder[]     @relation("ChefProcurementSeller")
 
   @@index([userId])
   @@index([vendorType])
@@ -734,13 +735,75 @@ model Product {
   /// Phase 49 — SNAP/EBT eligible SKU
   isSnapEligible Boolean @default(false) @map("is_snap_eligible")
 
+  /// Phase 84 — B2B wholesale eligibility for verified vendors/farmers.
+  isWholesaleEligible  Boolean @default(false) @map("is_wholesale_eligible")
+  /// Minimum order quantity required for bulk (wholesale) pricing.
+  moqQuantity          Int?    @map("moq_quantity")
+  /// Discounted unit price in cents for commercial buyers (chefs / vendors).
+  wholesalePriceCents  Int?    @map("wholesale_price_cents")
+
   availability       ProductEventAvailability[]
   orderItems         OrderItem[]
   posProductMappings PosProductMapping[]
   posLineItems       PosImportedLineItem[]
   inventoryTransactions InventoryTransaction[]
+  chefProcurementItems  ChefProcurementOrderItem[]
 
+  @@index([isWholesaleEligible])
   @@map("products")
+}
+
+/// Phase 84 — Private chef / vendor bulk procurement order (escrow-settled).
+enum ChefProcurementOrderStatus {
+  AWAITING_PAYMENT
+  HELD_IN_ESCROW
+  READY_FOR_PICKUP
+  SETTLED
+  CANCELLED
+
+  @@map("chef_procurement_order_status")
+}
+
+model ChefProcurementOrder {
+  id                     String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerUserId            String                     @map("buyer_user_id") @db.Uuid
+  /// chef | vendor
+  buyerRole              String                     @map("buyer_role")
+  buyerVendorId          String?                    @map("buyer_vendor_id") @db.Uuid
+  sellerVendorId         String                     @map("seller_vendor_id") @db.Uuid
+  sellerVendor           Vendor                     @relation("ChefProcurementSeller", fields: [sellerVendorId], references: [id], onDelete: Restrict)
+  status                 ChefProcurementOrderStatus @default(AWAITING_PAYMENT)
+  subtotalCents          Int                        @map("subtotal_cents")
+  pickupCode             String                     @map("pickup_code")
+  escrowTransactionId    String?                    @map("escrow_transaction_id") @db.Uuid
+  stripeCheckoutSessionId String?                   @map("stripe_checkout_session_id")
+  paidAt                 DateTime?                  @map("paid_at") @db.Timestamptz(6)
+  settledAt              DateTime?                  @map("settled_at") @db.Timestamptz(6)
+  createdAt              DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items                  ChefProcurementOrderItem[]
+
+  @@index([buyerUserId, status])
+  @@index([sellerVendorId, status])
+  @@index([pickupCode])
+  @@map("chef_procurement_orders")
+}
+
+model ChefProcurementOrderItem {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String               @map("order_id") @db.Uuid
+  order            ChefProcurementOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String               @map("product_id") @db.Uuid
+  product          Product              @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName      String               @map("product_name")
+  quantity         Int
+  moqQuantity      Int                  @map("moq_quantity")
+  unitPriceCents   Int                  @map("unit_price_cents")
+  lineTotalCents   Int                  @map("line_total_cents")
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("chef_procurement_order_items")
 }
 
 model Event {

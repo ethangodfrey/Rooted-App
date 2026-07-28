@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { FinancialModule } from '../financial/financial.module';
 import { ElasticsearchModule } from '../search/elasticsearch.module';
 import { UsWholesaleProximityMiddleware } from '../search/us-wholesale-proximity.middleware';
 import { StripeModule } from '../stripe/stripe.module';
@@ -13,6 +14,8 @@ import { B2bMarketplaceController } from './b2b-marketplace.controller';
 import { B2bMarketplaceService } from './b2b-marketplace.service';
 import { CatalogBulkImportController } from './catalog-bulk-import.controller';
 import { CatalogBulkImportService } from './catalog-bulk-import.service';
+import { ChefProcurementController } from './chef-procurement.controller';
+import { ChefProcurementService } from './chef-procurement.service';
 import { VendorConnectionsController } from './vendor-connections.controller';
 import { VendorConnectionsService } from './vendor-connections.service';
 import { VendorPeerRequestsController } from './vendor-peer-requests.controller';
@@ -27,7 +30,7 @@ import { WholesaleProductsService } from './wholesale-products.service';
 import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middleware';
 
 @Module({
-  imports: [PrismaModule, StripeModule, ElasticsearchModule],
+  imports: [PrismaModule, StripeModule, FinancialModule, ElasticsearchModule],
   controllers: [
     VendorConnectionsController,
     VendorPeerRequestsController,
@@ -36,6 +39,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleInvoicesController,
     B2bMarketplaceController,
     CatalogBulkImportController,
+    ChefProcurementController,
   ],
   providers: [
     VendorConnectionsService,
@@ -48,6 +52,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleRelationshipMiddleware,
     B2bMarketplaceService,
     CatalogBulkImportService,
+    ChefProcurementService,
   ],
   exports: [
     VendorConnectionsService,
@@ -57,6 +62,7 @@ import { WholesaleRelationshipMiddleware } from './wholesale-relationship.middle
     WholesaleInvoiceOverdueService,
     B2bMarketplaceService,
     CatalogBulkImportService,
+    ChefProcurementService,
   ],
 })
 export class B2bModule implements NestModule {

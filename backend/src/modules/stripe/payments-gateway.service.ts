@@ -87,7 +87,9 @@ export class PaymentsGatewayService implements OnModuleInit {
               name:
                 resolved.referenceType === 'CATERING'
                   ? 'Catering deposit'
-                  : 'Wholesale procurement payment',
+                  : resolved.referenceType === 'CHEF_PROCUREMENT'
+                    ? 'Wholesale chef procurement (escrow)'
+                    : 'Wholesale procurement payment',
               description: `Reference ${resolved.referenceId}`,
             },
           },
@@ -222,7 +224,7 @@ export class PaymentsGatewayService implements OnModuleInit {
 
   private async resolveReference(referenceId: string): Promise<{
     referenceId: string;
-    referenceType: 'CATERING' | 'B2B_PROCUREMENT';
+    referenceType: 'CATERING' | 'B2B_PROCUREMENT' | 'CHEF_PROCUREMENT';
     stripeAccountId: string | null;
   }> {
     const inquiry = await this.prisma.$queryRaw<
@@ -256,6 +258,23 @@ export class PaymentsGatewayService implements OnModuleInit {
         referenceId: procurement[0].id,
         referenceType: 'B2B_PROCUREMENT',
         stripeAccountId: procurement[0].stripe_account_id,
+      };
+    }
+
+    const chefOrder = await this.prisma.$queryRaw<
+      Array<{ id: string; stripe_account_id: string | null }>
+    >(Prisma.sql`
+      SELECT o.id, v.stripe_account_id
+      FROM public.chef_procurement_orders o
+      JOIN public.vendors v ON v.id = o.seller_vendor_id
+      WHERE o.id = ${referenceId}::uuid
+      LIMIT 1
+    `);
+    if (chefOrder[0]) {
+      return {
+        referenceId: chefOrder[0].id,
+        referenceType: 'CHEF_PROCUREMENT',
+        stripeAccountId: chefOrder[0].stripe_account_id,
       };
     }
 

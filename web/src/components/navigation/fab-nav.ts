@@ -86,7 +86,12 @@ const VENDOR_FAB_PAGES: AppTab[] = [
     to: '/vendor/network',
     label: 'Network',
     icon: 'explore',
-    matchPaths: ['/vendor/procurement'],
+    matchPaths: ['/vendor/procurement', '/vendor/wholesale'],
+  },
+  {
+    to: '/vendor/wholesale',
+    label: 'Wholesale',
+    icon: 'products',
   },
   {
     to: '/vendor/inbox',
@@ -176,6 +181,7 @@ const CREATOR_FAB_PAGES: AppTab[] = [
 
 const CHEF_FAB_PAGES: AppTab[] = [
   { to: '/chef/dashboard', label: 'Home', icon: 'dashboard' },
+  { to: '/chef/procurement', label: 'Procurement', icon: 'products' },
   { to: '/chef/services', label: 'Services', icon: 'services' },
   { to: '/chef/bookings', label: 'Bookings', icon: 'bookings' },
   { to: '/chef/portfolio', label: 'Portfolio', icon: 'portfolio' },
