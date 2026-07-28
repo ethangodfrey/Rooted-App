@@ -1,35 +1,46 @@
 import type { ConfigService } from '@nestjs/config';
 
+import {
+  collectMissingEnvKeys,
+  isStrictEnvValidation,
+  validateEnv,
+} from '../../config/env';
+
 export interface ProductionEnvAudit {
   ok: boolean;
   missing: string[];
   warnings: string[];
 }
 
-const REQUIRED_IN_PRODUCTION = [
-  'DATABASE_URL',
-  'PUBLIC_BASE_URL',
-  'WEB_APP_URL',
-  'SUPABASE_URL',
-] as const;
-
 const RECOMMENDED_IN_PRODUCTION = [
   'CORS_ORIGINS',
-  'STRIPE_SECRET_KEY',
-  'STRIPE_WEBHOOK_SECRET',
+  'PUBLIC_BASE_URL',
+  'WEB_APP_URL',
   'POS_CREDENTIAL_KEY',
 ] as const;
 
-/** Audits production-only env without mutating development defaults. */
+/**
+ * Audits production-only env without mutating development defaults.
+ * Prefer `validateEnv()` from `src/config/env.ts` at bootstrap for fail-fast.
+ */
 export function auditProductionEnv(config: ConfigService): ProductionEnvAudit {
-  const missing: string[] = [];
-  const warnings: string[] = [];
+  const bag: Record<string, string | undefined> = {
+    NODE_ENV: config.get<string>('NODE_ENV'),
+    DATABASE_URL: config.get<string>('DATABASE_URL'),
+    SUPABASE_URL: config.get<string>('SUPABASE_URL'),
+    SUPABASE_ANON_KEY: config.get<string>('SUPABASE_ANON_KEY'),
+    SUPABASE_SERVICE_ROLE_KEY: config.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
+    STRIPE_SECRET_KEY: config.get<string>('STRIPE_SECRET_KEY'),
+    STRIPE_WEBHOOK_SECRET: config.get<string>('STRIPE_WEBHOOK_SECRET'),
+    TWILIO_ACCOUNT_SID: config.get<string>('TWILIO_ACCOUNT_SID'),
+    TWILIO_AUTH_TOKEN: config.get<string>('TWILIO_AUTH_TOKEN'),
+    SENDGRID_API_KEY: config.get<string>('SENDGRID_API_KEY'),
+    MUX_TOKEN_ID: config.get<string>('MUX_TOKEN_ID'),
+    MUX_TOKEN_SECRET: config.get<string>('MUX_TOKEN_SECRET'),
+  };
 
-  for (const key of REQUIRED_IN_PRODUCTION) {
-    if (!config.get<string>(key, '').trim()) {
-      missing.push(key);
-    }
-  }
+  const missing = isStrictEnvValidation(bag) ? collectMissingEnvKeys(bag) : [];
+  const warnings: string[] = [];
 
   for (const key of RECOMMENDED_IN_PRODUCTION) {
     if (!config.get<string>(key, '').trim()) {
@@ -50,21 +61,31 @@ export function auditProductionEnv(config: ConfigService): ProductionEnvAudit {
   return { ok: missing.length === 0, missing, warnings };
 }
 
+/** @deprecated Prefer validateEnv() from src/config/env.ts */
 export function assertProductionEnv(config: ConfigService): void {
   const nodeEnv = config.get<string>('NODE_ENV', 'development');
   if (nodeEnv !== 'production') return;
 
-  const audit = auditProductionEnv(config);
-  if (!audit.ok) {
-    throw new Error(
-      `Production startup blocked — missing required env: ${audit.missing.join(', ')}`,
-    );
-  }
+  // Delegate to Zod fail-fast schema (MISSING_ENV_VARIABLE / ENV_VALIDATION_PASSED).
+  const bag: Record<string, string | undefined> = {
+    NODE_ENV: nodeEnv,
+    DATABASE_URL: config.get<string>('DATABASE_URL'),
+    SUPABASE_URL: config.get<string>('SUPABASE_URL'),
+    SUPABASE_ANON_KEY: config.get<string>('SUPABASE_ANON_KEY'),
+    SUPABASE_SERVICE_ROLE_KEY: config.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
+    STRIPE_SECRET_KEY: config.get<string>('STRIPE_SECRET_KEY'),
+    STRIPE_WEBHOOK_SECRET: config.get<string>('STRIPE_WEBHOOK_SECRET'),
+    TWILIO_ACCOUNT_SID: config.get<string>('TWILIO_ACCOUNT_SID'),
+    TWILIO_AUTH_TOKEN: config.get<string>('TWILIO_AUTH_TOKEN'),
+    SENDGRID_API_KEY: config.get<string>('SENDGRID_API_KEY'),
+    MUX_TOKEN_ID: config.get<string>('MUX_TOKEN_ID'),
+    MUX_TOKEN_SECRET: config.get<string>('MUX_TOKEN_SECRET'),
+  };
+  validateEnv(bag);
 
+  const audit = auditProductionEnv(config);
   if (audit.warnings.length > 0) {
     // eslint-disable-next-line no-console
-    console.warn(
-      `[production-env] warnings: ${audit.warnings.join(', ')}`,
-    );
+    console.warn(`[production-env] warnings: ${audit.warnings.join(', ')}`);
   }
 }

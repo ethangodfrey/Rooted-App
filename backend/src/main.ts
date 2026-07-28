@@ -6,16 +6,17 @@ import { NestFactory } from '@nestjs/core';
 import { json, raw } from 'express';
 
 import { AppModule } from './app.module';
-import { assertProductionEnv } from './common/config/validate-production-env';
+import { validateEnv } from './config/env';
 import { isCorsOriginAllowed } from './common/cors/origin-policy';
 import { getLanIpv4Addresses } from './common/network.util';
 import { posOAuthRedirectUri } from './modules/pos/pos-public-url';
 
 async function bootstrap() {
+  // Fail-fast before Nest boots when NODE_ENV=production (or STRICT_ENV_VALIDATION=1).
+  validateEnv(process.env);
+
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
-
-  assertProductionEnv(config);
 
   const isDev = config.get<string>('NODE_ENV', 'development') !== 'production';
 
