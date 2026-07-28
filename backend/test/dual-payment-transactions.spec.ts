@@ -292,6 +292,90 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
       expect(compensateStripeCheckout).not.toHaveBeenCalled();
       expect(fake.orders[0].payment_status).toBe('stripe_pending');
     });
+
+    it('updates wholesale invoice status on payment_intent.payment_failed payloads', async () => {
+      const wholesaleInvoiceUpdateMany = jest.fn(async () => ({ count: 1 }));
+      const prisma = {
+        $executeRaw: jest.fn(),
+        $queryRaw: jest.fn(async () => []),
+        $transaction: jest.fn(),
+        vendor: {},
+        wholesaleInvoice: { updateMany: wholesaleInvoiceUpdateMany },
+      } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_wholesale_failed',
+        type: 'payment_intent.payment_failed',
+        data: {
+          object: {
+            id: 'pi_wholesale_failed',
+            status: 'requires_payment_method',
+            metadata: {
+              purpose: 'wholesale_net30',
+              wholesale_invoice_id: 'inv-123',
+            },
+          },
+        },
+      } as never);
+
+      expect(wholesaleInvoiceUpdateMany).toHaveBeenCalledWith({
+        where: { id: 'inv-123' },
+        data: { stripePaymentStatus: 'requires_payment_method' },
+      });
+    });
+
+    it('ignores payment_intent.payment_failed without wholesale metadata', async () => {
+      const wholesaleInvoiceUpdateMany = jest.fn();
+      const prisma = {
+        $executeRaw: jest.fn(),
+        $queryRaw: jest.fn(async () => []),
+        $transaction: jest.fn(),
+        vendor: {},
+        wholesaleInvoice: { updateMany: wholesaleInvoiceUpdateMany },
+      } as never;
+      const stripe = new StripeService(
+        {
+          get: (key: string, def?: string) =>
+            ({
+              STRIPE_SECRET_KEY: 'sk_test',
+              STRIPE_WEBHOOK_SECRET: 'whsec_test',
+            })[key] ?? def,
+        } as ConfigService,
+        prisma,
+        {
+          finalizePaidOrder: jest.fn(),
+          compensateStripeCheckout: jest.fn(),
+        } as never,
+      );
+
+      await stripe.handleWebhookEvent({
+        id: 'evt_consumer_failed',
+        type: 'payment_intent.payment_failed',
+        data: {
+          object: {
+            id: 'pi_consumer_failed',
+            status: 'requires_payment_method',
+            metadata: { order_id: 'order-1' },
+          },
+        },
+      } as never);
+
+      expect(wholesaleInvoiceUpdateMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('Square POS payloads drive imported transaction state', () => {
@@ -449,6 +533,31 @@ describe('Dual payment transaction parsing (Stripe + Square)', () => {
 
       expect(txn.grossAmount).toBe(0);
       expect(txn.netAmount).toBe(0);
+    });
+
+    it('maps in-progress Square OPEN orders to COMPLETED for import auditing', async () => {
+      const fake = createFakePrisma();
+      const importer = new PosImportService(
+        fake.prisma,
+        new PosMappingService(fake.prisma),
+        new PosAnalyticsService(fake.prisma),
+      );
+
+      const openOrder = normalizeSquareOrder(adapter, {
+        id: 'sq-open-1',
+        state: 'OPEN',
+        total_money: { amount: 500, currency: 'USD' },
+        line_items: [{ uid: 'li-1', name: 'Apples', quantity: '1', gross_sales_money: { amount: 500 } }],
+      });
+
+      const result = await importer.importTransactions(connection(), SYNC_RUN_ID, [openOrder]);
+
+      expect(result.imported).toBe(1);
+      expect(fake.store.transactions[0]).toMatchObject({
+        providerTransactionId: 'sq-open-1',
+        state: 'COMPLETED',
+        grossAmount: 500,
+      });
     });
   });
 

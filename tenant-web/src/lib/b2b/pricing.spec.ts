@@ -1,6 +1,9 @@
+import { describe, expect, it } from 'vitest';
+
 import {
   buildPricingTierBands,
   evaluateWholesalePricing,
+  normalizePricingTiers,
   resolveUnitPriceCents,
 } from './pricing';
 
@@ -55,5 +58,16 @@ describe('wholesale tiered pricing calculator', () => {
     expect(evaled.moqGuardActive).toBe(false);
     expect(evaled.tierLabel).toBe('TIER_100');
     expect(evaled.lineTotalCents).toBe(2000 * 100);
+  });
+
+  it('normalizes invalid or empty tier payloads to an empty list', () => {
+    expect(normalizePricingTiers(undefined)).toEqual([]);
+    expect(normalizePricingTiers(null)).toEqual([]);
+    expect(normalizePricingTiers('not-an-array')).toEqual([]);
+    expect(normalizePricingTiers([{ minQty: 0, unitPriceCents: 100 }])).toEqual([]);
+    expect(normalizePricingTiers([{ minQty: 50, unitPriceCents: -1 }])).toEqual([]);
+    expect(normalizePricingTiers([{ min_qty: 50, unit_price_cents: 2200 }])).toEqual([
+      { minQty: 50, unitPriceCents: 2200 },
+    ]);
   });
 });
