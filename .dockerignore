@@ -1,0 +1,33 @@
+# Repository-root Docker context for backend/Dockerfile.
+# DO NOT ignore packages/env-config — Nest depends on @vendorly/env-config (file:).
+# Railway Root Directory must be the REPO ROOT (not backend/).
+
+.git
+.github
+.cursor
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/*.log
+**/boot.*
+
+# Not required for Nest image (keeps context small)
+web
+mobile
+tenant-web
+docs
+scripts
+agent-os
+data
+supabase
+public
+
+# Backend local noise (Dockerfile copies sources selectively)
+backend/node_modules
+backend/dist
+backend/coverage
+backend/test
+backend/**/*.spec.ts
+backend/docker-compose.yml

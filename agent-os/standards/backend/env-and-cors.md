@@ -25,7 +25,7 @@
 
 ## Deploy
 
-- **Railway:** Root Directory = `backend`, Dockerfile deploy, health check `/health/live`
+- **Railway:** Root Directory = repo root (empty), `dockerfilePath=backend/Dockerfile`, health check `/api/health` (also `/health/live`)
 - **Not Vercel** — long-running process with queues and cron
 
 See `docs/DEPLOY.md` for full checklist.
