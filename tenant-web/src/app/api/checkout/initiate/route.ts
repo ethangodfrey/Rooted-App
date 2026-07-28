@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { enqueueOnlineSaleDeductions } from '@/lib/checkout/enqueue-sale-deduct';
 import { supabaseRpc, verifySupabaseAccessToken } from '@/lib/checkout/supabase-client';
+import { resolveApiBaseUrl } from '@/lib/tenant/resolve-host';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -82,12 +83,12 @@ async function createStripeCheckoutSession(
   successUrl?: string | null,
   cancelUrl?: string | null,
 ): Promise<{ url: string | null; error: string | null }> {
-  const apiBase = process.env.VITE_API_URL?.trim() || process.env.PUBLIC_BASE_URL?.trim();
+  const apiBase = resolveApiBaseUrl();
   if (!apiBase) {
     return { url: null, error: 'Backend API URL not configured for Stripe checkout' };
   }
 
-  const res = await fetch(`${apiBase.replace(/\/$/, '')}/stripe/checkout/session`, {
+  const res = await fetch(`${apiBase}/stripe/checkout/session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

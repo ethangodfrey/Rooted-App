@@ -169,9 +169,134 @@ export function resolvePlatformDomain(): string {
     .toLowerCase();
 }
 
-export function resolveApiBaseUrl(): string {
-  const base = (process.env.TENANT_API_URL ?? 'http://localhost:4000').trim();
-  return base.replace(/\/$/, '');
+/**
+ * Live Railway Nest API. Used when env is missing or points at loopback /
+ * unresolved custom API DNS on Vercel edge / server runtimes.
+ */
+export const RAILWAY_PUBLIC_API_URL =
+  'https://rooted-app-production-43fb.up.railway.app';
+
+const DEV_LOOPBACK_API_URL = 'http://localhost:4000';
+
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/$/, '');
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
+function isLoopbackApiUrl(url: string): boolean {
+  try {
+    return isLoopbackHostname(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** True on Vercel (prod/preview) or NODE_ENV=production — never fetch loopback. */
+export function isDeployedRuntime(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.VERCEL === '1' || env.VERCEL === 'true') return true;
+  if (env.VERCEL_ENV === 'production' || env.VERCEL_ENV === 'preview') return true;
+  return env.NODE_ENV === 'production';
+}
+
+function firstConfiguredApiUrl(env: NodeJS.ProcessEnv): {
+  url: string;
+  source: string;
+} | null {
+  const keys = [
+    'TENANT_API_URL',
+    'NEXT_PUBLIC_API_URL',
+    'VITE_API_URL',
+    'PUBLIC_API_URL',
+    'API_URL',
+  ] as const;
+
+  for (const key of keys) {
+    const value = env[key]?.trim();
+    if (value) return { url: trimTrailingSlash(value), source: key };
+  }
+  return null;
+}
+
+/**
+ * Remap custom API hosts that may not resolve until DNS cutover completes.
+ * Matches web/src/lib/api-url.ts so edge and SPA hit the same Railway origin.
+ */
+function normalizeConfiguredApiUrl(url: string): string {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === 'api.vendorlymarketplace.app' || host === 'api.vendorly.app') {
+      return RAILWAY_PUBLIC_API_URL;
+    }
+  } catch {
+    /* keep configured value */
+  }
+  return url;
+}
+
+let cachedApiBaseUrl: string | null = null;
+
+/** Test helper — clears memoized API base between cases. */
+export function resetApiBaseUrlCache(): void {
+  cachedApiBaseUrl = null;
+}
+
+/**
+ * Resolve Nest API base for edge middleware, SSR, and Nest proxies.
+ * Never defaults to 127.0.0.1/localhost on deployed runtimes.
+ */
+export function resolveApiBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
+  // Memoize only for the live process.env path (edge hot path).
+  if (env === process.env && cachedApiBaseUrl) {
+    return cachedApiBaseUrl;
+  }
+
+  const deployed = isDeployedRuntime(env);
+  const configured = firstConfiguredApiUrl(env);
+
+  let source = configured?.source ?? 'NONE';
+  let base = configured?.url ?? '';
+
+  if (base && isLoopbackApiUrl(base) && deployed) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `LOCALHOST_FETCH_ELIMINATED SOURCE=${source} REJECTED=${base} REPLACED_WITH=${RAILWAY_PUBLIC_API_URL}`,
+    );
+    base = RAILWAY_PUBLIC_API_URL;
+    source = 'RAILWAY_FALLBACK';
+  }
+
+  if (!base) {
+    if (deployed) {
+      base = RAILWAY_PUBLIC_API_URL;
+      source = 'RAILWAY_FALLBACK';
+    } else {
+      base = DEV_LOOPBACK_API_URL;
+      source = 'DEV_DEFAULT';
+    }
+  }
+
+  const normalized = normalizeConfiguredApiUrl(base);
+  if (normalized !== base) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `LOCALHOST_FETCH_ELIMINATED SOURCE=${source} REJECTED=${base} REPLACED_WITH=${normalized}`,
+    );
+    base = normalized;
+    source = 'RAILWAY_DNS_FALLBACK';
+  }
+
+  const resolved = trimTrailingSlash(base);
+  // eslint-disable-next-line no-console
+  console.log(`API_URL_RESOLVED SOURCE=${source} URL=${resolved}`);
+
+  if (env === process.env) {
+    cachedApiBaseUrl = resolved;
+  }
+  return resolved;
 }
 
 export function tenantCacheKey(host: string): string {
