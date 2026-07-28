@@ -15,7 +15,13 @@ type MessageRow = {
   created_at: string;
 };
 
-export function VendorB2bChatPage() {
+export function VendorB2bChatPage({
+  backTo = '/vendor/inbox',
+  subtitle = 'B2B network thread',
+}: {
+  backTo?: string;
+  subtitle?: string;
+} = {}) {
   const { peerId } = useParams<{ peerId: string }>();
   const { user, session } = useAuth();
   const profileId = user?.id ?? session?.user?.id ?? null;
@@ -149,7 +155,7 @@ export function VendorB2bChatPage() {
   return (
     <div className="app-screen app-screen--narrow">
       <Link
-        to="/vendor/inbox"
+        to={backTo}
         className="mb-4 inline-block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400 no-underline"
       >
         Back to inbox
@@ -157,7 +163,7 @@ export function VendorB2bChatPage() {
 
       {error ? <div className="app-empty mb-4">{error}</div> : null}
 
-      <ChatThread title={peerName} role={peerRole} subtitle="B2B network thread" emptyLabel="No messages yet.">
+      <ChatThread title={peerName} role={peerRole} subtitle={subtitle} emptyLabel="No messages yet.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {messages.map((m) => {
             const mine = m.sender_user_id === profileId;

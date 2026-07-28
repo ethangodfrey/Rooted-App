@@ -5,7 +5,10 @@ import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { CREATOR_TABS } from '@/components/navigation/creator-tabs';
 import { isTabActive } from '@/components/navigation/app-tabs';
+import { FloatingActionBar } from '@/components/navigation/FloatingActionBar';
+import { MapQuickTrigger } from '@/components/navigation/MapQuickTrigger';
 import { TabIcon } from '@/components/navigation/TabIcon';
+import { VENDOR_MAP_HREF } from '@/components/navigation/vendor-tabs';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
 import { useAuth } from '@/hooks/use-auth';
 import { isShopperRole } from '@/lib/role-utils';
@@ -91,33 +94,13 @@ export function CreatorLayout() {
           ))}
         </nav>
 
-        <main className="app-main min-w-0 w-full pb-32 md:pb-0">
+        <main className="app-main min-w-0 w-full pb-28 md:pb-0">
           <Outlet />
         </main>
       </div>
 
-      <nav className="app-tabbar" aria-label="Creator tabs">
-        {CREATOR_TABS.map((tab) => {
-          const active = isTabActive(tab, location.pathname);
-          return (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              className={`app-tabbar__link${active ? ' active' : ''}`}
-              aria-label={tab.label}
-            >
-              <span className="app-tabbar__icon" aria-hidden="true">
-                <TabIcon
-                  name={tab.icon}
-                  size={20}
-                  color={active ? 'var(--color-primary)' : 'var(--color-muted)'}
-                />
-              </span>
-              {active ? <span className="app-tabbar__label">{tab.label}</span> : null}
-            </Link>
-          );
-        })}
-      </nav>
+      <FloatingActionBar role="CREATOR" />
+      <MapQuickTrigger href={VENDOR_MAP_HREF} />
     </div>
   );
 }
