@@ -7,6 +7,9 @@ const API_PORT = 4000;
 export const RAILWAY_PUBLIC_API_URL =
   'https://rooted-app-production-43fb.up.railway.app';
 
+/** Canonical custom domain once CNAME cutover is complete. */
+export const CANONICAL_API_ORIGIN = 'https://api.vendorlymarketplace.app';
+
 /** True when VITE_API_URL is set to an absolute https URL (production / tunnel). */
 export function isExplicitPublicApiUrl(): boolean {
   const configured = (import.meta.env.VITE_API_URL ?? '').trim();
@@ -41,16 +44,34 @@ function tryParseHostname(url: string): string | null {
   }
 }
 
+function isProductionRuntime(): boolean {
+  // Vite production builds set PROD; NODE_ENV is also replaced at build time.
+  return Boolean(import.meta.env.PROD) || import.meta.env.MODE === 'production';
+}
+
 export function resolveApiBaseUrl(): string {
   const rawConfigured = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
   const configured = normalizeConfiguredApiUrl(rawConfigured);
 
   if (typeof window === 'undefined') {
-    return configured || (import.meta.env.PROD ? RAILWAY_PUBLIC_API_URL : '');
+    // SSR / build-time: production always targets Railway when unset.
+    if (isProductionRuntime()) {
+      return configured.startsWith('https://') ? configured : RAILWAY_PUBLIC_API_URL;
+    }
+    return configured || '';
   }
 
   const { hostname, protocol } = window.location;
   const onLocalMachine = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  // Production (NODE_ENV === 'production' / Vite PROD): never call localhost.
+  // Prefer explicit https VITE_API_URL; otherwise bind to Railway public URL.
+  if (isProductionRuntime()) {
+    if (configured.startsWith('https://')) {
+      return configured;
+    }
+    return RAILWAY_PUBLIC_API_URL;
+  }
 
   if (configured) {
     // HTTPS or any non-localhost URL: always honor env (works off LAN / cellular).

@@ -17,10 +17,10 @@ Reference: `agent-os/standards/web/auth.md`, `docs/DEPLOY.md` §1
 
 ## Phase gate: backend live
 
-- [ ] Railway Root Directory = **`backend`**
+- [ ] Railway Root Directory = **repo root**; `dockerfilePath` = `backend/Dockerfile`
 - [ ] Env: `NODE_ENV`, `DATABASE_URL` (pooler 6543), `PUBLIC_BASE_URL`, `WEB_APP_URL`, `CORS_ORIGINS`, `SUPABASE_URL`, `POS_CREDENTIAL_KEY`
-- [ ] Health: `GET {PUBLIC_BASE_URL}/health/live` → 200
-- [ ] Health: `GET {PUBLIC_BASE_URL}/health/ready` → 200 (DB reachable)
+- [ ] Health: `GET {PUBLIC_BASE_URL}/api/health` → 200
+- [ ] Optional: `GET {PUBLIC_BASE_URL}/health/live` / `/health/ready` when exposed
 
 Reference: `agent-os/standards/backend/env-and-cors.md`, `docs/DEPLOY.md` §2
 

@@ -67,10 +67,16 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
+  // Railway / cloud PaaS inject PORT; bind all interfaces for the public proxy.
   const port = Number(process.env.PORT ?? 4000);
+  if (!Number.isFinite(port) || port <= 0) {
+    throw new Error(`INVALID_PORT VALUE=${String(process.env.PORT)}`);
+  }
   await app.listen(port, '0.0.0.0');
 
   const lan = getLanIpv4Addresses();
+  // eslint-disable-next-line no-console
+  console.log(`DEPLOYMENT_BIND HOST=0.0.0.0 PORT=${port}`);
   // eslint-disable-next-line no-console
   console.log(`BOOT_SEQUENCE_COMPLETE PORT=${port}`);
   // eslint-disable-next-line no-console
