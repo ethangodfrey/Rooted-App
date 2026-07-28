@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { AppShell } from '@/components/layout/AppShell';
+import { LAUNCH_FEATURES } from '@/config/features';
 import { useAuth } from '@/hooks/use-auth';
 import { readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
 import { isChefProfileComplete } from '@/lib/chef-profile';
@@ -23,6 +24,10 @@ export function ChefLayout() {
   useEffect(() => {
     void readAuthRouteCache().then(setRouteCache);
   }, []);
+
+  if (!LAUNCH_FEATURES.ENABLE_CHEF_ROLE) {
+    return <Navigate to="/explore" replace />;
+  }
 
   if (isProfileLoading || routeCache === undefined) {
     return (

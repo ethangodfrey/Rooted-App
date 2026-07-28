@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 import { UserSticker } from '@/components/ui/UserSticker';
+import { LAUNCH_FEATURES, logLaunchPruneMarkers } from '@/config/features';
 import { useAuth } from '@/hooks/use-auth';
-import { ensureRoleExtension, type StickerOnboardingRole } from '@/lib/role-selection';
+import {
+  ensureRoleExtension,
+  type OnboardingRole,
+  type StickerOnboardingRole,
+} from '@/lib/role-selection';
 import { supabase } from '@/lib/supabase';
 import '@/components/ui/ui.css';
 
-const ROLE_CARDS: {
-  role: StickerOnboardingRole;
+type SelectableRole = StickerOnboardingRole | 'chef';
+
+const BASE_ROLE_CARDS: {
+  role: SelectableRole;
   title: string;
   meta: string;
-  accent: 'shopper' | 'vendor' | 'farmer';
+  accent: 'shopper' | 'vendor' | 'farmer' | 'chef';
 }[] = [
   {
     role: 'shopper',
@@ -31,23 +38,45 @@ const ROLE_CARDS: {
     meta: 'List raw or bulk harvest goods, share daily updates, and supply vendors.',
     accent: 'farmer',
   },
+  {
+    role: 'chef',
+    title: 'Private Chef',
+    meta: 'Offer private dining and wholesale catering demand to local hosts.',
+    accent: 'chef',
+  },
 ];
 
 /**
- * Dark split-card onboarding — permanent sticker role: shopper | vendor | farmer.
+ * Dark split-card onboarding — permanent sticker role: shopper | vendor | farmer
+ * (+ Private Chef when ENABLE_CHEF_ROLE). Creator shell is not selectable.
  * Route aliases: /onboarding/role-select · /onboarding/role
  */
 export function RoleSelectPage() {
   const navigate = useNavigate();
   const { session, user, refreshUser, signOut } = useAuth();
-  const [loading, setLoading] = useState<StickerOnboardingRole | null>(null);
+  const [loading, setLoading] = useState<SelectableRole | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const roleCards = useMemo(
+    () =>
+      BASE_ROLE_CARDS.filter((card) => {
+        // Creator is never a selectable onboarding persona.
+        if ((card.role as string) === 'creator') return false;
+        if (card.role === 'chef') return LAUNCH_FEATURES.ENABLE_CHEF_ROLE;
+        return true;
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    logLaunchPruneMarkers();
+  }, []);
 
   if (user?.role && loading === null) {
     return <Navigate to="/app" replace />;
   }
 
-  async function selectRole(role: StickerOnboardingRole) {
+  async function selectRole(role: SelectableRole) {
     if (!session?.user) {
       setError('You must be signed in to continue.');
       return;
@@ -58,30 +87,41 @@ export function RoleSelectPage() {
 
     const userId = session.user.id;
 
-    // Canonical sticker role lives on profiles (enum shopper|vendor|farmer); syncs to users.
-    const { error: profileError } = await supabase.from('profiles').upsert(
-      {
-        id: userId,
-        role,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' },
-    );
-
-    if (profileError) {
-      // Fallback for environments that have not applied phase51 yet.
+    if (role === 'chef') {
       const { error: roleError } = await supabase
         .from('users')
-        .update({ role, updated_at: new Date().toISOString() })
+        .update({ role: 'chef', updated_at: new Date().toISOString() })
         .eq('id', userId);
       if (roleError) {
         setLoading(null);
-        setError(profileError.message || roleError.message);
+        setError(roleError.message);
         return;
+      }
+    } else {
+      // Canonical sticker role lives on profiles (enum shopper|vendor|farmer); syncs to users.
+      const { error: profileError } = await supabase.from('profiles').upsert(
+        {
+          id: userId,
+          role,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
+
+      if (profileError) {
+        const { error: roleError } = await supabase
+          .from('users')
+          .update({ role, updated_at: new Date().toISOString() })
+          .eq('id', userId);
+        if (roleError) {
+          setLoading(null);
+          setError(profileError.message || roleError.message);
+          return;
+        }
       }
     }
 
-    const { error: extensionError } = await ensureRoleExtension(userId, role);
+    const { error: extensionError } = await ensureRoleExtension(userId, role as OnboardingRole);
 
     if (extensionError) {
       setLoading(null);
@@ -93,6 +133,10 @@ export function RoleSelectPage() {
     setLoading(null);
     if (role === 'vendor' || role === 'farmer') {
       navigate('/onboarding/specialties');
+      return;
+    }
+    if (role === 'chef') {
+      navigate('/chef/setup');
       return;
     }
     navigate('/app');
@@ -130,8 +174,10 @@ export function RoleSelectPage() {
           chats.
         </p>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
-          {ROLE_CARDS.map((card) => {
+        <div
+          className={`mt-10 grid gap-4 ${roleCards.length > 3 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}
+        >
+          {roleCards.map((card) => {
             const active = loading === card.role;
             const tone =
               card.accent === 'shopper'
@@ -146,11 +192,17 @@ export function RoleSelectPage() {
                       border: 'rgba(251, 146, 60, 0.4)',
                       label: '#fdba74',
                     }
-                  : {
-                      bg: 'linear-gradient(160deg, rgba(34,197,94,0.18), rgba(15,23,42,0.55))',
-                      border: 'rgba(74, 222, 128, 0.4)',
-                      label: '#86efac',
-                    };
+                  : card.accent === 'chef'
+                    ? {
+                        bg: 'linear-gradient(160deg, rgba(244,114,182,0.18), rgba(15,23,42,0.55))',
+                        border: 'rgba(244, 114, 182, 0.4)',
+                        label: '#f9a8d4',
+                      }
+                    : {
+                        bg: 'linear-gradient(160deg, rgba(34,197,94,0.18), rgba(15,23,42,0.55))',
+                        border: 'rgba(74, 222, 128, 0.4)',
+                        label: '#86efac',
+                      };
             return (
               <button
                 key={card.role}
@@ -166,7 +218,16 @@ export function RoleSelectPage() {
                     : '0 12px 32px rgba(0,0,0,0.25)',
                 }}
               >
-                <UserSticker role={card.role} />
+                {card.role === 'chef' ? (
+                  <span
+                    className="inline-flex rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em]"
+                    style={{ borderColor: tone.border, color: tone.label }}
+                  >
+                    PRIVATE CHEF
+                  </span>
+                ) : (
+                  <UserSticker role={card.role} />
+                )}
                 <h2 className="mt-5 m-0 text-xl font-semibold text-white">{card.title}</h2>
                 <p className="mt-2 m-0 flex-1 text-sm leading-relaxed text-slate-300">{card.meta}</p>
                 <span

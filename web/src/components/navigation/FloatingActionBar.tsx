@@ -7,6 +7,7 @@ import {
   type FabNavRole,
 } from '@/components/navigation/fab-nav';
 import { TabIcon } from '@/components/navigation/TabIcon';
+import { LAUNCH_FEATURES } from '@/config/features';
 
 type FloatingActionBarProps = {
   role: FabNavRole;
@@ -24,18 +25,26 @@ export function FloatingActionBar({ role, tabs: tabsOverride }: FloatingActionBa
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const tabs = fabTabsForRole(role, tabsOverride);
+
+  // Creator menus never render when ENABLE_CREATOR_ROLE is false.
+  const safeRole: FabNavRole =
+    !LAUNCH_FEATURES.ENABLE_CREATOR_ROLE && role === 'CREATOR' ? 'VENDOR' : role;
+  const tabs = fabTabsForRole(safeRole, tabsOverride);
 
   const onInit = useEffectEvent(() => {
     // eslint-disable-next-line no-console
-    console.log(`FAB_UI_INITIALIZED ROLE=${role}`);
+    console.log(`FAB_UI_INITIALIZED ROLE=${safeRole}`);
     // eslint-disable-next-line no-console
-    console.log(`FAB_SHELL_ALIGNED ROLE=${role}`);
+    console.log(`FAB_SHELL_ALIGNED ROLE=${safeRole}`);
+    if (!LAUNCH_FEATURES.ENABLE_CREATOR_ROLE) {
+      // eslint-disable-next-line no-console
+      console.log('CREATOR_SHELL_DISABLED');
+    }
   });
 
   useEffect(() => {
     onInit();
-  }, [role]);
+  }, [safeRole]);
 
   useEffect(() => {
     setOpen(false);
@@ -68,14 +77,14 @@ export function FloatingActionBar({ role, tabs: tabsOverride }: FloatingActionBa
     setOpen((prev) => {
       const next = !prev;
       // eslint-disable-next-line no-console
-      console.log(`NAVIGATION_UPDATED STATE=${next ? 'EXPANDED' : 'COLLAPSED'} ROLE=${role}`);
+      console.log(`NAVIGATION_UPDATED STATE=${next ? 'EXPANDED' : 'COLLAPSED'} ROLE=${safeRole}`);
       return next;
     });
   };
 
   const goTo = (to: string, label: string) => {
     // eslint-disable-next-line no-console
-    console.log(`NAVIGATION_UPDATED DEST=${to} LABEL=${label} ROLE=${role}`);
+    console.log(`NAVIGATION_UPDATED DEST=${to} LABEL=${label} ROLE=${safeRole}`);
     setOpen(false);
     void navigate(to);
   };

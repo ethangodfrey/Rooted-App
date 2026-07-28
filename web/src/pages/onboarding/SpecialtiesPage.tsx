@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 
 import { SpecialtyPills } from '@/components/ui/SpecialtyPills';
 import { UserSticker } from '@/components/ui/UserSticker';
+import { LAUNCH_FEATURES } from '@/config/features';
 import { useAuth } from '@/hooks/use-auth';
 import {
   normalizeSpecialtySelection,
@@ -95,8 +96,8 @@ export function SpecialtiesPage() {
 
     await refreshUser();
     setLoading(false);
-    // Spec path `/creator` aliases into the vendor workspace.
-    navigate('/creator');
+    // Creator shell disabled for launch — land on vendor storefront.
+    navigate(LAUNCH_FEATURES.ENABLE_CREATOR_ROLE ? '/creator' : '/vendor/storefront');
   }
 
   return (

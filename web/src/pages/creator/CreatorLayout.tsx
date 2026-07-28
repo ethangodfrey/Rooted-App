@@ -10,6 +10,7 @@ import { MapQuickTrigger } from '@/components/navigation/MapQuickTrigger';
 import { TabIcon } from '@/components/navigation/TabIcon';
 import { VENDOR_MAP_HREF } from '@/components/navigation/vendor-tabs';
 import { ServerStatusBar } from '@/components/layout/ServerStatusBar';
+import { LAUNCH_FEATURES } from '@/config/features';
 import { useAuth } from '@/hooks/use-auth';
 import { isShopperRole } from '@/lib/role-utils';
 import { getTrustedAuthCache, readAuthRouteCache, type AuthRouteCache } from '@/lib/auth-route-cache';
@@ -26,6 +27,17 @@ export function CreatorLayout() {
   useEffect(() => {
     void readAuthRouteCache().then(setRouteCache);
   }, []);
+
+  useEffect(() => {
+    if (!LAUNCH_FEATURES.ENABLE_CREATOR_ROLE) {
+      // eslint-disable-next-line no-console
+      console.log('CREATOR_SHELL_DISABLED');
+    }
+  }, []);
+
+  if (!LAUNCH_FEATURES.ENABLE_CREATOR_ROLE) {
+    return <Navigate to="/explore" replace />;
+  }
 
   if (isProfileLoading || routeCache === undefined) {
     return (
