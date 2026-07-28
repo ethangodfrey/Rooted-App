@@ -963,7 +963,8 @@
 .app-shell {
   min-height: 100vh;
   background: var(--shell-bg);
-  padding-bottom: calc(var(--app-tabbar-height) + 6.5rem + env(safe-area-inset-bottom, 0px));
+  /* FAB + map trigger clearance (replaces legacy bottom tab bar). */
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .app-topbar {
@@ -1039,12 +1040,21 @@
 }
 
 .app-tabbar {
+  display: none;
+}
+
+.app-tabbar__link {
+  display: none;
+}
+
+/* Legacy tab bar styles retained as no-ops so older class hooks do not resurface. */
+.app-tabbar--legacy {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 50;
-  display: flex;
+  display: none;
   align-items: flex-end;
   justify-content: space-around;
   background: var(--tabbar-bg);
@@ -1056,9 +1066,9 @@
   min-height: var(--app-tabbar-height);
 }
 
-.app-tabbar__link {
+.app-tabbar__link--legacy {
   flex: 1;
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1372,34 +1382,10 @@
 /* —— Market Day redesign —— */
 
 .app-map-fab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-surface);
-  box-shadow: var(--shadow-fab);
-  text-decoration: none;
-  transition: transform 0.12s ease, width 0.2s ease, height 0.2s ease;
+  display: none;
 }
 
-.app-map-fab:hover {
-  transform: scale(1.04);
-}
-
-.app-map-fab:active {
-  transform: scale(0.92);
-  transition-duration: 0.08s;
-}
-
-.app-map-fab--compact {
-  width: 48px;
-  height: 48px;
-}
-
-.app-map-fab--pulse {
+.fab-map-trigger--pulse {
   animation: fab-live-pulse 2.4s ease-in-out infinite;
 }
 
@@ -2099,7 +2085,7 @@
   .markets-split__list {
     order: 2;
     position: sticky;
-    bottom: calc(var(--app-tabbar-height) + 0.5rem);
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
     z-index: 20;
     margin: 0 -1.25rem;
     padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom, 0px));

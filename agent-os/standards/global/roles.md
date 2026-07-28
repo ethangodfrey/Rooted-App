@@ -26,8 +26,8 @@ Legacy aliases still accepted on `users.role`: `customer` → treat as shopper.
 | `/shopper/*` | Shopper workspace | Active |
 | `/explore`, `/orders`, `/following`, `/inbox` | Shopper shared roots | Active |
 | `/vendor/*` | Vendor workspace (farmers may enter network) | Active |
-| `/farmer/logistics`, `/farmer/network` | Farmer shell (logistics + V2V network) | Active |
-| `/creator/*` | Creator shell (listings, hand-offs, network, inbox, settings) | Active |
+| `/farmer/logistics`, `/farmer/network`, `/farmer/procurement` | Farmer shell (logistics + V2V + procurement); FAB persona `FARMER` | Active |
+| `/creator/*` | Creator shell (listings, hand-offs, network, inbox, settings); FAB persona `CREATOR` | Active |
 | `/chef/*`, `/admin/*` | Ops portals | Active |
 | `/onboarding/role`, `/onboarding/role-select` | Sticker role selection | Active |
 

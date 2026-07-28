@@ -84,6 +84,7 @@ import { FarmerLogisticsPage } from '@/pages/farmer/FarmerLogisticsPage';
 import { VendorProcurementPage } from '@/pages/vendor/VendorProcurementPage';
 import { VendorFulfillmentPage } from '@/pages/vendor/VendorFulfillmentPage';
 import { VendorHandoffsPage } from '@/pages/vendor/VendorHandoffsPage';
+import { CreatorB2bChatPage } from '@/pages/creator/CreatorB2bChatPage';
 import { CreatorHandoffsPage } from '@/pages/creator/CreatorHandoffsPage';
 import { CreatorInboxPage } from '@/pages/creator/CreatorInboxPage';
 import { CreatorLayout } from '@/pages/creator/CreatorLayout';
@@ -205,6 +206,11 @@ export default function App() {
           <Route path="handoffs" element={<CreatorHandoffsPage />} />
           <Route path="network" element={<CreatorNetworkPage />} />
           <Route path="inbox" element={<CreatorInboxPage />} />
+          <Route path="inbox/chat/:peerId" element={<CreatorB2bChatPage />} />
+          <Route
+            path="inbox/thread/:threadId"
+            element={<OrderContextThreadPage viewerRole="vendor" backTo="/creator/inbox" />}
+          />
           <Route path="settings" element={<CreatorSettingsPage />} />
         </Route>
         <Route path="/creator/events" element={<Navigate to="/vendor/events" replace />} />

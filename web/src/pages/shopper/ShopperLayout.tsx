@@ -65,7 +65,12 @@ export function ShopperLayout() {
 
   return (
     <NotificationProvider userId={user?.id ?? session?.user?.id}>
-      <AppShell role="shopper" tabs={SHOPPER_TABS} mapFabHref={SHOPPER_MAP_HREF} />
+      <AppShell
+        role="shopper"
+        tabs={SHOPPER_TABS}
+        mapFabHref={SHOPPER_MAP_HREF}
+        fabRole="SHOPPER"
+      />
     </NotificationProvider>
   );
 }
