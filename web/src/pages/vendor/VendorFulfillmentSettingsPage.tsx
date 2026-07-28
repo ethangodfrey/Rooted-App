@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { FieldError } from '@/components/ui/FieldError';
+import { Skeleton, SkeletonCard, SkeletonText } from '@/components/ui/Skeleton';
 import {
   VendorFormPanel,
   VendorHero,
@@ -63,6 +65,25 @@ export function VendorFulfillmentSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<
+      Record<
+        'deliveryRadius' | 'minimumOrder' | 'baseRate' | 'minGuests' | 'flatShipping' | 'freeShipMin',
+        string
+      >
+    >
+  >({});
+
+  function clearFieldError(
+    field: keyof typeof fieldErrors,
+  ) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   const load = useCallback(async () => {
     if (!vendor?.id) {
@@ -152,37 +173,39 @@ export function VendorFulfillmentSettingsPage() {
     const guests = minGuests.trim() ? Number(minGuests) : null;
     const flatShipDollars = flatShipping.trim() ? Number(flatShipping) : null;
     const freeMinDollars = freeShipMin.trim() ? Number(freeShipMin) : null;
+    const nextFieldErrors: Partial<
+      Record<
+        'deliveryRadius' | 'minimumOrder' | 'baseRate' | 'minGuests' | 'flatShipping' | 'freeShipMin',
+        string
+      >
+    > = {};
 
     if (deliveryRadius.trim() && (!Number.isFinite(radius) || (radius as number) < 0)) {
-      setSaving(false);
-      setError('Delivery / travel radius must be a non-negative number.');
-      return;
+      nextFieldErrors.deliveryRadius = 'Enter a non-negative number of miles.';
     }
     if (minimumOrder.trim() && (!Number.isFinite(minOrderDollars) || (minOrderDollars as number) < 0)) {
-      setSaving(false);
-      setError('Minimum order must be a valid dollar amount.');
-      return;
+      nextFieldErrors.minimumOrder = 'Enter a valid dollar amount (e.g. 25.00).';
     }
     if (baseRate.trim() && (!Number.isFinite(rateDollars) || (rateDollars as number) < 0)) {
-      setSaving(false);
-      setError('Base service rate must be a valid dollar amount.');
-      return;
+      nextFieldErrors.baseRate = 'Enter a valid service rate (e.g. 150.00).';
     }
     if (minGuests.trim() && (!Number.isFinite(guests) || (guests as number) < 1)) {
-      setSaving(false);
-      setError('Minimum guest count must be at least 1.');
-      return;
+      nextFieldErrors.minGuests = 'Minimum guest count must be at least 1.';
     }
     if (flatShipping.trim() && (!Number.isFinite(flatShipDollars) || (flatShipDollars as number) < 0)) {
-      setSaving(false);
-      setError('Flat rate shipping fee must be a valid dollar amount.');
-      return;
+      nextFieldErrors.flatShipping = 'Enter a valid shipping fee (e.g. 8.00).';
     }
     if (freeShipMin.trim() && (!Number.isFinite(freeMinDollars) || (freeMinDollars as number) < 0)) {
+      nextFieldErrors.freeShipMin = 'Enter a valid minimum order (e.g. 75.00).';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       setSaving(false);
-      setError('Free shipping minimum must be a valid dollar amount.');
       return;
     }
+
+    setFieldErrors({});
 
     const payload: Record<string, unknown> = {
       street_address: streetAddress.trim() || null,
@@ -214,9 +237,16 @@ export function VendorFulfillmentSettingsPage() {
 
   if (loading) {
     return (
-      <div className="app-loading">
-        <div className="app-spinner" />
-      </div>
+      <VendorScreen>
+        <Skeleton style={{ width: 120, height: 16, marginBottom: 16 }} />
+        <SkeletonText width="45%" height={32} />
+        <SkeletonText width="70%" height={14} />
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <SkeletonCard height={88} />
+          <SkeletonCard height={88} />
+        </div>
+        <SkeletonCard height={220} />
+      </VendorScreen>
     );
   }
 
@@ -326,22 +356,32 @@ export function VendorFulfillmentSettingsPage() {
                 <div className="app-input-group">
                   <label className="!text-white/80">Local delivery radius (miles)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.deliveryRadius ? ' app-input--invalid' : ''}`}
                     inputMode="numeric"
                     value={deliveryRadius}
-                    onChange={(e) => setDeliveryRadius(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.deliveryRadius)}
+                    onChange={(e) => {
+                      setDeliveryRadius(e.target.value);
+                      clearFieldError('deliveryRadius');
+                    }}
                     placeholder="10"
                   />
+                  <FieldError message={fieldErrors.deliveryRadius} />
                 </div>
                 <div className="app-input-group">
                   <label className="!text-white/80">Minimum order ($)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.minimumOrder ? ' app-input--invalid' : ''}`}
                     inputMode="decimal"
                     value={minimumOrder}
-                    onChange={(e) => setMinimumOrder(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.minimumOrder)}
+                    onChange={(e) => {
+                      setMinimumOrder(e.target.value);
+                      clearFieldError('minimumOrder');
+                    }}
                     placeholder="25.00"
                   />
+                  <FieldError message={fieldErrors.minimumOrder} />
                 </div>
               </div>
             ) : null}
@@ -373,32 +413,47 @@ export function VendorFulfillmentSettingsPage() {
             <div className="app-input-group">
               <label className="!text-white/80">Travel radius (miles)</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.deliveryRadius ? ' app-input--invalid' : ''}`}
                 inputMode="numeric"
                 value={deliveryRadius}
-                onChange={(e) => setDeliveryRadius(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.deliveryRadius)}
+                onChange={(e) => {
+                  setDeliveryRadius(e.target.value);
+                  clearFieldError('deliveryRadius');
+                }}
                 placeholder="25"
               />
+              <FieldError message={fieldErrors.deliveryRadius} />
             </div>
             <div className="app-input-group">
               <label className="!text-white/80">Base service rate ($)</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.baseRate ? ' app-input--invalid' : ''}`}
                 inputMode="decimal"
                 value={baseRate}
-                onChange={(e) => setBaseRate(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.baseRate)}
+                onChange={(e) => {
+                  setBaseRate(e.target.value);
+                  clearFieldError('baseRate');
+                }}
                 placeholder="150.00"
               />
+              <FieldError message={fieldErrors.baseRate} />
             </div>
             <div className="app-input-group">
               <label className="!text-white/80">Minimum guest count</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.minGuests ? ' app-input--invalid' : ''}`}
                 inputMode="numeric"
                 value={minGuests}
-                onChange={(e) => setMinGuests(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.minGuests)}
+                onChange={(e) => {
+                  setMinGuests(e.target.value);
+                  clearFieldError('minGuests');
+                }}
                 placeholder="4"
               />
+              <FieldError message={fieldErrors.minGuests} />
             </div>
             <p className="mb-4 text-xs text-white/45">
               Shoppers see an Inquire / Book Date CTA instead of Add to Cart for Private Chef menus.
@@ -441,22 +496,32 @@ export function VendorFulfillmentSettingsPage() {
                 <div className="app-input-group">
                   <label className="!text-white/80">Flat rate shipping fee ($)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.flatShipping ? ' app-input--invalid' : ''}`}
                     inputMode="decimal"
                     value={flatShipping}
-                    onChange={(e) => setFlatShipping(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.flatShipping)}
+                    onChange={(e) => {
+                      setFlatShipping(e.target.value);
+                      clearFieldError('flatShipping');
+                    }}
                     placeholder="8.00"
                   />
+                  <FieldError message={fieldErrors.flatShipping} />
                 </div>
                 <div className="app-input-group">
                   <label className="!text-white/80">Free shipping minimum ($)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.freeShipMin ? ' app-input--invalid' : ''}`}
                     inputMode="decimal"
                     value={freeShipMin}
-                    onChange={(e) => setFreeShipMin(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.freeShipMin)}
+                    onChange={(e) => {
+                      setFreeShipMin(e.target.value);
+                      clearFieldError('freeShipMin');
+                    }}
                     placeholder="75.00"
                   />
+                  <FieldError message={fieldErrors.freeShipMin} />
                 </div>
               </div>
             ) : null}

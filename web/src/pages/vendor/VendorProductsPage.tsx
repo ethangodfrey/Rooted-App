@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ProductImage } from '@/components/ui/ProductImage';
+import { VendorCatalogSkeleton } from '@/components/vendor/VendorCatalogSkeleton';
 import {
   VendorActionGrid,
   VendorActionTile,
@@ -59,9 +60,7 @@ export function VendorProductsPage() {
       </VendorActionGrid>
 
       {loading ? (
-        <div className="app-loading">
-          <div className="app-spinner" />
-        </div>
+        <VendorCatalogSkeleton count={4} />
       ) : products.length === 0 ? (
         <VendorEmpty message="No products yet." />
       ) : (
