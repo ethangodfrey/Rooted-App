@@ -118,10 +118,10 @@ export function centroidOfEvents(events: Event[]): Coords | null {
     }),
     { latitude: 0, longitude: 0 },
   );
-  return {
+  return coordsFrom({
     latitude: totals.latitude / mappable.length,
     longitude: totals.longitude / mappable.length,
-  };
+  });
 }
 
 export async function geocodeUsZip(zip: string): Promise<Coords | null> {

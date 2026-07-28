@@ -33,6 +33,7 @@ export function ShopperFollowingPage() {
       .catch((err: unknown) => {
         if (active) {
           setError(err instanceof Error ? err.message : 'Unable to load following');
+          setVendors([]);
           setLoading(false);
         }
       });

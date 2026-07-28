@@ -20,7 +20,7 @@ import { marketPath, vendorPath } from '@/lib/market-routes';
 import { extractMarketLinks } from '@/lib/market-links';
 import { eventRuntimePhase, type EventRuntimePhase } from '@/lib/event-runtime';
 import { formatEventDisplayDate } from '@/lib/format';
-import { isValidCoords, type Coords } from '@/lib/geo';
+import { coordsFrom, isValidCoords, type Coords } from '@/lib/geo';
 import {
   clusterTrackedBusinesses,
   type MapBounds,
@@ -300,7 +300,7 @@ export function EventsMap({
     () => clusterTrackedBusinesses(businesses, mapZoom),
     [businesses, mapZoom],
   );
-  const eventCenter = centroidOfEvents(events);
+  const eventCenter = coordsFrom(centroidOfEvents(events));
   const resolvedUserCoords = isValidCoords(userCoords) ? userCoords : null;
   const initialCenter: [number, number] = resolvedUserCoords
     ? [resolvedUserCoords.latitude, resolvedUserCoords.longitude]

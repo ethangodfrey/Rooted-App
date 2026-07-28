@@ -31,10 +31,11 @@ export function ShopperExplorePage() {
 
   const loadPage = useCallback(
     async (cursor: string | null, append: boolean) => {
-      if (!coords) {
-        setLoading(false);
-        return;
-      }
+    if (!coords) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
 
       if (append) {
         setLoadingMore(true);
@@ -55,6 +56,8 @@ export function ShopperExplorePage() {
         setError(null);
       } catch (err) {
         setError((err as Error).message);
+        if (!append) setItems([]);
+        setNextCursor(null);
       } finally {
         setLoading(false);
         setLoadingMore(false);

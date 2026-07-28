@@ -36,11 +36,25 @@ export function ReviewsSection({
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchApprovedReviews(targetType, targetId).then((res) => {
-      if (!active) return;
-      setReviews(res.reviews);
-      setLoading(false);
-    });
+    setError(null);
+    void fetchApprovedReviews(targetType, targetId)
+      .then((res) => {
+        if (!active) return;
+        if (res.error) {
+          setError(res.error);
+          setReviews([]);
+        } else {
+          setReviews(res.reviews);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setError('Unable to load reviews');
+        setReviews([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -154,6 +168,12 @@ export function ReviewsSection({
             {submitting ? 'Submitting…' : 'Submit review'}
           </button>
         </div>
+      ) : null}
+
+      {error && !loading ? (
+        <p className="app-row-meta" style={{ marginBottom: '0.75rem' }}>
+          Couldn&apos;t load reviews: {error}
+        </p>
       ) : null}
 
       {loading ? (
