@@ -29,7 +29,7 @@ export function ChefSetupPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<'displayName' | 'bio' | 'city' | 'state', string>>
+    Partial<Record<'displayName' | 'bio' | 'city' | 'state' | 'postalCode', string>>
   >({});
 
   function clearFieldError(field: keyof typeof fieldErrors) {
@@ -75,7 +75,9 @@ export function ChefSetupPage() {
       return;
     }
 
-    const nextFieldErrors: Partial<Record<'displayName' | 'bio' | 'city' | 'state', string>> = {};
+    const nextFieldErrors: Partial<
+      Record<'displayName' | 'bio' | 'city' | 'state' | 'postalCode', string>
+    > = {};
 
     if (!displayName.trim()) {
       nextFieldErrors.displayName = 'Display name is required.';
@@ -90,6 +92,11 @@ export function ChefSetupPage() {
       nextFieldErrors.state = 'State is required.';
     } else if (state.trim().length !== 2) {
       nextFieldErrors.state = 'Use a two-letter state code (e.g. TX).';
+    }
+
+    const trimmedPostal = postalCode.trim();
+    if (trimmedPostal && !/^\d{5}(-\d{4})?$/.test(trimmedPostal)) {
+      nextFieldErrors.postalCode = 'Enter a valid 5-digit ZIP code (or ZIP+4).';
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {
@@ -304,13 +311,18 @@ export function ChefSetupPage() {
         <label htmlFor="chef-zip">ZIP code (optional)</label>
         <input
           id="chef-zip"
-          className="app-input"
+          className={`app-input${fieldErrors.postalCode ? ' app-input--invalid' : ''}`}
           value={postalCode}
-          onChange={(e) => setPostalCode(e.target.value)}
+          onChange={(e) => {
+            setPostalCode(e.target.value);
+            clearFieldError('postalCode');
+          }}
           placeholder="78701"
           inputMode="numeric"
           autoComplete="postal-code"
+          aria-invalid={Boolean(fieldErrors.postalCode)}
         />
+        <FieldError message={fieldErrors.postalCode} />
       </div>
 
       {error ? <p className="app-error">{error}</p> : null}

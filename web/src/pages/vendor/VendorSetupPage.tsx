@@ -45,7 +45,7 @@ export function VendorSetupPage() {
   const [backing, setBacking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<keyof VendorApplicationInput | 'social' | 'attested', string>>
+    Partial<Record<keyof VendorApplicationInput | 'social' | 'attested' | 'postal_code', string>>
   >({});
 
   function clearFieldError(field: keyof typeof fieldErrors) {
@@ -80,8 +80,17 @@ export function VendorSetupPage() {
     };
 
     const validationErrors = validateVendorApplicationFields(application, attested);
-    if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors);
+    const nextFieldErrors: Partial<
+      Record<keyof VendorApplicationInput | 'social' | 'attested' | 'postal_code', string>
+    > = { ...validationErrors };
+
+    const cleanPostal = postalCode.trim();
+    if (cleanPostal && !/^\d{5}(-\d{4})?$/.test(cleanPostal)) {
+      nextFieldErrors.postal_code = 'Enter a valid 5-digit ZIP code (or ZIP+4).';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       setError(null);
       return;
     }
@@ -94,7 +103,6 @@ export function VendorSetupPage() {
     const cleanCity = application.sell_city.trim();
     const cleanState = application.sell_state.trim().toUpperCase();
     const cleanStreet = streetAddress.trim();
-    const cleanPostal = postalCode.trim();
 
     // Best-effort geocode so the vendor lands on the nearby map. Falls back to a
     // city/state centroid and never blocks the save on failure.
@@ -252,13 +260,18 @@ export function VendorSetupPage() {
         <div className="app-input-group">
           <label>ZIP code</label>
           <input
-            className="app-input"
+            className={`app-input${fieldErrors.postal_code ? ' app-input--invalid' : ''}`}
             value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
+            onChange={(e) => {
+              setPostalCode(e.target.value);
+              clearFieldError('postal_code');
+            }}
             placeholder="78701"
             inputMode="numeric"
             autoComplete="postal-code"
+            aria-invalid={Boolean(fieldErrors.postal_code)}
           />
+          <FieldError message={fieldErrors.postal_code} />
         </div>
 
         <p className="m-0 mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">Where do you sell?</p>
@@ -292,7 +305,9 @@ export function VendorSetupPage() {
               setInstagram(e.target.value);
               clearFieldError('social');
             }}
+            aria-invalid={Boolean(fieldErrors.social)}
           />
+          <FieldError message={fieldErrors.social && instagram.trim() ? fieldErrors.social : undefined} />
         </div>
         <div className="app-input-group">
           <label>Website URL</label>
@@ -303,8 +318,9 @@ export function VendorSetupPage() {
               setWebsite(e.target.value);
               clearFieldError('social');
             }}
+            aria-invalid={Boolean(fieldErrors.social)}
           />
-          <FieldError message={fieldErrors.social} />
+          <FieldError message={fieldErrors.social && website.trim() ? fieldErrors.social : undefined} />
         </div>
 
         <label className="mb-4 flex items-start gap-2">

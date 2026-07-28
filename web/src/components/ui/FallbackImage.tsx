@@ -76,11 +76,20 @@ export function FallbackImage({
   const showImage = Boolean(normalizedSrc) && !failed;
 
   if (showImage) {
+    const imgClass = [
+      className,
+      !className.includes('object-') && (variant === 'product' || variant === 'banner' || variant === 'vendor-logo')
+        ? 'object-cover'
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     return (
       <img
         src={normalizedSrc}
         alt={alt}
-        className={className}
+        className={imgClass}
         style={style}
         onError={() => setFailed(true)}
       />

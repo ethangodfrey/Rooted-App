@@ -2283,13 +2283,23 @@
 
 .markets-preview__vendor-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.75rem;
   padding: 0.85rem 0;
   border-bottom: 1px solid var(--color-border);
   min-width: 0;
+}
+
+.markets-preview__vendor-row--link {
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.markets-preview__vendor-row--link:hover {
+  background: rgba(249, 115, 22, 0.06);
 }
 
 .markets-preview__vendor-skeleton {
