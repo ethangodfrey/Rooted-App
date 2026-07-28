@@ -39,6 +39,10 @@ describe('formatPrice', () => {
     expect(formatPrice(Number.NaN)).toBe('$NaN');
     expect(formatPrice(Number.POSITIVE_INFINITY)).toBe('$Infinity');
   });
+
+  it('coerces string-like numeric inputs through division', () => {
+    expect(formatPrice('1250' as unknown as number)).toBe('$12.50');
+  });
 });
 
 describe('formatEventDate', () => {
