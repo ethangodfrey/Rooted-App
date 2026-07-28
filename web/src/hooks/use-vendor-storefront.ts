@@ -110,7 +110,10 @@ export function useVendorStorefront(vendorId: string | undefined): UseVendorStor
             event: Omit<VendorUpcomingMarket, 'distanceLabel'> | null;
           }[])
             .map((row) => row.event)
-            .filter((event): event is Omit<VendorUpcomingMarket, 'distanceLabel'> => Boolean(event))
+            .filter(
+              (event): event is Omit<VendorUpcomingMarket, 'distanceLabel'> =>
+                Boolean(event) && isValidCoords(event),
+            )
             .map((event) => ({
               ...event,
               distanceLabel: null as string | null,

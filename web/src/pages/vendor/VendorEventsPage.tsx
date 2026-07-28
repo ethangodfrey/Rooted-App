@@ -21,7 +21,7 @@ import {
 } from '@/lib/community-events';
 import { eventRuntimePhase, sortEventsByRuntime } from '@/lib/event-runtime';
 import { formatEventDisplayDate, formatEventDisplayTimeRange } from '@/lib/format';
-import { coordsFrom } from '@/lib/geo';
+import { coordsFrom, type Coords } from '@/lib/geo';
 import { fetchNearbyMarkets } from '@/lib/national-markets-api';
 import { supabase } from '@/lib/supabase';
 import type { NearbyNationalMarket } from '@/types/pos-transactions';
@@ -122,10 +122,14 @@ export function VendorEventsPage() {
       }
       setNearbyLoading(true);
 
-      const resolveCoords = (): Promise<{ lat: number; lng: number } | null> =>
+      const resolveCoords = (): Promise<Coords | null> =>
         new Promise((resolve) => {
-          if (vendor.latitude != null && vendor.longitude != null) {
-            resolve({ lat: Number(vendor.latitude), lng: Number(vendor.longitude) });
+          const vendorCoords = coordsFrom({
+            latitude: vendor.latitude,
+            longitude: vendor.longitude,
+          });
+          if (vendorCoords) {
+            resolve(vendorCoords);
             return;
           }
           if (!navigator.geolocation) {
@@ -133,28 +137,40 @@ export function VendorEventsPage() {
             return;
           }
           navigator.geolocation.getCurrentPosition(
-            (pos) =>
-              resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (pos) => {
+              const gps = coordsFrom({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+              });
+              resolve(gps);
+            },
             () => resolve(null),
             { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
           );
         });
 
-      const coords = await resolveCoords();
-      if (cancelled) return;
+      try {
+        const coords = await resolveCoords();
+        if (cancelled) return;
 
-      if (!coords) {
-        setNearbyMarkets([]);
-        setNearbyReady(true);
-        setNearbyLoading(false);
-        return;
-      }
+        if (!coords) {
+          setNearbyMarkets([]);
+          return;
+        }
 
-      const markets = await fetchNearbyMarkets(coords.lat, coords.lng, 50);
-      if (!cancelled) {
-        setNearbyMarkets(markets);
-        setNearbyReady(true);
-        setNearbyLoading(false);
+        const markets = await fetchNearbyMarkets(
+          coords.latitude,
+          coords.longitude,
+          50,
+        );
+        if (!cancelled) setNearbyMarkets(markets);
+      } catch {
+        if (!cancelled) setNearbyMarkets([]);
+      } finally {
+        if (!cancelled) {
+          setNearbyReady(true);
+          setNearbyLoading(false);
+        }
       }
     }
 

@@ -104,7 +104,9 @@ export async function fetchNearbyEvents(
     });
 
     if (error) return null;
-    return (data as NearbyEvent[] | null) ?? [];
+    return ((data as NearbyEvent[] | null) ?? []).filter((row) =>
+      isValidCoords({ latitude: row.latitude, longitude: row.longitude }),
+    );
   });
 }
 
@@ -123,7 +125,9 @@ export async function fetchNearbyVendors(
   });
 
   if (error) return null;
-  return (data as NearbyVendor[] | null) ?? [];
+  return ((data as NearbyVendor[] | null) ?? []).filter((row) =>
+    isValidCoords({ latitude: row.latitude, longitude: row.longitude }),
+  );
 }
 
 /** Active leftover listings near `coords`, ordered by distance. */
@@ -140,5 +144,7 @@ export async function fetchNearbyLeftovers(
   });
 
   if (error) return null;
-  return (data as NearbyLeftover[] | null) ?? [];
+  return ((data as NearbyLeftover[] | null) ?? []).filter((row) =>
+    isValidCoords({ latitude: row.pickup_latitude, longitude: row.pickup_longitude }),
+  );
 }

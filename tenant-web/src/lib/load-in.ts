@@ -18,6 +18,23 @@ export interface Coords {
   longitude: number;
 }
 
+function sanitizeCoord(value: unknown, min: number, max: number): number | null {
+  if (value == null || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n) || n < min || n > max) return null;
+  return n;
+}
+
+export function coordsFrom(
+  value: { latitude?: unknown; longitude?: unknown } | null | undefined,
+): Coords | null {
+  if (!value) return null;
+  const latitude = sanitizeCoord(value.latitude, -90, 90);
+  const longitude = sanitizeCoord(value.longitude, -180, 180);
+  if (latitude == null || longitude == null) return null;
+  return { latitude, longitude };
+}
+
 export function distanceMiles(a: Coords, b: Coords): number {
   const R = 3958.8;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -35,10 +52,10 @@ export function isWithinMarketGeofence(
   market: Coords | null | undefined,
   radiusMiles: number = LOAD_IN_GEOFENCE_MILES,
 ): boolean {
-  if (!user || !market) return false;
-  if (!Number.isFinite(user.latitude) || !Number.isFinite(user.longitude)) return false;
-  if (!Number.isFinite(market.latitude) || !Number.isFinite(market.longitude)) return false;
-  return distanceMiles(user, market) <= radiusMiles;
+  const safeUser = coordsFrom(user);
+  const safeMarket = coordsFrom(market);
+  if (!safeUser || !safeMarket) return false;
+  return distanceMiles(safeUser, safeMarket) <= radiusMiles;
 }
 
 export function parseBoothAssignment(raw: string | null | undefined): {

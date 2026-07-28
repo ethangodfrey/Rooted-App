@@ -7,7 +7,7 @@ import { useUserCoords } from '@/hooks/use-user-coords';
 import { eventRuntimePhase, eventRuntimeHint, sortEventsByRuntime } from '@/lib/event-runtime';
 import { fetchPublicEvents } from '@/lib/events-query';
 import { formatEventDisplayDate, formatPrice } from '@/lib/format';
-import { distanceMiles, formatDistance, coordsFrom } from '@/lib/geo';
+import { distanceMiles, formatDistance, coordsFrom, isValidCoords } from '@/lib/geo';
 import { fetchCuratedLeftovers, formatExpiresIn, type CuratedLeftover } from '@/lib/leftovers';
 import { getMarketContext } from '@/lib/market-context';
 import { marketPath } from '@/lib/market-routes';
@@ -43,10 +43,7 @@ export function ShopperHomePage() {
   );
 
   const nearbyCoords = useMemo(
-    () =>
-      coords?.latitude != null && coords?.longitude != null
-        ? { latitude: coords.latitude, longitude: coords.longitude }
-        : null,
+    () => (isValidCoords(coords) ? coords : null),
     [coords],
   );
 
