@@ -242,6 +242,17 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  min-width: 0;
+}
+
+.shopper-map-carousel-card .app-hscroll-card__body {
+  padding: 0;
+  min-width: 0;
 }
 
 .shopper-map-carousel-card.app-card--selected,

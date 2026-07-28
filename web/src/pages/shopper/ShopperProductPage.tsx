@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
 import { FallbackImage } from '@/components/ui/FallbackImage';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { useAuth } from '@/hooks/use-auth';
@@ -20,6 +21,7 @@ type ProductRow = {
   name: string;
   description: string | null;
   price: number;
+  category: string | null;
   media_urls: string[];
   reserve_enabled: boolean;
   stock: number | null;
@@ -71,7 +73,7 @@ export function ShopperProductPage() {
         supabase
           .from('products')
           .select(
-            'id, name, description, price, media_urls, reserve_enabled, stock, vendor_id, vendor:vendors(business_name, user_id)',
+            'id, name, description, price, category, media_urls, reserve_enabled, stock, vendor_id, vendor:vendors(business_name, user_id)',
           )
           .eq('id', id)
           .maybeSingle(),
@@ -171,11 +173,7 @@ export function ShopperProductPage() {
   }
 
   if (loading) {
-    return (
-      <div className="app-loading">
-        <div className="app-spinner" />
-      </div>
-    );
+    return <ProductDetailSkeleton />;
   }
   if (!product) return <div className="app-empty">Product not found.</div>;
 
@@ -192,13 +190,14 @@ export function ShopperProductPage() {
       <FallbackImage
         src={product.media_urls[0]}
         variant="product"
+        category={product.category}
+        alt={product.name}
+        className="w-full object-cover"
         style={{
-          width: '100%',
           borderRadius: '16px',
           marginBottom: '1rem',
           minHeight: '180px',
           maxHeight: '320px',
-          objectFit: 'cover',
         }}
       />
 

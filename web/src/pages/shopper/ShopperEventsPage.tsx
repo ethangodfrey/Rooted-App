@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
 import { EventThumb } from '@/components/events/EventThumb';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { WeekStrip } from '@/components/events/WeekStrip';
 import { useMarketDetail } from '@/hooks/use-market-detail';
 import { useNow } from '@/hooks/use-now';
@@ -301,15 +302,22 @@ export function ShopperEventsPage() {
                             to={vendorPath(vendor.id, selectedEvent.id)}
                             className="markets-preview__vendor-row markets-preview__vendor-row--link"
                           >
-                            <div>
-                              <p className="app-row-title" style={{ fontSize: '0.875rem' }}>
+                            <FallbackImage
+                              src={vendor.logo_url}
+                              variant="vendor-logo"
+                              category={vendor.category}
+                              className="shrink-0 object-cover"
+                              style={{ width: 40, height: 40, borderRadius: 10 }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="app-row-title truncate" style={{ fontSize: '0.875rem' }}>
                                 {vendor.business_name ?? 'Vendor'}
                               </p>
-                              <p className="ft-subhead">
+                              <p className="ft-subhead truncate">
                                 {vendor.category ?? vendor.product_summary ?? 'Local maker'}
                               </p>
                             </div>
-                            <span className="markets-split__distance">View profile</span>
+                            <span className="markets-split__distance shrink-0">View profile</span>
                           </Link>
                         ))
                       )}

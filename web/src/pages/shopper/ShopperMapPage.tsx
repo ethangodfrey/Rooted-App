@@ -36,6 +36,7 @@ import {
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 import '@/components/map/events-map.css';
+import { EventThumb } from '@/components/events/EventThumb';
 import { MapListSkeleton } from '@/components/map/MapListSkeleton';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -474,15 +475,16 @@ export function ShopperMapPage() {
                     className={`app-hscroll-card shopper-map-carousel-card${selectedEventId === event.id ? ' is-selected' : ''}${phase === 'closed' ? ' app-card--closed' : ''}`}
                     onClick={() => previewEvent(event.id)}
                   >
-                    <div className="app-hscroll-card__body">
-                      <p className="app-hscroll-card__title">{event.name}</p>
-                      <p className="app-hscroll-card__meta">
-                        {formatEventDisplayDate(event, now)}
-                        {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
-                      </p>
+                    <EventThumb event={event} size={48} />
+                    <div className="app-hscroll-card__body min-w-0 flex-1">
                       {phase === 'live' ? (
                         <span className="app-hscroll-card__badge">Live</span>
                       ) : null}
+                      <p className="app-hscroll-card__title truncate">{event.name}</p>
+                      <p className="app-hscroll-card__meta truncate">
+                        {formatEventDisplayDate(event, now)}
+                        {distanceFor(event) ? ` · ${distanceFor(event)}` : ''}
+                      </p>
                     </div>
                   </button>
                 );
