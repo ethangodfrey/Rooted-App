@@ -34,6 +34,25 @@ function ProductPlaceholderIcon() {
   );
 }
 
+function VendorLogoPlaceholderIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      style={{ width: '46%', height: '46%', opacity: 0.5 }}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 9.75L12 4l9 5.75M5 10.5V19a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-8.5"
+      />
+    </svg>
+  );
+}
+
 function resolveFallbackContent(
   variant: FallbackImageVariant,
   category: string | null | undefined,
@@ -48,7 +67,13 @@ function resolveFallbackContent(
       return initial;
     }
     case 'vendor-logo':
-      return '🏪';
+      return label ? (
+        <span style={{ fontSize: '1.1em', fontWeight: 700, lineHeight: 1 }}>
+          {(label ?? '?').trim().charAt(0).toUpperCase()}
+        </span>
+      ) : (
+        <VendorLogoPlaceholderIcon />
+      );
     case 'banner':
       return categoryVisual(category).emoji;
     case 'product':

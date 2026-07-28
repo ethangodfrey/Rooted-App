@@ -8,6 +8,7 @@ import {
   VendorScreen,
   VendorSection,
 } from '@/components/vendor/vendor-ui';
+import { FieldError } from '@/components/ui/FieldError';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 import {
@@ -17,6 +18,15 @@ import {
   vendorTypeLabel,
 } from '@/lib/vendor-types';
 import '@/components/ui/ui.css';
+
+type FulfillmentField =
+  | 'deliveryRadius'
+  | 'minimumOrder'
+  | 'baseRate'
+  | 'minGuests'
+  | 'flatShipping'
+  | 'freeShipMin'
+  | 'streetAddress';
 
 /**
  * Dynamic fulfillment / service settings — `/vendor/settings/fulfillment`.
@@ -62,7 +72,17 @@ export function VendorFulfillmentSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FulfillmentField, string>>>({});
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  function clearFieldError(field: FulfillmentField) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   const load = useCallback(async () => {
     if (!vendor?.id) {
@@ -146,6 +166,7 @@ export function VendorFulfillmentSettingsPage() {
     setError(null);
     setSaveMessage(null);
 
+    const nextFieldErrors: Partial<Record<FulfillmentField, string>> = {};
     const radius = deliveryRadius.trim() ? Number(deliveryRadius) : null;
     const minOrderDollars = minimumOrder.trim() ? Number(minimumOrder) : null;
     const rateDollars = baseRate.trim() ? Number(baseRate) : null;
@@ -154,35 +175,31 @@ export function VendorFulfillmentSettingsPage() {
     const freeMinDollars = freeShipMin.trim() ? Number(freeShipMin) : null;
 
     if (deliveryRadius.trim() && (!Number.isFinite(radius) || (radius as number) < 0)) {
-      setSaving(false);
-      setError('Delivery / travel radius must be a non-negative number.');
-      return;
+      nextFieldErrors.deliveryRadius = 'Delivery / travel radius must be a non-negative number.';
     }
     if (minimumOrder.trim() && (!Number.isFinite(minOrderDollars) || (minOrderDollars as number) < 0)) {
-      setSaving(false);
-      setError('Minimum order must be a valid dollar amount.');
-      return;
+      nextFieldErrors.minimumOrder = 'Minimum order must be a valid dollar amount.';
     }
     if (baseRate.trim() && (!Number.isFinite(rateDollars) || (rateDollars as number) < 0)) {
-      setSaving(false);
-      setError('Base service rate must be a valid dollar amount.');
-      return;
+      nextFieldErrors.baseRate = 'Base service rate must be a valid dollar amount.';
     }
     if (minGuests.trim() && (!Number.isFinite(guests) || (guests as number) < 1)) {
-      setSaving(false);
-      setError('Minimum guest count must be at least 1.');
-      return;
+      nextFieldErrors.minGuests = 'Minimum guest count must be at least 1.';
     }
     if (flatShipping.trim() && (!Number.isFinite(flatShipDollars) || (flatShipDollars as number) < 0)) {
-      setSaving(false);
-      setError('Flat rate shipping fee must be a valid dollar amount.');
-      return;
+      nextFieldErrors.flatShipping = 'Flat rate shipping fee must be a valid dollar amount.';
     }
     if (freeShipMin.trim() && (!Number.isFinite(freeMinDollars) || (freeMinDollars as number) < 0)) {
+      nextFieldErrors.freeShipMin = 'Free shipping minimum must be a valid dollar amount.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       setSaving(false);
-      setError('Free shipping minimum must be a valid dollar amount.');
       return;
     }
+
+    setFieldErrors({});
 
     const payload: Record<string, unknown> = {
       street_address: streetAddress.trim() || null,
@@ -299,11 +316,16 @@ export function VendorFulfillmentSettingsPage() {
             <div className="app-input-group">
               <label className="!text-white/80">Local pickup address</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.streetAddress ? ' app-input--invalid' : ''}`}
                 value={streetAddress}
-                onChange={(e) => setStreetAddress(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.streetAddress)}
+                onChange={(e) => {
+                  setStreetAddress(e.target.value);
+                  clearFieldError('streetAddress');
+                }}
                 placeholder="123 Kitchen Lane, City"
               />
+              <FieldError message={fieldErrors.streetAddress} />
             </div>
 
             <label className="mb-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
@@ -326,22 +348,32 @@ export function VendorFulfillmentSettingsPage() {
                 <div className="app-input-group">
                   <label className="!text-white/80">Local delivery radius (miles)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.deliveryRadius ? ' app-input--invalid' : ''}`}
                     inputMode="numeric"
                     value={deliveryRadius}
-                    onChange={(e) => setDeliveryRadius(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.deliveryRadius)}
+                    onChange={(e) => {
+                      setDeliveryRadius(e.target.value);
+                      clearFieldError('deliveryRadius');
+                    }}
                     placeholder="10"
                   />
+                  <FieldError message={fieldErrors.deliveryRadius} />
                 </div>
                 <div className="app-input-group">
                   <label className="!text-white/80">Minimum order ($)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.minimumOrder ? ' app-input--invalid' : ''}`}
                     inputMode="decimal"
                     value={minimumOrder}
-                    onChange={(e) => setMinimumOrder(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.minimumOrder)}
+                    onChange={(e) => {
+                      setMinimumOrder(e.target.value);
+                      clearFieldError('minimumOrder');
+                    }}
                     placeholder="25.00"
                   />
+                  <FieldError message={fieldErrors.minimumOrder} />
                 </div>
               </div>
             ) : null}
@@ -373,32 +405,47 @@ export function VendorFulfillmentSettingsPage() {
             <div className="app-input-group">
               <label className="!text-white/80">Travel radius (miles)</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.deliveryRadius ? ' app-input--invalid' : ''}`}
                 inputMode="numeric"
                 value={deliveryRadius}
-                onChange={(e) => setDeliveryRadius(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.deliveryRadius)}
+                onChange={(e) => {
+                  setDeliveryRadius(e.target.value);
+                  clearFieldError('deliveryRadius');
+                }}
                 placeholder="25"
               />
+              <FieldError message={fieldErrors.deliveryRadius} />
             </div>
             <div className="app-input-group">
               <label className="!text-white/80">Base service rate ($)</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.baseRate ? ' app-input--invalid' : ''}`}
                 inputMode="decimal"
                 value={baseRate}
-                onChange={(e) => setBaseRate(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.baseRate)}
+                onChange={(e) => {
+                  setBaseRate(e.target.value);
+                  clearFieldError('baseRate');
+                }}
                 placeholder="150.00"
               />
+              <FieldError message={fieldErrors.baseRate} />
             </div>
             <div className="app-input-group">
               <label className="!text-white/80">Minimum guest count</label>
               <input
-                className="app-input"
+                className={`app-input${fieldErrors.minGuests ? ' app-input--invalid' : ''}`}
                 inputMode="numeric"
                 value={minGuests}
-                onChange={(e) => setMinGuests(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.minGuests)}
+                onChange={(e) => {
+                  setMinGuests(e.target.value);
+                  clearFieldError('minGuests');
+                }}
                 placeholder="4"
               />
+              <FieldError message={fieldErrors.minGuests} />
             </div>
             <p className="mb-4 text-xs text-white/45">
               Shoppers see an Inquire / Book Date CTA instead of Add to Cart for Private Chef menus.
@@ -441,22 +488,32 @@ export function VendorFulfillmentSettingsPage() {
                 <div className="app-input-group">
                   <label className="!text-white/80">Flat rate shipping fee ($)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.flatShipping ? ' app-input--invalid' : ''}`}
                     inputMode="decimal"
                     value={flatShipping}
-                    onChange={(e) => setFlatShipping(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.flatShipping)}
+                    onChange={(e) => {
+                      setFlatShipping(e.target.value);
+                      clearFieldError('flatShipping');
+                    }}
                     placeholder="8.00"
                   />
+                  <FieldError message={fieldErrors.flatShipping} />
                 </div>
                 <div className="app-input-group">
                   <label className="!text-white/80">Free shipping minimum ($)</label>
                   <input
-                    className="app-input"
+                    className={`app-input${fieldErrors.freeShipMin ? ' app-input--invalid' : ''}`}
                     inputMode="decimal"
                     value={freeShipMin}
-                    onChange={(e) => setFreeShipMin(e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.freeShipMin)}
+                    onChange={(e) => {
+                      setFreeShipMin(e.target.value);
+                      clearFieldError('freeShipMin');
+                    }}
                     placeholder="75.00"
                   />
+                  <FieldError message={fieldErrors.freeShipMin} />
                 </div>
               </div>
             ) : null}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { EventStatusBadge } from '@/components/events/EventStatusBadge';
+import { FieldError } from '@/components/ui/FieldError';
 import { IconBadge } from '@/components/vendor/dashboard-icons';
 import {
   VendorEmpty,
@@ -28,6 +29,8 @@ import type { NearbyNationalMarket } from '@/types/pos-transactions';
 import type { Event } from '@/types/database';
 import '@/components/ui/ui.css';
 
+type EventFormField = 'title' | 'latitude' | 'longitude' | 'startTime' | 'endTime';
+
 function toLocalInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -53,6 +56,7 @@ export function VendorEventsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<EventFormField, string>>>({});
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventType, setEventType] = useState<CommunityEventType>('POP_UP');
@@ -214,18 +218,57 @@ export function VendorEventsPage() {
   async function onPublish(e: FormEvent) {
     e.preventDefault();
     if (!profileId || !canHost) return;
+
+    const nextFieldErrors: Partial<Record<EventFormField, string>> = {};
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      nextFieldErrors.title = 'Event title is required.';
+    }
+
+    const lat = Number(latitude);
+    if (!latitude.trim() || !Number.isFinite(lat)) {
+      nextFieldErrors.latitude = 'Enter a valid latitude (e.g. 39.7392).';
+    } else if (lat < -90 || lat > 90) {
+      nextFieldErrors.latitude = 'Latitude must be between -90 and 90.';
+    }
+
+    const lng = Number(longitude);
+    if (!longitude.trim() || !Number.isFinite(lng)) {
+      nextFieldErrors.longitude = 'Enter a valid longitude (e.g. -104.9903).';
+    } else if (lng < -180 || lng > 180) {
+      nextFieldErrors.longitude = 'Longitude must be between -180 and 180.';
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (!startTime || Number.isNaN(start.getTime())) {
+      nextFieldErrors.startTime = 'Choose a valid start date and time.';
+    }
+    if (!endTime || Number.isNaN(end.getTime())) {
+      nextFieldErrors.endTime = 'Choose a valid end date and time.';
+    } else if (!Number.isNaN(start.getTime()) && end.getTime() <= start.getTime()) {
+      nextFieldErrors.endTime = 'End time must be after the start time.';
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setFormError(null);
+      return;
+    }
+
     setPublishing(true);
     setFormError(null);
+    setFieldErrors({});
     try {
       await publishCommunityEvent({
         creatorId: profileId,
-        title,
+        title: trimmedTitle,
         description,
         eventType,
-        latitude: Number(latitude),
-        longitude: Number(longitude),
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
+        latitude: lat,
+        longitude: lng,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
       });
       setTitle('');
       setDescription('');
@@ -295,13 +338,22 @@ export function VendorEventsPage() {
                   Title
                 </span>
                 <input
-                  className="app-input w-full"
+                  className={`app-input w-full min-w-0${fieldErrors.title ? ' app-input--invalid' : ''}`}
                   value={title}
-                  onChange={(ev) => setTitle(ev.target.value)}
-                  required
+                  aria-invalid={Boolean(fieldErrors.title)}
+                  onChange={(ev) => {
+                    setTitle(ev.target.value);
+                    setFieldErrors((prev) => {
+                      if (!prev.title) return prev;
+                      const next = { ...prev };
+                      delete next.title;
+                      return next;
+                    });
+                  }}
                   maxLength={120}
                   placeholder="Saturday pop-up market"
                 />
+                <FieldError message={fieldErrors.title} />
               </label>
 
               <label className="block">
@@ -335,31 +387,49 @@ export function VendorEventsPage() {
               </label>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
+                <label className="block min-w-0">
                   <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
                     Latitude
                   </span>
                   <input
-                    className="app-input w-full"
+                    className={`app-input w-full min-w-0${fieldErrors.latitude ? ' app-input--invalid' : ''}`}
                     value={latitude}
-                    onChange={(ev) => setLatitude(ev.target.value)}
-                    required
+                    aria-invalid={Boolean(fieldErrors.latitude)}
+                    onChange={(ev) => {
+                      setLatitude(ev.target.value);
+                      setFieldErrors((prev) => {
+                        if (!prev.latitude) return prev;
+                        const next = { ...prev };
+                        delete next.latitude;
+                        return next;
+                      });
+                    }}
                     inputMode="decimal"
                     placeholder="39.7392"
                   />
+                  <FieldError message={fieldErrors.latitude} />
                 </label>
-                <label className="block">
+                <label className="block min-w-0">
                   <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
                     Longitude
                   </span>
                   <input
-                    className="app-input w-full"
+                    className={`app-input w-full min-w-0${fieldErrors.longitude ? ' app-input--invalid' : ''}`}
                     value={longitude}
-                    onChange={(ev) => setLongitude(ev.target.value)}
-                    required
+                    aria-invalid={Boolean(fieldErrors.longitude)}
+                    onChange={(ev) => {
+                      setLongitude(ev.target.value);
+                      setFieldErrors((prev) => {
+                        if (!prev.longitude) return prev;
+                        const next = { ...prev };
+                        delete next.longitude;
+                        return next;
+                      });
+                    }}
                     inputMode="decimal"
                     placeholder="-104.9903"
                   />
+                  <FieldError message={fieldErrors.longitude} />
                 </label>
               </div>
 
@@ -372,29 +442,47 @@ export function VendorEventsPage() {
               </button>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
+                <label className="block min-w-0">
                   <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
                     Start
                   </span>
                   <input
                     type="datetime-local"
-                    className="app-input w-full"
+                    className={`app-input w-full min-w-0${fieldErrors.startTime ? ' app-input--invalid' : ''}`}
                     value={startTime}
-                    onChange={(ev) => setStartTime(ev.target.value)}
-                    required
+                    aria-invalid={Boolean(fieldErrors.startTime)}
+                    onChange={(ev) => {
+                      setStartTime(ev.target.value);
+                      setFieldErrors((prev) => {
+                        if (!prev.startTime) return prev;
+                        const next = { ...prev };
+                        delete next.startTime;
+                        return next;
+                      });
+                    }}
                   />
+                  <FieldError message={fieldErrors.startTime} />
                 </label>
-                <label className="block">
+                <label className="block min-w-0">
                   <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-stone-500">
                     End
                   </span>
                   <input
                     type="datetime-local"
-                    className="app-input w-full"
+                    className={`app-input w-full min-w-0${fieldErrors.endTime ? ' app-input--invalid' : ''}`}
                     value={endTime}
-                    onChange={(ev) => setEndTime(ev.target.value)}
-                    required
+                    aria-invalid={Boolean(fieldErrors.endTime)}
+                    onChange={(ev) => {
+                      setEndTime(ev.target.value);
+                      setFieldErrors((prev) => {
+                        if (!prev.endTime) return prev;
+                        const next = { ...prev };
+                        delete next.endTime;
+                        return next;
+                      });
+                    }}
                   />
+                  <FieldError message={fieldErrors.endTime} />
                 </label>
               </div>
 
