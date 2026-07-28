@@ -50,6 +50,7 @@ export function useWholesaleCatalog(options: UseWholesaleCatalogOptions = {}) {
       setVendorName(null);
       setError(null);
       setFromCache(false);
+      setLoading(false);
       return;
     }
 
