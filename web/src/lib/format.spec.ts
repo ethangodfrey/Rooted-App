@@ -2,8 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   formatCurrentClock,
+  formatDateTime,
   formatEventDate,
+  formatEventDisplayDate,
+  formatEventDisplayFullDate,
+  formatEventDisplayTimeRange,
   formatEventFullDate,
+  formatLocalDate,
   formatPrice,
   formatRelativeTime,
 } from './format';
@@ -98,5 +103,82 @@ describe('formatCurrentClock', () => {
     const label = formatCurrentClock(new Date('2026-07-10T15:30:45.000Z'));
     expect(label.length).toBeGreaterThan(0);
     expect(label).toMatch(/45/);
+  });
+});
+
+describe('formatLocalDate', () => {
+  it('formats a stable en-US weekday and month label', () => {
+    expect(formatLocalDate(new Date('2026-07-10T15:00:00.000Z'))).toMatch(/Fri.*Jul.*10/);
+  });
+
+  it('honors an explicit IANA timezone', () => {
+    const label = formatLocalDate(new Date('2026-07-10T04:00:00.000Z'), 'America/Los_Angeles');
+    expect(label).toMatch(/Jul.*9/);
+  });
+});
+
+describe('formatDateTime', () => {
+  it('returns a short month, day, and time label', () => {
+    const label = formatDateTime('2026-07-10T15:30:00.000Z');
+    expect(label).toMatch(/Jul/);
+    expect(label).toMatch(/10/);
+  });
+});
+
+describe('formatEventDisplayDate', () => {
+  it('uses the stored start date for one-off events', () => {
+    const label = formatEventDisplayDate(
+      {
+        start_datetime: '2026-07-10T15:00:00.000Z',
+        hours_summary: null,
+        state: 'IL',
+      },
+      new Date('2026-07-27T12:00:00.000Z'),
+    );
+    expect(label).toMatch(/Jul.*10/);
+  });
+
+  it('uses the live calendar day for recurring markets that are open', () => {
+    const label = formatEventDisplayDate(
+      {
+        start_datetime: '2026-01-01T12:00:00.000Z',
+        hours_summary: 'Sa 08:00-13:00',
+        state: 'IL',
+        timezone: 'America/Chicago',
+      },
+      new Date('2026-07-11T17:00:00.000Z'),
+    );
+    expect(label).toMatch(/Jul.*11/);
+  });
+});
+
+describe('formatEventDisplayFullDate', () => {
+  it('includes the year for one-off events', () => {
+    const label = formatEventDisplayFullDate(
+      {
+        start_datetime: '2026-07-10T15:00:00.000Z',
+        hours_summary: null,
+        state: 'IL',
+      },
+      new Date('2026-07-27T12:00:00.000Z'),
+    );
+    expect(label).toContain('2026');
+    expect(label).toMatch(/July.*10/);
+  });
+});
+
+describe('formatEventDisplayTimeRange', () => {
+  it('formats the schedule window from seed datetimes', () => {
+    const label = formatEventDisplayTimeRange({
+      start_datetime: '2026-07-10T13:00:00.000Z',
+      end_datetime: '2026-07-10T18:00:00.000Z',
+      hours_summary: 'Sa 08:00-13:00',
+      state: 'IL',
+      timezone: 'America/Chicago',
+    });
+
+    expect(label).toMatch(/8:00/);
+    expect(label).toMatch(/1:00/);
+    expect(label).toMatch(/–/);
   });
 });
