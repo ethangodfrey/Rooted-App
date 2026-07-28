@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   fetchThreadMessages,
@@ -12,6 +12,7 @@ export function useChatThread(threadId: string | null, currentUserId: string | n
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestRef = useRef(0);
 
   const load = useCallback(async () => {
     if (!threadId) {
@@ -19,16 +20,19 @@ export function useChatThread(threadId: string | null, currentUserId: string | n
       setLoading(false);
       return;
     }
+    const requestId = ++requestRef.current;
     setLoading(true);
     setError(null);
     try {
       const rows = await fetchThreadMessages(threadId);
+      if (requestId !== requestRef.current) return;
       setMessages(rows);
     } catch (err) {
+      if (requestId !== requestRef.current) return;
       setError(err instanceof Error ? err.message : 'Unable to load messages');
       setMessages([]);
     } finally {
-      setLoading(false);
+      if (requestId === requestRef.current) setLoading(false);
     }
   }, [threadId]);
 

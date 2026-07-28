@@ -12,12 +12,16 @@ export function useEventsScope() {
 
   useEffect(() => {
     let active = true;
-    getEventsScope().then((saved) => {
-      if (active) {
-        setScopeState(saved);
-        setReady(true);
-      }
-    });
+    getEventsScope()
+      .then((saved) => {
+        if (active) {
+          setScopeState(saved);
+          setReady(true);
+        }
+      })
+      .catch(() => {
+        if (active) setReady(true);
+      });
     return () => {
       active = false;
     };
