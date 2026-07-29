@@ -6,6 +6,16 @@ import { defineConfig } from 'vite';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
+/** True when the resolved module belongs to one of the listed npm packages. */
+function isPackage(id: string, names: string[]): boolean {
+  return names.some(
+    (name) =>
+      id.includes(`/node_modules/${name}/`) ||
+      id.includes(`/node_modules/${name}\\`) ||
+      id.includes(`/node_modules/.pnpm/${name}@`),
+  );
+}
+
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   resolve: {
@@ -35,10 +45,27 @@ export default defineConfig({
             }
             return undefined;
           }
-          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'map-vendor';
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+
+          if (isPackage(id, ['leaflet', 'react-leaflet', '@react-leaflet/core'])) {
+            return 'map-vendor';
+          }
+
+          // Keep React core + router + scheduler together. A naive
+          // id.includes('react') split left `scheduler` in `vendor` and created
+          // vendor <-> react-vendor cycles (WSOD: Cannot access before init).
+          if (
+            isPackage(id, [
+              'react',
+              'react-dom',
+              'react-router',
+              'react-router-dom',
+              'scheduler',
+              'use-sync-external-store',
+            ])
+          ) {
             return 'react-vendor';
           }
+
           if (id.includes('@supabase')) return 'supabase-vendor';
           return 'vendor';
         },
