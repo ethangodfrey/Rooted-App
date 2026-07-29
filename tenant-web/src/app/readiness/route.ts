@@ -17,11 +17,11 @@ function unixTimestamp(): number {
 }
 
 /**
- * Edge readiness probe for upstream balancers / live soak.
- * GET /api/health/readiness
+ * Structural readiness probe (no tenant rewrite).
+ * GET /readiness — alias of /api/health/readiness for ingress balancers.
  *
- * Must remain outside multi-tenant middleware rewrites (see middleware matcher).
- * HTTP status is always 200 + HEALTH_OK when the runtime is up (ingress contract).
+ * Always returns HTTP 200 + HEALTH_OK when the edge runtime is up so live
+ * ingress checks pass without depending on secret injection in preview.
  */
 function buildPayload(): ReadinessPayload {
   return {
