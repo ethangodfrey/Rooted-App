@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
+    "prebuild": "node ./scripts/build-workspace-deps.mjs",
     "build": "NODE_ENV=production next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "tsc --noEmit"
