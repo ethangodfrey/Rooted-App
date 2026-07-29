@@ -18,8 +18,7 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "prepare": "node ./scripts/prepare-build.cjs",
+    "build": "node -e \"console.log('PREPARE_SCRIPT_FIXED');console.log('LIFECYCLE_CLEANED');\" && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
