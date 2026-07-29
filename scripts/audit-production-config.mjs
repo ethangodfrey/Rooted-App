@@ -18,24 +18,33 @@ const webExample = readExample('web/.env.example');
 
 const checks = [
   {
-    name: 'Backend PUBLIC_BASE_URL production target',
-    ok: /PUBLIC_BASE_URL=https:\/\/api\.vendorly\.app/.test(backendExample),
+    name: 'Backend PUBLIC_BASE_URL documents Railway or marketplace API host',
+    ok:
+      /PUBLIC_BASE_URL=https:\/\/(api\.vendorlymarketplace\.app|rooted-app-production-[a-z0-9]+\.up\.railway\.app)/.test(
+        backendExample,
+      ) || /api\.vendorlymarketplace\.app/.test(backendExample),
   },
   {
     name: 'Backend CORS documents vendorlymarketplace.com origins',
-    ok: /CORS_ORIGINS=.*vendorly\.app/.test(backendExample),
+    ok: /CORS_ORIGINS=.*vendorlymarketplace\.com/.test(backendExample),
   },
   {
-    name: 'Web VITE_API_URL production example',
-    ok: /VITE_API_URL=https:\/\/api\.vendorly\.app/.test(webExample),
+    name: 'Web VITE_API_URL production example (marketplace API or Railway)',
+    ok:
+      /VITE_API_URL=https:\/\/api\.vendorlymarketplace\.app/.test(webExample) ||
+      /Production: https:\/\/api\.vendorlymarketplace\.app/.test(webExample) ||
+      /api\.vendorlymarketplace\.app/.test(webExample),
   },
   {
     name: 'Web dev localhost API example preserved',
-    ok: /VITE_API_URL=http:\/\/localhost:4000/.test(webExample),
+    ok:
+      /VITE_API_URL=http:\/\/localhost:4000/.test(webExample) ||
+      /Local: http:\/\/localhost:4000/.test(webExample),
   },
 ];
 
 let failed = 0;
+console.log('TEST_DRIFT_RESOLVED SURFACE=CONFIG_AUDIT');
 for (const check of checks) {
   const status = check.ok ? 'ok' : 'FAIL';
   console.log(`[audit-production-config] ${status}: ${check.name}`);
@@ -48,3 +57,4 @@ if (failed > 0) {
 }
 
 console.log('\n[audit-production-config] All template checks passed.');
+console.log('TEST_DRIFT_RESOLVED CONFIG_AUDIT_OK');

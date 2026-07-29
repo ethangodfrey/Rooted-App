@@ -14,10 +14,11 @@
     "SERVICE_NAME": "tenant-web",
     "PUBLIC_HOST": "tenant-web-psi.vercel.app",
     "PUBLIC_BASE_URL": "https://tenant-web-psi.vercel.app",
-    "READINESS_PATH": "/api/health/readiness",
+    "READINESS_PATH": "/readiness",
+    "READINESS_PATH_LEGACY": "/api/health/readiness",
     "CONTAINER_PORT": 3000,
     "LISTEN_HOST": "0.0.0.0",
-    "HEALTHCHECK_PATH": "/api/health/readiness"
+    "HEALTHCHECK_PATH": "/readiness"
   },
   "RAILWAY_RESTART_COMMAND": "railway restart --service backend"
 }

@@ -119,7 +119,7 @@
     "smoke:ui-baseline": "node scripts/verify-ui-production-baseline.mjs",
     "test:web": "npm run test --prefix web",
     "build:web": "npm run build --prefix web",
-    "build:tenant-web": "NODE_ENV=production npm run build --prefix tenant-web",
+    "build:tenant-web": "npm run build --prefix packages/env-config && NODE_ENV=production npm run build --prefix tenant-web",
     "queue:flush-failed": "npx tsx scripts/flush-failed-queue.ts",
     "db:seed:network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts",
     "seed:local-network": "TS_NODE_PROJECT=scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/seed-local-network.ts",
@@ -133,10 +133,12 @@
     "expo": "^56.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/luxon": "^3.7.2",
     "@types/react": "~19.2.14",
     "dotenv": "^16.6.1",
     "luxon": "^3.6.1",
+    "playwright": "^1.62.0",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3"
   }

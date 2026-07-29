@@ -21,6 +21,7 @@ const INTERNAL_PREFIXES = [
   '/api',
   '/api/health',
   '/api/health/readiness',
+  '/readiness',
   '/favicon.ico',
   '/robots.txt',
   '/sitemap.xml',
@@ -43,6 +44,7 @@ export function shouldBypassMiddleware(pathname: string): boolean {
   if (
     normalized === '/api/health' ||
     normalized === '/api/health/readiness' ||
+    normalized === '/readiness' ||
     normalized.startsWith('/api/health/')
   ) {
     return true;

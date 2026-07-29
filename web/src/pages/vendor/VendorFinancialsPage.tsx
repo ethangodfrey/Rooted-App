@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import { StripeBankLinkBanner } from '@/components/payments/StripeBankLinkBanner';
 import { EscrowPayouts } from '@/components/vendor/EscrowPayouts';
+import { SettlementDashboard } from '@/components/vendor/SettlementDashboard';
 import { WalletOverview } from '@/components/vendor/WalletOverview';
 import { FieldError } from '@/components/ui/FieldError';
 import {
@@ -11,6 +12,7 @@ import {
   VendorSection,
 } from '@/components/vendor/vendor-ui';
 import { useAuth } from '@/hooks/use-auth';
+import { useVendorSettlementOrders } from '@/hooks/use-vendor-settlement-orders';
 import { isApiConfigured } from '@/lib/api';
 import {
   fetchPaymentsOnboardStatus,
@@ -36,6 +38,11 @@ export function VendorFinancialsPage() {
   const { vendor, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const stripeReturn = searchParams.get('stripe');
+  const {
+    orders: settlementOrders,
+    loading: settlementLoading,
+    error: settlementError,
+  } = useVendorSettlementOrders(vendor?.id);
   const [balance, setBalance] = useState<VendorBalance | null>(null);
   const [transactions, setTransactions] = useState<FinancialTransactionItem[]>(
     [],
@@ -261,6 +268,14 @@ export function VendorFinancialsPage() {
           loading={loading}
           reportingId={reportingId}
           onReportIssue={(transactionId) => void handleReportIssue(transactionId)}
+        />
+      </VendorSection>
+
+      <VendorSection title="Market settlement">
+        <SettlementDashboard
+          orders={settlementOrders}
+          loading={settlementLoading}
+          error={settlementError}
         />
       </VendorSection>
 

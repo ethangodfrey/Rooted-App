@@ -21,7 +21,7 @@ export const config = {
   // Exclude structural health + all /api/* from tenant rewrite/catch-all.
   // /api/health/readiness must never be rewritten to /[tenant]/api/...
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/|api$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|readiness|api/|api$).*)',
   ],
 };
 
