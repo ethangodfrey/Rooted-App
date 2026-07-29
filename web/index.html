@@ -32,5 +32,25 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Boot watchdog — module eval failures (chunk TDZ) never reach React boundaries.
+      (function () {
+        var BOOT_MS = 8000;
+        window.setTimeout(function () {
+          var root = document.getElementById('root');
+          if (!root || root.childNodes.length > 0) return;
+          // eslint-disable-next-line no-console
+          console.log('CLIENT_CRASH_CAUGHT SCOPE=BOOT_WATCHDOG DETAIL=ROOT_EMPTY');
+          root.innerHTML =
+            '<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#0B1228;color:#f8fafc;font-family:IBM Plex Sans,Segoe UI,system-ui,sans-serif;text-align:center">' +
+            '<div style="max-width:420px">' +
+            '<p style="margin:0;font-family:IBM Plex Mono,ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#f97316">CLIENT_CRASH_CAUGHT</p>' +
+            '<h1 style="margin:1rem 0 .5rem;font-size:1.5rem">Critical Application Error</h1>' +
+            '<p style="margin:0;color:rgba(248,250,252,.68);line-height:1.6">The marketplace failed to start. Hard-reload, or clear site data if this persists.</p>' +
+            '<button type="button" onclick="location.reload()" style="margin-top:1.5rem;border:0;border-radius:12px;background:#ea580c;color:#fff;font-weight:600;font-size:14px;padding:.85rem 1.5rem;cursor:pointer">Try Again</button>' +
+            '</div></main>';
+        }, BOOT_MS);
+      })();
+    </script>
   </body>
 </html>
