@@ -57,6 +57,16 @@ Local dev: copy `web/.env.example` → `web/.env`.
 
 ### tenant-web (separate project)
 
+**Build order:** `@vendorly/env-config` must be compiled before `next build`.  
+`tenant-web/package.json` `prebuild` runs `scripts/build-workspace-deps.mjs` (`WORKSPACE_BUILD_ORDER_FIXED`).  
+`tenant-web/vercel.json` installs env-config first, then tenant-web.
+
+Prefer **Root Directory** = `tenant-web` with Vercel “include files outside root” so `packages/env-config` is available, **or** Root Directory = repo root with:
+
+```bash
+npm run build:tenant-web
+```
+
 Set in Vercel → **tenant-web project** → Environment Variables:
 
 | Variable | Purpose |
