@@ -6,7 +6,7 @@ export function isPosQueuesEnabled(config: ConfigService): boolean {
   if (raw !== undefined && raw.trim() !== '') {
     return raw.toLowerCase() === 'true';
   }
-  // Local dev defaults off — avoids burning Upstash quota and spam when Redis is down.
+  // Local dev defaults off — avoids connecting when Redis is not running.
   return config.get<string>('NODE_ENV') === 'production';
 }
 

@@ -49,6 +49,8 @@ const posQueuesEnabled = isPosQueuesEnabledFromEnv();
           BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
+              // resolveRedisConnection logs REDIS_MIGRATION_CONFIGURED;
+              // BullMQ opens the TCP session lazily when workers/queues start.
               connection: resolveRedisConnection(config),
               defaultJobOptions: {
                 attempts: 5,
